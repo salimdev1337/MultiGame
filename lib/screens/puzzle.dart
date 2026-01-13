@@ -17,7 +17,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
   bool isLoading = true;
   bool isNewImageLoading = false;
   int moveCount = 0;
-  DateTime? startTime;
+  // DateTime? startTime; // Timer removed
 
   @override
   void initState() {
@@ -29,7 +29,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
     setState(() {
       isLoading = true;
       moveCount = 0;
-      startTime = DateTime.now();
+      // startTime = DateTime.now(); // Timer removed
     });
 
     game = PuzzleGame(gridSize: gridSize);
@@ -42,7 +42,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
     setState(() {
       isNewImageLoading = false;
       moveCount = 0;
-      startTime = DateTime.now();
+      // startTime = DateTime.now(); // Timer removed
     });
 
     await game.loadPuzzleImages();
@@ -53,7 +53,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
     setState(() {
       isNewImageLoading = true;
       moveCount = 0;
-      startTime = DateTime.now();
+      // startTime = DateTime.now(); // Timer removed
     });
 
     await game.loadNewPuzzle();
@@ -66,7 +66,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
       gridSize = newSize;
       isLoading = true;
       moveCount = 0;
-      startTime = DateTime.now();
+      // startTime = DateTime.now(); // Timer removed
     });
 
     game = PuzzleGame(gridSize: newSize);
@@ -88,13 +88,6 @@ class _PuzzlePageState extends State<PuzzlePage> {
   }
 
   void _showWinDialog() {
-    final duration = startTime != null
-        ? DateTime.now().difference(startTime!)
-        : const Duration(seconds: 0);
-
-    final minutes = duration.inMinutes;
-    final seconds = duration.inSeconds % 60;
-
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -106,11 +99,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
             children: [
               const Icon(Icons.flag, color: Colors.green, size: 60),
               const SizedBox(height: 16),
-              Text(
-                'Time: ${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
-                style: const TextStyle(fontSize: 18),
-              ),
-              const SizedBox(height: 8),
+              // Timer display removed
               Text('Moves: $moveCount', style: const TextStyle(fontSize: 18)),
               const SizedBox(height: 8),
               Text(
@@ -196,13 +185,6 @@ class _PuzzlePageState extends State<PuzzlePage> {
   }
 
   Widget _buildStatsCard() {
-    final duration = startTime != null
-        ? DateTime.now().difference(startTime!)
-        : const Duration(seconds: 0);
-
-    final minutes = duration.inMinutes;
-    final seconds = duration.inSeconds % 60;
-
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
@@ -220,20 +202,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          Column(
-            children: [
-              const Icon(Icons.timer, color: Colors.blue, size: 20),
-              const SizedBox(height: 4),
-              Text(
-                '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const Text('Time', style: TextStyle(fontSize: 12)),
-            ],
-          ),
+          // Timer column removed
           Column(
             children: [
               const Icon(Icons.directions, color: Colors.blue, size: 20),

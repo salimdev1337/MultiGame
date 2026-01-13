@@ -15,6 +15,14 @@ class ImagePuzzlePiece extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final urlPreview = piece.imageUrl != null
+        ? (piece.imageUrl!.length > 50
+              ? piece.imageUrl!.substring(0, 50) + '...'
+              : piece.imageUrl!)
+        : 'null';
+    print(
+      'Building piece: number=${piece.number}, imageUrl=$urlPreview, pos=${piece.currentPosition}',
+    );
     if (piece.isEmpty) {
       return Container(
         width: size,
@@ -57,7 +65,11 @@ class ImagePuzzlePiece extends StatelessWidget {
   }
 
   Widget _buildImageContent() {
+    print(
+      '_buildImageContent: imageUrl is ${piece.imageUrl == null ? "NULL" : "NOT NULL"}, size=$size, gridSize=${piece.gridSize}',
+    );
     if (piece.imageUrl == null) {
+      print('⚠️ Piece ${piece.number} has NULL imageUrl!');
       return Container(
         color: Colors.grey[100],
         child: Center(
@@ -72,51 +84,89 @@ class ImagePuzzlePiece extends StatelessWidget {
         ),
       );
     }
-    return ClipRect(
-      child: Align(
-        alignment: Alignment(piece.alignmentX, piece.alignmentY),
-        widthFactor: 1.0 / piece.gridSize,
-        heightFactor: 1.0 / piece.gridSize,
-        child: Image.network(
-          piece.imageUrl!,
-          fit: BoxFit.cover,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
+    print('Loading image: ${piece.imageUrl!}');
+    print(
+      'Piece position - correct: (${piece.correctRow}, ${piece.correctCol}), current: (${piece.currentRow}, ${piece.currentCol})',
+    );
+    print(
+      'Image will be cropped at alignment: (${piece.alignmentX}, ${piece.alignmentY})',
+    );
 
-            return Container(
-              color: Colors.grey[200],
-              child: Center(
-                child: CircularProgressIndicator(
-                  value: loadingProgress.expectedTotalBytes != null
-                      ? loadingProgress.cumulativeBytesLoaded /
-                            loadingProgress.expectedTotalBytes!
-                      : null,
-                ),
-              ),
-            );
-          },
-          errorBuilder: (context, error, stackTrace) {
-            // Show number if image fails to load
-            return Container(
-              color: Colors.grey[200],
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.image_not_supported, color: Colors.red),
-                    const SizedBox(height: 8),
-                    Text(
-                      piece.number?.toString() ?? '?',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+    // Calculate the offset for this piece within the full image
+    final double offsetX = -piece.correctCol * size;
+    final double offsetY = -piece.correctRow * size;
+
+    return ClipRect(
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: OverflowBox(
+          alignment: Alignment.topLeft,
+          minWidth: size * piece.gridSize,
+          maxWidth: size * piece.gridSize,
+          minHeight: size * piece.gridSize,
+          maxHeight: size * piece.gridSize,
+          child: Transform.translate(
+            offset: Offset(offsetX, offsetY),
+            child: Image.network(
+              piece.imageUrl!,
+              width: size * piece.gridSize,
+              height: size * piece.gridSize,
+              fit: BoxFit.cover,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) {
+                  print(
+                    '✅ Image loaded successfully for piece ${piece.number}',
+                  );
+                  return child;
+                }
+                print(
+                  '⏳ Loading image for piece ${piece.number}: ${loadingProgress.cumulativeBytesLoaded} / ${loadingProgress.expectedTotalBytes}',
+                );
+
+                return Container(
+                  color: Colors.grey[200],
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                          : null,
                     ),
-                  ],
-                ),
-              ),
-            );
-          },
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                print(
+                  '❌ ERROR loading image for piece ${piece.number}: $error',
+                );
+                print('Stack trace: $stackTrace');
+                // Show number if image fails to load
+                return Container(
+                  color: Colors.grey[200],
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.image_not_supported,
+                          color: Colors.red,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          piece.number?.toString() ?? '?',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
