@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/puzzle_piece.dart';
 
-class ImagePuzzlePiece extends StatelessWidget {
+class ImagePuzzlePiece extends StatefulWidget {
   final PuzzlePiece piece;
   final VoidCallback onTap;
   final double size;
@@ -14,51 +14,79 @@ class ImagePuzzlePiece extends StatelessWidget {
   });
 
   @override
+  State<ImagePuzzlePiece> createState() => _ImagePuzzlePieceState();
+}
+
+class _ImagePuzzlePieceState extends State<ImagePuzzlePiece> {
+  bool _isHovering = false;
+
+  @override
   Widget build(BuildContext context) {
-    final urlPreview = piece.imageUrl != null
-        ? (piece.imageUrl!.length > 50
-              ? piece.imageUrl!.substring(0, 50) + '...'
-              : piece.imageUrl!)
+    final urlPreview = widget.piece.imageUrl != null
+        ? (widget.piece.imageUrl!.length > 50
+              ? widget.piece.imageUrl!.substring(0, 50) + '...'
+              : widget.piece.imageUrl!)
         : 'null';
     print(
-      'Building piece: number=${piece.number}, imageUrl=$urlPreview, pos=${piece.currentPosition}',
+      'Building piece: number=${widget.piece.number}, imageUrl=$urlPreview, pos=${widget.piece.currentPosition}',
     );
-    if (piece.isEmpty) {
+    if (widget.piece.isEmpty) {
       return Container(
-        width: size,
-        height: size,
+        width: widget.size,
+        height: widget.size,
         decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(8.0),
-          border: Border.all(color: Colors.grey, width: 1.0),
+          color: const Color(0xFF16181d).withOpacity(0.5),
+          borderRadius: BorderRadius.circular(12.0),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.1),
+            width: 2,
+            style: BorderStyle.solid,
+          ),
         ),
-        child: const Center(
-          child: Icon(Icons.drag_handle, color: Colors.grey, size: 32),
+        child: Center(
+          child: Icon(
+            Icons.add_circle_outline,
+            color: const Color(0xFF00d4ff).withOpacity(0.3),
+            size: 32,
+          ),
         ),
       );
     }
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: piece.isCorrect ? Colors.green : Colors.blue[400]!,
-            width: piece.isCorrect ? 3 : 2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: widget.size,
+          height: widget.size,
+          transform: Matrix4.identity()..scale(_isHovering ? 1.05 : 1.0),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _isHovering
+                  ? const Color(0xFF00d4ff)
+                  : (widget.piece.isCorrect
+                        ? Colors.green
+                        : Colors.white.withOpacity(0.2)),
+              width: _isHovering ? 3 : 2,
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: _buildImageContent(),
+            boxShadow: [
+              BoxShadow(
+                color: _isHovering
+                    ? const Color(0xFF00d4ff).withOpacity(0.4)
+                    : Colors.black.withOpacity(0.3),
+                blurRadius: _isHovering ? 15 : 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: _buildImageContent(),
+          ),
         ),
       ),
     );
@@ -66,68 +94,69 @@ class ImagePuzzlePiece extends StatelessWidget {
 
   Widget _buildImageContent() {
     print(
-      '_buildImageContent: imageUrl is ${piece.imageUrl == null ? "NULL" : "NOT NULL"}, size=$size, gridSize=${piece.gridSize}',
+      '_buildImageContent: imageUrl is ${widget.piece.imageUrl == null ? "NULL" : "NOT NULL"}, size=${widget.size}, gridSize=${widget.piece.gridSize}',
     );
-    if (piece.imageUrl == null) {
-      print('⚠️ Piece ${piece.number} has NULL imageUrl!');
+    if (widget.piece.imageUrl == null) {
+      print('⚠️ Piece ${widget.piece.number} has NULL imageUrl!');
       return Container(
-        color: Colors.grey[100],
+        color: const Color(0xFF21242b),
         child: Center(
           child: Text(
-            piece.number?.toString() ?? '?',
+            widget.piece.number?.toString() ?? '?',
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.blue,
+              color: Color(0xFF00d4ff),
             ),
           ),
         ),
       );
     }
-    print('Loading image: ${piece.imageUrl!}');
+    print('Loading image: ${widget.piece.imageUrl!}');
     print(
-      'Piece position - correct: (${piece.correctRow}, ${piece.correctCol}), current: (${piece.currentRow}, ${piece.currentCol})',
+      'Piece position - correct: (${widget.piece.correctRow}, ${widget.piece.correctCol}), current: (${widget.piece.currentRow}, ${widget.piece.currentCol})',
     );
     print(
-      'Image will be cropped at alignment: (${piece.alignmentX}, ${piece.alignmentY})',
+      'Image will be cropped at alignment: (${widget.piece.alignmentX}, ${widget.piece.alignmentY})',
     );
 
     // Calculate the offset for this piece within the full image
-    final double offsetX = -piece.correctCol * size;
-    final double offsetY = -piece.correctRow * size;
+    final double offsetX = -widget.piece.correctCol * widget.size;
+    final double offsetY = -widget.piece.correctRow * widget.size;
 
     return ClipRect(
       child: SizedBox(
-        width: size,
-        height: size,
+        width: widget.size,
+        height: widget.size,
         child: OverflowBox(
           alignment: Alignment.topLeft,
-          minWidth: size * piece.gridSize,
-          maxWidth: size * piece.gridSize,
-          minHeight: size * piece.gridSize,
-          maxHeight: size * piece.gridSize,
+          minWidth: widget.size * widget.piece.gridSize,
+          maxWidth: widget.size * widget.piece.gridSize,
+          minHeight: widget.size * widget.piece.gridSize,
+          maxHeight: widget.size * widget.piece.gridSize,
           child: Transform.translate(
             offset: Offset(offsetX, offsetY),
             child: Image.network(
-              piece.imageUrl!,
-              width: size * piece.gridSize,
-              height: size * piece.gridSize,
+              widget.piece.imageUrl!,
+              width: widget.size * widget.piece.gridSize,
+              height: widget.size * widget.piece.gridSize,
               fit: BoxFit.cover,
               loadingBuilder: (context, child, loadingProgress) {
                 if (loadingProgress == null) {
                   print(
-                    '✅ Image loaded successfully for piece ${piece.number}',
+                    '✅ Image loaded successfully for piece ${widget.piece.number}',
                   );
                   return child;
                 }
                 print(
-                  '⏳ Loading image for piece ${piece.number}: ${loadingProgress.cumulativeBytesLoaded} / ${loadingProgress.expectedTotalBytes}',
+                  '⏳ Loading image for piece ${widget.piece.number}: ${loadingProgress.cumulativeBytesLoaded} / ${loadingProgress.expectedTotalBytes}',
                 );
 
                 return Container(
-                  color: Colors.grey[200],
+                  color: const Color(0xFF21242b),
                   child: Center(
                     child: CircularProgressIndicator(
+                      color: const Color(0xFF00d4ff),
                       value: loadingProgress.expectedTotalBytes != null
                           ? loadingProgress.cumulativeBytesLoaded /
                                 loadingProgress.expectedTotalBytes!
@@ -138,26 +167,27 @@ class ImagePuzzlePiece extends StatelessWidget {
               },
               errorBuilder: (context, error, stackTrace) {
                 print(
-                  '❌ ERROR loading image for piece ${piece.number}: $error',
+                  '❌ ERROR loading image for piece ${widget.piece.number}: $error',
                 );
                 print('Stack trace: $stackTrace');
                 // Show number if image fails to load
                 return Container(
-                  color: Colors.grey[200],
+                  color: const Color(0xFF21242b),
                   child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Icon(
                           Icons.image_not_supported,
-                          color: Colors.red,
+                          color: Color(0xFFff5c00),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          piece.number?.toString() ?? '?',
+                          widget.piece.number?.toString() ?? '?',
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
+                            color: Color(0xFF00d4ff),
                           ),
                         ),
                       ],

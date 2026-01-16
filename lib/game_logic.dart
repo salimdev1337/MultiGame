@@ -39,11 +39,17 @@ class PuzzleGame {
   }
 
   // Check if piece can move to empty position
+  // In glide mode, any non-empty piece can move to the empty position
   bool canMove(int position) {
-    return _getAdjacentPositions(emptyPosition).contains(position);
+    // Can't move if it's the empty position itself
+    if (position == emptyPosition) {
+      return false;
+    }
+    // Any other piece can move to the empty position
+    return true;
   }
 
-  // Move piece to empty position
+  // Move piece to empty position (glide to empty space)
   bool movePiece(int position) {
     if (!canMove(position)) {
       return false;

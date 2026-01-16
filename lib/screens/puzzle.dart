@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:puzzle/game_logic.dart';
 import 'package:puzzle/widgets/image_puzzle_piece.dart';
@@ -11,41 +12,85 @@ class PuzzlePage extends StatefulWidget {
   State<PuzzlePage> createState() => _PuzzlePageState();
 }
 
-class _PuzzlePageState extends State<PuzzlePage> {
+class _PuzzlePageState extends State<PuzzlePage>
+    with SingleTickerProviderStateMixin {
   late PuzzleGame game;
   int gridSize = 4;
   bool isLoading = true;
   bool isNewImageLoading = false;
   int moveCount = 0;
-  // DateTime? startTime; // Timer removed
+  int elapsedSeconds = 0;
+  Timer? _timer;
+  bool showImagePreview = false;
+  late AnimationController _previewAnimationController;
+  late Animation<double> _previewAnimation;
+  final GlobalKey _hintButtonKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
+    _previewAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    _previewAnimation = CurvedAnimation(
+      parent: _previewAnimationController,
+      curve: Curves.easeInOutCubic,
+    );
     _initializeGame();
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _previewAnimationController.dispose();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    elapsedSeconds = 0;
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!game.isSolved) {
+        setState(() {
+          elapsedSeconds++;
+        });
+      }
+    });
+  }
+
+  String _formatTime(int seconds) {
+    int minutes = seconds ~/ 60;
+    int secs = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
   }
 
   Future<void> _initializeGame() async {
     setState(() {
       isLoading = true;
       moveCount = 0;
-      // startTime = DateTime.now(); // Timer removed
     });
 
     game = PuzzleGame(gridSize: gridSize);
     await game.loadPuzzleImages();
+    _startTimer();
 
     setState(() => isLoading = false);
+
+    // Show image preview after loading
+    _showImagePreviewAnimation();
   }
 
   Future<void> _resetGame() async {
     setState(() {
       isNewImageLoading = false;
       moveCount = 0;
-      // startTime = DateTime.now(); // Timer removed
     });
 
     await game.loadPuzzleImages();
+    _startTimer();
+    _showImagePreviewAnimation();
     setState(() {});
   }
 
@@ -53,10 +98,11 @@ class _PuzzlePageState extends State<PuzzlePage> {
     setState(() {
       isNewImageLoading = true;
       moveCount = 0;
-      // startTime = DateTime.now(); // Timer removed
     });
 
     await game.loadNewPuzzle();
+    _startTimer();
+    _showImagePreviewAnimation();
 
     setState(() => isNewImageLoading = false);
   }
@@ -66,13 +112,123 @@ class _PuzzlePageState extends State<PuzzlePage> {
       gridSize = newSize;
       isLoading = true;
       moveCount = 0;
-      // startTime = DateTime.now(); // Timer removed
     });
 
     game = PuzzleGame(gridSize: newSize);
     await game.loadPuzzleImages();
+    _startTimer();
+    _showImagePreviewAnimation();
 
     setState(() => isLoading = false);
+  }
+
+  void _showImagePreviewAnimation() {
+    setState(() {
+      showImagePreview = true;
+    });
+    _previewAnimationController.reset();
+
+    // Wait 3 seconds, then animate to hint button
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        _previewAnimationController.forward().then((_) {
+          if (mounted) {
+            setState(() {
+              showImagePreview = false;
+            });
+          }
+        });
+      }
+    });
+  }
+
+  void _showHintDialog() {
+    final imageUrl = game.pieces.firstWhere((p) => p.imageUrl != null).imageUrl;
+    if (imageUrl == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Stack(
+            children: [
+              Container(
+                margin: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF21242b),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: const Color(0xFF00d4ff), width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00d4ff).withOpacity(0.3),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'Image Preview',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF00d4ff),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              height: 300,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  value:
+                                      loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                      : null,
+                                  color: const Color(0xFF00d4ff),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text(
+                          'CLOSE',
+                          style: TextStyle(
+                            color: Color(0xFF00d4ff),
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _movePiece(int position) {
@@ -88,179 +244,623 @@ class _PuzzlePageState extends State<PuzzlePage> {
   }
 
   void _showWinDialog() {
+    _timer?.cancel();
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('🎉 Puzzle Solved!', textAlign: TextAlign.center),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.flag, color: Colors.green, size: 60),
-              const SizedBox(height: 16),
-              // Timer display removed
-              Text('Moves: $moveCount', style: const TextStyle(fontSize: 18)),
-              const SizedBox(height: 8),
-              Text(
-                'Grid: $gridSize×$gridSize',
-                style: const TextStyle(fontSize: 18),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Great job! 🇹🇳',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-            ],
+        return Dialog(
+          backgroundColor: const Color(0xFF21242b),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _newImageGame();
-              },
-              child: const Text('New Image'),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  '🎉 Puzzle Solved!',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF00d4ff),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF16181d),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.05)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Column(
+                            children: [
+                              const Text(
+                                'MOVES',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '$moveCount',
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  color: Color(0xFF00d4ff),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              const Text(
+                                'TIME',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _formatTime(elapsedSeconds),
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  color: Color(0xFF00d4ff),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Great job! You have successfully completed the puzzle. Play again',
+                  style: TextStyle(fontSize: 18, color: Colors.white70),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildDialogButton(
+                        label: 'RESET',
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _resetGame();
+                        },
+                        isPrimary: false,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: _buildDialogButton(
+                        label: 'PLAY AGAIN',
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _newImageGame();
+                        },
+                        isPrimary: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _resetGame();
-              },
-              child: const Text('Play Again'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-          ],
+          ),
         );
       },
     );
   }
 
-  Widget _buildGridSizeSelector() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(Icons.grid_view, size: 20),
-        const SizedBox(width: 8),
-        const Text('Grid:', style: TextStyle(color: Colors.white)),
-        const SizedBox(width: 8),
-        Container(
+  Widget _buildDialogButton({
+    required String label,
+    required VoidCallback onPressed,
+    required bool isPrimary,
+  }) {
+    return Material(
+      color: isPrimary ? const Color(0xFFff5c00) : const Color(0xFF16181d),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
+            border: Border(
+              bottom: BorderSide(
+                color: isPrimary ? const Color(0xFF8B3000) : Colors.black,
+                width: 4,
+              ),
+            ),
           ),
-          child: Row(
-            children: [
-              _buildGridSizeOption(3, '3×3'),
-              _buildGridSizeOption(4, '4×4'),
-              _buildGridSizeOption(5, '5×5'),
-            ],
+          child: Center(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                // Top App Bar
+                _buildTopAppBar(),
+
+                // Main Content
+                Expanded(
+                  child: isLoading
+                      ? _buildLoadingScreen()
+                      : SingleChildScrollView(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: Column(
+                              children: [
+                                const SizedBox(height: 16),
+                                // Stats Section
+                                _buildStatsSection(),
+                                const SizedBox(height: 32),
+                                // Puzzle Grid
+                                _buildPuzzleGridContainer(),
+                                const SizedBox(height: 32),
+                                // Progress Section
+                                _buildProgressSection(),
+                                const SizedBox(height: 24),
+                              ],
+                            ),
+                          ),
+                        ),
+                ),
+
+                // Footer Controls
+                _buildFooterControls(),
+              ],
+            ),
+
+            // Image Preview Overlay
+            if (showImagePreview) _buildImagePreviewOverlay(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopAppBar() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 48, 24, 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF16181d).withOpacity(0.8),
+      ),
+      child: Row(
+        children: [
+          // Back Button
+          _buildIconButton(Icons.arrow_back_ios_new, () {
+            // Back action
+          }),
+          const SizedBox(width: 12),
+          // Settings Button
+          _buildIconButton(Icons.settings, () {
+            _showGridSizeDialog();
+          }),
+          const Spacer(),
+          // Level Title
+          Text(
+            'LEVEL ${gridSize * gridSize}',
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIconButton(IconData icon, VoidCallback onPressed) {
+    return Material(
+      color: const Color(0xFF21242b),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 40,
+          height: 40,
+          alignment: Alignment.center,
+          child: Icon(icon, color: const Color(0xFF00d4ff), size: 20),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatsSection() {
+    return Row(
+      children: [
+        // Moves Card
+        Expanded(child: _buildStatCard('MOVES', '$moveCount')),
+        const SizedBox(width: 16),
+        // Time Card
+        Expanded(child: _buildStatCard('TIME', _formatTime(elapsedSeconds))),
+        const SizedBox(width: 16),
+        // Hint Button
+        _buildHintButton(),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF21242b),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.5,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF00d4ff),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHintButton() {
+    return GestureDetector(
+      key: _hintButtonKey,
+      onTap: _showHintDialog,
+      child: Container(
+        width: 64,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF21242b),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        child: const Icon(
+          Icons.lightbulb_outline,
+          color: Color(0xFF00d4ff),
+          size: 28,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPuzzleGridContainer() {
+    return AspectRatio(
+      aspectRatio: 1,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF21242b),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.5),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: _buildPuzzleGrid(),
+      ),
+    );
+  }
+
+  Widget _buildPuzzleGrid() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Calculate the size for each piece based on available space
+        // Subtract the total spacing from available width
+        final totalSpacing = 10.0 * (gridSize - 1);
+        final availableWidth = constraints.maxWidth - totalSpacing;
+        final pieceSize = availableWidth / gridSize;
+
+        return GridView.builder(
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: gridSize,
+            crossAxisSpacing: 10.0,
+            mainAxisSpacing: 10.0,
+          ),
+          itemCount: game.totalPieces,
+          itemBuilder: (context, index) {
+            final piece = game.pieces[index];
+            return ImagePuzzlePiece(
+              piece: piece,
+              onTap: () => _movePiece(index),
+              size: pieceSize,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildProgressSection() {
+    final progress = game.completionPercentage;
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'PROGRESS',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
+                color: Colors.grey[600],
+              ),
+            ),
+            Text(
+              '${(progress * 100).toInt()}%',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF00d4ff),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container(
+          height: 12,
+          decoration: BoxDecoration(
+            color: const Color(0xFF21242b),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: Stack(
+              children: [
+                FractionallySizedBox(
+                  widthFactor: progress,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF00d4ff), Color(0xFF00a8cc)],
+                      ),
+                      borderRadius: BorderRadius.circular(6),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00d4ff).withOpacity(0.4),
+                          blurRadius: 10,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildGridSizeOption(int size, String label) {
-    bool isSelected = gridSize == size;
-    return GestureDetector(
-      onTap: () => _changeGridSize(size),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.blue : Colors.white,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatsCard() {
+  Widget _buildFooterControls() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: const Color(0xFF21242b).withOpacity(0.5),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
+        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05))),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
           ),
         ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          // Timer column removed
-          Column(
-            children: [
-              const Icon(Icons.directions, color: Colors.blue, size: 20),
-              const SizedBox(height: 4),
-              Text(
-                '$moveCount',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const Text('Moves', style: TextStyle(fontSize: 12)),
-            ],
+          Expanded(
+            child: _buildFooterButton(
+              label: 'RESET',
+              onPressed: _resetGame,
+              isPrimary: false,
+            ),
           ),
-          Column(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.blue, size: 20),
-              const SizedBox(height: 4),
-              Text(
-                '${game.correctCount}/${game.totalPieces - 1}',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const Text('Pieces', style: TextStyle(fontSize: 12)),
-            ],
+          const SizedBox(width: 16),
+          Expanded(
+            flex: 2,
+            child: _buildFooterButton(
+              label: 'PLAY AGAIN',
+              onPressed: _newImageGame,
+              isPrimary: true,
+              isLoading: isNewImageLoading,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPuzzleGrid() {
-    if (isLoading) {
-      return _buildLoadingScreen();
-    }
-
-    // Calculate available space for grid
-    final availableWidth = MediaQuery.of(context).size.width - 32;
-    final pieceSize = (availableWidth / gridSize) - 4;
-
-    return GridView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: gridSize,
-        crossAxisSpacing: 4.0,
-        mainAxisSpacing: 4.0,
+  Widget _buildFooterButton({
+    required String label,
+    required VoidCallback onPressed,
+    required bool isPrimary,
+    bool isLoading = false,
+  }) {
+    return Material(
+      color: isPrimary ? const Color(0xFFff5c00) : const Color(0xFF16181d),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: isLoading ? null : onPressed,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          height: 64,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border(
+              bottom: BorderSide(
+                color: isPrimary ? const Color(0xFF8B3000) : Colors.black,
+                width: 4,
+              ),
+            ),
+          ),
+          child: Center(
+            child: isLoading
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+          ),
+        ),
       ),
-      itemCount: game.totalPieces,
-      itemBuilder: (context, index) {
-        final piece = game.pieces[index];
-        return ImagePuzzlePiece(
-          piece: piece,
-          onTap: () => _movePiece(index),
-          size: pieceSize,
+    );
+  }
+
+  void _showGridSizeDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: const Color(0xFF21242b),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Select Grid Size',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF00d4ff),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildGridSizeOption(3),
+                    _buildGridSizeOption(4),
+                    _buildGridSizeOption(5),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'CLOSE',
+                    style: TextStyle(color: Color(0xFF00d4ff)),
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
+    );
+  }
+
+  Widget _buildGridSizeOption(int size) {
+    final isSelected = gridSize == size;
+    return GestureDetector(
+      onTap: () {
+        Navigator.pop(context);
+        _changeGridSize(size);
+      },
+      child: Container(
+        width: 70,
+        height: 70,
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF00d4ff) : const Color(0xFF16181d),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF00d4ff)
+                : Colors.white.withOpacity(0.1),
+            width: 2,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            '${size}×$size',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: isSelected ? Colors.black : Colors.white,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -269,128 +869,201 @@ class _PuzzlePageState extends State<PuzzlePage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(),
-          const SizedBox(height: 20),
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                colors: [Color(0xFF00d4ff), Color(0xFF00a8cc)],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF00d4ff).withOpacity(0.4),
+                  blurRadius: 20,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
           const Text(
-            'Loading Tunisian Puzzle...',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+            'Loading Puzzle...',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF00d4ff),
+            ),
           ),
           const SizedBox(height: 8),
-          const Text('🇹🇳', style: TextStyle(fontSize: 40)),
+          const Text('🇹🇳', style: TextStyle(fontSize: 48)),
           const SizedBox(height: 16),
           Text(
             'Grid: $gridSize×$gridSize',
-            style: const TextStyle(color: Colors.grey),
+            style: const TextStyle(color: Colors.grey, fontSize: 16),
           ),
         ],
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tunisian Puzzle'),
-        actions: [
-          _buildGridSizeSelector(),
-          const SizedBox(width: 16),
-          IconButton(
-            onPressed: _newImageGame,
-            icon: isNewImageLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
+  Widget _buildImagePreviewOverlay() {
+    final imageUrl = game.pieces.firstWhere((p) => p.imageUrl != null).imageUrl;
+    if (imageUrl == null) return const SizedBox.shrink();
+
+    // Get hint button position
+    RenderBox? hintBox;
+    Offset? hintPosition;
+    Size? hintSize;
+
+    try {
+      hintBox = _hintButtonKey.currentContext?.findRenderObject() as RenderBox?;
+      if (hintBox != null) {
+        hintPosition = hintBox.localToGlobal(Offset.zero);
+        hintSize = hintBox.size;
+      }
+    } catch (e) {
+      // Handle case where hint button is not yet rendered
+    }
+
+    return AnimatedBuilder(
+      animation: _previewAnimation,
+      builder: (context, child) {
+        final screenSize = MediaQuery.of(context).size;
+        final isAnimating = _previewAnimation.value > 0;
+
+        // Start position: center of screen with large size
+        final startLeft = screenSize.width * 0.1;
+        final startTop = screenSize.height * 0.2;
+        final startWidth = screenSize.width * 0.8;
+        final startHeight = screenSize.width * 0.8;
+
+        // End position: hint button position
+        final endLeft = hintPosition?.dx ?? screenSize.width - 100;
+        final endTop = hintPosition?.dy ?? 150;
+        final endWidth = hintSize?.width ?? 64;
+        final endHeight = hintSize?.height ?? 64;
+
+        // Interpolate
+        final currentLeft =
+            startLeft + (endLeft - startLeft) * _previewAnimation.value;
+        final currentTop =
+            startTop + (endTop - startTop) * _previewAnimation.value;
+        final currentWidth =
+            startWidth + (endWidth - startWidth) * _previewAnimation.value;
+        final currentHeight =
+            startHeight + (endHeight - startHeight) * _previewAnimation.value;
+        final currentOpacity = 1.0 - (_previewAnimation.value * 0.7);
+        final currentBlur = _previewAnimation.value * 10;
+
+        return Stack(
+          children: [
+            // Dark overlay
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(
+                  0.8 * (1 - _previewAnimation.value),
+                ),
+              ),
+            ),
+
+            // Animated image
+            Positioned(
+              left: currentLeft,
+              top: currentTop,
+              child: IgnorePointer(
+                ignoring: isAnimating,
+                child: Container(
+                  width: currentWidth,
+                  height: currentHeight,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(
+                      24 - (_previewAnimation.value * 8),
                     ),
-                  )
-                : const Icon(Icons.image),
-            tooltip: 'New Image',
-          ),
-          IconButton(
-            onPressed: _resetGame,
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Restart Puzzle',
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Stats card
-          if (!isLoading) _buildStatsCard(),
-
-          // Progress indicator
-          if (!isLoading)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: LinearProgressIndicator(
-                value: game.completionPercentage,
-                backgroundColor: Colors.grey[200],
-                color: Colors.green,
-                minHeight: 6,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-
-          // Puzzle grid
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    border: Border.all(
+                      color: const Color(
+                        0xFF00d4ff,
+                      ).withOpacity(currentOpacity),
+                      width: 3,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(
+                          0xFF00d4ff,
+                        ).withOpacity(0.5 * currentOpacity),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      ),
+                    ],
                   ),
-                ],
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(
+                      22 - (_previewAnimation.value * 8),
+                    ),
+                    child: Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          color: const Color(0xFF21242b),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                  : null,
+                              color: const Color(0xFF00d4ff),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
               ),
-              child: _buildPuzzleGrid(),
             ),
-          ),
 
-          // Control buttons
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: _resetGame,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Restart'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[600],
-                    foregroundColor: Colors.white,
+            // Hint text (only show before animation)
+            if (!isAnimating)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: screenSize.height * 0.15,
+                child: Center(
+                  child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
                       vertical: 12,
                     ),
-                  ),
-                ),
-                ElevatedButton.icon(
-                  onPressed: _newImageGame,
-                  icon: const Icon(Icons.image),
-                  label: const Text('New Image'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[600],
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF21242b),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: const Color(0xFF00d4ff),
+                        width: 2,
+                      ),
+                    ),
+                    child: const Text(
+                      'Memorize this image! 💡',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF00d4ff),
+                      ),
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ],
-      ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
