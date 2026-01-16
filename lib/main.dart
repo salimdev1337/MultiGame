@@ -1,7 +1,7 @@
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:puzzle/screens/puzzle.dart';
+import 'package:puzzle/screens/main_navigation.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,17 +24,15 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Puzzle Game',
       theme: ThemeData.dark().copyWith(
-        useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFF16181d),
         primaryColor: const Color(0xFF00d4ff),
         colorScheme: const ColorScheme.dark(
           primary: Color(0xFF00d4ff),
           secondary: Color(0xFFff5c00),
           surface: Color(0xFF21242b),
-          background: Color(0xFF16181d),
         ),
       ),
-      home: const PuzzlePage(),
+      home: const MainNavigation(),
       locale: DevicePreview.locale(context),
       builder: DevicePreview.appBuilder,
     );

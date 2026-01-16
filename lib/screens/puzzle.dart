@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:puzzle/game_logic.dart';
 import 'package:puzzle/widgets/image_puzzle_piece.dart';
+import 'package:puzzle/services/achievement_service.dart';
 
 class PuzzlePage extends StatefulWidget {
   const PuzzlePage({super.key});
@@ -25,6 +26,7 @@ class _PuzzlePageState extends State<PuzzlePage>
   late AnimationController _previewAnimationController;
   late Animation<double> _previewAnimation;
   final GlobalKey _hintButtonKey = GlobalKey();
+  final AchievementService _achievementService = AchievementService();
 
   @override
   void initState() {
@@ -190,7 +192,7 @@ class _PuzzlePageState extends State<PuzzlePage>
                           fit: BoxFit.cover,
                           loadingBuilder: (context, child, loadingProgress) {
                             if (loadingProgress == null) return child;
-                            return Container(
+                            return SizedBox(
                               height: 300,
                               child: Center(
                                 child: CircularProgressIndicator(
@@ -243,8 +245,18 @@ class _PuzzlePageState extends State<PuzzlePage>
     }
   }
 
-  void _showWinDialog() {
+  Future<void> _showWinDialog() async {
     _timer?.cancel();
+
+    // Record game completion and check for achievements
+    final newAchievements = await _achievementService.recordGameCompletion(
+      gridSize: gridSize,
+      moves: moveCount,
+      seconds: elapsedSeconds,
+    );
+
+    if (!mounted) return;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -328,10 +340,56 @@ class _PuzzlePageState extends State<PuzzlePage>
                     ],
                   ),
                 ),
+                if (newAchievements.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFff5c00).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFFff5c00).withOpacity(0.5),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('🏆', style: TextStyle(fontSize: 20)),
+                            SizedBox(width: 8),
+                            Text(
+                              'New Achievement!',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFff5c00),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ...newAchievements.map(
+                          (achievement) => Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Text(
+                              achievement,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 const Text(
                   'Great job! You have successfully completed the puzzle. Play again',
                   style: TextStyle(fontSize: 18, color: Colors.white70),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
                 Row(
@@ -852,7 +910,7 @@ class _PuzzlePageState extends State<PuzzlePage>
         ),
         child: Center(
           child: Text(
-            '${size}×$size',
+            '$size×$size',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,

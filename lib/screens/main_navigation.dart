@@ -1,0 +1,185 @@
+import 'package:flutter/material.dart';
+import 'package:puzzle/models/game_model.dart';
+import 'package:puzzle/screens/home_page.dart';
+import 'package:puzzle/screens/profile_page.dart';
+import 'package:puzzle/screens/puzzle.dart';
+
+class MainNavigation extends StatefulWidget {
+  const MainNavigation({super.key});
+
+  @override
+  State<MainNavigation> createState() => _MainNavigationState();
+}
+
+class _MainNavigationState extends State<MainNavigation> {
+  int _currentIndex = 0;
+  GameModel? _selectedGame;
+
+  void _onGameSelected(GameModel game) {
+    if (game.id == 'image_puzzle') {
+      setState(() {
+        _selectedGame = game;
+        _currentIndex = 1; // Switch to game tab
+      });
+    }
+  }
+
+  void _onTabTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
+  Widget _getCurrentPage() {
+    switch (_currentIndex) {
+      case 0:
+        return HomePage(onGameSelected: _onGameSelected);
+      case 1:
+        if (_selectedGame?.id == 'image_puzzle') {
+          return const PuzzlePage();
+        } else {
+          return _buildNoGameSelectedView();
+        }
+      case 2:
+        return const ProfilePage();
+      default:
+        return HomePage(onGameSelected: _onGameSelected);
+    }
+  }
+
+  Widget _buildNoGameSelectedView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.games_outlined,
+            size: 80,
+            color: Colors.grey.withOpacity(0.5),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'No Game Selected',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white.withOpacity(0.7),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Go to Home and select a game to play',
+            style: TextStyle(fontSize: 16, color: Colors.grey.withOpacity(0.6)),
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton.icon(
+            onPressed: () {
+              setState(() {
+                _currentIndex = 0;
+              });
+            },
+            icon: const Icon(Icons.home),
+            label: const Text('Go to Home'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _getCurrentPage(),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(
+                  icon: Icons.home_rounded,
+                  label: 'Home',
+                  index: 0,
+                ),
+                _buildNavItem(
+                  icon: Icons.games_rounded,
+                  label: 'Game',
+                  index: 1,
+                ),
+                _buildNavItem(
+                  icon: Icons.person_rounded,
+                  label: 'Profile',
+                  index: 2,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required IconData icon,
+    required String label,
+    required int index,
+  }) {
+    final isSelected = _currentIndex == index;
+    return GestureDetector(
+      onTap: () => _onTabTapped(index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.grey,
+              size: 28,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
