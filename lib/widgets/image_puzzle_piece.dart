@@ -24,7 +24,7 @@ class _ImagePuzzlePieceState extends State<ImagePuzzlePiece> {
   Widget build(BuildContext context) {
     final urlPreview = widget.piece.imageUrl != null
         ? (widget.piece.imageUrl!.length > 50
-              ? widget.piece.imageUrl!.substring(0, 50) + '...'
+              ? '${widget.piece.imageUrl!.substring(0, 50)}...'
               : widget.piece.imageUrl!)
         : 'null';
     print(
