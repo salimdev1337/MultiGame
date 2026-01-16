@@ -56,7 +56,7 @@ jobs:
         
       # Build for web with proper base URL for GitHub Pages
       - name: 🔨 Build Web
-        run: flutter build web --release --base-href "/puzzle/"
+        run: flutter build web --release --base-href "/MultiGame/"
         
       # Setup GitHub Pages
       - name: 🔧 Setup Pages
