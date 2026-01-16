@@ -82,18 +82,18 @@ class PuzzleGame {
     if (piece2.isEmpty) emptyPosition = pos1;
   }
 
-  List<int> _getAdjacentPositions(int position) {
-    List<int> adjacent = [];
-    int row = position ~/ gridSize;
-    int col = position % gridSize;
+  //  List<int> _getAdjacentPositions(int position) {
+  //     List<int> adjacent = [];
+  //     int row = position ~/ gridSize;
+  //     int col = position % gridSize;
 
-    if (row > 0) adjacent.add(position - gridSize);
-    if (row < gridSize - 1) adjacent.add(position + gridSize);
-    if (col > 0) adjacent.add(position - 1);
-    if (col < gridSize - 1) adjacent.add(position + 1);
+  //     if (row > 0) adjacent.add(position - gridSize);
+  //     if (row < gridSize - 1) adjacent.add(position + gridSize);
+  //     if (col > 0) adjacent.add(position - 1);
+  //     if (col < gridSize - 1) adjacent.add(position + 1);
 
-    return adjacent;
-  }
+  //     return adjacent;
+  //   }
 
   bool get isSolved {
     for (var piece in pieces) {

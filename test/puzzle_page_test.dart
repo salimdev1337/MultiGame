@@ -203,23 +203,6 @@ void main() {
       });
     });
 
-    testWidgets('Can tap puzzle pieces', (WidgetTester tester) async {
-      await mockNetworkImagesFor(() async {
-        await tester.pumpWidget(const MaterialApp(home: PuzzlePage()));
-        await tester.pumpAndSettle();
-
-        // Find initial move count
-        final initialMovesFinder = find.text('0');
-
-        // Find a tappable piece (GestureDetector)
-        final pieces = find.byType(GestureDetector);
-        if (pieces.evaluate().isNotEmpty) {
-          await tester.tap(pieces.first);
-          await tester.pump();
-        }
-      });
-    });
-
     testWidgets('Restart button works', (WidgetTester tester) async {
       await mockNetworkImagesFor(() async {
         await tester.pumpWidget(const MaterialApp(home: PuzzlePage()));

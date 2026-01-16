@@ -84,7 +84,7 @@ Upload artifacts (downloadable builds)
 ```
 Main branch updated → Build web version → 
 Deploy to GitHub Pages → 
-Your game is live at yourusername.github.io/puzzle
+Your game is live at salimdev1337.github.io/puzzle
 ```
 
 **Setup required:**
@@ -93,7 +93,7 @@ Your game is live at yourusername.github.io/puzzle
 3. Save
 4. Done! Future pushes auto-deploy
 
-**Your game URL:** `https://yourusername.github.io/puzzle`
+**Your game URL:** `https://salimdev1337.github.io/puzzle`
 
 ---
 

@@ -1018,7 +1018,7 @@ class _PuzzlePageState extends State<PuzzlePage>
         final currentHeight =
             startHeight + (endHeight - startHeight) * _previewAnimation.value;
         final currentOpacity = 1.0 - (_previewAnimation.value * 0.7);
-        final currentBlur = _previewAnimation.value * 10;
+        // final currentBlur = _previewAnimation.value * 10;
 
         return Stack(
           children: [
