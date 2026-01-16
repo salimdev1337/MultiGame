@@ -55,7 +55,7 @@ class _MainNavigationState extends State<MainNavigation> {
           Icon(
             Icons.games_outlined,
             size: 80,
-            color: Colors.grey.withOpacity(0.5),
+            color: Colors.grey.withValues(alpha: (0.5 * 255)),
           ),
           const SizedBox(height: 24),
           Text(
@@ -63,13 +63,16 @@ class _MainNavigationState extends State<MainNavigation> {
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: (0.7 * 255)),
             ),
           ),
           const SizedBox(height: 12),
           Text(
             'Go to Home and select a game to play',
-            style: TextStyle(fontSize: 16, color: Colors.grey.withOpacity(0.6)),
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.withValues(alpha: (0.6 * 255)),
+            ),
           ),
           const SizedBox(height: 32),
           ElevatedButton.icon(
@@ -103,7 +106,7 @@ class _MainNavigationState extends State<MainNavigation> {
           color: Theme.of(context).colorScheme.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: (0.3 * 255)),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -144,41 +147,65 @@ class _MainNavigationState extends State<MainNavigation> {
     required int index,
   }) {
     final isSelected = _currentIndex == index;
+
     return GestureDetector(
       onTap: () => _onTabTapped(index),
       behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 🔵 Top indicator
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            height: 4,
+            width: isSelected ? 24 : 0,
+            margin: const EdgeInsets.only(bottom: 6),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
               color: isSelected
-                  ? Theme.of(context).colorScheme.primary
-                  : Colors.grey,
-              size: 28,
+                  ? Theme.of(context).colorScheme.primary.withOpacity(0.15)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected
-                    ? Theme.of(context).colorScheme.primary
-                    : Colors.grey,
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedScale(
+                  scale: isSelected ? 1.15 : 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    icon,
+                    size: 28,
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.primary
+                        : Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.primary
+                        : Colors.grey,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

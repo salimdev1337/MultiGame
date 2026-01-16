@@ -71,9 +71,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary.withOpacity(0.3),
+                                    color: Theme.of(context).colorScheme.primary
+                                        .withValues(alpha: (0.3 * 255)),
                                     blurRadius: 20,
                                     offset: const Offset(0, 5),
                                   ),
@@ -81,7 +80,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                               child: const Center(
                                 child: Text(
-                                  '🎮',
+                                  '\ud83c\udfae',
                                   style: TextStyle(fontSize: 60),
                                 ),
                               ),
@@ -215,7 +214,9 @@ class _ProfilePageState extends State<ProfilePage> {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+          color: Theme.of(
+            context,
+          ).colorScheme.primary.withValues(alpha: (0.3 * 255)),
           width: 1,
         ),
       ),
@@ -251,7 +252,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     stat.label,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: (0.7 * 255)),
                     ),
                   ),
                   Text(

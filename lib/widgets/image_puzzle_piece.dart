@@ -22,23 +22,16 @@ class _ImagePuzzlePieceState extends State<ImagePuzzlePiece> {
 
   @override
   Widget build(BuildContext context) {
-    final urlPreview = widget.piece.imageUrl != null
-        ? (widget.piece.imageUrl!.length > 50
-              ? '${widget.piece.imageUrl!.substring(0, 50)}...'
-              : widget.piece.imageUrl!)
-        : 'null';
-    print(
-      'Building piece: number=${widget.piece.number}, imageUrl=$urlPreview, pos=${widget.piece.currentPosition}',
-    );
+    // debug: 'Building piece: number=${widget.piece.number}, imageUrl=${widget.piece.imageUrl}, pos=${widget.piece.currentPosition}'
     if (widget.piece.isEmpty) {
       return Container(
         width: widget.size,
         height: widget.size,
         decoration: BoxDecoration(
-          color: const Color(0xFF16181d).withOpacity(0.5),
+          color: const Color(0xFF16181d).withValues(alpha: 0.5 * 255),
           borderRadius: BorderRadius.circular(12.0),
           border: Border.all(
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.white.withValues(alpha: 0.1 * 255),
             width: 2,
             style: BorderStyle.solid,
           ),
@@ -46,7 +39,7 @@ class _ImagePuzzlePieceState extends State<ImagePuzzlePiece> {
         child: Center(
           child: Icon(
             Icons.add_circle_outline,
-            color: const Color(0xFF00d4ff).withOpacity(0.3),
+            color: const Color(0xFF00d4ff).withValues(alpha: 0.3 * 255),
             size: 32,
           ),
         ),
@@ -62,7 +55,8 @@ class _ImagePuzzlePieceState extends State<ImagePuzzlePiece> {
           duration: const Duration(milliseconds: 200),
           width: widget.size,
           height: widget.size,
-          transform: Matrix4.identity()..scale(_isHovering ? 1.05 : 1.0),
+          transform: Matrix4.identity()
+            ..scaleByDouble(_isHovering ? 1.05 : 1.0, 1.0, 1.0, 1.0),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
@@ -70,14 +64,14 @@ class _ImagePuzzlePieceState extends State<ImagePuzzlePiece> {
                   ? const Color(0xFF00d4ff)
                   : (widget.piece.isCorrect
                         ? Colors.green
-                        : Colors.white.withOpacity(0.2)),
+                        : Colors.white.withValues(alpha: (0.2 * 255))),
               width: _isHovering ? 3 : 2,
             ),
             boxShadow: [
               BoxShadow(
                 color: _isHovering
-                    ? const Color(0xFF00d4ff).withOpacity(0.4)
-                    : Colors.black.withOpacity(0.3),
+                    ? const Color(0xFF00d4ff).withValues(alpha: (0.4 * 255))
+                    : Colors.black.withValues(alpha: (0.3 * 255)),
                 blurRadius: _isHovering ? 15 : 8,
                 offset: const Offset(0, 2),
               ),
@@ -93,11 +87,9 @@ class _ImagePuzzlePieceState extends State<ImagePuzzlePiece> {
   }
 
   Widget _buildImageContent() {
-    print(
-      '_buildImageContent: imageUrl is ${widget.piece.imageUrl == null ? "NULL" : "NOT NULL"}, size=${widget.size}, gridSize=${widget.piece.gridSize}',
-    );
+    // debug: '_buildImageContent: imageUrl is ${widget.piece.imageUrl == null ? "NULL" : "NOT NULL"}, size=${widget.size}, gridSize=${widget.piece.gridSize}'
     if (widget.piece.imageUrl == null) {
-      print('⚠️ Piece ${widget.piece.number} has NULL imageUrl!');
+      // debug: 'Piece ${widget.piece.number} has NULL imageUrl!'
       return Container(
         color: const Color(0xFF21242b),
         child: Center(
@@ -112,13 +104,9 @@ class _ImagePuzzlePieceState extends State<ImagePuzzlePiece> {
         ),
       );
     }
-    print('Loading image: ${widget.piece.imageUrl!}');
-    print(
-      'Piece position - correct: (${widget.piece.correctRow}, ${widget.piece.correctCol}), current: (${widget.piece.currentRow}, ${widget.piece.currentCol})',
-    );
-    print(
-      'Image will be cropped at alignment: (${widget.piece.alignmentX}, ${widget.piece.alignmentY})',
-    );
+    // debug: 'Loading image: ${widget.piece.imageUrl!}'
+    // debug: 'Piece position - correct: (${widget.piece.correctRow}, ${widget.piece.correctCol}), current: (${widget.piece.currentRow}, ${widget.piece.currentCol})'
+    // debug: 'Image will be cropped at alignment: (${widget.piece.alignmentX}, ${widget.piece.alignmentY})'
 
     // Calculate the offset for this piece within the full image
     final double offsetX = -widget.piece.correctCol * widget.size;
@@ -143,14 +131,10 @@ class _ImagePuzzlePieceState extends State<ImagePuzzlePiece> {
               fit: BoxFit.cover,
               loadingBuilder: (context, child, loadingProgress) {
                 if (loadingProgress == null) {
-                  print(
-                    '✅ Image loaded successfully for piece ${widget.piece.number}',
-                  );
+                  // debug: 'Image loaded successfully for piece ${widget.piece.number}'
                   return child;
                 }
-                print(
-                  '⏳ Loading image for piece ${widget.piece.number}: ${loadingProgress.cumulativeBytesLoaded} / ${loadingProgress.expectedTotalBytes}',
-                );
+                // debug: 'Loading image for piece ${widget.piece.number}: ${loadingProgress.cumulativeBytesLoaded} / ${loadingProgress.expectedTotalBytes}'
 
                 return Container(
                   color: const Color(0xFF21242b),
@@ -166,10 +150,8 @@ class _ImagePuzzlePieceState extends State<ImagePuzzlePiece> {
                 );
               },
               errorBuilder: (context, error, stackTrace) {
-                print(
-                  '❌ ERROR loading image for piece ${widget.piece.number}: $error',
-                );
-                print('Stack trace: $stackTrace');
+                // debug: 'ERROR loading image for piece ${widget.piece.number}: $error'
+                // debug: 'Stack trace: $stackTrace'
                 // Show number if image fails to load
                 return Container(
                   color: const Color(0xFF21242b),

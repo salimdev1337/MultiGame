@@ -72,7 +72,7 @@ class _HomePageState extends State<HomePage> {
                         'Welcome back,',
                         style: TextStyle(
                           fontSize: 20,
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withValues(alpha: (0.7 * 255)),
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -144,9 +144,8 @@ class _HomePageState extends State<HomePage> {
                           fontSize: 24,
                           shadows: [
                             Shadow(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.primary.withOpacity(0.5),
+                              color: Theme.of(context).colorScheme.primary
+                                  .withValues(alpha: (0.5 * 255)),
                               blurRadius: 10,
                             ),
                           ],
@@ -176,14 +175,14 @@ class _HomePageState extends State<HomePage> {
                           Icon(
                             Icons.emoji_events_outlined,
                             size: 64,
-                            color: Colors.grey.withOpacity(0.5),
+                            color: Colors.grey.withValues(alpha: (0.5 * 255)),
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'No achievements yet',
                             style: TextStyle(
                               fontSize: 18,
-                              color: Colors.grey.withOpacity(0.7),
+                              color: Colors.grey.withValues(alpha: (0.7 * 255)),
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -191,7 +190,7 @@ class _HomePageState extends State<HomePage> {
                             'Complete puzzles to unlock achievements!',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey.withOpacity(0.5),
+                              color: Colors.grey.withValues(alpha: (0.5 * 255)),
                             ),
                           ),
                         ],

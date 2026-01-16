@@ -49,7 +49,9 @@ class _GameCarouselState extends State<GameCarousel> {
                 borderRadius: BorderRadius.circular(4),
                 color: _currentIndex == entry.key
                     ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                    : Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: (0.3 * 255)),
               ),
             );
           }).toList(),
@@ -75,8 +77,10 @@ class _GameCarouselState extends State<GameCarousel> {
           boxShadow: [
             BoxShadow(
               color: game.isAvailable
-                  ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
-                  : Colors.black.withOpacity(0.3),
+                  ? Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: (0.3 * 255))
+                  : Colors.black.withValues(alpha: (0.3 * 255)),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),
@@ -106,11 +110,11 @@ class _GameCarouselState extends State<GameCarousel> {
                     : Container(
                         color: Theme.of(
                           context,
-                        ).colorScheme.surface.withOpacity(0.5),
+                        ).colorScheme.surface.withValues(alpha: (0.5 * 255)),
                         child: Icon(
                           Icons.games,
                           size: 80,
-                          color: Colors.grey.withOpacity(0.5),
+                          color: Colors.grey.withValues(alpha: (0.5 * 255)),
                         ),
                       ),
               ),
@@ -123,7 +127,7 @@ class _GameCarouselState extends State<GameCarousel> {
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        Colors.black.withOpacity(0.8),
+                        Colors.black.withValues(alpha: (0.8 * 255)),
                       ],
                     ),
                   ),
@@ -158,7 +162,9 @@ class _GameCarouselState extends State<GameCarousel> {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.orange.withOpacity(0.9),
+                                color: Colors.orange.withValues(
+                                  alpha: (0.9 * 255),
+                                ),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Text(
@@ -177,7 +183,7 @@ class _GameCarouselState extends State<GameCarousel> {
                         game.description,
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: (0.9 * 255)),
                         ),
                       ),
                       const SizedBox(height: 16),

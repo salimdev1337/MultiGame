@@ -516,7 +516,7 @@ class _PuzzlePageState extends State<PuzzlePage>
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 48, 24, 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF16181d).withOpacity(0.8),
+        color: const Color(0xFF16181d).withValues(alpha: (0.8 * 255)),
       ),
       child: Row(
         children: [
@@ -582,10 +582,10 @@ class _PuzzlePageState extends State<PuzzlePage>
       decoration: BoxDecoration(
         color: const Color(0xFF21242b),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: (0.05 * 255))),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: (0.2 * 255)),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -626,7 +626,9 @@ class _PuzzlePageState extends State<PuzzlePage>
         decoration: BoxDecoration(
           color: const Color(0xFF21242b),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: (0.05 * 255)),
+          ),
         ),
         child: const Icon(
           Icons.lightbulb_outline,
@@ -645,10 +647,12 @@ class _PuzzlePageState extends State<PuzzlePage>
         decoration: BoxDecoration(
           color: const Color(0xFF21242b),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: (0.05 * 255)),
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: (0.5 * 255)),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -707,7 +711,7 @@ class _PuzzlePageState extends State<PuzzlePage>
               ),
             ),
             Text(
-              '${(progress * 100).toInt()}%',
+              '${(progress * 100)}%',
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
@@ -722,7 +726,9 @@ class _PuzzlePageState extends State<PuzzlePage>
           decoration: BoxDecoration(
             color: const Color(0xFF21242b),
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: (0.05 * 255)),
+            ),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(6),
@@ -738,7 +744,9 @@ class _PuzzlePageState extends State<PuzzlePage>
                       borderRadius: BorderRadius.circular(6),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00d4ff).withOpacity(0.4),
+                          color: const Color(
+                            0xFF00d4ff,
+                          ).withValues(alpha: (0.4 * 255)),
                           blurRadius: 10,
                           spreadRadius: 2,
                         ),
@@ -758,12 +766,14 @@ class _PuzzlePageState extends State<PuzzlePage>
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF21242b).withOpacity(0.5),
+        color: const Color(0xFF21242b).withValues(alpha: (0.5 * 255)),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05))),
+        border: Border(
+          top: BorderSide(color: Colors.white.withValues(alpha: (0.05 * 255))),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: (0.3 * 255)),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),

@@ -10,9 +10,9 @@ class ImagePuzzleGenerator {
   ImagePuzzleGenerator({required this.gridSize});
 
   Future<List<PuzzlePiece>> generatePuzzle() async {
-    print('\n=== PUZZLE GENERATOR: Generating puzzle (${gridSize}x$gridSize) ===');
+    // debug: 'PUZZLE GENERATOR: Generating puzzle (${gridSize}x$gridSize)'
     _currentImageUrl ??= await unsplashService.getRandomTunisianImage();
-    print('Using image URL for puzzle: $_currentImageUrl');
+    // debug: 'Using image URL for puzzle: $_currentImageUrl'
 
     final List<PuzzlePiece> pieces = [];
     final int totalPieces = gridSize * gridSize;
@@ -40,8 +40,8 @@ class ImagePuzzleGenerator {
         );
       }
     }
-    print('Created $totalPieces pieces (${totalPieces - 1} with images, 1 empty)');
-    print('Sample piece imageUrl: ${pieces[0].imageUrl}');
+    // debug: 'Created $totalPieces pieces (${totalPieces - 1} with images, 1 empty)'
+    // debug: 'Sample piece imageUrl: ${pieces[0].imageUrl}'
 
     return _shufflePuzzle(pieces);
   }

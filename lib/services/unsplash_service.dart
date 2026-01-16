@@ -11,16 +11,16 @@ class UnsplashService {
 
   // Get a random Tunisian image
   Future<String> getRandomTunisianImage() async {
-    print('\n=== UNSPLASH SERVICE: Getting random image ===');
+    // debug: 'UNSPLASH SERVICE: Getting random image'
     if (_cachedImageUrl != null && _cacheTime != null) {
       final hourAgo = DateTime.now().subtract(const Duration(hours: 1));
       if (_cacheTime!.isAfter(hourAgo)) {
-        print('Using cached image: $_cachedImageUrl');
+        // debug: 'Using cached image: $_cachedImageUrl'
         return _cachedImageUrl!;
       }
     }
 
-    print('Fetching new image from Unsplash API...');
+    // debug: 'Fetching new image from Unsplash API...'
     try {
       final url = Uri.parse('$_baseUrl/photos/random').replace(
         queryParameters: {
@@ -29,25 +29,25 @@ class UnsplashService {
           'client_id': ApiConfig.unsplashAccessKey,
         },
       );
-      print('API URL: $url');
+      // debug: 'API URL: $url'
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final imageUrl = data['urls']['regular'];
-        print('✅ Successfully fetched image from Unsplash');
-        print('Image URL: $imageUrl');
+        // debug: 'Successfully fetched image from Unsplash'
+        // debug: 'Image URL: $imageUrl'
 
         _cachedImageUrl = imageUrl;
         _cacheTime = DateTime.now();
 
         return imageUrl;
       } else {
-        print('❌ Unsplash API error: ${response.statusCode}');
+        // debug: 'Unsplash API error: ${response.statusCode}'
         throw Exception('Unsplash API error: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error fetching from Unsplash: $e');
+      // debug: 'Error fetching from Unsplash: $e'
       return _getFallbackImage();
     }
   }
@@ -62,7 +62,7 @@ class UnsplashService {
     ];
 
     final randomIndex = DateTime.now().millisecond % fallbackImages.length;
-    print('DEBUG: Using fallback image: ${fallbackImages[randomIndex]}');
+    // debug: 'Using fallback image: ${fallbackImages[randomIndex]}'
     return fallbackImages[randomIndex];
   }
 

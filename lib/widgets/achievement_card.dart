@@ -16,14 +16,18 @@ class AchievementCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: achievement.isUnlocked
-              ? Theme.of(context).colorScheme.primary.withOpacity(0.5)
-              : Colors.grey.withOpacity(0.2),
+              ? Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: (0.5 * 255))
+              : Colors.grey.withValues(alpha: (0.2 * 255)),
           width: 1,
         ),
         boxShadow: achievement.isUnlocked
             ? [
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: (0.2 * 255)),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -38,8 +42,10 @@ class AchievementCard extends StatelessWidget {
             height: 56,
             decoration: BoxDecoration(
               color: achievement.isUnlocked
-                  ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
-                  : Colors.grey.withOpacity(0.1),
+                  ? Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: (0.2 * 255))
+                  : Colors.grey.withValues(alpha: (0.1 * 255)),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
@@ -69,8 +75,8 @@ class AchievementCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     color: achievement.isUnlocked
-                        ? Colors.white.withOpacity(0.7)
-                        : Colors.grey.withOpacity(0.7),
+                        ? Colors.white.withValues(alpha: (0.7 * 255))
+                        : Colors.grey.withValues(alpha: (0.7 * 255)),
                   ),
                 ),
                 if (!achievement.isUnlocked &&
@@ -90,7 +96,9 @@ class AchievementCard extends StatelessWidget {
                                   value:
                                       achievement.currentProgress! /
                                       achievement.targetProgress!,
-                                  backgroundColor: Colors.grey.withOpacity(0.2),
+                                  backgroundColor: Colors.grey.withValues(
+                                    alpha: (0.2 * 255),
+                                  ),
                                   valueColor: AlwaysStoppedAnimation<Color>(
                                     Theme.of(context).colorScheme.primary,
                                   ),

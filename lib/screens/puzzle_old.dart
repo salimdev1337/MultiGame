@@ -148,7 +148,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
         const SizedBox(width: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withValues(alpha: (0.2 * 255)),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
@@ -193,7 +193,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: (0.05 * 255)),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -344,7 +344,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: (0.05 * 255)),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
