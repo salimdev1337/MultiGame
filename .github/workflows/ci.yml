@@ -1,0 +1,116 @@
+# =============================================================================
+# CI WORKFLOW - Continuous Integration
+# =============================================================================
+# PURPOSE: This workflow runs automatically on every push and pull request
+# to ensure code quality and catch bugs early.
+#
+# WHAT YOU'LL LEARN:
+# - How to trigger workflows automatically
+# - Running tests in the cloud
+# - Checking code quality
+# - Caching dependencies for faster builds
+# =============================================================================
+
+name: CI - Test & Analyze
+
+# TRIGGER: When does this workflow run?
+on:
+  push:
+    branches: [ main, master, develop ]  # Run on pushes to these branches
+  pull_request:
+    branches: [ main, master, develop ]  # Run on PRs to these branches
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
+
+# JOBS: The actual work to be done
+jobs:
+  # Job 1: Test the Flutter app
+  test:
+    name: Run Tests & Analyze Code
+    runs-on: ubuntu-latest  # Use Ubuntu Linux (free on GitHub)
+    
+    steps:
+      # STEP 1: Get the code from your repository
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      # STEP 2: Install Java (required for Android builds)
+      - name: ☕ Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          
+      # STEP 3: Install Flutter
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.1'  # Use latest stable version
+          channel: 'stable'
+          cache: true  # Cache Flutter SDK to speed up future runs
+          
+      # STEP 4: Display Flutter version (for debugging)
+      - name: 📋 Flutter doctor
+        run: flutter doctor -v
+        
+      # STEP 5: Get all dependencies from pubspec.yaml
+      - name: 📦 Get dependencies
+        run: flutter pub get
+        
+      # STEP 6: Check code formatting
+      # This ensures all code follows Flutter style guidelines
+      - name: 🎨 Check formatting
+        run: dart format --set-exit-if-changed .
+        continue-on-error: true  # Don't fail if formatting is off, just warn
+        
+      # STEP 7: Analyze code for issues
+      # Catches potential bugs, bad practices, unused code
+      - name: 🔍 Analyze code
+        run: flutter analyze
+        
+      # STEP 8: Run all unit tests
+      # This is where your puzzle logic tests run
+      - name: 🧪 Run tests
+        run: flutter test --coverage
+        
+      # STEP 9: Upload code coverage report
+      # Shows which parts of your code are tested
+      - name: 📊 Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false  # Don't fail if coverage upload fails
+          
+      # STEP 10: Generate coverage report (optional)
+      - name: 📈 Coverage Report
+        if: always()  # Run even if previous steps failed
+        run: |
+          if [ -f coverage/lcov.info ]; then
+            echo "✅ Code coverage generated"
+            echo "View detailed report in Codecov"
+          else
+            echo "⚠️ No coverage data found"
+          fi
+
+  # Job 2: Check for dependency vulnerabilities
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.1'
+          channel: 'stable'
+          cache: true
+          
+      - name: 📦 Get dependencies
+        run: flutter pub get
+        
+      # Check for outdated or vulnerable packages
+      - name: 🔒 Check pub outdated
+        run: flutter pub outdated
+        continue-on-error: true  # Just informational

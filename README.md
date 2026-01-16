@@ -1,16 +1,197 @@
-# puzzle
+# Tunisian Puzzle Game 🎮
 
-A new Flutter project.
+[![CI](https://github.com/yourusername/puzzle/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/puzzle/actions/workflows/ci.yml)
+[![Build](https://github.com/yourusername/puzzle/actions/workflows/build.yml/badge.svg)](https://github.com/yourusername/puzzle/actions/workflows/build.yml)
+[![Deploy](https://github.com/yourusername/puzzle/actions/workflows/deploy-web.yml/badge.svg)](https://github.com/yourusername/puzzle/actions/workflows/deploy-web.yml)
 
-## Getting Started
+A modern, multi-game puzzle application built with Flutter featuring sliding puzzles, achievements, and cross-platform support.
 
-This project is a starting point for a Flutter application.
+## 🎯 Features
 
-A few resources to get you started if this is your first Flutter project:
+- 🧩 **Multiple Game Modes**: Image puzzle, Number puzzle, Memory game (coming soon)
+- 🏆 **Achievement System**: Unlock achievements as you complete puzzles
+- 📊 **Statistics Tracking**: Track your best times and moves
+- 🎨 **Beautiful UI**: Modern dark theme with smooth animations
+- 📱 **Cross-Platform**: Android, iOS, Windows, Web
+- 🌐 **Play Online**: [Play now on GitHub Pages](https://yourusername.github.io/puzzle)
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## 🚀 Live Demo
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+**Play online:** [https://yourusername.github.io/puzzle](https://yourusername.github.io/puzzle)
+
+## 📥 Download
+
+### Latest Release
+Download the latest version for your platform:
+
+- **Android**: [Download APK](https://github.com/yourusername/puzzle/releases/latest)
+- **Windows**: [Download ZIP](https://github.com/yourusername/puzzle/releases/latest)
+- **Web**: [Play Online](https://yourusername.github.io/puzzle)
+
+## 🎮 Game Modes
+
+### Image Puzzle (Available)
+Classic sliding puzzle with beautiful images from Unsplash. Choose from 3x3, 4x4, or 5x5 grids.
+
+### Number Puzzle (Coming Soon)
+Traditional 15-puzzle with numbers.
+
+### Memory Game (Coming Soon)
+Match pairs of cards to win.
+
+## 🏆 Achievements
+
+Unlock achievements by completing challenges:
+- 🎉 **First Victory**: Complete your first puzzle
+- 🎮 **Puzzle Fan**: Complete 5 puzzles
+- 🏆 **Puzzle Master**: Complete 10 puzzles
+- ⭐ **3x3 Expert**: Complete a 3x3 in under 100 moves
+- 💎 **4x4 Pro**: Complete a 4x4 in under 200 moves
+- ⚡ **Speed Demon**: Complete any puzzle in under 60 seconds
+
+## 🛠️ Built With
+
+- [Flutter](https://flutter.dev/) - UI Framework
+- [Shared Preferences](https://pub.dev/packages/shared_preferences) - Local storage
+- [Carousel Slider](https://pub.dev/packages/carousel_slider) - Game carousel
+- [HTTP](https://pub.dev/packages/http) - Image fetching
+
+## 🚀 CI/CD
+
+This project uses GitHub Actions for automated testing, building, and deployment:
+
+- ✅ **Continuous Integration**: Automated tests on every commit
+- 🔨 **Multi-Platform Builds**: Automatic builds for Android, Windows, and Web
+- 🌐 **Auto Deployment**: Web version deploys to GitHub Pages automatically
+- 📦 **Releases**: Automated release creation with downloadable builds
+
+**Learn more**: Check out our [CI/CD Learning Guide](.github/CI_CD_GUIDE.md)
+
+## 📱 Getting Started for Developers
+
+### Prerequisites
+
+- Flutter SDK (3.27.1 or higher)
+- Dart SDK (3.10.4 or higher)
+- Android Studio / VS Code
+- Git
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/puzzle.git
+cd puzzle
+```
+
+2. Install dependencies:
+```bash
+flutter pub get
+```
+
+3. Run the app:
+```bash
+# Android/iOS
+flutter run
+
+# Windows
+flutter run -d windows
+
+# Web
+flutter run -d chrome
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+flutter test
+
+# Run tests with coverage
+flutter test --coverage
+
+# View coverage report
+genhtml coverage/lcov.info -o coverage/html
+open coverage/html/index.html
+```
+
+### Building for Production
+
+```bash
+# Android APK
+flutter build apk --release
+
+# Android App Bundle (for Play Store)
+flutter build appbundle --release
+
+# Windows
+flutter build windows --release
+
+# Web
+flutter build web --release
+```
+
+## 📂 Project Structure
+
+```
+lib/
+├── main.dart                      # App entry point
+├── screens/
+│   ├── main_navigation.dart       # Bottom navigation
+│   ├── home_page.dart            # Home with carousel
+│   ├── puzzle.dart               # Image puzzle game
+│   └── profile_page.dart         # User profile & stats
+├── models/
+│   ├── game_model.dart           # Game definitions
+│   ├── achievement_model.dart    # Achievement system
+│   └── puzzle_piece.dart         # Puzzle piece model
+├── services/
+│   ├── achievement_service.dart  # Achievement logic
+│   ├── image_puzzle_generator.dart
+│   └── unsplash_service.dart
+├── widgets/
+│   ├── game_carousel.dart        # Game selection carousel
+│   ├── achievement_card.dart     # Achievement display
+│   └── image_puzzle_piece.dart   # Puzzle tile widget
+└── config/
+    └── api_config.dart           # API configuration
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Here's how you can help:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+**Note**: All pull requests trigger automated tests. Make sure tests pass before requesting review.
+
+## 📝 License
+
+This project is open source and available under the [MIT License](LICENSE).
+
+## 👨‍💻 Author
+
+**Your Name**
+- GitHub: [@yourusername](https://github.com/yourusername)
+
+## 🙏 Acknowledgments
+
+- Images from [Unsplash](https://unsplash.com/)
+- Flutter team for the amazing framework
+- All contributors who help improve this project
+
+## 📞 Support
+
+If you encounter any issues or have questions:
+- Open an [issue](https://github.com/yourusername/puzzle/issues)
+- Check the [CI/CD Guide](.github/CI_CD_GUIDE.md)
+- Review [closed issues](https://github.com/yourusername/puzzle/issues?q=is%3Aissue+is%3Aclosed) for solutions
+
+---
+
+Made with ❤️ using Flutter
+

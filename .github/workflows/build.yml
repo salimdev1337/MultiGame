@@ -1,0 +1,147 @@
+# =============================================================================
+# BUILD WORKFLOW - Multi-Platform Builds
+# =============================================================================
+# PURPOSE: Build the app for Android, Windows, and Web platforms
+# This runs on push to main and when you create a tag/release
+#
+# WHAT YOU'LL LEARN:
+# - Building for multiple platforms
+# - Creating artifacts (downloadable builds)
+# - Matrix builds (running same job with different parameters)
+# - Uploading build outputs
+# =============================================================================
+
+name: Build - Multi-Platform
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'  # Trigger on version tags like v1.0.0
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  # Job 1: Build Android APK
+  build-android:
+    name: 🤖 Build Android APK
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: ☕ Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.1'
+          channel: 'stable'
+          cache: true
+          
+      - name: 📦 Get dependencies
+        run: flutter pub get
+        
+      - name: 🔨 Build Android APK
+        run: flutter build apk --release
+        
+      - name: 🔨 Build Android App Bundle (for Play Store)
+        run: flutter build appbundle --release
+        
+      # Upload the built APK so you can download it
+      - name: 📤 Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          
+      - name: 📤 Upload App Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-appbundle
+          path: build/app/outputs/bundle/release/app-release.aab
+
+  # Job 2: Build Windows executable
+  build-windows:
+    name: 🪟 Build Windows
+    runs-on: windows-latest  # Windows machine required for Windows builds
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.1'
+          channel: 'stable'
+          cache: true
+          
+      - name: 📦 Get dependencies
+        run: flutter pub get
+        
+      - name: 🔨 Build Windows
+        run: flutter build windows --release
+        
+      # Zip the entire build folder
+      - name: 📦 Package Windows build
+        run: |
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath puzzle-windows.zip
+        
+      - name: 📤 Upload Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: puzzle-windows.zip
+
+  # Job 3: Build Web version
+  build-web:
+    name: 🌐 Build Web
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.1'
+          channel: 'stable'
+          cache: true
+          
+      - name: 📦 Get dependencies
+        run: flutter pub get
+        
+      - name: 🔨 Build Web
+        run: flutter build web --release --base-href "/puzzle/"
+        
+      - name: 📤 Upload Web build
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: build/web/
+
+  # Job 4: Summary of all builds
+  build-summary:
+    name: 📋 Build Summary
+    needs: [build-android, build-windows, build-web]
+    runs-on: ubuntu-latest
+    if: always()  # Run even if some builds fail
+    
+    steps:
+      - name: 📊 Create summary
+        run: |
+          echo "## 🎉 Build Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Platform | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Android  | ${{ needs.build-android.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Windows  | ${{ needs.build-windows.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Web      | ${{ needs.build-web.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📥 Download artifacts from the Actions tab" >> $GITHUB_STEP_SUMMARY
