@@ -56,7 +56,9 @@ jobs:
         
       # Build for web with proper base URL for GitHub Pages
       - name: 🔨 Build Web
-        run: flutter build web --release --base-href "/MultiGame/"
+        env:
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+        run: flutter build web --release --base-href "/MultiGame/" --dart-define=UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY
         
       # Setup GitHub Pages
       - name: 🔧 Setup Pages

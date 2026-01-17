@@ -47,10 +47,14 @@ jobs:
         run: flutter pub get
         
       - name: 🔨 Build Android APK
-        run: flutter build apk --release
+        env:
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+        run: flutter build apk --release --dart-define=UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY
         
       - name: 🔨 Build Android App Bundle (for Play Store)
-        run: flutter build appbundle --release
+        env:
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+        run: flutter build appbundle --release --dart-define=UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY
         
       # Upload the built APK so you can download it
       - name: 📤 Upload APK
@@ -85,7 +89,9 @@ jobs:
         run: flutter pub get
         
       - name: 🔨 Build Windows
-        run: flutter build windows --release
+        env:
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+        run: flutter build windows --release --dart-define=UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY
         
       # Zip the entire build folder
       - name: 📦 Package Windows build
