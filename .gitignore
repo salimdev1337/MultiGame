@@ -49,4 +49,3 @@ app.*.map.json
 .env
 .env.local
 *.env
-lib/config/api_config.dart
