@@ -126,7 +126,9 @@ jobs:
         run: flutter pub get
         
       - name: 🔨 Build APK
-        run: flutter build apk --release
+        env:
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+        run: flutter build apk --release --dart-define=UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY
         
       # Rename APK for release
       - name: 📝 Rename APK
@@ -164,7 +166,9 @@ jobs:
         run: flutter pub get
         
       - name: 🔨 Build Windows
-        run: flutter build windows --release
+        env:
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+        run: flutter build windows --release --dart-define=UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY
         
       - name: 📦 Package Windows
         run: |

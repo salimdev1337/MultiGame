@@ -66,6 +66,8 @@ jobs:
       # Catches potential bugs, bad practices, unused code
       - name: 🔍 Analyze code
         run: flutter analyze
+        env:
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
         
       # STEP 8: Run all unit tests
       # This is where your puzzle logic tests run
