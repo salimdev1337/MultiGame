@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:puzzle/config/api_config.dart';
+import 'package:multigame/config/api_config.dart';
 
 class UnsplashService {
   static const String _baseUrl = 'https://api.unsplash.com';

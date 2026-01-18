@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:puzzle/models/achievement_model.dart';
-import 'package:puzzle/models/game_model.dart';
-import 'package:puzzle/services/achievement_service.dart';
-import 'package:puzzle/widgets/achievement_card.dart';
-import 'package:puzzle/widgets/game_carousel.dart';
+import 'package:multigame/models/achievement_model.dart';
+import 'package:multigame/models/game_model.dart';
+import 'package:multigame/services/achievement_service.dart';
+import 'package:multigame/widgets/achievement_card.dart';
+import 'package:multigame/widgets/game_carousel.dart';
 
 class HomePage extends StatefulWidget {
   final Function(GameModel) onGameSelected;

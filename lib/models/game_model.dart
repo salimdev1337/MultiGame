@@ -23,11 +23,11 @@ class GameModel {
         isAvailable: true,
       ),
       GameModel(
-        id: 'number_puzzle',
-        name: 'Number Puzzle',
-        description: 'Classic 15-puzzle with numbers',
+        id: '2048',
+        name: '2048 Game',
+        description: 'Merge tiles to reach the goal!',
         imagePath: 'assets/images/fallback_puzzle.jpg',
-        isAvailable: false,
+        isAvailable: true,
       ),
       GameModel(
         id: 'memory_game',

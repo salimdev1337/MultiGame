@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:network_image_mock/network_image_mock.dart';
-import 'package:puzzle/game_logic.dart';
-import 'package:puzzle/models/puzzle_piece.dart';
-import 'package:puzzle/screens/puzzle.dart';
-import 'package:puzzle/widgets/image_puzzle_piece.dart';
+import 'package:multigame/game_logic.dart';
+import 'package:multigame/models/puzzle_piece.dart';
+import 'package:multigame/screens/puzzle.dart';
+import 'package:multigame/widgets/image_puzzle_piece.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

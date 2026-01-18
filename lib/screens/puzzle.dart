@@ -2,9 +2,9 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:puzzle/game_logic.dart';
-import 'package:puzzle/widgets/image_puzzle_piece.dart';
-import 'package:puzzle/services/achievement_service.dart';
+import 'package:multigame/game_logic.dart';
+import 'package:multigame/widgets/image_puzzle_piece.dart';
+import 'package:multigame/services/achievement_service.dart';
 
 class PuzzlePage extends StatefulWidget {
   const PuzzlePage({super.key});
@@ -493,14 +493,14 @@ class _PuzzlePageState extends State<PuzzlePage>
                                 // Progress Section
                                 _buildProgressSection(),
                                 const SizedBox(height: 24),
+                                // Footer Controls
+                                _buildFooterControls(),
+                                const SizedBox(height: 24),
                               ],
                             ),
                           ),
                         ),
                 ),
-
-                // Footer Controls
-                _buildFooterControls(),
               ],
             ),
 
@@ -520,10 +520,6 @@ class _PuzzlePageState extends State<PuzzlePage>
       ),
       child: Row(
         children: [
-          // Back Button
-          _buildIconButton(Icons.arrow_back_ios_new, () {
-            // Back action
-          }),
           const SizedBox(width: 12),
           // Settings Button
           _buildIconButton(Icons.settings, () {
@@ -622,6 +618,7 @@ class _PuzzlePageState extends State<PuzzlePage>
       onTap: _showHintDialog,
       child: Container(
         width: 64,
+        height: 87,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: const Color(0xFF21242b),
@@ -711,7 +708,7 @@ class _PuzzlePageState extends State<PuzzlePage>
               ),
             ),
             Text(
-              '${(progress * 100)}%',
+              '${(progress * 100).toStringAsFixed(0)}%',
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
@@ -764,18 +761,16 @@ class _PuzzlePageState extends State<PuzzlePage>
 
   Widget _buildFooterControls() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF21242b).withValues(alpha: (0.5 * 255)),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
-        border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: (0.05 * 255))),
-        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: (0.05 * 255))),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: (0.3 * 255)),
             blurRadius: 20,
-            offset: const Offset(0, -5),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -816,7 +811,7 @@ class _PuzzlePageState extends State<PuzzlePage>
         onTap: isLoading ? null : onPressed,
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          height: 64,
+          height: 48,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border(
@@ -829,8 +824,8 @@ class _PuzzlePageState extends State<PuzzlePage>
           child: Center(
             child: isLoading
                 ? const SizedBox(
-                    width: 24,
-                    height: 24,
+                    width: 20,
+                    height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       color: Colors.white,
@@ -840,7 +835,7 @@ class _PuzzlePageState extends State<PuzzlePage>
                     label,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
                     ),
@@ -997,7 +992,8 @@ class _PuzzlePageState extends State<PuzzlePage>
         hintSize = hintBox.size;
       }
     } catch (e) {
-      // Handle case where hint button is not yet rendered
+      hintPosition = null;
+      hintSize = null;
     }
 
     return AnimatedBuilder(

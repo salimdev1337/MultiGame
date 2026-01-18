@@ -253,6 +253,61 @@ class AchievementService {
     return prefs.getBool('$_achievementPrefix$achievementId') ?? false;
   }
 
+  // Save 2048 game achievement
+  Future<void> save2048Achievement({
+    required int score,
+    required int highestTile,
+    required String levelPassed,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Save best score for 2048
+    final currentBest2048Score = prefs.getInt('best_2048_score');
+    if (currentBest2048Score == null || score > currentBest2048Score) {
+      await prefs.setInt('best_2048_score', score);
+    }
+
+    // Save highest tile achieved
+    final currentHighestTile = prefs.getInt('highest_2048_tile');
+    if (currentHighestTile == null || highestTile > currentHighestTile) {
+      await prefs.setInt('highest_2048_tile', highestTile);
+    }
+
+    // Save level passed
+    await prefs.setString('last_2048_level_passed', levelPassed);
+
+    // Track total 2048 games played
+    final gamesPlayed = prefs.getInt('total_2048_games') ?? 0;
+    await prefs.setInt('total_2048_games', gamesPlayed + 1);
+
+    // Unlock 2048-specific achievements
+    if (highestTile >= 512 && !_isAchievementUnlocked('2048_beginner', prefs)) {
+      await _unlockAchievement('2048_beginner');
+    }
+    if (highestTile >= 1024 &&
+        !_isAchievementUnlocked('2048_intermediate', prefs)) {
+      await _unlockAchievement('2048_intermediate');
+    }
+    if (highestTile >= 2048 &&
+        !_isAchievementUnlocked('2048_advanced', prefs)) {
+      await _unlockAchievement('2048_advanced');
+    }
+    if (highestTile >= 4096 && !_isAchievementUnlocked('2048_master', prefs)) {
+      await _unlockAchievement('2048_master');
+    }
+  }
+
+  // Get 2048 game stats
+  Future<Map<String, dynamic>> get2048Stats() async {
+    final prefs = await SharedPreferences.getInstance();
+    return {
+      'bestScore': prefs.getInt('best_2048_score') ?? 0,
+      'highestTile': prefs.getInt('highest_2048_tile') ?? 0,
+      'lastLevelPassed': prefs.getString('last_2048_level_passed') ?? 'None',
+      'gamesPlayed': prefs.getInt('total_2048_games') ?? 0,
+    };
+  }
+
   // Get all stats
   Future<Map<String, dynamic>> getAllStats() async {
     return {
@@ -271,5 +326,16 @@ class AchievementService {
   Future<void> resetAll() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
+  }
+
+  // Get all 2048 achievements
+  Future<Map<String, bool>> getAchievements() async {
+    final prefs = await SharedPreferences.getInstance();
+    return {
+      '2048_beginner': _isAchievementUnlocked('2048_beginner', prefs),
+      '2048_intermediate': _isAchievementUnlocked('2048_intermediate', prefs),
+      '2048_advanced': _isAchievementUnlocked('2048_advanced', prefs),
+      '2048_master': _isAchievementUnlocked('2048_master', prefs),
+    };
   }
 }

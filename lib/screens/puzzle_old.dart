@@ -1,8 +1,8 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:puzzle/game_logic.dart';
-import 'package:puzzle/widgets/image_puzzle_piece.dart';
+import 'package:multigame/game_logic.dart';
+import 'package:multigame/widgets/image_puzzle_piece.dart';
 
 class PuzzlePage extends StatefulWidget {
   const PuzzlePage({super.key});

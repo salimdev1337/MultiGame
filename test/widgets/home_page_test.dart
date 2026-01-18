@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:puzzle/screens/home_page.dart';
-import 'package:puzzle/widgets/game_carousel.dart';
-import 'package:puzzle/widgets/achievement_card.dart';
+import 'package:multigame/screens/home_page.dart';
+import 'package:multigame/widgets/game_carousel.dart';
+import 'package:multigame/widgets/achievement_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

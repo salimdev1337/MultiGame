@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:puzzle/services/achievement_service.dart';
+import 'package:multigame/services/achievement_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

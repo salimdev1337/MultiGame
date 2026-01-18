@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:puzzle/models/achievement_model.dart';
+import 'package:multigame/models/achievement_model.dart';
 
 class AchievementCard extends StatelessWidget {
   final AchievementModel achievement;

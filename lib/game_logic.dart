@@ -107,6 +107,6 @@ class PuzzleGame {
   }
 
   double get completionPercentage {
-    return correctCount / (totalPieces - 1); // Exclude empty piece
+    return correctCount / (totalPieces - 1);
   }
 }

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:puzzle/models/game_model.dart';
+import 'package:multigame/models/game_model.dart';
 
 void main() {
   group('GameModel', () {

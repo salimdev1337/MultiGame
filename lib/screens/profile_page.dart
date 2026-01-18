@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:puzzle/services/achievement_service.dart';
+import 'package:multigame/services/achievement_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -11,6 +11,8 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final AchievementService _achievementService = AchievementService();
   Map<String, dynamic> _stats = {};
+  Map<String, dynamic> _stats2048 = {};
+  Map<String, bool> _achievements = {};
   bool _isLoading = true;
 
   @override
@@ -25,9 +27,13 @@ class _ProfilePageState extends State<ProfilePage> {
     });
 
     final stats = await _achievementService.getAllStats();
+    final stats2048 = await _achievementService.get2048Stats();
+    final achievements = await _achievementService.getAchievements();
 
     setState(() {
       _stats = stats;
+      _stats2048 = stats2048;
+      _achievements = achievements;
       _isLoading = false;
     });
   }
@@ -132,12 +138,105 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
                     ),
+                    // 2048 Game Stats Section
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '2048 Game Stats',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _build2048StatCard(
+                              title: '2048 Achievements',
+                              icon: Icons.stars,
+                              stats: [
+                                _StatItem(
+                                  label: 'Best Score',
+                                  value: '${_stats2048['bestScore'] ?? 0}',
+                                ),
+                                _StatItem(
+                                  label: 'Highest Tile',
+                                  value: '${_stats2048['highestTile'] ?? 0}',
+                                ),
+                                _StatItem(
+                                  label: 'Games Played',
+                                  value: '${_stats2048['gamesPlayed'] ?? 0}',
+                                ),
+                                _StatItem(
+                                  label: 'Last Level',
+                                  value:
+                                      _stats2048['lastLevelPassed']
+                                          ?.toString() ??
+                                      'None',
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                    // Achievements Badges
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '2048 Achievements',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                _buildAchievementBadge(
+                                  '512',
+                                  _achievements['2048_beginner'] ?? false,
+                                  const Color(0xFF19e6a2),
+                                ),
+                                _buildAchievementBadge(
+                                  '1024',
+                                  _achievements['2048_intermediate'] ?? false,
+                                  const Color(0xFF0ea5e9),
+                                ),
+                                _buildAchievementBadge(
+                                  '2048',
+                                  _achievements['2048_advanced'] ?? false,
+                                  const Color(0xFFec4899),
+                                ),
+                                _buildAchievementBadge(
+                                  '4096',
+                                  _achievements['2048_master'] ?? false,
+                                  const Color(0xFFffd700),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
                     // Statistics Section
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
                         child: Text(
-                          'Statistics',
+                          'Puzzle Game Stats',
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -265,6 +364,104 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _build2048StatCard({
+    required String title,
+    required IconData icon,
+    required List<_StatItem> stats,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1a1e26),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF19e6a2).withValues(alpha: (0.3 * 255)),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: const Color(0xFF19e6a2), size: 24),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...stats.map(
+            (stat) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    stat.label,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withValues(alpha: (0.7 * 255)),
+                    ),
+                  ),
+                  Text(
+                    stat.value,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF19e6a2),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAchievementBadge(String title, bool unlocked, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: unlocked
+            ? color.withValues(alpha: (0.2 * 255))
+            : Colors.grey.withValues(alpha: (0.1 * 255)),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: unlocked ? color : Colors.grey.withValues(alpha: (0.3 * 255)),
+          width: 2,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            unlocked ? Icons.emoji_events : Icons.lock,
+            color: unlocked ? color : Colors.grey,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: unlocked ? color : Colors.grey,
             ),
           ),
         ],

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:puzzle/models/game_model.dart';
-import 'package:puzzle/screens/home_page.dart';
-import 'package:puzzle/screens/profile_page.dart';
-import 'package:puzzle/screens/puzzle.dart';
+import 'package:multigame/models/game_model.dart';
+import 'package:multigame/screens/home_page.dart';
+import 'package:multigame/screens/profile_page.dart';
+import 'package:multigame/screens/puzzle.dart';
+import 'package:multigame/screens/game_2048_page.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -16,7 +17,7 @@ class _MainNavigationState extends State<MainNavigation> {
   GameModel? _selectedGame;
 
   void _onGameSelected(GameModel game) {
-    if (game.id == 'image_puzzle') {
+    if (game.id == 'image_puzzle' || game.id == '2048') {
       setState(() {
         _selectedGame = game;
         _currentIndex = 1; // Switch to game tab
@@ -37,6 +38,8 @@ class _MainNavigationState extends State<MainNavigation> {
       case 1:
         if (_selectedGame?.id == 'image_puzzle') {
           return const PuzzlePage();
+        } else if (_selectedGame?.id == '2048') {
+          return const Game2048Page();
         } else {
           return _buildNoGameSelectedView();
         }
@@ -173,7 +176,7 @@ class _MainNavigationState extends State<MainNavigation> {
               color: isSelected
                   ? Theme.of(
                       context,
-                    ).colorScheme.primary.withValues(alpha: (0.15 * 255))
+                    ).colorScheme.primary.withAlpha((0.1 * 255).toInt())
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
             ),

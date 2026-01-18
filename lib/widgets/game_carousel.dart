@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:puzzle/models/game_model.dart';
+import 'package:multigame/models/game_model.dart';
 
 class GameCarousel extends StatefulWidget {
   final Function(GameModel) onGameSelected;

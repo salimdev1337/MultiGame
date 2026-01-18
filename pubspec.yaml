@@ -1,5 +1,5 @@
-name: puzzle
-description: "Puzzle Game."
+name: multigame
+description: "Multi Game app that includes multiple games like 2048 , puzzles and more ... ."
 publish_to: 'none' 
 version: 1.0.0+1
 
