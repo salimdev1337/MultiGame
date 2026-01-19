@@ -16,6 +16,13 @@ class GameModel {
   static List<GameModel> getAvailableGames() {
     return [
       GameModel(
+        id: 'snake_game',
+        name: 'Neon Snake',
+        description: 'Classic snake game with neon style',
+        imagePath: 'assets/images/2048game.png',
+        isAvailable: true,
+      ),
+      GameModel(
         id: 'image_puzzle',
         name: 'Image Puzzle',
         description: 'Slide tiles to complete the picture',
@@ -29,6 +36,7 @@ class GameModel {
         imagePath: 'assets/images/2048.jpg',
         isAvailable: true,
       ),
+
       GameModel(
         id: 'memory_game',
         name: 'Memory Game',

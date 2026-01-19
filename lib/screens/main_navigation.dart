@@ -4,6 +4,7 @@ import 'package:multigame/screens/home_page.dart';
 import 'package:multigame/screens/profile_page.dart';
 import 'package:multigame/screens/puzzle.dart';
 import 'package:multigame/screens/game_2048_page.dart';
+import 'package:multigame/screens/snake_game_page.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -17,7 +18,9 @@ class _MainNavigationState extends State<MainNavigation> {
   GameModel? _selectedGame;
 
   void _onGameSelected(GameModel game) {
-    if (game.id == 'image_puzzle' || game.id == '2048') {
+    if (game.id == 'image_puzzle' ||
+        game.id == '2048' ||
+        game.id == 'snake_game') {
       setState(() {
         _selectedGame = game;
         _currentIndex = 1; // Switch to game tab
@@ -40,6 +43,8 @@ class _MainNavigationState extends State<MainNavigation> {
           return const PuzzlePage();
         } else if (_selectedGame?.id == '2048') {
           return const Game2048Page();
+        } else if (_selectedGame?.id == 'snake_game') {
+          return const SnakeGamePage();
         } else {
           return _buildNoGameSelectedView();
         }
