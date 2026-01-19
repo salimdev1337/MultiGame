@@ -5,12 +5,18 @@ class ImagePuzzlePiece extends StatefulWidget {
   final PuzzlePiece piece;
   final VoidCallback onTap;
   final double size;
+  final Function(int)? onDragStart;
+  final Function(int, int)? onDragEnd;
+  final int index;
 
   const ImagePuzzlePiece({
     super.key,
     required this.piece,
     required this.onTap,
     required this.size,
+    required this.index,
+    this.onDragStart,
+    this.onDragEnd,
   });
 
   @override
@@ -24,62 +30,126 @@ class _ImagePuzzlePieceState extends State<ImagePuzzlePiece> {
   Widget build(BuildContext context) {
     // debug: 'Building piece: number=${widget.piece.number}, imageUrl=${widget.piece.imageUrl}, pos=${widget.piece.currentPosition}'
     if (widget.piece.isEmpty) {
-      return Container(
+      return DragTarget<int>(
+        onWillAcceptWithDetails: (details) => true,
+        onAcceptWithDetails: (details) {
+          if (widget.onDragEnd != null) {
+            widget.onDragEnd!(details.data, widget.index);
+          }
+        },
+        builder: (context, candidateData, rejectedData) {
+          final isHovering = candidateData.isNotEmpty;
+          return Container(
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(
+              color: isHovering
+                  ? const Color(0xFF00d4ff).withValues(alpha: 0.2 * 255)
+                  : const Color(0xFF16181d).withValues(alpha: 0.5 * 255),
+              borderRadius: BorderRadius.circular(12.0),
+              border: Border.all(
+                color: isHovering
+                    ? const Color(0xFF00d4ff)
+                    : Colors.white.withValues(alpha: 0.1 * 255),
+                width: isHovering ? 3 : 2,
+                style: BorderStyle.solid,
+              ),
+            ),
+            child: Center(
+              child: Icon(
+                Icons.add_circle_outline,
+                color: isHovering
+                    ? const Color(0xFF00d4ff)
+                    : const Color(0xFF00d4ff).withValues(alpha: 0.3 * 255),
+                size: 32,
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    return LongPressDraggable<int>(
+      data: widget.index,
+      feedback: Opacity(
+        opacity: 0.7,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF00d4ff), width: 3),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF00d4ff).withValues(alpha: (0.6 * 255)),
+                  blurRadius: 20,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: _buildImageContent(),
+            ),
+          ),
+        ),
+      ),
+      childWhenDragging: Container(
         width: widget.size,
         height: widget.size,
         decoration: BoxDecoration(
           color: const Color(0xFF16181d).withValues(alpha: 0.5 * 255),
-          borderRadius: BorderRadius.circular(12.0),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: Colors.white.withValues(alpha: 0.1 * 255),
             width: 2,
             style: BorderStyle.solid,
           ),
         ),
-        child: Center(
-          child: Icon(
-            Icons.add_circle_outline,
-            color: const Color(0xFF00d4ff).withValues(alpha: 0.3 * 255),
-            size: 32,
-          ),
-        ),
-      );
-    }
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: widget.size,
-          height: widget.size,
-          transform: Matrix4.identity()
-            ..scaleByDouble(_isHovering ? 1.05 : 1.0, 1.0, 1.0, 1.0),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: _isHovering
-                  ? const Color(0xFF00d4ff)
-                  : (widget.piece.isCorrect
-                        ? Colors.green
-                        : Colors.white.withValues(alpha: (0.2 * 255))),
-              width: _isHovering ? 3 : 2,
-            ),
-            boxShadow: [
-              BoxShadow(
+      ),
+      onDragStarted: () {
+        if (widget.onDragStart != null) {
+          widget.onDragStart!(widget.index);
+        }
+      },
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovering = true),
+        onExit: (_) => setState(() => _isHovering = false),
+        cursor: SystemMouseCursors.grab,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: widget.size,
+            height: widget.size,
+            transform: Matrix4.identity()
+              ..scaleByDouble(_isHovering ? 1.05 : 1.0, 1.0, 1.0, 1.0),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
                 color: _isHovering
-                    ? const Color(0xFF00d4ff).withValues(alpha: (0.4 * 255))
-                    : Colors.black.withValues(alpha: (0.3 * 255)),
-                blurRadius: _isHovering ? 15 : 8,
-                offset: const Offset(0, 2),
+                    ? const Color(0xFF00d4ff)
+                    : (widget.piece.isCorrect
+                          ? Colors.green
+                          : Colors.white.withValues(alpha: (0.2 * 255))),
+                width: _isHovering ? 3 : 2,
               ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: _buildImageContent(),
+              boxShadow: [
+                BoxShadow(
+                  color: _isHovering
+                      ? const Color(0xFF00d4ff).withValues(alpha: (0.4 * 255))
+                      : Colors.black.withValues(alpha: (0.3 * 255)),
+                  blurRadius: _isHovering ? 15 : 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: _buildImageContent(),
+            ),
           ),
         ),
       ),

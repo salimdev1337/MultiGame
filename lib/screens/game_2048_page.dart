@@ -105,7 +105,7 @@ class _Game2048PageState extends State<Game2048Page>
           }
         }
 
-        // If user reached at least the minimum objective (32), show win dialog
+        // If user reached at least the minimum objective show ,win dialog
         if (highestTileInGrid >= objectives[0]) {
           _showObjectiveCompleteDialog();
         } else {
@@ -417,7 +417,11 @@ class _Game2048PageState extends State<Game2048Page>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
           children: [
-            Icon(Icons.settings, color: const Color(0xFF19e6a2), size: 28),
+            Icon(
+              Icons.settings,
+              color: const Color(0xFF19e6a2).withValues(alpha: (0.6 * 255)),
+              size: 28,
+            ),
             const SizedBox(width: 12),
             const Text(
               'Settings',
@@ -440,7 +444,10 @@ class _Game2048PageState extends State<Game2048Page>
                   color: const Color(0xFF19e6a2).withValues(alpha: (0.1 * 255)),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.refresh, color: Color(0xFF19e6a2)),
+                child: const Icon(
+                  Icons.refresh,
+                  color: Color.fromARGB(255, 0, 0, 0),
+                ),
               ),
               title: const Text(
                 'Reset Game',
@@ -495,8 +502,8 @@ class _Game2048PageState extends State<Game2048Page>
       levelPassed = 'Hard (1024)';
     } else if (highestTileInGrid >= 512) {
       levelPassed = 'Medium (512)';
-    } else if (highestTileInGrid >= 32) {
-      levelPassed = 'Easy (32)';
+    } else if (highestTileInGrid >= 256) {
+      levelPassed = 'Easy (256)';
     }
 
     // Save achievement
@@ -744,20 +751,6 @@ class _Game2048PageState extends State<Game2048Page>
                     children: [
                       Row(
                         children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1a1e26),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(
-                              Icons.menu,
-                              color: Colors.white,
-                              size: 24,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
                           InkWell(
                             onTap: _showSettingsDialog,
                             borderRadius: BorderRadius.circular(12),

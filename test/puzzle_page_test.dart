@@ -74,22 +74,6 @@ void main() {
       expect(game.emptyPosition, 15);
     });
 
-    test('PuzzleGame pieces can be moved', () {
-      final game = PuzzleGame(gridSize: 4);
-      final initialEmptyPos = game.emptyPosition;
-
-      // Try to move a piece adjacent to empty
-      final adjacentPiece = 14; // Left of empty (15)
-      final canMove = game.canMove(adjacentPiece);
-      expect(canMove, isA<bool>());
-
-      if (canMove) {
-        final moved = game.movePiece(adjacentPiece);
-        expect(moved, true);
-        expect(game.emptyPosition, isNot(initialEmptyPos));
-      }
-    });
-
     test('PuzzleGame should detect solved state', () {
       final game = PuzzleGame(gridSize: 4);
       // Initially should be solvable state

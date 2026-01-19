@@ -12,7 +12,6 @@ class _ProfilePageState extends State<ProfilePage> {
   final AchievementService _achievementService = AchievementService();
   Map<String, dynamic> _stats = {};
   Map<String, dynamic> _stats2048 = {};
-  Map<String, bool> _achievements = {};
   bool _isLoading = true;
 
   @override
@@ -28,12 +27,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
     final stats = await _achievementService.getAllStats();
     final stats2048 = await _achievementService.get2048Stats();
-    final achievements = await _achievementService.getAchievements();
 
     setState(() {
       _stats = stats;
       _stats2048 = stats2048;
-      _achievements = achievements;
       _isLoading = false;
     });
   }
@@ -185,51 +182,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const SliverToBoxAdapter(child: SizedBox(height: 8)),
                     // Achievements Badges
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              '2048 Achievements',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: [
-                                _buildAchievementBadge(
-                                  '512',
-                                  _achievements['2048_beginner'] ?? false,
-                                  const Color(0xFF19e6a2),
-                                ),
-                                _buildAchievementBadge(
-                                  '1024',
-                                  _achievements['2048_intermediate'] ?? false,
-                                  const Color(0xFF0ea5e9),
-                                ),
-                                _buildAchievementBadge(
-                                  '2048',
-                                  _achievements['2048_advanced'] ?? false,
-                                  const Color(0xFFec4899),
-                                ),
-                                _buildAchievementBadge(
-                                  '4096',
-                                  _achievements['2048_master'] ?? false,
-                                  const Color(0xFFffd700),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
                     const SliverToBoxAdapter(child: SizedBox(height: 16)),
                     // Statistics Section
                     SliverToBoxAdapter(
@@ -427,41 +379,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ],
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAchievementBadge(String title, bool unlocked, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: unlocked
-            ? color.withValues(alpha: (0.2 * 255))
-            : Colors.grey.withValues(alpha: (0.1 * 255)),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: unlocked ? color : Colors.grey.withValues(alpha: (0.3 * 255)),
-          width: 2,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            unlocked ? Icons.emoji_events : Icons.lock,
-            color: unlocked ? color : Colors.grey,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: unlocked ? color : Colors.grey,
             ),
           ),
         ],

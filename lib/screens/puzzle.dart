@@ -261,122 +261,276 @@ class _PuzzlePageState extends State<PuzzlePage>
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        return Dialog(
-          backgroundColor: const Color(0xFF21242b),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  '🎉 Puzzle Solved!',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF00d4ff),
+        return Stack(
+          children: [
+            // Backdrop blur overlay
+            Positioned.fill(
+              child: Container(color: const Color(0xFF0a0b0e).withOpacity(0.6)),
+            ),
+            Center(
+              child: Container(
+                margin: const EdgeInsets.all(32),
+                constraints: const BoxConstraints(maxWidth: 400),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF21242b).withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(40),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.1),
+                    width: 1,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF16181d),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.05)),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          Column(
-                            children: [
-                              const Text(
-                                'MOVES',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '$moveCount',
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  color: Color(0xFF00d4ff),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Column(
-                            children: [
-                              const Text(
-                                'TIME',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                _formatTime(elapsedSeconds),
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  color: Color(0xFF00d4ff),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                if (newAchievements.isNotEmpty) ...[
-                  const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFff5c00).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFFff5c00).withOpacity(0.5),
-                      ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.5),
+                      blurRadius: 40,
+                      spreadRadius: 10,
                     ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: SingleChildScrollView(
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Row(
-                          mainAxisSize: MainAxisSize.min,
+                        // Trophy icon with gold glow
+                        Container(
+                          width: 96,
+                          height: 96,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFFffd700).withOpacity(0.1),
+                            border: Border.all(
+                              color: const Color(0xFFffd700).withOpacity(0.2),
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFffd700).withOpacity(0.3),
+                                blurRadius: 25,
+                                spreadRadius: 5,
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Text('🏆', style: TextStyle(fontSize: 48)),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Title
+                        const Text(
+                          'YOU SOLVED IT!',
+                          style: TextStyle(
+                            fontSize: 36,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: -0.5,
+                            fontStyle: FontStyle.italic,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Subtitle
+                        Text(
+                          'MASTERPIECE COMPLETE',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[500],
+                            letterSpacing: 3,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Stats cards
+                        Row(
                           children: [
-                            Text('🏆', style: TextStyle(fontSize: 20)),
-                            SizedBox(width: 8),
-                            Text(
-                              'New Achievement!',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFFff5c00),
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.05),
+                                  ),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'MOVES',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey[600],
+                                        letterSpacing: 2,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '$moveCount',
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.05),
+                                  ),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'TIME',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey[600],
+                                        letterSpacing: 2,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _formatTime(elapsedSeconds),
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        ...newAchievements.map(
-                          (achievement) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Text(
-                              achievement,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.white70,
+
+                        // Achievement badge (if any)
+                        if (newAchievements.isNotEmpty) ...[
+                          const SizedBox(height: 20),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFffd700).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFffd700).withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text('⭐', style: TextStyle(fontSize: 16)),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    newAchievements.first,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFFffd700),
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
+                        const SizedBox(height: 32),
+
+                        // Next Level button
+                        Material(
+                          color: const Color(0xFFff5c00),
+                          borderRadius: BorderRadius.circular(16),
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.of(context).pop();
+                              _newImageGame();
+                            },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              height: 64,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                border: const Border(
+                                  bottom: BorderSide(
+                                    color: Color(0xFF8B3000),
+                                    width: 4,
+                                  ),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFFff5c00,
+                                    ).withOpacity(0.2),
+                                    blurRadius: 20,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  'NEXT LEVEL',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Back to menu button
+                        Material(
+                          color: const Color(0xFF21242b),
+                          borderRadius: BorderRadius.circular(16),
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.of(context).pop();
+                              _resetGame();
+                            },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              height: 64,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                border: const Border(
+                                  bottom: BorderSide(
+                                    color: Colors.black,
+                                    width: 4,
+                                  ),
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'BACK TO MENU',
+                                  style: TextStyle(
+                                    color: Colors.grey[400],
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -384,82 +538,12 @@ class _PuzzlePageState extends State<PuzzlePage>
                       ],
                     ),
                   ),
-                ],
-                const SizedBox(height: 24),
-                const Text(
-                  'Great job! You have successfully completed the puzzle. Play again',
-                  style: TextStyle(fontSize: 18, color: Colors.white70),
-                  textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildDialogButton(
-                        label: 'RESET',
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          _resetGame();
-                        },
-                        isPrimary: false,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: _buildDialogButton(
-                        label: 'PLAY AGAIN',
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          _newImageGame();
-                        },
-                        isPrimary: true,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
-          ),
+          ],
         );
       },
-    );
-  }
-
-  Widget _buildDialogButton({
-    required String label,
-    required VoidCallback onPressed,
-    required bool isPrimary,
-  }) {
-    return Material(
-      color: isPrimary ? const Color(0xFFff5c00) : const Color(0xFF16181d),
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border(
-              bottom: BorderSide(
-                color: isPrimary ? const Color(0xFF8B3000) : Colors.black,
-                width: 4,
-              ),
-            ),
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -682,13 +766,35 @@ class _PuzzlePageState extends State<PuzzlePage>
             final piece = game.pieces[index];
             return ImagePuzzlePiece(
               piece: piece,
+              index: index,
               onTap: () => _movePiece(index),
               size: pieceSize,
+              onDragStart: (draggedIndex) {
+                // Optional: Add feedback when drag starts
+              },
+              onDragEnd: (draggedIndex, targetIndex) {
+                _handleDrop(draggedIndex, targetIndex);
+              },
             );
           },
         );
       },
     );
+  }
+
+  void _handleDrop(int fromIndex, int toIndex) {
+    // Only allow dropping on the empty space
+    if (game.pieces[toIndex].isEmpty) {
+      if (game.movePiece(fromIndex)) {
+        setState(() {
+          moveCount++;
+        });
+
+        if (game.isSolved) {
+          _showWinDialog();
+        }
+      }
+    }
   }
 
   Widget _buildProgressSection() {

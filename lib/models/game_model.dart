@@ -19,14 +19,14 @@ class GameModel {
         id: 'image_puzzle',
         name: 'Image Puzzle',
         description: 'Slide tiles to complete the picture',
-        imagePath: 'assets/images/fallback_puzzle.jpg',
+        imagePath: 'assets/images/classic_puzzle_carousel_thumbnail.png',
         isAvailable: true,
       ),
       GameModel(
         id: '2048',
         name: '2048 Game',
         description: 'Merge tiles to reach the goal!',
-        imagePath: 'assets/images/fallback_puzzle.jpg',
+        imagePath: 'assets/images/2048.jpg',
         isAvailable: true,
       ),
       GameModel(
