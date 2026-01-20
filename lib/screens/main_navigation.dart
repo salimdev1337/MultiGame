@@ -23,7 +23,7 @@ class _MainNavigationState extends State<MainNavigation> {
         game.id == 'snake_game') {
       setState(() {
         _selectedGame = game;
-        _currentIndex = 1; // Switch to game tab
+        _currentIndex = 1;
       });
     }
   }

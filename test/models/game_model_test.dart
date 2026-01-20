@@ -22,10 +22,11 @@ void main() {
     test('getAvailableGames returns list of games', () {
       final games = GameModel.getAvailableGames();
 
-      expect(games.length, 3);
-      expect(games[0].id, 'image_puzzle');
-      expect(games[1].id, '2048');
-      expect(games[2].id, 'memory_game');
+      expect(games.length, 4);
+      expect(games[0].id, 'snake_game');
+      expect(games[1].id, 'image_puzzle');
+      expect(games[2].id, '2048');
+      expect(games[3].id, 'memory_game');
     });
 
     test('image_puzzle is available', () {

@@ -1,10 +1,9 @@
 // ignore_for_file: deprecated_member_use
 
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:multigame/game_logic.dart';
+import 'package:provider/provider.dart';
+import 'package:multigame/providers/puzzle_game_provider.dart';
 import 'package:multigame/widgets/image_puzzle_piece.dart';
-import 'package:multigame/services/achievement_service.dart';
 
 class PuzzlePage extends StatefulWidget {
   const PuzzlePage({super.key});
@@ -15,18 +14,9 @@ class PuzzlePage extends StatefulWidget {
 
 class _PuzzlePageState extends State<PuzzlePage>
     with SingleTickerProviderStateMixin {
-  late PuzzleGame game;
-  int gridSize = 4;
-  bool isLoading = true;
-  bool isNewImageLoading = false;
-  int moveCount = 0;
-  int elapsedSeconds = 0;
-  Timer? _timer;
-  bool showImagePreview = false;
   late AnimationController _previewAnimationController;
   late Animation<double> _previewAnimation;
   final GlobalKey _hintButtonKey = GlobalKey();
-  final AchievementService _achievementService = AchievementService();
 
   @override
   void initState() {
@@ -39,95 +29,27 @@ class _PuzzlePageState extends State<PuzzlePage>
       parent: _previewAnimationController,
       curve: Curves.easeInOutCubic,
     );
-    _initializeGame();
-    _startTimer();
+
+    // Initialize game after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final notifier = context.read<PuzzleGameNotifier>();
+      notifier.initializeGame().then((_) {
+        if (mounted) {
+          _showImagePreviewAnimation();
+        }
+      });
+    });
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     _previewAnimationController.dispose();
     super.dispose();
   }
 
-  void _startTimer() {
-    _timer?.cancel();
-    elapsedSeconds = 0;
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!game.isSolved) {
-        setState(() {
-          elapsedSeconds++;
-        });
-      }
-    });
-  }
-
-  String _formatTime(int seconds) {
-    int minutes = seconds ~/ 60;
-    int secs = seconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
-  }
-
-  Future<void> _initializeGame() async {
-    setState(() {
-      isLoading = true;
-      moveCount = 0;
-    });
-
-    game = PuzzleGame(gridSize: gridSize);
-    await game.loadPuzzleImages();
-    _startTimer();
-
-    setState(() => isLoading = false);
-
-    // Show image preview after loading
-    _showImagePreviewAnimation();
-  }
-
-  Future<void> _resetGame() async {
-    setState(() {
-      isNewImageLoading = false;
-      moveCount = 0;
-    });
-
-    await game.loadPuzzleImages();
-    _startTimer();
-    _showImagePreviewAnimation();
-    setState(() {});
-  }
-
-  Future<void> _newImageGame() async {
-    setState(() {
-      isNewImageLoading = true;
-      moveCount = 0;
-    });
-
-    await game.loadNewPuzzle();
-    _startTimer();
-    _showImagePreviewAnimation();
-
-    setState(() => isNewImageLoading = false);
-  }
-
-  Future<void> _changeGridSize(int newSize) async {
-    setState(() {
-      gridSize = newSize;
-      isLoading = true;
-      moveCount = 0;
-    });
-
-    game = PuzzleGame(gridSize: newSize);
-    await game.loadPuzzleImages();
-    _startTimer();
-    _showImagePreviewAnimation();
-
-    setState(() => isLoading = false);
-  }
-
   void _showImagePreviewAnimation() {
-    setState(() {
-      showImagePreview = true;
-    });
+    final notifier = context.read<PuzzleGameNotifier>();
+    notifier.setShowImagePreview(true);
     _previewAnimationController.reset();
 
     // Wait 3 seconds, then animate to hint button
@@ -135,9 +57,7 @@ class _PuzzlePageState extends State<PuzzlePage>
       if (mounted) {
         _previewAnimationController.forward().then((_) {
           if (mounted) {
-            setState(() {
-              showImagePreview = false;
-            });
+            notifier.setShowImagePreview(false);
           }
         });
       }
@@ -145,6 +65,10 @@ class _PuzzlePageState extends State<PuzzlePage>
   }
 
   void _showHintDialog() {
+    final notifier = context.read<PuzzleGameNotifier>();
+    final game = notifier.game;
+    if (game == null) return;
+
     final imageUrl = game.pieces.firstWhere((p) => p.imageUrl != null).imageUrl;
     if (imageUrl == null) return;
 
@@ -234,26 +158,23 @@ class _PuzzlePageState extends State<PuzzlePage>
   }
 
   void _movePiece(int position) {
-    if (game.movePiece(position)) {
-      setState(() {
-        moveCount++;
-      });
+    final notifier = context.read<PuzzleGameNotifier>();
+    final wasSolved = notifier.game?.isSolved ?? false;
 
-      if (game.isSolved) {
+    if (notifier.movePiece(position)) {
+      // Check if game is now solved
+      if (!wasSolved && notifier.game?.isSolved == true) {
         _showWinDialog();
       }
     }
   }
 
   Future<void> _showWinDialog() async {
-    _timer?.cancel();
+    final notifier = context.read<PuzzleGameNotifier>();
+    notifier.stopTimer();
 
     // Record game completion and check for achievements
-    final newAchievements = await _achievementService.recordGameCompletion(
-      gridSize: gridSize,
-      moves: moveCount,
-      seconds: elapsedSeconds,
-    );
+    final newAchievements = await notifier.recordGameCompletion();
 
     if (!mounted) return;
 
@@ -369,13 +290,17 @@ class _PuzzlePageState extends State<PuzzlePage>
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    Text(
-                                      '$moveCount',
-                                      style: const TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
+                                    Consumer<PuzzleGameNotifier>(
+                                      builder: (context, notifier, _) {
+                                        return Text(
+                                          '${notifier.moveCount}',
+                                          style: const TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ],
                                 ),
@@ -404,13 +329,19 @@ class _PuzzlePageState extends State<PuzzlePage>
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    Text(
-                                      _formatTime(elapsedSeconds),
-                                      style: const TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
+                                    Consumer<PuzzleGameNotifier>(
+                                      builder: (context, notifier, _) {
+                                        return Text(
+                                          notifier.formatTime(
+                                            notifier.elapsedSeconds,
+                                          ),
+                                          style: const TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ],
                                 ),
@@ -461,7 +392,13 @@ class _PuzzlePageState extends State<PuzzlePage>
                           child: InkWell(
                             onTap: () {
                               Navigator.of(context).pop();
-                              _newImageGame();
+                              final notifier = context
+                                  .read<PuzzleGameNotifier>();
+                              notifier.newImageGame().then((_) {
+                                if (mounted) {
+                                  _showImagePreviewAnimation();
+                                }
+                              });
                             },
                             borderRadius: BorderRadius.circular(16),
                             child: Container(
@@ -507,7 +444,13 @@ class _PuzzlePageState extends State<PuzzlePage>
                           child: InkWell(
                             onTap: () {
                               Navigator.of(context).pop();
-                              _resetGame();
+                              final notifier = context
+                                  .read<PuzzleGameNotifier>();
+                              notifier.resetGame().then((_) {
+                                if (mounted) {
+                                  _showImagePreviewAnimation();
+                                }
+                              });
                             },
                             borderRadius: BorderRadius.circular(16),
                             child: Container(
@@ -549,54 +492,61 @@ class _PuzzlePageState extends State<PuzzlePage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
+    return Consumer<PuzzleGameNotifier>(
+      builder: (context, notifier, _) {
+        return Scaffold(
+          body: SafeArea(
+            child: Stack(
               children: [
-                // Top App Bar
-                _buildTopAppBar(),
+                Column(
+                  children: [
+                    // Top App Bar
+                    _buildTopAppBar(notifier),
 
-                // Main Content
-                Expanded(
-                  child: isLoading
-                      ? _buildLoadingScreen()
-                      : SingleChildScrollView(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                            child: Column(
-                              children: [
-                                const SizedBox(height: 16),
-                                // Stats Section
-                                _buildStatsSection(),
-                                const SizedBox(height: 32),
-                                // Puzzle Grid
-                                _buildPuzzleGridContainer(),
-                                const SizedBox(height: 32),
-                                // Progress Section
-                                _buildProgressSection(),
-                                const SizedBox(height: 24),
-                                // Footer Controls
-                                _buildFooterControls(),
-                                const SizedBox(height: 24),
-                              ],
+                    // Main Content
+                    Expanded(
+                      child: notifier.isLoading
+                          ? _buildLoadingScreen(notifier)
+                          : SingleChildScrollView(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                ),
+                                child: Column(
+                                  children: [
+                                    const SizedBox(height: 16),
+                                    // Stats Section
+                                    _buildStatsSection(notifier),
+                                    const SizedBox(height: 32),
+                                    // Puzzle Grid
+                                    _buildPuzzleGridContainer(notifier),
+                                    const SizedBox(height: 32),
+                                    // Progress Section
+                                    _buildProgressSection(notifier),
+                                    const SizedBox(height: 24),
+                                    // Footer Controls
+                                    _buildFooterControls(notifier),
+                                    const SizedBox(height: 24),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
+                    ),
+                  ],
                 ),
+
+                // Image Preview Overlay
+                if (notifier.showImagePreview)
+                  _buildImagePreviewOverlay(notifier),
               ],
             ),
-
-            // Image Preview Overlay
-            if (showImagePreview) _buildImagePreviewOverlay(),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildTopAppBar() {
+  Widget _buildTopAppBar(PuzzleGameNotifier notifier) {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 48, 24, 16),
       decoration: BoxDecoration(
@@ -612,7 +562,7 @@ class _PuzzlePageState extends State<PuzzlePage>
           const Spacer(),
           // Level Title
           Text(
-            'LEVEL ${gridSize * gridSize}',
+            'LEVEL ${notifier.gridSize * notifier.gridSize}',
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -641,14 +591,19 @@ class _PuzzlePageState extends State<PuzzlePage>
     );
   }
 
-  Widget _buildStatsSection() {
+  Widget _buildStatsSection(PuzzleGameNotifier notifier) {
     return Row(
       children: [
         // Moves Card
-        Expanded(child: _buildStatCard('MOVES', '$moveCount')),
+        Expanded(child: _buildStatCard('MOVES', '${notifier.moveCount}')),
         const SizedBox(width: 16),
         // Time Card
-        Expanded(child: _buildStatCard('TIME', _formatTime(elapsedSeconds))),
+        Expanded(
+          child: _buildStatCard(
+            'TIME',
+            notifier.formatTime(notifier.elapsedSeconds),
+          ),
+        ),
         const SizedBox(width: 16),
         // Hint Button
         _buildHintButton(),
@@ -720,7 +675,7 @@ class _PuzzlePageState extends State<PuzzlePage>
     );
   }
 
-  Widget _buildPuzzleGridContainer() {
+  Widget _buildPuzzleGridContainer(PuzzleGameNotifier notifier) {
     return AspectRatio(
       aspectRatio: 1,
       child: Container(
@@ -739,25 +694,30 @@ class _PuzzlePageState extends State<PuzzlePage>
             ),
           ],
         ),
-        child: _buildPuzzleGrid(),
+        child: _buildPuzzleGrid(notifier),
       ),
     );
   }
 
-  Widget _buildPuzzleGrid() {
+  Widget _buildPuzzleGrid(PuzzleGameNotifier notifier) {
+    final game = notifier.game;
+    if (game == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         // Calculate the size for each piece based on available space
         // Subtract the total spacing from available width
-        final totalSpacing = 10.0 * (gridSize - 1);
+        final totalSpacing = 10.0 * (notifier.gridSize - 1);
         final availableWidth = constraints.maxWidth - totalSpacing;
-        final pieceSize = availableWidth / gridSize;
+        final pieceSize = availableWidth / notifier.gridSize;
 
         return GridView.builder(
           physics: const NeverScrollableScrollPhysics(),
           shrinkWrap: true,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: gridSize,
+            crossAxisCount: notifier.gridSize,
             crossAxisSpacing: 10.0,
             mainAxisSpacing: 10.0,
           ),
@@ -783,21 +743,26 @@ class _PuzzlePageState extends State<PuzzlePage>
   }
 
   void _handleDrop(int fromIndex, int toIndex) {
+    final notifier = context.read<PuzzleGameNotifier>();
+    final game = notifier.game;
+    if (game == null) return;
+
     // Only allow dropping on the empty space
     if (game.pieces[toIndex].isEmpty) {
-      if (game.movePiece(fromIndex)) {
-        setState(() {
-          moveCount++;
-        });
-
-        if (game.isSolved) {
+      final wasSolved = game.isSolved;
+      if (notifier.movePiece(fromIndex)) {
+        // Check if game is now solved
+        if (!wasSolved && game.isSolved) {
           _showWinDialog();
         }
       }
     }
   }
 
-  Widget _buildProgressSection() {
+  Widget _buildProgressSection(PuzzleGameNotifier notifier) {
+    final game = notifier.game;
+    if (game == null) return const SizedBox.shrink();
+
     final progress = game.completionPercentage;
     return Column(
       children: [
@@ -865,7 +830,7 @@ class _PuzzlePageState extends State<PuzzlePage>
     );
   }
 
-  Widget _buildFooterControls() {
+  Widget _buildFooterControls(PuzzleGameNotifier notifier) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -885,7 +850,13 @@ class _PuzzlePageState extends State<PuzzlePage>
           Expanded(
             child: _buildFooterButton(
               label: 'RESET',
-              onPressed: _resetGame,
+              onPressed: () {
+                notifier.resetGame().then((_) {
+                  if (mounted) {
+                    _showImagePreviewAnimation();
+                  }
+                });
+              },
               isPrimary: false,
             ),
           ),
@@ -894,9 +865,15 @@ class _PuzzlePageState extends State<PuzzlePage>
             flex: 2,
             child: _buildFooterButton(
               label: 'PLAY AGAIN',
-              onPressed: _newImageGame,
+              onPressed: () {
+                notifier.newImageGame().then((_) {
+                  if (mounted) {
+                    _showImagePreviewAnimation();
+                  }
+                });
+              },
               isPrimary: true,
-              isLoading: isNewImageLoading,
+              isLoading: notifier.isNewImageLoading,
             ),
           ),
         ],
@@ -975,13 +952,17 @@ class _PuzzlePageState extends State<PuzzlePage>
                   ),
                 ),
                 const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildGridSizeOption(3),
-                    _buildGridSizeOption(4),
-                    _buildGridSizeOption(5),
-                  ],
+                Consumer<PuzzleGameNotifier>(
+                  builder: (context, notifier, _) {
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildGridSizeOption(3, notifier),
+                        _buildGridSizeOption(4, notifier),
+                        _buildGridSizeOption(5, notifier),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 24),
                 TextButton(
@@ -999,12 +980,16 @@ class _PuzzlePageState extends State<PuzzlePage>
     );
   }
 
-  Widget _buildGridSizeOption(int size) {
-    final isSelected = gridSize == size;
+  Widget _buildGridSizeOption(int size, PuzzleGameNotifier notifier) {
+    final isSelected = notifier.gridSize == size;
     return GestureDetector(
       onTap: () {
         Navigator.pop(context);
-        _changeGridSize(size);
+        notifier.changeGridSize(size).then((_) {
+          if (mounted) {
+            _showImagePreviewAnimation();
+          }
+        });
       },
       child: Container(
         width: 70,
@@ -1033,7 +1018,7 @@ class _PuzzlePageState extends State<PuzzlePage>
     );
   }
 
-  Widget _buildLoadingScreen() {
+  Widget _buildLoadingScreen(PuzzleGameNotifier notifier) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -1074,7 +1059,7 @@ class _PuzzlePageState extends State<PuzzlePage>
           const Text('🇹🇳', style: TextStyle(fontSize: 48)),
           const SizedBox(height: 16),
           Text(
-            'Grid: $gridSize×$gridSize',
+            'Grid: ${notifier.gridSize}×${notifier.gridSize}',
             style: const TextStyle(color: Colors.grey, fontSize: 16),
           ),
         ],
@@ -1082,7 +1067,10 @@ class _PuzzlePageState extends State<PuzzlePage>
     );
   }
 
-  Widget _buildImagePreviewOverlay() {
+  Widget _buildImagePreviewOverlay(PuzzleGameNotifier notifier) {
+    final game = notifier.game;
+    if (game == null) return const SizedBox.shrink();
+
     final imageUrl = game.pieces.firstWhere((p) => p.imageUrl != null).imageUrl;
     if (imageUrl == null) return const SizedBox.shrink();
 

@@ -6,6 +6,10 @@ import 'package:multigame/models/puzzle_piece.dart';
 import 'package:multigame/screens/puzzle.dart';
 import 'package:multigame/widgets/image_puzzle_piece.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import 'package:multigame/providers/puzzle_game_provider.dart';
+import 'package:multigame/providers/game_2048_provider.dart';
+import 'package:multigame/providers/snake_game_provider.dart';
 
 void main() {
   setUp(() {
@@ -103,7 +107,16 @@ void main() {
       WidgetTester tester,
     ) async {
       await mockNetworkImagesFor(() async {
-        await tester.pumpWidget(const MaterialApp(home: PuzzlePage()));
+        await tester.pumpWidget(
+          MultiProvider(
+            providers: [
+              ChangeNotifierProvider(create: (_) => PuzzleGameNotifier()),
+              ChangeNotifierProvider(create: (_) => Game2048Provider()),
+              ChangeNotifierProvider(create: (_) => SnakeGameProvider()),
+            ],
+            child: const MaterialApp(home: PuzzlePage()),
+          ),
+        );
         await tester.pumpAndSettle(const Duration(seconds: 6));
 
         // Check for main UI components
@@ -115,7 +128,16 @@ void main() {
 
     testWidgets('Stats cards display', (WidgetTester tester) async {
       await mockNetworkImagesFor(() async {
-        await tester.pumpWidget(const MaterialApp(home: PuzzlePage()));
+        await tester.pumpWidget(
+          MultiProvider(
+            providers: [
+              ChangeNotifierProvider(create: (_) => PuzzleGameNotifier()),
+              ChangeNotifierProvider(create: (_) => Game2048Provider()),
+              ChangeNotifierProvider(create: (_) => SnakeGameProvider()),
+            ],
+            child: const MaterialApp(home: PuzzlePage()),
+          ),
+        );
         await tester.pumpAndSettle(const Duration(seconds: 6));
 
         expect(find.text('MOVES'), findsOneWidget);
@@ -125,7 +147,16 @@ void main() {
 
     testWidgets('Puzzle grid renders', (WidgetTester tester) async {
       await mockNetworkImagesFor(() async {
-        await tester.pumpWidget(const MaterialApp(home: PuzzlePage()));
+        await tester.pumpWidget(
+          MultiProvider(
+            providers: [
+              ChangeNotifierProvider(create: (_) => PuzzleGameNotifier()),
+              ChangeNotifierProvider(create: (_) => Game2048Provider()),
+              ChangeNotifierProvider(create: (_) => SnakeGameProvider()),
+            ],
+            child: const MaterialApp(home: PuzzlePage()),
+          ),
+        );
         await tester.pumpAndSettle(const Duration(seconds: 6));
 
         expect(find.byType(GridView), findsOneWidget);
@@ -135,7 +166,16 @@ void main() {
 
     testWidgets('Control buttons are present', (WidgetTester tester) async {
       await mockNetworkImagesFor(() async {
-        await tester.pumpWidget(const MaterialApp(home: PuzzlePage()));
+        await tester.pumpWidget(
+          MultiProvider(
+            providers: [
+              ChangeNotifierProvider(create: (_) => PuzzleGameNotifier()),
+              ChangeNotifierProvider(create: (_) => Game2048Provider()),
+              ChangeNotifierProvider(create: (_) => SnakeGameProvider()),
+            ],
+            child: const MaterialApp(home: PuzzlePage()),
+          ),
+        );
         await tester.pumpAndSettle(const Duration(seconds: 6));
 
         expect(find.text('RESET'), findsOneWidget);

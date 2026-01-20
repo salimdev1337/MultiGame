@@ -1,11 +1,8 @@
-import 'dart:async';
-import 'dart:math';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-enum Direction { up, down, left, right }
-
-enum GameMode { classic, wrap, speed }
+import 'package:provider/provider.dart';
+import 'package:multigame/providers/snake_game_provider.dart';
 
 class SnakeGamePage extends StatefulWidget {
   const SnakeGamePage({super.key});
@@ -15,338 +12,572 @@ class SnakeGamePage extends StatefulWidget {
 }
 
 class _SnakeGamePageState extends State<SnakeGamePage> {
-  static const int gridSize = 20;
-
-  List<Offset> snake = [const Offset(5, 10)];
-  Offset food = const Offset(10, 10);
-
-  Direction currentDirection = Direction.right;
-  Direction nextDirection = Direction.right;
-
-  GameMode gameMode = GameMode.classic;
-
-  Timer? timer;
-  bool playing = true;
-  int score = 0;
-
-  Duration get tickRate {
-    switch (gameMode) {
-      case GameMode.speed:
-        return const Duration(milliseconds: 120);
-      case GameMode.wrap:
-      case GameMode.classic:
-        return const Duration(milliseconds: 200);
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _startGame();
-  }
-
-  @override
-  void dispose() {
-    timer?.cancel();
-    super.dispose();
-  }
-
-  void _startGame() {
-    timer?.cancel();
-    setState(() {
-      snake = [const Offset(5, 10)];
-      currentDirection = Direction.right;
-      nextDirection = Direction.right;
-      score = 0;
-      playing = true;
-      _spawnFood();
-    });
-
-    timer = Timer.periodic(tickRate, (_) {
-      if (playing) _tick();
-    });
-  }
-
-  void _spawnFood() {
-    final rand = Random();
-    Offset pos;
-    do {
-      pos = Offset(
-        rand.nextInt(gridSize).toDouble(),
-        rand.nextInt(gridSize).toDouble(),
-      );
-    } while (snake.contains(pos));
-    food = pos;
-  }
-
-  void _tick() {
-    setState(() {
-      currentDirection = nextDirection;
-      final head = snake.first;
-      Offset next;
-
-      switch (currentDirection) {
-        case Direction.up:
-          next = Offset(head.dx, head.dy - 1);
-          break;
-        case Direction.down:
-          next = Offset(head.dx, head.dy + 1);
-          break;
-        case Direction.left:
-          next = Offset(head.dx - 1, head.dy);
-          break;
-        case Direction.right:
-          next = Offset(head.dx + 1, head.dy);
-          break;
-      }
-
-      if (gameMode == GameMode.wrap) {
-        next = Offset(
-          (next.dx + gridSize) % gridSize,
-          (next.dy + gridSize) % gridSize,
-        );
-      } else {
-        if (next.dx < 0 ||
-            next.dy < 0 ||
-            next.dx >= gridSize ||
-            next.dy >= gridSize) {
-          _gameOver();
-          return;
-        }
-      }
-
-      if (snake.contains(next)) {
-        _gameOver();
-        return;
-      }
-
-      snake.insert(0, next);
-
-      if (next == food) {
-        score += 10;
-        _spawnFood();
-      } else {
-        snake.removeLast();
-      }
-    });
-  }
-
-  void _gameOver() {
-    playing = false;
-    timer?.cancel();
-
+  void _showGameOverDialog(int score, bool isWin) {
+    final provider = context.read<SnakeGameProvider>();
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF111317),
-        title: const Text(
-          'GAME OVER',
-          style: TextStyle(color: Color(0xFF55ff00)),
-        ),
-        content: Text(
-          'Score: $score',
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _startGame();
-            },
-            child: const Text('PLAY AGAIN'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _changeDirection(Direction d) {
-    if ((currentDirection == Direction.up && d == Direction.down) ||
-        (currentDirection == Direction.down && d == Direction.up) ||
-        (currentDirection == Direction.left && d == Direction.right) ||
-        (currentDirection == Direction.right && d == Direction.left)) {
-      return;
-    }
-    nextDirection = d;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return KeyboardListener(
-      focusNode: FocusNode()..requestFocus(),
-      onKeyEvent: (event) {
-        if (event is KeyDownEvent) {
-          if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-            _changeDirection(Direction.up);
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-            _changeDirection(Direction.down);
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-            _changeDirection(Direction.left);
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-            _changeDirection(Direction.right);
-          }
-        }
-      },
-      child: Scaffold(
-        backgroundColor: const Color(0xFF111317),
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF111317),
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'NEON SNAKE',
-                style: TextStyle(color: Color(0xFF55ff00), letterSpacing: 2),
+      builder: (_) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 340),
+            decoration: BoxDecoration(
+              color: const Color(0xFF17191c).withAlpha((0.6 * 255).toInt()),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withAlpha((0.05 * 255).toInt()),
+                width: 1,
               ),
-              Text(
-                'SCORE $score',
-                style: const TextStyle(color: Color(0xFF00C2FF)),
-              ),
-            ],
-          ),
-          actions: [
-            PopupMenuButton<GameMode>(
-              icon: const Icon(Icons.settings),
-              onSelected: (m) {
-                gameMode = m;
-                _startGame();
-              },
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: GameMode.classic, child: Text('Classic')),
-                PopupMenuItem(value: GameMode.wrap, child: Text('Wrap Around')),
-                PopupMenuItem(value: GameMode.speed, child: Text('Speed Mode')),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha((0.5 * 255).toInt()),
+                  blurRadius: 30,
+                  spreadRadius: 10,
+                ),
               ],
             ),
-          ],
-        ),
-        body: Column(
-          children: [
-            // 🎮 GAME AREA (FIXED HEIGHT)
-            Expanded(
-              flex: 3,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0b0c0f),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(
-                          0xFF55ff00,
-                        ).withAlpha((0.2 * 255).toInt()),
-                        width: 2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(
-                            0xFF55ff00,
-                          ).withAlpha((0.2 * 255).toInt()),
-                          blurRadius: 20,
-                          spreadRadius: 2,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Header Section
+                      const SizedBox(height: 8),
+                      // Icon
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color:
+                              (isWin
+                                      ? const Color(0xFF55ff00)
+                                      : const Color(0xFFBB2C2C))
+                                  .withAlpha((0.1 * 255).toInt()),
+                          boxShadow: [
+                            BoxShadow(
+                              color:
+                                  (isWin
+                                          ? const Color(0xFF55ff00)
+                                          : const Color(0xFFBB2C2C))
+                                      .withAlpha((0.2 * 255).toInt()),
+                              blurRadius: 20,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: LayoutBuilder(
-                        builder: (_, constraints) {
-                          final cell = constraints.maxWidth / gridSize;
-                          return Stack(
-                            children: [
-                              CustomPaint(
-                                size: constraints.biggest,
-                                painter: GridPainter(),
-                              ),
-                              ...snake.map(
-                                (p) => Positioned(
-                                  left: p.dx * cell,
-                                  top: p.dy * cell,
-                                  child: Container(
-                                    width: cell,
-                                    height: cell,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF55ff00),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
+                        child: Icon(
+                          isWin
+                              ? Icons.emoji_events_outlined
+                              : Icons.sentiment_very_dissatisfied_outlined,
+                          size: 36,
+                          color: isWin
+                              ? const Color(0xFF55ff00)
+                              : const Color(0xFFBB2C2C),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Title
+                      Text(
+                        isWin ? 'YOU WIN!' : 'GAME OVER',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 4,
+                          color: isWin
+                              ? const Color(0xFF55ff00)
+                              : const Color(0xFFBB2C2C),
+                          shadows: [
+                            Shadow(
+                              color:
+                                  (isWin
+                                          ? const Color(0xFF55ff00)
+                                          : const Color(0xFFBB2C2C))
+                                      .withAlpha((0.5 * 255).toInt()),
+                              blurRadius: 10,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Subtitle
+                      Text(
+                        isWin
+                            ? 'Perfect run! Maximum score!'
+                            : 'Your snake hit the wall!',
+                        style: TextStyle(fontSize: 13, color: Colors.grey[400]),
+                      ),
+                      const SizedBox(height: 24),
+                      // Stats Section
+                      Row(
+                        children: [
+                          // Current Score
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withAlpha(
+                                  (0.05 * 255).toInt(),
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.white.withAlpha(
+                                    (0.05 * 255).toInt(),
                                   ),
                                 ),
                               ),
-                              Positioned(
-                                left: food.dx * cell,
-                                top: food.dy * cell,
-                                child: Container(
-                                  width: cell,
-                                  height: cell,
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Color(0xFF00C2FF),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'SCORE',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 2,
+                                      color: Colors.grey[500],
+                                    ),
                                   ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    score.toString(),
+                                    style: const TextStyle(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      height: 1,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // High Score
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withAlpha(
+                                  (0.05 * 255).toInt(),
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.white.withAlpha(
+                                    (0.05 * 255).toInt(),
+                                  ),
+                                ),
+                              ),
+                              child: Stack(
+                                children: [
+                                  Column(
+                                    children: [
+                                      Text(
+                                        'BEST',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 2,
+                                          color: const Color(
+                                            0xFFf52900,
+                                          ).withAlpha((0.8 * 255).toInt()),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        provider.highScore.toString(),
+                                        style: const TextStyle(
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                          height: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Positioned(
+                                    top: 0,
+                                    right: 0,
+                                    child: Icon(
+                                      Icons.emoji_events,
+                                      size: 14,
+                                      color: Colors.yellow.withAlpha(
+                                        (0.5 * 255).toInt(),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      // Separator
+                      Container(
+                        height: 1,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.transparent,
+                              Colors.white.withAlpha((0.1 * 255).toInt()),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Action Buttons
+                      // Try Again Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            provider.startGame();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFf52900),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shadowColor: const Color(
+                              0xFFf52900,
+                            ).withAlpha((0.3 * 255).toInt()),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.replay, size: 24),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Try Again',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
                                 ),
                               ),
                             ],
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // ⬅⬆⬇➡ CONTROLS
-            Expanded(
-              flex: 2,
-              child: Center(
-                child: SizedBox(
-                  width: 220,
-                  height: 220,
-                  child: Stack(
-                    children: [
-                      Positioned(
-                        top: 0,
-                        left: 80,
-                        child: _Arrow(
-                          Icons.keyboard_arrow_up,
-                          () => _changeDirection(Direction.up),
+                          ),
                         ),
                       ),
-                      Positioned(
-                        top: 80,
-                        left: 0,
-                        child: _Arrow(
-                          Icons.keyboard_arrow_left,
-                          () => _changeDirection(Direction.left),
+                      const SizedBox(height: 12),
+                      // Main Menu Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.pop(context); // Close dialog
+                            Navigator.popUntil(
+                              context,
+                              (route) => route.isFirst,
+                            ); // Go to home screen
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.grey[300],
+                            side: BorderSide(
+                              color: Colors.white.withAlpha(
+                                (0.2 * 255).toInt(),
+                              ),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.grid_view,
+                                size: 24,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Main Menu',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                  color: Colors.grey[300],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      Positioned(
-                        top: 80,
-                        left: 80,
-                        child: _Arrow(
-                          Icons.keyboard_arrow_down,
-                          () => _changeDirection(Direction.down),
-                        ),
+                      const SizedBox(height: 16),
+                      // Footer
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 4,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withAlpha(
+                                (0.4 * 255).toInt(),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            provider.gameMode == GameMode.classic
+                                ? 'CLASSIC MODE'
+                                : provider.gameMode == GameMode.wrap
+                                ? 'WRAP MODE'
+                                : 'SPEED MODE',
+                            style: TextStyle(
+                              fontSize: 10,
+                              letterSpacing: 2,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white.withAlpha(
+                                (0.4 * 255).toInt(),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 4,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withAlpha(
+                                (0.4 * 255).toInt(),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      Positioned(
-                        top: 80,
-                        left: 160,
-                        child: _Arrow(
-                          Icons.keyboard_arrow_right,
-                          () => _changeDirection(Direction.right),
-                        ),
-                      ),
+                      const SizedBox(height: 8),
                     ],
                   ),
                 ),
               ),
             ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<SnakeGameProvider>(
+      builder: (context, provider, child) {
+        // Check if game is over and show dialog
+        if (!provider.playing) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            // Check if it's a win (you can customize this condition)
+            final isWin = provider.score >= 100; // Win condition example
+            _showGameOverDialog(provider.score, isWin);
+          });
+        }
+
+        return KeyboardListener(
+          focusNode: FocusNode()..requestFocus(),
+          onKeyEvent: (event) {
+            if (event is KeyDownEvent) {
+              if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                provider.changeDirection(Direction.up);
+              } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                provider.changeDirection(Direction.down);
+              } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+                provider.changeDirection(Direction.left);
+              } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+                provider.changeDirection(Direction.right);
+              }
+            }
+          },
+          child: Scaffold(
+            backgroundColor: const Color(0xFF111317),
+            appBar: AppBar(
+              backgroundColor: const Color(0xFF111317),
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'NEON SNAKE',
+                    style: TextStyle(
+                      color: Color(0xFF55ff00),
+                      letterSpacing: 2,
+                    ),
+                  ),
+                  Text(
+                    'SCORE ${provider.score}',
+                    style: const TextStyle(color: Color(0xFF00C2FF)),
+                  ),
+                ],
+              ),
+              actions: [
+                PopupMenuButton<GameMode>(
+                  icon: const Icon(Icons.settings),
+                  onSelected: (m) {
+                    provider.setGameMode(m);
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: GameMode.classic,
+                      child: Text('Classic'),
+                    ),
+                    PopupMenuItem(
+                      value: GameMode.wrap,
+                      child: Text('Wrap Around'),
+                    ),
+                    PopupMenuItem(
+                      value: GameMode.speed,
+                      child: Text('Speed Mode'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            body: Column(
+              children: [
+                // 🎮 GAME AREA (FIXED HEIGHT)
+                Expanded(
+                  flex: 3,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 8,
+                    ),
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0b0c0f),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(
+                              0xFF55ff00,
+                            ).withAlpha((0.2 * 255).toInt()),
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(
+                                0xFF55ff00,
+                              ).withAlpha((0.2 * 255).toInt()),
+                              blurRadius: 20,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: LayoutBuilder(
+                            builder: (_, constraints) {
+                              final cell =
+                                  constraints.maxWidth /
+                                  SnakeGameProvider.gridSize;
+                              return Stack(
+                                children: [
+                                  CustomPaint(
+                                    size: constraints.biggest,
+                                    painter: GridPainter(),
+                                  ),
+                                  ...provider.snake.map(
+                                    (p) => Positioned(
+                                      left: p.dx * cell,
+                                      top: p.dy * cell,
+                                      child: Container(
+                                        width: cell,
+                                        height: cell,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF55ff00),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    left: provider.food.dx * cell,
+                                    top: provider.food.dy * cell,
+                                    child: Container(
+                                      width: cell,
+                                      height: cell,
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Color(0xFF00C2FF),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // ⬅⬆⬇➡ CONTROLS
+                Expanded(
+                  flex: 2,
+                  child: Center(
+                    child: SizedBox(
+                      width: 220,
+                      height: 220,
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            top: 0,
+                            left: 80,
+                            child: _Arrow(
+                              Icons.keyboard_arrow_up,
+                              () => provider.changeDirection(Direction.up),
+                            ),
+                          ),
+                          Positioned(
+                            top: 80,
+                            left: 0,
+                            child: _Arrow(
+                              Icons.keyboard_arrow_left,
+                              () => provider.changeDirection(Direction.left),
+                            ),
+                          ),
+                          Positioned(
+                            top: 80,
+                            left: 80,
+                            child: _Arrow(
+                              Icons.keyboard_arrow_down,
+                              () => provider.changeDirection(Direction.down),
+                            ),
+                          ),
+                          Positioned(
+                            top: 80,
+                            left: 160,
+                            child: _Arrow(
+                              Icons.keyboard_arrow_right,
+                              () => provider.changeDirection(Direction.right),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
