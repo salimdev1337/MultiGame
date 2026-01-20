@@ -11,7 +11,7 @@ class ImagePuzzleGenerator {
 
   Future<List<PuzzlePiece>> generatePuzzle() async {
     // debug: 'PUZZLE GENERATOR: Generating puzzle (${gridSize}x$gridSize)'
-    _currentImageUrl ??= await unsplashService.getRandomTunisianImage();
+    _currentImageUrl ??= await unsplashService.getRandomImage();
     // debug: 'Using image URL for puzzle: $_currentImageUrl'
 
     final List<PuzzlePiece> pieces = [];

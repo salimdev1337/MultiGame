@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
+import 'package:multigame/services/firebase_stats_service.dart';
 
 enum Direction { up, down, left, right }
 
@@ -12,15 +13,25 @@ class SnakeGameProvider extends ChangeNotifier {
   static const int gridSize = 20;
 
   // Game state
-  List<Offset> _snake = [const Offset(5, 10)];
+  List<Offset> _snake = [const Offset(10, 10)];
   Offset _food = const Offset(10, 10);
   Direction _currentDirection = Direction.right;
   Direction _nextDirection = Direction.right;
   GameMode _gameMode = GameMode.classic;
   Timer? _timer;
-  bool _playing = true;
+  bool _playing = false; // Start as false, will be set to true when game starts
   int _score = 0;
   int _highScore = 0;
+  bool _initialized = false; // Track if game has been initialized
+  final FirebaseStatsService _statsService = FirebaseStatsService();
+  String? _userId;
+  String? _displayName;
+
+  /// Set user info for saving stats
+  void setUserInfo(String? userId, String? displayName) {
+    _userId = userId;
+    _displayName = displayName;
+  }
 
   // Getters
   List<Offset> get snake => _snake;
@@ -28,6 +39,7 @@ class SnakeGameProvider extends ChangeNotifier {
   Direction get currentDirection => _currentDirection;
   GameMode get gameMode => _gameMode;
   bool get playing => _playing;
+  bool get initialized => _initialized;
   int get score => _score;
   int get highScore => _highScore;
 
@@ -41,18 +53,18 @@ class SnakeGameProvider extends ChangeNotifier {
     }
   }
 
-  SnakeGameProvider() {
-    startGame();
-  }
+  // Constructor - game will be started manually when page is opened
+  SnakeGameProvider();
 
   /// Start or restart the game
   void startGame() {
     _timer?.cancel();
-    _snake = [const Offset(5, 10)];
+    _snake = [const Offset(10, 10)];
     _currentDirection = Direction.right;
     _nextDirection = Direction.right;
     _score = 0;
     _playing = true;
+    _initialized = true;
     _spawnFood();
     notifyListeners();
 
@@ -141,7 +153,31 @@ class SnakeGameProvider extends ChangeNotifier {
     if (_score > _highScore) {
       _highScore = _score;
     }
+    _saveScore();
     notifyListeners();
+  }
+
+  /// Save score to Firebase
+  void _saveScore() {
+    debugPrint('Snake _saveScore called: userId=$_userId, score=$_score');
+    if (_userId != null && _score > 0) {
+      debugPrint('Saving snake score to Firebase: $_score');
+      _statsService
+          .saveUserStats(
+            userId: _userId!,
+            displayName: _displayName,
+            gameType: 'snake',
+            score: _score,
+          )
+          .then((_) {
+            debugPrint('Snake score saved successfully!');
+          })
+          .catchError((e) {
+            debugPrint('Error saving snake score: $e');
+          });
+    } else {
+      debugPrint('Not saving snake score: userId is null or score is 0');
+    }
   }
 
   /// Change snake direction

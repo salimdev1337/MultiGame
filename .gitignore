@@ -48,4 +48,9 @@ app.*.map.json
 # Environment variables and secrets
 .env
 .env.local
+lib/config/secrets.dart
+*.key
+*.pem
 *.env
+
+node_modules/

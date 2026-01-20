@@ -12,6 +12,18 @@ class SnakeGamePage extends StatefulWidget {
 }
 
 class _SnakeGamePageState extends State<SnakeGamePage> {
+  @override
+  void initState() {
+    super.initState();
+    // Start the game when the page is first loaded
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = context.read<SnakeGameProvider>();
+      if (!provider.initialized) {
+        provider.startGame();
+      }
+    });
+  }
+
   void _showGameOverDialog(int score, bool isWin) {
     final provider = context.read<SnakeGameProvider>();
     showDialog(
@@ -376,7 +388,8 @@ class _SnakeGamePageState extends State<SnakeGamePage> {
     return Consumer<SnakeGameProvider>(
       builder: (context, provider, child) {
         // Check if game is over and show dialog
-        if (!provider.playing) {
+        // Only show dialog if game was initialized and is no longer playing
+        if (provider.initialized && !provider.playing) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             // Check if it's a win (you can customize this condition)
             final isWin = provider.score >= 100; // Win condition example

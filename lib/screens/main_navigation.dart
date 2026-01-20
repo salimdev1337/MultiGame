@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:multigame/models/game_model.dart';
+import 'package:multigame/providers/user_auth_provider.dart';
+import 'package:multigame/providers/game_2048_provider.dart';
+import 'package:multigame/providers/snake_game_provider.dart';
+import 'package:multigame/providers/puzzle_game_provider.dart';
+import 'package:multigame/services/nickname_service.dart';
+import 'package:multigame/widgets/nickname_dialog.dart';
 import 'package:multigame/screens/home_page.dart';
-import 'package:multigame/screens/profile_page.dart';
+import 'package:multigame/screens/profile_screen.dart';
 import 'package:multigame/screens/puzzle.dart';
 import 'package:multigame/screens/game_2048_page.dart';
 import 'package:multigame/screens/snake_game_page.dart';
+import 'package:multigame/screens/leaderboard_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -16,6 +24,61 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
   GameModel? _selectedGame;
+  final NicknameService _nicknameService = NicknameService();
+  String? _userNickname;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize user info in game providers after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeUser();
+    });
+  }
+
+  Future<void> _initializeUser() async {
+    // Load saved nickname
+    _userNickname = await _nicknameService.getNickname();
+
+    // If no nickname, prompt user
+    if (_userNickname == null && mounted) {
+      _userNickname = await showNicknameDialog(context);
+      if (_userNickname != null) {
+        await _nicknameService.saveNickname(_userNickname!);
+      }
+    }
+
+    // Update game providers with user info
+    _updateGameProvidersUserInfo();
+  }
+
+  void _updateGameProvidersUserInfo() {
+    final authProvider = context.read<UserAuthProvider>();
+    if (authProvider.userId != null) {
+      // Use nickname instead of displayName
+      final displayName = _userNickname ?? authProvider.displayName;
+
+      context.read<Game2048Provider>().setUserInfo(
+        authProvider.userId,
+        displayName,
+      );
+      context.read<SnakeGameProvider>().setUserInfo(
+        authProvider.userId,
+        displayName,
+      );
+      context.read<PuzzleGameNotifier>().setUserInfo(
+        authProvider.userId,
+        displayName,
+      );
+      debugPrint('User info updated: ${authProvider.userId} - $displayName');
+    } else {
+      debugPrint('User info is null, waiting for auth...');
+      // Retry after a delay
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) _updateGameProvidersUserInfo();
+      });
+    }
+  }
 
   void _onGameSelected(GameModel game) {
     if (game.id == 'image_puzzle' ||
@@ -49,7 +112,9 @@ class _MainNavigationState extends State<MainNavigation> {
           return _buildNoGameSelectedView();
         }
       case 2:
-        return const ProfilePage();
+        return const LeaderboardScreen();
+      case 3:
+        return ProfilePage();
       default:
         return HomePage(onGameSelected: _onGameSelected);
     }
@@ -137,9 +202,14 @@ class _MainNavigationState extends State<MainNavigation> {
                   index: 1,
                 ),
                 _buildNavItem(
+                  icon: Icons.emoji_events_rounded,
+                  label: 'Leaderboard',
+                  index: 2,
+                ),
+                _buildNavItem(
                   icon: Icons.person_rounded,
                   label: 'Profile',
-                  index: 2,
+                  index: 3,
                 ),
               ],
             ),

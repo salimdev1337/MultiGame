@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:multigame/game_logic.dart';
 import 'package:multigame/services/achievement_service.dart';
+import 'package:multigame/services/firebase_stats_service.dart';
 
 /// Provider for managing puzzle game state
 class PuzzleGameNotifier extends ChangeNotifier {
@@ -14,6 +15,15 @@ class PuzzleGameNotifier extends ChangeNotifier {
   Timer? _timer;
   bool _showImagePreview = false;
   final AchievementService _achievementService = AchievementService();
+  final FirebaseStatsService _statsService = FirebaseStatsService();
+  String? _userId;
+  String? _displayName;
+
+  /// Set user info for saving stats
+  void setUserInfo(String? userId, String? displayName) {
+    _userId = userId;
+    _displayName = displayName;
+  }
 
   // Getters
   PuzzleGame? get game => _game;
@@ -89,6 +99,7 @@ class PuzzleGameNotifier extends ChangeNotifier {
     // Check if game is solved
     if (_game!.isSolved) {
       _cancelTimer();
+      _saveScore();
       notifyListeners();
       return true;
     }
@@ -167,6 +178,36 @@ class PuzzleGameNotifier extends ChangeNotifier {
       moves: _moveCount,
       seconds: _elapsedSeconds,
     );
+  }
+
+  /// Save score to Firebase
+  void _saveScore() {
+    debugPrint(
+      'Puzzle _saveScore called: userId=$_userId, moveCount=$_moveCount',
+    );
+    if (_userId != null && _moveCount > 0) {
+      // Calculate score based on moves and time (lower is better)
+      // Score = 10000 - (moves * 10) - elapsed seconds
+      final score = (10000 - (_moveCount * 10) - _elapsedSeconds).clamp(
+        0,
+        10000,
+      );
+      debugPrint('Saving puzzle score to Firebase: $score');
+
+      _statsService
+          .saveUserStats(
+            userId: _userId!,
+            displayName: _displayName,
+            gameType: 'puzzle',
+            score: score,
+          )
+          .then((_) {
+            debugPrint('Puzzle score saved successfully!');
+          })
+          .catchError((e) {
+            debugPrint('Error saving puzzle score: $e');
+          });
+    }
   }
 
   /// Format time as MM:SS

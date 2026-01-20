@@ -89,7 +89,14 @@ cd puzzle
 flutter pub get
 ```
 
-3. Run the app:
+3. Configure API keys (optional):
+```bash
+# See API_CONFIGURATION.md for detailed instructions
+# The app will work with fallback images without API configuration
+flutter run --dart-define=UNSPLASH_ACCESS_KEY=your_key_here
+```
+
+4. Run the app:
 ```bash
 # Android/iOS
 flutter run

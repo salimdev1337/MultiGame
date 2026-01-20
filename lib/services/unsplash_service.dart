@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:multigame/config/api_config.dart';
 
-/// Custom exception classes for better error handling
 class UnsplashApiException implements Exception {
   final String message;
   final int? statusCode;
@@ -34,13 +33,10 @@ class UnsplashService {
   static const Duration _retryDelay = Duration(seconds: 2);
   static const Duration _requestTimeout = Duration(seconds: 10);
 
-  // Cache to store images and reduce API calls
   static String? _cachedImageUrl;
   static DateTime? _cacheTime;
 
-  /// Get a random Tunisian image with proper error handling and retry logic
-  Future<String> getRandomTunisianImage() async {
-    // Check cache first
+  Future<String> getRandomImage() async {
     if (_cachedImageUrl != null && _cacheTime != null) {
       final hourAgo = DateTime.now().subtract(const Duration(hours: 1));
       if (_cacheTime!.isAfter(hourAgo)) {
@@ -51,13 +47,14 @@ class UnsplashService {
       }
     }
 
-    // Validate API key before making request
-    if (ApiConfig.unsplashAccessKey.isEmpty) {
-      _logError('Unsplash API key is not configured. Using fallback image.');
+    final apiKey = ApiConfig.unsplashAccessKey;
+    if (apiKey == null || !ApiConfig.validateUnsplashKey(apiKey)) {
+      _logError(
+        'Unsplash API key is not configured or invalid. Using fallback image.',
+      );
       return _getFallbackImage();
     }
 
-    // Attempt to fetch with retry logic
     for (int attempt = 1; attempt <= _maxRetries; attempt++) {
       try {
         if (kDebugMode) {
@@ -124,17 +121,21 @@ class UnsplashService {
 
   /// Internal method to fetch image from Unsplash API
   Future<String> _fetchImageFromApi() async {
-    final url = Uri.parse('$_baseUrl/photos/random').replace(
-      queryParameters: {
-        'query': 'tunisia landmark',
-        'orientation': 'square',
-        'client_id': ApiConfig.unsplashAccessKey,
-      },
-    );
+    final apiKey = ApiConfig.unsplashAccessKey;
+    if (apiKey == null) {
+      throw Exception('API key not available');
+    }
+
+    final url = Uri.parse('$_baseUrl/photos/random');
+
+    if (kDebugMode) {
+      debugPrint('UnsplashService: Request URL: $url');
+      debugPrint('UnsplashService: API Key length: ${apiKey.length}');
+    }
 
     try {
       final response = await http
-          .get(url)
+          .get(url, headers: {'Authorization': 'Client-ID $apiKey'})
           .timeout(
             _requestTimeout,
             onTimeout: () {
@@ -181,6 +182,15 @@ class UnsplashService {
             originalError: e,
           );
         }
+      } else if (response.statusCode == 400) {
+        // Log the response body for debugging
+        if (kDebugMode) {
+          debugPrint('400 Error Response: ${response.body}');
+        }
+        throw UnsplashApiException(
+          'Bad Request: ${response.body}',
+          statusCode: response.statusCode,
+        );
       } else if (response.statusCode == 401) {
         throw UnsplashApiException(
           'Unauthorized: Invalid or missing API key',
@@ -248,7 +258,6 @@ class UnsplashService {
   }
 
   String _getFallbackImage() {
-    // Using reliable placeholder image services
     final fallbackImages = [
       'https://picsum.photos/800/800?random=1',
       'https://picsum.photos/800/800?random=2',
@@ -257,7 +266,6 @@ class UnsplashService {
     ];
 
     final randomIndex = DateTime.now().millisecond % fallbackImages.length;
-    // debug: 'Using fallback image: ${fallbackImages[randomIndex]}'
     return fallbackImages[randomIndex];
   }
 

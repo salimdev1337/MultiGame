@@ -19,7 +19,7 @@ class GameModel {
         id: 'snake_game',
         name: 'Neon Snake',
         description: 'Classic snake game with neon style',
-        imagePath: 'assets/images/2048game.png',
+        imagePath: 'assets/images/snake.png',
         isAvailable: true,
       ),
       GameModel(
@@ -33,7 +33,7 @@ class GameModel {
         id: '2048',
         name: '2048 Game',
         description: 'Merge tiles to reach the goal!',
-        imagePath: 'assets/images/2048.jpg',
+        imagePath: 'assets/images/2048_challenge_carousel_thumbnail.png',
         isAvailable: true,
       ),
 
