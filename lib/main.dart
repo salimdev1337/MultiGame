@@ -15,8 +15,15 @@ import 'package:multigame/services/nickname_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables
-  await dotenv.load(fileName: ".env");
+  // Load environment variables (optional - for local development)
+  // In CI/CD, we use --dart-define instead
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    // .env file not found - this is fine in CI/CD environments
+    // where we use dart-define instead
+    debugPrint('No .env file found - using dart-define or defaults');
+  }
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
