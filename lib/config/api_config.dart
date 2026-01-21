@@ -1,20 +1,20 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConfig {
   static const String unsplashBaseUrl = 'https://api.unsplash.com';
 
   static String? get unsplashAccessKey {
-    // Try to get from environment variable (for production/CI/CD)
+    // Get from dart-define (for production/CI/CD and local development)
     const envKey = String.fromEnvironment('UNSPLASH_ACCESS_KEY');
-    if (envKey.isNotEmpty) {
-      return envKey;
+
+    if (kDebugMode) {
+      debugPrint('🔑 UNSPLASH_ACCESS_KEY from dart-define: "${envKey}"');
+      debugPrint('🔑 Key length: ${envKey.length}');
+      debugPrint('🔑 Is empty: ${envKey.isEmpty}');
     }
 
-    // Try to get from .env file (for local development)
-    final dotenvKey = dotenv.maybeGet('UNSPLASH_ACCESS_KEY');
-    if (dotenvKey != null && dotenvKey.isNotEmpty) {
-      return dotenvKey;
+    if (envKey.isNotEmpty) {
+      return envKey;
     }
 
     _log('Unsplash API key not configured');

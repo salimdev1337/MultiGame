@@ -1,9 +1,11 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Internet permission required for loading images from external URLs -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.multigame"> 
+        <!-- Internet permission required for loading images from external URLs -->
     <uses-permission android:name="android.permission.INTERNET"/>
     
+    
     <application
-        android:label="puzzle"
+        android:label="multigame"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

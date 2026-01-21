@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
 import 'package:multigame/providers/puzzle_game_provider.dart';
 import 'package:multigame/providers/game_2048_provider.dart';
@@ -14,16 +13,6 @@ import 'package:multigame/services/nickname_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Load environment variables (optional - for local development)
-  // In CI/CD, we use --dart-define instead
-  try {
-    await dotenv.load(fileName: ".env");
-  } catch (e) {
-    // .env file not found - this is fine in CI/CD environments
-    // where we use dart-define instead
-    debugPrint('No .env file found - using dart-define or defaults');
-  }
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(

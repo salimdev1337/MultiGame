@@ -53,10 +53,8 @@ class SnakeGameProvider extends ChangeNotifier {
     }
   }
 
-  // Constructor - game will be started manually when page is opened
   SnakeGameProvider();
 
-  /// Start or restart the game
   void startGame() {
     _timer?.cancel();
     _snake = [const Offset(10, 10)];
@@ -77,6 +75,24 @@ class SnakeGameProvider extends ChangeNotifier {
   void setGameMode(GameMode mode) {
     _gameMode = mode;
     startGame();
+  }
+
+  /// Toggle pause state
+  void togglePause() {
+    _playing = !_playing;
+
+    if (_playing) {
+      // Resume: restart the timer
+      _timer?.cancel();
+      _timer = Timer.periodic(tickRate, (_) {
+        if (_playing) _tick();
+      });
+    } else {
+      // Pause: cancel the timer
+      _timer?.cancel();
+    }
+
+    notifyListeners();
   }
 
   /// Spawn food at a random position

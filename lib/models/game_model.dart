@@ -17,21 +17,21 @@ class GameModel {
     return [
       GameModel(
         id: 'snake_game',
-        name: 'Neon Snake',
+        name: 'Snake',
         description: 'Classic snake game with neon style',
         imagePath: 'assets/images/snake.png',
         isAvailable: true,
       ),
       GameModel(
         id: 'image_puzzle',
-        name: 'Image Puzzle',
+        name: 'Puzzle',
         description: 'Slide tiles to complete the picture',
         imagePath: 'assets/images/classic_puzzle_carousel_thumbnail.png',
         isAvailable: true,
       ),
       GameModel(
         id: '2048',
-        name: '2048 Game',
+        name: '2048',
         description: 'Merge tiles to reach the goal!',
         imagePath: 'assets/images/2048_challenge_carousel_thumbnail.png',
         isAvailable: true,

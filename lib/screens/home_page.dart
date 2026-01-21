@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:multigame/models/achievement_model.dart';
 import 'package:multigame/models/game_model.dart';
 import 'package:multigame/services/achievement_service.dart';
+import 'package:multigame/services/nickname_service.dart';
 import 'package:multigame/widgets/achievement_card.dart';
 import 'package:multigame/widgets/game_carousel.dart';
+import 'package:multigame/widgets/nickname_dialog.dart';
 
 class HomePage extends StatefulWidget {
   final Function(GameModel) onGameSelected;
@@ -16,14 +18,39 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final AchievementService _achievementService = AchievementService();
+  final NicknameService _nicknameService = NicknameService();
   List<AchievementModel> _achievements = [];
   bool _isLoading = true;
   int _totalCompleted = 0;
+  String _nickname = 'Puzzle Master';
 
   @override
   void initState() {
     super.initState();
     _loadAchievements();
+    _loadNickname();
+  }
+
+  Future<void> _loadNickname() async {
+    final nickname = await _nicknameService.getNickname();
+    setState(() {
+      _nickname = nickname ?? 'Puzzle Master';
+    });
+  }
+
+  Future<void> _showSettingsDialog() async {
+    final newNickname = await showNicknameDialog(
+      context,
+      currentNickname: _nickname,
+      isFirstTime: false,
+    );
+
+    if (newNickname != null && newNickname != _nickname) {
+      await _nicknameService.saveNickname(newNickname);
+      setState(() {
+        _nickname = newNickname;
+      });
+    }
   }
 
   Future<void> _loadAchievements() async {
@@ -68,22 +95,40 @@ class _HomePageState extends State<HomePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Welcome back,',
-                        style: TextStyle(
-                          fontSize: 20,
-                          color: Colors.white.withValues(alpha: (0.7 * 255)),
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Welcome back,',
+                            style: TextStyle(
+                              fontSize: 20,
+                              color: Colors.white.withValues(
+                                alpha: (0.7 * 255),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: _showSettingsDialog,
+                            icon: const Icon(
+                              Icons.settings,
+                              color: Colors.white70,
+                            ),
+                            tooltip: 'Settings',
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Text(
-                            'Puzzle Master',
-                            style: TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                          Flexible(
+                            child: Text(
+                              _nickname,
+                              style: const TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 12),

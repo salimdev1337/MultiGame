@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:multigame/services/achievement_service.dart';
+import 'package:multigame/services/nickname_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -10,14 +11,24 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final AchievementService _achievementService = AchievementService();
+  final NicknameService _nicknameService = NicknameService();
   Map<String, dynamic> _stats = {};
   Map<String, dynamic> _stats2048 = {};
   bool _isLoading = true;
+  String _nickname = 'Puzzle Master';
 
   @override
   void initState() {
     super.initState();
     _loadStats();
+    _loadNickname();
+  }
+
+  Future<void> _loadNickname() async {
+    final nickname = await _nicknameService.getNickname();
+    setState(() {
+      _nickname = nickname ?? 'Puzzle Master';
+    });
   }
 
   Future<void> _loadStats() async {
@@ -89,9 +100,9 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                             ),
                             const SizedBox(height: 20),
-                            const Text(
-                              'Puzzle Master',
-                              style: TextStyle(
+                            Text(
+                              _nickname,
+                              style: const TextStyle(
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,

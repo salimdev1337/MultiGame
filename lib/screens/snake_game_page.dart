@@ -283,50 +283,6 @@ class _SnakeGamePageState extends State<SnakeGamePage> {
                       ),
                       const SizedBox(height: 12),
                       // Main Menu Button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: OutlinedButton(
-                          onPressed: () {
-                            Navigator.pop(context); // Close dialog
-                            Navigator.popUntil(
-                              context,
-                              (route) => route.isFirst,
-                            ); // Go to home screen
-                          },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.grey[300],
-                            side: BorderSide(
-                              color: Colors.white.withAlpha(
-                                (0.2 * 255).toInt(),
-                              ),
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.grid_view,
-                                size: 24,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Main Menu',
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
-                                  color: Colors.grey[300],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
                       const SizedBox(height: 16),
                       // Footer
                       Row(

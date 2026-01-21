@@ -502,26 +502,22 @@ class _Game2048PageState extends State<Game2048Page>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              InkWell(
-                                onTap: _showSettingsDialog,
+                          InkWell(
+                            onTap: _showSettingsDialog,
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1a1e26),
                                 borderRadius: BorderRadius.circular(12),
-                                child: Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF1a1e26),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(
-                                    Icons.settings,
-                                    color: Colors.white,
-                                    size: 24,
-                                  ),
-                                ),
                               ),
-                            ],
+                              child: const Icon(
+                                Icons.settings,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
                           ),
                           const Text(
                             '2048 Game',

@@ -133,6 +133,35 @@ class _GameCarouselState extends State<GameCarousel> {
                   ),
                 ),
               ),
+              // How to Play button (top right)
+              if (game.isAvailable)
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: GestureDetector(
+                    onTap: () {
+                      _showHowToPlayDialog(game);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withOpacity(0.5),
+                          width: 2,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.help_outline,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
               // Content
               Positioned(
                 bottom: 0,
@@ -215,6 +244,174 @@ class _GameCarouselState extends State<GameCarousel> {
         ),
       ),
     );
+  }
+
+  void _showHowToPlayDialog(GameModel game) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 400),
+            decoration: BoxDecoration(
+              color: const Color(0xFF21242b),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Theme.of(context).colorScheme.primary,
+                        Theme.of(context).colorScheme.secondary,
+                      ],
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.help_outline,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          'How to Play ${game.name}',
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Content
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: _getGameInstructions(game),
+                  ),
+                ),
+                // Close button
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Got It!',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  List<Widget> _getGameInstructions(GameModel game) {
+    List<Map<String, String>> instructions;
+
+    switch (game.name) {
+      case 'Puzzle':
+        instructions = [
+          {
+            'emoji': '🎯',
+            'text': 'Tap tiles next to the empty space to move them',
+          },
+          {'emoji': '🖼️', 'text': 'Arrange pieces to complete the image'},
+          {'emoji': '⚙️', 'text': 'Use settings to change difficulty'},
+        ];
+        break;
+      case '2048':
+        instructions = [
+          {'emoji': '⬆️', 'text': 'Swipe to move all tiles in that direction'},
+          {'emoji': '➕', 'text': 'Same numbers merge and add up'},
+          {'emoji': '🎯', 'text': 'Reach the target tile to win'},
+        ];
+        break;
+      case 'Snake':
+        instructions = [
+          {'emoji': '🕹️', 'text': 'Use arrow keys or swipe to move'},
+          {'emoji': '🍎', 'text': 'Eat food to grow and score points'},
+          {'emoji': '💥', 'text': 'Don\'t hit walls or yourself'},
+        ];
+        break;
+      default:
+        instructions = [
+          {'emoji': '🎮', 'text': 'Instructions coming soon!'},
+        ];
+    }
+
+    return instructions.map((instruction) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(instruction['emoji']!, style: const TextStyle(fontSize: 24)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                instruction['text']!,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.white,
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }).toList();
   }
 
   void _showComingSoonDialog(GameModel game) {

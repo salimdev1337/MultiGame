@@ -42,7 +42,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
     // If no nickname, prompt user
     if (_userNickname == null && mounted) {
-      _userNickname = await showNicknameDialog(context);
+      _userNickname = await showNicknameDialog(context, isFirstTime: true);
       if (_userNickname != null) {
         await _nicknameService.saveNickname(_userNickname!);
       }
