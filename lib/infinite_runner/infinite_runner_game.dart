@@ -1,6 +1,5 @@
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
-import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,7 +15,7 @@ import 'systems/obstacle_pool.dart';
 /// Main infinite runner game using Flame engine
 /// Optimized for 60 FPS with object pooling and clean architecture
 class InfiniteRunnerGame extends FlameGame
-    with TapCallbacks, HasCollisionDetection, KeyboardEvents {
+    with DragCallbacks, HasCollisionDetection, KeyboardEvents {
   InfiniteRunnerGame() : super();
 
   // Game state
@@ -58,6 +57,11 @@ class InfiniteRunnerGame extends FlameGame
 
   // Player spawn position
   static const double playerSpawnX = 100.0;
+
+  // Swipe detection
+  Vector2? _dragStart;
+  Vector2? _dragCurrent;
+  static const double swipeThreshold = 50.0; // Minimum distance for swipe
 
   @override
   Color backgroundColor() => const Color(0xFF16181d);
@@ -230,26 +234,58 @@ class InfiniteRunnerGame extends FlameGame
     }
   }
 
-  /// Handle tap input - jump or start game
+  /// Handle swipe start
   @override
-  void onTapDown(TapDownEvent event) {
-    switch (_gameState) {
-      case GameState.idle:
-        startGame();
-        break;
+  void onDragStart(DragStartEvent event) {
+    super.onDragStart(event);
+    _dragStart = event.localPosition;
+    _dragCurrent = event.localPosition;
+  }
 
-      case GameState.playing:
-        _player.jump();
-        break;
+  /// Track drag movement
+  @override
+  void onDragUpdate(DragUpdateEvent event) {
+    super.onDragUpdate(event);
+    _dragCurrent = event.localEndPosition;
+  }
 
-      case GameState.paused:
-        // Resume handled by overlay button
-        break;
+  /// Handle swipe end - detect direction
+  @override
+  void onDragEnd(DragEndEvent event) {
+    super.onDragEnd(event);
+    if (_dragStart == null || _dragCurrent == null) return;
 
-      case GameState.gameOver:
-        // Restart handled by overlay button
-        break;
+    final deltaY = _dragCurrent!.y - _dragStart!.y;
+
+    // Check if swipe distance is sufficient
+    if (deltaY.abs() < swipeThreshold) {
+      _dragStart = null;
+      return;
     }
+
+    // Swipe up (negative deltaY)
+    if (deltaY < 0) {
+      switch (_gameState) {
+        case GameState.idle:
+          startGame();
+          break;
+        case GameState.playing:
+          _player.jump();
+          break;
+        case GameState.paused:
+        case GameState.gameOver:
+          // Handled by overlay buttons
+          break;
+      }
+    }
+    // Swipe down (positive deltaY)
+    else {
+      if (_gameState == GameState.playing && !_player.isOnGround) {
+        _player.fastDrop();
+      }
+    }
+
+    _dragStart = null;
   }
 
   /// Handle keyboard input
