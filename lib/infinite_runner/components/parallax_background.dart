@@ -13,20 +13,12 @@ class ParallaxBackground extends ParallaxComponent {
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // Use Flame's standard asset loading (works on web)
-    // Images should be in assets/images/background/PNG/Flat/
+    // Use paths relative to assets/images/ (Flame's default prefix)
     parallax = await game.loadParallax(
       [
-        // Layer 1: Sky - Static background (no scrolling)
         ParallaxImageData('background/PNG/Flat/sky.png'),
-
-        // Layer 2: Mountains - Slow scroll (0.3x speed)
         ParallaxImageData('background/PNG/Flat/mountain1.png'),
-
-        // Layer 3: Hills - Medium scroll (0.6x speed)
         ParallaxImageData('background/PNG/Flat/hills1.png'),
-
-        // Layer 4: Clouds - Fast scroll (1.0x speed)
         ParallaxImageData('background/PNG/Flat/clouds1.png'),
       ],
       baseVelocity: Vector2(_scrollSpeed, 0),

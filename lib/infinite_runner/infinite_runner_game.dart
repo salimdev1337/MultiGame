@@ -66,6 +66,9 @@ class InfiniteRunnerGame extends FlameGame
   Future<void> onLoad() async {
     await super.onLoad();
 
+    // Set Flame's image prefix to 'images/' (Flutter adds 'assets/' automatically on web)
+    images.prefix = 'images/';
+
     // Initialize obstacle pool
     _obstaclePool = ObstaclePool(scrollSpeed: _currentScrollSpeed);
 
