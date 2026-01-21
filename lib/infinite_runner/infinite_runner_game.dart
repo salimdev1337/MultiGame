@@ -428,4 +428,64 @@ class InfiniteRunnerGame extends FlameGame
 
     super.onRemove();
   }
+
+  @override
+  void onGameResize(Vector2 size) {
+    super.onGameResize(size);
+
+    // Only recalculate if game is fully loaded
+    if (isLoaded) {
+      _updatePositionsForNewSize();
+    }
+  }
+
+  /// Update all game element positions based on new screen size
+  void _updatePositionsForNewSize() {
+    // Check if components are initialized before updating
+    if (!isLoaded) return;
+
+    // Update background size
+    _background.size = size;
+    _background.updateForResize(size);
+
+    // Update ground positions
+    _updateGroundForResize();
+
+    // Update player position
+    final newGroundY = groundY - 60;
+    _player.position.y = newGroundY;
+
+    // Update spawn system with new dimensions
+    _spawnSystem.updateDimensions(size.x, groundY);
+
+    // Clear and reposition any existing obstacles
+    for (final obstacle in _obstacles) {
+      remove(obstacle);
+      _obstaclePool.release(obstacle);
+    }
+    _obstacles.clear();
+  }
+
+  /// Update ground tiles for new screen size
+  void _updateGroundForResize() {
+    // Remove existing ground tiles
+    for (final ground in _groundTiles) {
+      remove(ground);
+    }
+    _groundTiles.clear();
+
+    // Recreate ground tiles with new dimensions
+    final tileWidth = size.x * 0.6;
+    final numTiles = (size.x / tileWidth).ceil() + 1;
+
+    for (int i = 0; i < numTiles; i++) {
+      final ground = Ground(
+        position: Vector2(i * tileWidth, groundY),
+        size: Vector2(tileWidth, groundHeight),
+        scrollSpeed: _currentScrollSpeed,
+      );
+      _groundTiles.add(ground);
+      add(ground);
+    }
+  }
 }

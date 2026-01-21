@@ -12,8 +12,8 @@ class SpawnSystem {
     required this.obstaclePool,
   });
 
-  final double gameWidth;
-  final double groundY;
+  double gameWidth;
+  double groundY;
   final ObstaclePool obstaclePool;
 
   // Spawn configuration
@@ -109,5 +109,11 @@ class SpawnSystem {
     _distanceTraveled = 0;
     _nextSpawnDistance = minSpawnDistance;
     _lastObstacleType = null;
+  }
+
+  /// Update dimensions when screen size changes
+  void updateDimensions(double newGameWidth, double newGroundY) {
+    gameWidth = newGameWidth;
+    groundY = newGroundY;
   }
 }

@@ -40,4 +40,10 @@ class ParallaxBackground extends ParallaxComponent {
       }
     }
   }
+
+  /// Update for screen resize (called when orientation changes)
+  void updateForResize(Vector2 newSize) {
+    size = newSize;
+    // Parallax will automatically adjust to new size
+  }
 }

@@ -18,8 +18,7 @@ import 'package:multigame/screens/leaderboard_screen.dart';
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
 
-  static final GlobalKey<_MainNavigationState> navigatorKey =
-      GlobalKey<_MainNavigationState>();
+  static final GlobalKey navigatorKey = GlobalKey();
 
   @override
   State<MainNavigation> createState() => _MainNavigationState();

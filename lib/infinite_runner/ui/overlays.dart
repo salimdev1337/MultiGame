@@ -413,7 +413,10 @@ class GameOverOverlay extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: () {
                     // Navigate to home tab using MainNavigation's GlobalKey
-                    MainNavigation.navigatorKey.currentState?.onTabTapped(0);
+                    final state = MainNavigation.navigatorKey.currentState;
+                    if (state != null) {
+                      (state as dynamic).onTabTapped(0);
+                    }
                   },
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFF00d4ff), width: 2),
