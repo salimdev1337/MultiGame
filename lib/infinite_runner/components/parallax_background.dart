@@ -13,13 +13,12 @@ class ParallaxBackground extends ParallaxComponent {
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // Use paths relative to assets/images/ (Flame's default prefix)
     parallax = await game.loadParallax(
       [
-        ParallaxImageData('background/PNG/Flat/sky.png'),
-        ParallaxImageData('background/PNG/Flat/mountain1.png'),
-        ParallaxImageData('background/PNG/Flat/hills1.png'),
-        ParallaxImageData('background/PNG/Flat/clouds1.png'),
+        ParallaxImageData('sky.png'),
+        ParallaxImageData('mountain1.png'),
+        ParallaxImageData('hills1.png'),
+        ParallaxImageData('clouds1.png'),
       ],
       baseVelocity: Vector2(_scrollSpeed, 0),
       velocityMultiplierDelta: Vector2(1.4, 0),
