@@ -18,6 +18,9 @@ import 'package:multigame/screens/leaderboard_screen.dart';
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
 
+  static final GlobalKey<_MainNavigationState> navigatorKey =
+      GlobalKey<_MainNavigationState>();
+
   @override
   State<MainNavigation> createState() => _MainNavigationState();
 }
@@ -93,7 +96,7 @@ class _MainNavigationState extends State<MainNavigation> {
     }
   }
 
-  void _onTabTapped(int index) {
+  void onTabTapped(int index) {
     setState(() {
       _currentIndex = index;
     });
@@ -231,7 +234,7 @@ class _MainNavigationState extends State<MainNavigation> {
     final isSelected = _currentIndex == index;
 
     return GestureDetector(
-      onTap: () => _onTabTapped(index),
+      onTap: () => onTabTapped(index),
       behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisSize: MainAxisSize.min,

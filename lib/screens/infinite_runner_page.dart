@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flame/game.dart';
 import 'package:multigame/infinite_runner/infinite_runner_game.dart';
 import 'package:multigame/infinite_runner/ui/overlays.dart';
@@ -19,6 +20,13 @@ class _InfiniteRunnerPageState extends State<InfiniteRunnerPage> {
   void initState() {
     super.initState();
     _game = InfiniteRunnerGame();
+    // Set landscape orientation for better gameplay
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeRight,
+      DeviceOrientation.landscapeLeft,
+    ]);
+    // Hide system UI for immersive experience
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
 
   @override
@@ -45,6 +53,13 @@ class _InfiniteRunnerPageState extends State<InfiniteRunnerPage> {
   @override
   void dispose() {
     _game.onRemove();
+    // Restore portrait orientation when leaving game
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+    // Restore system UI
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
 }

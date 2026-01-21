@@ -162,6 +162,6 @@ class _FirebaseInitializerState extends State<FirebaseInitializer> {
       );
     }
 
-    return const MainNavigation();
+    return MainNavigation(key: MainNavigation.navigatorKey);
   }
 }
