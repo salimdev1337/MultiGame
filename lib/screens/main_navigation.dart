@@ -12,6 +12,7 @@ import 'package:multigame/screens/profile_screen.dart';
 import 'package:multigame/screens/puzzle.dart';
 import 'package:multigame/screens/game_2048_page.dart';
 import 'package:multigame/screens/snake_game_page.dart';
+import 'package:multigame/screens/infinite_runner_page.dart';
 import 'package:multigame/screens/leaderboard_screen.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -83,7 +84,8 @@ class _MainNavigationState extends State<MainNavigation> {
   void _onGameSelected(GameModel game) {
     if (game.id == 'image_puzzle' ||
         game.id == '2048' ||
-        game.id == 'snake_game') {
+        game.id == 'snake_game' ||
+        game.id == 'infinite_runner') {
       setState(() {
         _selectedGame = game;
         _currentIndex = 1;
@@ -108,6 +110,8 @@ class _MainNavigationState extends State<MainNavigation> {
           return const Game2048Page();
         } else if (_selectedGame?.id == 'snake_game') {
           return const SnakeGamePage();
+        } else if (_selectedGame?.id == 'infinite_runner') {
+          return const InfiniteRunnerPage();
         } else {
           return _buildNoGameSelectedView();
         }

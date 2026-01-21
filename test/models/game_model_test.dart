@@ -22,18 +22,19 @@ void main() {
     test('getAvailableGames returns list of games', () {
       final games = GameModel.getAvailableGames();
 
-      expect(games.length, 4);
-      expect(games[0].id, 'snake_game');
-      expect(games[1].id, 'image_puzzle');
-      expect(games[2].id, '2048');
-      expect(games[3].id, 'memory_game');
+      expect(games.length, 5);
+      expect(games[0].id, 'infinite_runner');
+      expect(games[1].id, 'snake_game');
+      expect(games[2].id, 'image_puzzle');
+      expect(games[3].id, '2048');
+      expect(games[4].id, 'memory_game');
     });
 
     test('image_puzzle is available', () {
       final games = GameModel.getAvailableGames();
       final imagePuzzle = games.firstWhere((g) => g.id == 'image_puzzle');
 
-      expect(imagePuzzle.name, 'Image Puzzle');
+      expect(imagePuzzle.name, 'Puzzle');
       expect(imagePuzzle.isAvailable, true);
       expect(imagePuzzle.description, 'Slide tiles to complete the picture');
     });
@@ -42,7 +43,7 @@ void main() {
       final games = GameModel.getAvailableGames();
       final game2048 = games.firstWhere((g) => g.id == '2048');
 
-      expect(game2048.name, '2048 Game');
+      expect(game2048.name, '2048');
       expect(game2048.isAvailable, true);
       expect(game2048.description, 'Merge tiles to reach the goal!');
     });

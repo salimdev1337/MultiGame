@@ -8,7 +8,7 @@ class ApiConfig {
     const envKey = String.fromEnvironment('UNSPLASH_ACCESS_KEY');
 
     if (kDebugMode) {
-      debugPrint('🔑 UNSPLASH_ACCESS_KEY from dart-define: "${envKey}"');
+      debugPrint('🔑 UNSPLASH_ACCESS_KEY from dart-define: "$envKey"');
       debugPrint('🔑 Key length: ${envKey.length}');
       debugPrint('🔑 Is empty: ${envKey.isEmpty}');
     }

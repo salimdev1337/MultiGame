@@ -16,6 +16,13 @@ class GameModel {
   static List<GameModel> getAvailableGames() {
     return [
       GameModel(
+        id: 'infinite_runner',
+        name: 'Infinite Runner',
+        description: 'Run, jump and avoid obstacles!',
+        imagePath: 'assets/images/magic-image.png',
+        isAvailable: true,
+      ),
+      GameModel(
         id: 'snake_game',
         name: 'Snake',
         description: 'Classic snake game with neon style',
@@ -36,7 +43,6 @@ class GameModel {
         imagePath: 'assets/images/2048_challenge_carousel_thumbnail.png',
         isAvailable: true,
       ),
-
       GameModel(
         id: 'memory_game',
         name: 'Memory Game',

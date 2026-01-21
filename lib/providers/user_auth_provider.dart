@@ -79,42 +79,6 @@ class UserAuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Sign in with Google
-  Future<bool> signInWithGoogle() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      final result = await _authService.signInWithGoogle();
-      _isLoading = false;
-      notifyListeners();
-      return result != null;
-    } catch (e) {
-      _error = 'Failed to sign in with Google: $e';
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
-
-  /// Sign out
-  Future<void> signOut() async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      await _authService.signOut();
-      _user = null;
-      _error = null;
-    } catch (e) {
-      _error = 'Failed to sign out: $e';
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
   /// Clear error
   void clearError() {
     _error = null;
