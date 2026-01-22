@@ -96,9 +96,9 @@ class InfiniteRunnerGame extends FlameGame
 
     // Add player
     _player = Player(
-      position: Vector2(playerSpawnX, groundY - 60),
+      position: Vector2(playerSpawnX, groundY),
       size: Vector2(40, 60),
-      groundY: groundY - 60,
+      groundY: groundY,
     );
     add(_player);
     // Set initial state
@@ -447,7 +447,7 @@ class InfiniteRunnerGame extends FlameGame
     _updateGroundForResize();
 
     // Update player position to always be on the ground
-    final newGroundY = groundY - 60;
+    final newGroundY = groundY;
     _player.updateGroundY(newGroundY);
 
     // Update spawn system with new dimensions

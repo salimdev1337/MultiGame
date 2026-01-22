@@ -1,11 +1,8 @@
-import 'dart:ui';
-
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
-import 'package:flutter/material.dart';
 import '../state/player_state.dart';
 
-/// Player character in the infinite runner
+/// Player character in the infinite runner using Kenney sprites
 /// Optimized for 60 FPS with zero allocations in hot paths
 class Player extends SpriteAnimationGroupComponent<PlayerState>
     with CollisionCallbacks {
@@ -16,7 +13,7 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
   }) : _groundY = groundY,
        _standingWidth = size.x,
        _standingHeight = size.y,
-       super(position: position, size: size);
+       super(position: position, size: size, anchor: Anchor.bottomCenter);
 
   // Physics constants (primitives only - no allocations)
   static const double gravity = 1200.0;
@@ -56,77 +53,69 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // ✅ CRITICAL: Load ALL animations ONCE during initialization
-    // These animations are NEVER recreated during gameplay
-    // All frames MUST have identical dimensions (64x64) to avoid texture reallocation
+    // Load real sprite animations from Kenney Industrial assets
     animations = {
-      PlayerState.running: await _createPlaceholderAnimation(
-        const Color(0xFF00d4ff),
-        4,
-      ),
-      PlayerState.jumping: await _createPlaceholderAnimation(
-        const Color(0xFF00ff88),
-        2,
-      ),
-      PlayerState.sliding: await _createPlaceholderAnimation(
-        const Color(0xFFff5c00),
-        2,
-      ),
-      PlayerState.dead: await _createPlaceholderAnimation(
-        const Color(0xFFff0000),
-        1,
-      ),
+      PlayerState.running: await _loadRunAnimation(),
+      PlayerState.jumping: await _loadJumpAnimation(),
+      PlayerState.sliding: await _loadSlideAnimation(),
+      PlayerState.dead: await _loadDeadAnimation(),
     };
 
     current = PlayerState.running;
 
-    // ✅ CRITICAL: Create hitbox ONCE - never recreated during gameplay
-    // We only modify its size property, never remove/add it
-    _hitbox = RectangleHitbox()..debugMode = debugMode;
+    // Create hitbox ONCE - never recreated during gameplay
+    // Hitbox is 85% of sprite size for fair gameplay
+    // Position relative to bottomCenter anchor
+    final hitboxWidth = _standingWidth * 0.85;
+    final hitboxHeight = _standingHeight * 0.85;
+    _hitbox = RectangleHitbox(
+      size: Vector2(hitboxWidth, hitboxHeight),
+      position: Vector2(-hitboxWidth / 2, -hitboxHeight),
+    );
     add(_hitbox);
 
-    // Set initial size (no clone() - direct assignment)
+    // Set initial size
     size.x = _standingWidth;
     size.y = _standingHeight;
   }
 
-  /// Create placeholder animation with FIXED 64x64 size
-  /// ✅ All animations use identical frame dimensions - critical for performance
-  Future<SpriteAnimation> _createPlaceholderAnimation(
-    Color color,
-    int frameCount,
-  ) async {
-    final frames = <SpriteAnimationFrame>[];
-    for (int i = 0; i < frameCount; i++) {
-      final sprite = await _createColorSprite(color);
-      frames.add(SpriteAnimationFrame(sprite, 0.1));
-    }
-    return SpriteAnimation(frames);
+  /// Load running animation (2 frames looping)
+  Future<SpriteAnimation> _loadRunAnimation() async {
+    return SpriteAnimation.spriteList(
+      [
+        await Sprite.load('alienBlue_walk1.png'),
+        await Sprite.load('alienBlue_walk2.png'),
+      ],
+      stepTime: 0.15,
+      loop: true,
+    );
   }
 
-  /// Create sprite with FIXED 64x64 dimensions
-  /// ✅ Consistent size prevents GPU texture reallocation
-  Future<Sprite> _createColorSprite(Color color) async {
-    final recorder = PictureRecorder();
-    final canvas = Canvas(recorder);
-    final paint = Paint()..color = color;
-
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, 64, 64),
-        const Radius.circular(8),
-      ),
-      paint,
+  /// Load jump animation (single sprite)
+  Future<SpriteAnimation> _loadJumpAnimation() async {
+    return SpriteAnimation.spriteList(
+      [await Sprite.load('alienBlue_jump.png')],
+      stepTime: 1.0,
+      loop: false,
     );
+  }
 
-    // Draw eyes
-    final eyePaint = Paint()..color = Colors.white;
-    canvas.drawCircle(const Offset(20, 20), 4, eyePaint);
-    canvas.drawCircle(const Offset(44, 20), 4, eyePaint);
+  /// Load slide animation (reuse walk1 for now, scaled)
+  Future<SpriteAnimation> _loadSlideAnimation() async {
+    return SpriteAnimation.spriteList(
+      [await Sprite.load('alienBlue_walk1.png')],
+      stepTime: 1.0,
+      loop: false,
+    );
+  }
 
-    final picture = recorder.endRecording();
-    final image = await picture.toImage(64, 64);
-    return Sprite(image);
+  /// Load dead animation (walk1 but static)
+  Future<SpriteAnimation> _loadDeadAnimation() async {
+    return SpriteAnimation.spriteList(
+      [await Sprite.load('alienBlue_walk1.png')],
+      stepTime: 1.0,
+      loop: false,
+    );
   }
 
   /// ✅ OPTIMIZED update() - ZERO allocations in hot path

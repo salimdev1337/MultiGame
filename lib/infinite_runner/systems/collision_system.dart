@@ -47,12 +47,12 @@ class CollisionSystem {
       return _basicAABB(player, obstacle);
     }
 
-    // Calculate absolute positions accounting for bottomLeft anchor
-    // Player uses default anchor (topLeft), so position.y is the top
-    final playerLeft = player.position.x + playerHitbox.position.x;
+    // Player uses bottomCenter anchor, so position.y is bottom and position.x is center
+    final playerLeft =
+        player.position.x - (player.size.x / 2) + playerHitbox.position.x;
     final playerRight = playerLeft + playerHitbox.size.x;
-    final playerTop = player.position.y + playerHitbox.position.y;
-    final playerBottom = playerTop + playerHitbox.size.y;
+    final playerBottom = player.position.y + playerHitbox.position.y;
+    final playerTop = playerBottom - player.size.y;
 
     // Obstacle uses bottomLeft anchor, so position.y is the bottom
     final obstacleLeft = obstacle.position.x + obstacleHitbox.position.x;
@@ -69,11 +69,11 @@ class CollisionSystem {
 
   /// Fallback basic AABB collision detection accounting for anchors
   bool _basicAABB(PositionComponent a, PositionComponent b) {
-    // Player (a) uses default topLeft anchor
-    final aLeft = a.position.x;
-    final aRight = a.position.x + a.size.x;
-    final aTop = a.position.y;
-    final aBottom = a.position.y + a.size.y;
+    // Player (a) uses bottomCenter anchor
+    final aLeft = a.position.x - (a.size.x / 2);
+    final aRight = a.position.x + (a.size.x / 2);
+    final aBottom = a.position.y;
+    final aTop = a.position.y - a.size.y;
 
     // Obstacle (b) uses bottomLeft anchor
     final bLeft = b.position.x;
