@@ -74,9 +74,9 @@ class SpawnSystem {
     final type = _selectObstacleType();
     _lastObstacleType = type;
 
-    // Calculate position based on obstacle height
+    // Calculate position - spawn at ground level (Anchor.bottomLeft)
     final spawnX = gameWidth + SpawnSystem.spawnX;
-    final spawnY = groundY - type.height;
+    final spawnY = groundY;
 
     // Get obstacle from pool
     return obstaclePool.acquire(type, Vector2(spawnX, spawnY));

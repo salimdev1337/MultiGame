@@ -25,7 +25,7 @@ class InfiniteRunnerGame extends FlameGame
   // Components
   late Player _player;
   late ParallaxBackground _background;
-  final List<Ground> _groundTiles = [];
+  final List<GroundTile> _groundTiles = [];
   final List<Obstacle> _obstacles = [];
 
   // Systems
@@ -52,8 +52,7 @@ class InfiniteRunnerGame extends FlameGame
   static const double speedIncreaseRate = 10.0; // Pixels per second increase
 
   // Ground configuration
-  static const double groundHeight = 100.0;
-  double get groundY => size.y - groundHeight;
+  double get groundY => size.y * 0.82;
 
   // Player spawn position
   static const double playerSpawnX = 100.0;
@@ -93,7 +92,7 @@ class InfiniteRunnerGame extends FlameGame
     add(_background);
 
     // Add ground tiles
-    _initializeGround();
+    await _initializeGround();
 
     // Add player
     _player = Player(
@@ -110,19 +109,26 @@ class InfiniteRunnerGame extends FlameGame
     overlays.add('idle');
   }
 
-  /// Initialize ground tiles for infinite scrolling
-  void _initializeGround() {
-    final tileWidth = size.x * 0.6;
-    final numTiles = (size.x / tileWidth).ceil() + 1;
+  /// Initialize ground tiles for infinite scrolling with queue system
+  Future<void> _initializeGround() async {
+    // Create first tile to get the tile width
+    final firstTile = GroundTile(
+      position: Vector2(0, groundY),
+      scrollSpeed: _currentScrollSpeed,
+    );
+    add(firstTile);
+    await firstTile.loaded;
+    _groundTiles.add(firstTile);
 
-    for (int i = 0; i < numTiles; i++) {
-      final ground = Ground(
-        position: Vector2(i * tileWidth, groundY),
-        size: Vector2(tileWidth, groundHeight),
+    // Create 9 more tiles, each positioned right after the previous one
+    final tileWidth = firstTile.size.x;
+    for (int i = 1; i < 10; i++) {
+      final tile = GroundTile(
+        position: Vector2(tileWidth * i, groundY),
         scrollSpeed: _currentScrollSpeed,
       );
-      _groundTiles.add(ground);
-      add(ground);
+      add(tile);
+      _groundTiles.add(tile);
     }
   }
 
@@ -181,9 +187,6 @@ class InfiniteRunnerGame extends FlameGame
       }
     }
 
-    // Update ground tiles (reposition when off-screen)
-    _updateGroundTiles();
-
     // Spawn obstacles using pool
     final newObstacle = _spawnSystem.update(
       dt,
@@ -205,33 +208,25 @@ class InfiniteRunnerGame extends FlameGame
       return false;
     });
 
+    // Queue-based ground tile management: pop from front, push to back
+    if (_groundTiles.isNotEmpty &&
+        _groundTiles.first.position.x + _groundTiles.first.size.x < 0) {
+      // First tile is completely off-screen, remove it
+      final oldTile = _groundTiles.removeAt(0);
+      remove(oldTile);
+
+      // Create new tile at the end of the queue
+      final lastTile = _groundTiles.last;
+      final newTile = GroundTile(
+        position: Vector2(lastTile.position.x + lastTile.size.x, groundY),
+        scrollSpeed: _currentScrollSpeed,
+      );
+      add(newTile);
+      _groundTiles.add(newTile);
+    }
+
     // Check collisions
     _collisionSystem.checkCollisions(_player, _obstacles);
-  }
-
-  /// Update ground tiles for infinite scrolling
-  void _updateGroundTiles() {
-    // Find leftmost and rightmost tiles
-    Ground? leftmost;
-    Ground? rightmost;
-    double leftmostX = double.infinity;
-    double rightmostX = double.negativeInfinity;
-
-    for (final ground in _groundTiles) {
-      if (ground.position.x < leftmostX) {
-        leftmostX = ground.position.x;
-        leftmost = ground;
-      }
-      if (ground.position.x > rightmostX) {
-        rightmostX = ground.position.x;
-        rightmost = ground;
-      }
-    }
-
-    // If leftmost tile is off screen, move it to the right
-    if (leftmost != null && leftmost.isOffScreen && rightmost != null) {
-      leftmost.reposition(rightmost.position.x + rightmost.size.x);
-    }
   }
 
   /// Handle swipe start
@@ -451,9 +446,9 @@ class InfiniteRunnerGame extends FlameGame
     // Update ground positions
     _updateGroundForResize();
 
-    // Update player position
+    // Update player position to always be on the ground
     final newGroundY = groundY - 60;
-    _player.position.y = newGroundY;
+    _player.updateGroundY(newGroundY);
 
     // Update spawn system with new dimensions
     _spawnSystem.updateDimensions(size.x, groundY);
@@ -466,26 +461,12 @@ class InfiniteRunnerGame extends FlameGame
     _obstacles.clear();
   }
 
-  /// Update ground tiles for new screen size
   void _updateGroundForResize() {
-    // Remove existing ground tiles
     for (final ground in _groundTiles) {
       remove(ground);
     }
     _groundTiles.clear();
 
-    // Recreate ground tiles with new dimensions
-    final tileWidth = size.x * 0.6;
-    final numTiles = (size.x / tileWidth).ceil() + 1;
-
-    for (int i = 0; i < numTiles; i++) {
-      final ground = Ground(
-        position: Vector2(i * tileWidth, groundY),
-        size: Vector2(tileWidth, groundHeight),
-        scrollSpeed: _currentScrollSpeed,
-      );
-      _groundTiles.add(ground);
-      add(ground);
-    }
+    _initializeGround();
   }
 }

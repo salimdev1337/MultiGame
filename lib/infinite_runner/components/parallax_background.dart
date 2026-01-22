@@ -22,9 +22,9 @@ class ParallaxBackground extends ParallaxComponent {
       ],
       baseVelocity: Vector2(_scrollSpeed, 0),
       velocityMultiplierDelta: Vector2(1.4, 0),
-      fill: LayerFill.width,
+      fill: LayerFill.height,
       repeat: ImageRepeat.repeatX,
-      alignment: Alignment.bottomCenter,
+      alignment: Alignment.topCenter,
     );
   }
 

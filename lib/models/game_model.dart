@@ -19,7 +19,7 @@ class GameModel {
         id: 'infinite_runner',
         name: 'Infinite Runner',
         description: 'Run, jump and avoid obstacles!',
-        imagePath: 'assets/images/magic-image.png',
+        imagePath: 'assets/images/runner.png',
         isAvailable: true,
       ),
       GameModel(

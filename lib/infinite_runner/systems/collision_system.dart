@@ -47,16 +47,18 @@ class CollisionSystem {
       return _basicAABB(player, obstacle);
     }
 
-    // Calculate absolute positions of hitboxes
+    // Calculate absolute positions accounting for bottomLeft anchor
+    // Player uses default anchor (topLeft), so position.y is the top
     final playerLeft = player.position.x + playerHitbox.position.x;
     final playerRight = playerLeft + playerHitbox.size.x;
     final playerTop = player.position.y + playerHitbox.position.y;
     final playerBottom = playerTop + playerHitbox.size.y;
 
+    // Obstacle uses bottomLeft anchor, so position.y is the bottom
     final obstacleLeft = obstacle.position.x + obstacleHitbox.position.x;
     final obstacleRight = obstacleLeft + obstacleHitbox.size.x;
-    final obstacleTop = obstacle.position.y + obstacleHitbox.position.y;
-    final obstacleBottom = obstacleTop + obstacleHitbox.size.y;
+    final obstacleBottom = obstacle.position.y + obstacleHitbox.position.y;
+    final obstacleTop = obstacleBottom - obstacle.size.y;
 
     // AABB collision detection with hitboxes
     return playerLeft < obstacleRight &&
@@ -65,12 +67,21 @@ class CollisionSystem {
         playerBottom > obstacleTop;
   }
 
-  /// Fallback basic AABB collision detection
+  /// Fallback basic AABB collision detection accounting for anchors
   bool _basicAABB(PositionComponent a, PositionComponent b) {
-    return a.position.x < b.position.x + b.size.x &&
-        a.position.x + a.size.x > b.position.x &&
-        a.position.y < b.position.y + b.size.y &&
-        a.position.y + a.size.y > b.position.y;
+    // Player (a) uses default topLeft anchor
+    final aLeft = a.position.x;
+    final aRight = a.position.x + a.size.x;
+    final aTop = a.position.y;
+    final aBottom = a.position.y + a.size.y;
+
+    // Obstacle (b) uses bottomLeft anchor
+    final bLeft = b.position.x;
+    final bRight = b.position.x + b.size.x;
+    final bBottom = b.position.y;
+    final bTop = b.position.y - b.size.y;
+
+    return aLeft < bRight && aRight > bLeft && aTop < bBottom && aBottom > bTop;
   }
 
   /// Reset collision state for new game

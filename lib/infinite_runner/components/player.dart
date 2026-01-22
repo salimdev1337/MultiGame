@@ -35,7 +35,7 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
   // Dimensions (primitives - no Vector2 allocations)
   final double _standingWidth;
   final double _standingHeight;
-  final double _groundY;
+  double _groundY;
 
   // Cached hitbox (REUSED - never recreated)
   late final RectangleHitbox _hitbox;
@@ -43,6 +43,14 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
   bool get isOnGround => _isOnGround;
   bool get isSliding => _isSliding;
   PlayerState get currentState => _currentState;
+
+  /// Update ground level and reposition player (for screen resize)
+  void updateGroundY(double newGroundY) {
+    _groundY = newGroundY;
+    position.y = newGroundY;
+    _isOnGround = true;
+    _velocityY = 0.0;
+  }
 
   @override
   Future<void> onLoad() async {
