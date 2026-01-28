@@ -174,7 +174,7 @@ This project is open source and available under the [MIT License](LICENSE).
 ## 👨‍💻 Author
 
 **Your Name**
-- GitHub: [@yourusername](https://github.com/salimdev1337)
+- GitHub: [@ME](https://github.com/salimdev1337)
 
 ## 🙏 Acknowledgments
 
@@ -185,11 +185,7 @@ This project is open source and available under the [MIT License](LICENSE).
 ## 📞 Support
 
 If you encounter any issues or have questions:
-- Open an [issue](https://github.com/yourusername/puzzle/issues)
+- Open an [issue](https://github.com/salimdev1337/puzzle/issues)
 - Check the [CI/CD Guide](.github/CI_CD_GUIDE.md)
-- Review [closed issues](https://github.com/yourusername/puzzle/issues?q=is%3Aissue+is%3Aclosed) for solutions
 
----
-
-Made with ❤️ using Flutter
 
