@@ -1,11 +1,3 @@
-# Tunisian Puzzle Game 🎮
-
-[![CI](https://github.com/yourusername/puzzle/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/puzzle/actions/workflows/ci.yml)
-[![Build](https://github.com/yourusername/puzzle/actions/workflows/build.yml/badge.svg)](https://github.com/yourusername/puzzle/actions/workflows/build.yml)
-[![Deploy](https://github.com/yourusername/puzzle/actions/workflows/deploy-web.yml/badge.svg)](https://github.com/yourusername/puzzle/actions/workflows/deploy-web.yml)
-
-A modern, multi-game puzzle application built with Flutter featuring sliding puzzles, achievements, and cross-platform support.
-
 ## 🎯 Features
 
 - 🧩 **Multiple Game Modes**: Image puzzle, Number puzzle, Memory game (coming soon)
@@ -13,20 +5,19 @@ A modern, multi-game puzzle application built with Flutter featuring sliding puz
 - 📊 **Statistics Tracking**: Track your best times and moves
 - 🎨 **Beautiful UI**: Modern dark theme with smooth animations
 - 📱 **Cross-Platform**: Android, iOS, Windows, Web
-- 🌐 **Play Online**: [Play now on GitHub Pages](https://yourusername.github.io/puzzle)
+- 🌐 **Play Online**: [Play now on GitHub Pages](https://salimdev1337.github.io/MultiGame)
 
 ## 🚀 Live Demo
 
-**Play online:** [https://yourusername.github.io/puzzle](https://yourusername.github.io/puzzle)
-
+**Play online:** (https://salimdev1337.github.io/MultiGame)
 ## 📥 Download
 
 ### Latest Release
 Download the latest version for your platform:
 
-- **Android**: [Download APK](https://github.com/yourusername/puzzle/releases/latest)
-- **Windows**: [Download ZIP](https://github.com/yourusername/puzzle/releases/latest)
-- **Web**: [Play Online](https://yourusername.github.io/puzzle)
+- **Android**: [Download APK](https://github.com/yourusername/MultiGame/releases/latest)
+- **Windows**: [Download ZIP](https://github.com/yourusername/MultiGame/releases/latest)
+- **Web**: [Play Online](https://salimdev1337.github.io/MultiGame)
 
 ## 🎮 Game Modes
 
@@ -183,7 +174,7 @@ This project is open source and available under the [MIT License](LICENSE).
 ## 👨‍💻 Author
 
 **Your Name**
-- GitHub: [@yourusername](https://github.com/yourusername)
+- GitHub: [@yourusername](https://github.com/salimdev1337)
 
 ## 🙏 Acknowledgments
 
