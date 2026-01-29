@@ -82,7 +82,7 @@ flutter pub get
 
 3. Configure API keys (optional):
 ```bash
-# See API_CONFIGURATION.md for detailed instructions
+# See docs/API_CONFIGURATION.md for detailed instructions
 # The app will work with fallback images without API configuration
 flutter run --dart-define=UNSPLASH_ACCESS_KEY=your_key_here
 ```
@@ -134,11 +134,12 @@ flutter build web --release
 ```
 lib/
 ├── main.dart                      # App entry point
+├── puzzle_game_logic.dart         # Puzzle game logic
 ├── screens/
 │   ├── main_navigation.dart       # Bottom navigation
 │   ├── home_page.dart            # Home with carousel
 │   ├── puzzle.dart               # Image puzzle game
-│   └── profile_page.dart         # User profile & stats
+│   └── profile_screen.dart       # User profile & stats
 ├── models/
 │   ├── game_model.dart           # Game definitions
 │   ├── achievement_model.dart    # Achievement system
@@ -151,8 +152,28 @@ lib/
 │   ├── game_carousel.dart        # Game selection carousel
 │   ├── achievement_card.dart     # Achievement display
 │   └── image_puzzle_piece.dart   # Puzzle tile widget
+├── providers/
+│   ├── puzzle_game_provider.dart # Puzzle state management
+│   ├── game_2048_provider.dart   # 2048 game provider
+│   └── snake_game_provider.dart  # Snake game provider
+├── infinite_runner/               # Infinite runner game module
+│   ├── components/
+│   ├── state/
+│   ├── systems/
+│   └── ui/
 └── config/
     └── api_config.dart           # API configuration
+
+docs/                              # Documentation
+├── API_CONFIGURATION.md
+├── FIREBASE_SETUP_GUIDE.md
+├── INFINITE_RUNNER_ARCHITECTURE.md
+└── ...more documentation files
+
+assets/
+├── images/                        # Game images and sprites
+├── audio/                         # Sound effects (coming soon)
+└── fonts/                         # Custom fonts (coming soon)
 ```
 
 ## 🤝 Contributing
@@ -187,5 +208,15 @@ This project is open source and available under the [MIT License](LICENSE).
 If you encounter any issues or have questions:
 - Open an [issue](https://github.com/salimdev1337/puzzle/issues)
 - Check the [CI/CD Guide](.github/CI_CD_GUIDE.md)
+- Browse documentation in the [docs/](docs/) folder
+
+## 📚 Documentation
+
+For detailed guides and documentation, see:
+- [API Configuration](docs/API_CONFIGURATION.md)
+- [Firebase Setup](docs/FIREBASE_SETUP_GUIDE.md)
+- [Infinite Runner Architecture](docs/INFINITE_RUNNER_ARCHITECTURE.md)
+- [CI/CD Setup](docs/CI_CD_SETUP_COMPLETE.md)
+- [Security Improvements](docs/SECURITY_IMPROVEMENTS.md)
 
 

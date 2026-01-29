@@ -122,7 +122,7 @@ class InfiniteRunnerGame extends FlameGame
 
     // Create 9 more tiles, each positioned right after the previous one
     final tileWidth = firstTile.size.x;
-    for (int i = 1; i < 10; i++) {
+    for (int i = 1; i < 20; i++) {
       final tile = GroundTile(
         position: Vector2(tileWidth * i, groundY),
         scrollSpeed: _currentScrollSpeed,

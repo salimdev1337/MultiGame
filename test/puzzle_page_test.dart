@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:multigame/game_logic.dart';
+import 'package:multigame/games/puzzle_game_logic.dart';
 import 'package:multigame/models/puzzle_piece.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

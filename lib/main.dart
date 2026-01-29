@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'firebase_options.dart';
+import 'config/firebase_options.dart';
 import 'package:multigame/providers/puzzle_game_provider.dart';
 import 'package:multigame/providers/game_2048_provider.dart';
 import 'package:multigame/providers/snake_game_provider.dart';

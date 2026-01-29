@@ -304,138 +304,158 @@ class GameOverOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isNewHighScore = game.score == game.highScore && game.score > 0;
+    final orientation = MediaQuery.of(context).orientation;
+    final isLandscape = orientation == Orientation.landscape;
+
+    // Scale down sizes for landscape
+    final iconSize = isLandscape ? 40.0 : 56.0;
+    final titleSize = isLandscape ? 20.0 : 24.0;
+    final scoreSize = isLandscape ? 32.0 : 40.0;
+    final buttonTextSize = isLandscape ? 14.0 : 16.0;
+    final containerPadding = isLandscape ? 16.0 : 24.0;
+    final spacing = isLandscape ? 8.0 : 12.0;
+    final buttonPadding = isLandscape ? 10.0 : 14.0;
 
     return Material(
       color: Colors.black.withValues(alpha: 0.8),
       child: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 400),
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: const Color(0xFF21242b),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: isNewHighScore
-                  ? const Color(0xFFffd700).withValues(alpha: 0.5)
-                  : const Color(0xFFff5c00).withValues(alpha: 0.3),
-              width: 2,
+        child: SingleChildScrollView(
+          child: Container(
+            constraints: BoxConstraints(maxWidth: isLandscape ? 320 : 360),
+            margin: EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: isLandscape ? 8 : 16,
             ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icon
-              Icon(
-                isNewHighScore ? Icons.emoji_events : Icons.close,
-                size: 64,
+            padding: EdgeInsets.all(containerPadding),
+            decoration: BoxDecoration(
+              color: const Color(0xFF21242b),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
                 color: isNewHighScore
-                    ? const Color(0xFFffd700)
-                    : const Color(0xFFff5c00),
+                    ? const Color(0xFFffd700).withValues(alpha: 0.5)
+                    : const Color(0xFFff5c00).withValues(alpha: 0.3),
+                width: 2,
               ),
-              const SizedBox(height: 16),
-              // Title
-              Text(
-                isNewHighScore ? 'NEW HIGH SCORE!' : 'GAME OVER',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon
+                Icon(
+                  isNewHighScore ? Icons.emoji_events : Icons.close,
+                  size: iconSize,
                   color: isNewHighScore
                       ? const Color(0xFFffd700)
-                      : Colors.white,
+                      : const Color(0xFFff5c00),
                 ),
-              ),
-              const SizedBox(height: 24),
-              // Score
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(12),
+                SizedBox(height: spacing),
+                // Title
+                Text(
+                  isNewHighScore ? 'NEW HIGH SCORE!' : 'GAME OVER',
+                  style: TextStyle(
+                    fontSize: titleSize,
+                    fontWeight: FontWeight.bold,
+                    color: isNewHighScore
+                        ? const Color(0xFFffd700)
+                        : Colors.white,
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    const Text(
-                      'SCORE',
+                SizedBox(height: spacing * 1.5),
+                // Score
+                Container(
+                  padding: EdgeInsets.all(spacing * 1.2),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'SCORE',
+                        style: TextStyle(
+                          fontSize: isLandscape ? 10 : 12,
+                          color: Colors.white70,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                      SizedBox(height: spacing * 0.5),
+                      Text(
+                        '${game.score}',
+                        style: TextStyle(
+                          fontSize: scoreSize,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF00d4ff),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: spacing),
+                // High score
+                Text(
+                  'Best: ${game.highScore}',
+                  style: TextStyle(
+                    fontSize: isLandscape ? 12 : 14,
+                    color: Colors.white.withValues(alpha: 0.7),
+                  ),
+                ),
+                SizedBox(height: spacing * 2),
+                // Restart button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => game.restart(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00d4ff),
+                      padding: EdgeInsets.symmetric(vertical: buttonPadding),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: Text(
+                      'PLAY AGAIN',
                       style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white70,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${game.score}',
-                      style: const TextStyle(
-                        fontSize: 48,
+                        fontSize: buttonTextSize,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF00d4ff),
+                        color: Colors.white,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              // High score
-              Text(
-                'Best: ${game.highScore}',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white.withValues(alpha: 0.7),
-                ),
-              ),
-              const SizedBox(height: 32),
-              // Restart button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => game.restart(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00d4ff),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'PLAY AGAIN',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              // Main menu button
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () {
-                    // Navigate to home tab using MainNavigation's GlobalKey
-                    final state = MainNavigation.navigatorKey.currentState;
-                    if (state != null) {
-                      (state as dynamic).onTabTapped(0);
-                    }
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFF00d4ff), width: 2),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                SizedBox(height: spacing),
+                // Main menu button
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      // Navigate to home tab using MainNavigation's GlobalKey
+                      final state = MainNavigation.navigatorKey.currentState;
+                      if (state != null) {
+                        (state as dynamic).onTabTapped(0);
+                      }
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(
+                        color: Color(0xFF00d4ff),
+                        width: 2,
+                      ),
+                      padding: EdgeInsets.symmetric(vertical: buttonPadding),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
-                  ),
-                  child: const Text(
-                    'MAIN MENU',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF00d4ff),
+                    child: Text(
+                      'MAIN MENU',
+                      style: TextStyle(
+                        fontSize: buttonTextSize,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF00d4ff),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

@@ -1,5 +1,5 @@
 {
-    "cmake.sourceDirectory": "C:/Users/salim/OneDrive/Bureau/bootcamp/flutter/puzzle/linux",
+    "cmake.sourceDirectory": "/home/king/Documents/flutter/MultiGame/linux",
     "chat.tools.terminal.autoApprove": {
         "flutter": true
     }
