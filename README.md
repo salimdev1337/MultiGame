@@ -15,8 +15,8 @@
 ### Latest Release
 Download the latest version for your platform:
 
-- **Android**: [Download APK](https://github.com/yourusername/MultiGame/releases/latest)
-- **Windows**: [Download ZIP](https://github.com/yourusername/MultiGame/releases/latest)
+- **Android**: [Download APK](https://github.com/salimdev1337/MultiGame/releases/latest)
+- **Windows**: [Download ZIP](https://github.com/salimdev1337/MultiGame/releases/latest)
 - **Web**: [Play Online](https://salimdev1337.github.io/MultiGame)
 
 ## 🎮 Game Modes
@@ -71,7 +71,7 @@ This project uses GitHub Actions for automated testing, building, and deployment
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/puzzle.git
+git clone https://github.com/salimdev1337/puzzle.git
 cd puzzle
 ```
 
