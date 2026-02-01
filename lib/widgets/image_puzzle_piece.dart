@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/puzzle_piece.dart';
+import 'package:multigame/games/puzzle/models/puzzle_piece.dart';
 
 class ImagePuzzlePiece extends StatefulWidget {
   final PuzzlePiece piece;

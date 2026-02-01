@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:multigame/games/puzzle_game_logic.dart';
+import '../logic/puzzle_game_logic.dart';
 import 'package:multigame/providers/mixins/game_stats_mixin.dart';
 import 'package:multigame/services/data/achievement_service.dart';
 import 'package:multigame/services/data/firebase_stats_service.dart';

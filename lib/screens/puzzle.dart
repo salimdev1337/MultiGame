@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:multigame/providers/puzzle_game_provider.dart';
-import 'package:multigame/providers/puzzle_ui_provider.dart';
+import 'package:multigame/games/puzzle/index.dart';
 import 'package:multigame/widgets/image_puzzle_piece.dart';
 
 class PuzzlePage extends StatefulWidget {

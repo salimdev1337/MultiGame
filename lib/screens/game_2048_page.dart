@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:multigame/providers/game_2048_provider.dart';
+import 'package:multigame/games/game_2048/index.dart';
 
 class Game2048Page extends StatefulWidget {
   const Game2048Page({super.key});

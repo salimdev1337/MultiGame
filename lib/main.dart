@@ -5,12 +5,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'config/firebase_options.dart';
 import 'config/service_locator.dart';
-import 'package:multigame/providers/puzzle_game_provider.dart';
-import 'package:multigame/providers/puzzle_ui_provider.dart';
-import 'package:multigame/providers/game_2048_provider.dart';
-import 'package:multigame/providers/game_2048_ui_provider.dart';
-import 'package:multigame/providers/snake_game_provider.dart';
-import 'package:multigame/providers/snake_ui_provider.dart';
+import 'package:multigame/games/puzzle/index.dart';
+import 'package:multigame/games/game_2048/index.dart';
+import 'package:multigame/games/snake/index.dart';
 import 'package:multigame/providers/user_auth_provider.dart';
 import 'package:multigame/screens/main_navigation.dart';
 import 'package:multigame/services/data/achievement_service.dart';
@@ -18,12 +15,16 @@ import 'package:multigame/services/auth/auth_service.dart';
 import 'package:multigame/services/data/firebase_stats_service.dart';
 import 'package:multigame/services/storage/nickname_service.dart';
 import 'package:multigame/utils/secure_logger.dart';
+import 'package:multigame/core/game_initializer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize dependency injection container
   await setupServiceLocator();
+
+  // Initialize game registry
+  initializeGames();
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(

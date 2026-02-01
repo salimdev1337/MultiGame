@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:multigame/providers/snake_game_provider.dart';
+import 'package:multigame/games/snake/index.dart';
 
 class SnakeGamePage extends StatefulWidget {
   const SnakeGamePage({super.key});

@@ -1,6 +1,6 @@
 import 'dart:math';
-import '../../models/puzzle_piece.dart';
-import 'unsplash_service.dart';
+import '../models/puzzle_piece.dart';
+import 'package:multigame/services/game/unsplash_service.dart';
 
 class ImagePuzzleGenerator {
   final UnsplashService unsplashService = UnsplashService();
