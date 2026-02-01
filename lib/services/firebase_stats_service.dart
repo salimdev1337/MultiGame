@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
+import 'package:multigame/utils/secure_logger.dart';
 
 /// Model for user statistics
 class UserStats {
@@ -181,7 +181,7 @@ class FirebaseStatsService {
           'lastUpdated': FieldValue.serverTimestamp(),
         });
       } else if (score > currentHighScore) {
-        debugPrint('🏆 UPDATING leaderboard: $currentHighScore → $score');
+        SecureLogger.firebase('Updating leaderboard', details: 'New high score');
         await leaderboardRef.set({
           'userId': userId,
           'displayName': displayName ?? 'Anonymous',
@@ -189,12 +189,10 @@ class FirebaseStatsService {
           'lastUpdated': FieldValue.serverTimestamp(),
         });
       } else {
-        debugPrint(
-          '⏭️ Score $score not higher than current high score $currentHighScore, skipping update',
-        );
+        SecureLogger.firebase('Score not higher than current high score, skipping update');
       }
     } catch (e) {
-      debugPrint('Error updating leaderboard: $e');
+      SecureLogger.error('Failed to update leaderboard', error: e, tag: 'Firebase');
     }
   }
 
@@ -212,7 +210,7 @@ class FirebaseStatsService {
 
       return UserStats.fromFirestore(doc);
     } catch (e) {
-      debugPrint('Error getting user stats: $e');
+      SecureLogger.error('Failed to get user stats', error: e, tag: 'Firebase');
       return null;
     }
   }
@@ -230,7 +228,7 @@ class FirebaseStatsService {
           return UserStats.fromFirestore(doc);
         })
         .handleError((error) {
-          debugPrint('Error in user stats stream: $error');
+          SecureLogger.error('Error in user stats stream', tag: 'Firebase');
           return null;
         });
   }
@@ -253,7 +251,7 @@ class FirebaseStatsService {
           .map((doc) => LeaderboardEntry.fromFirestore(doc))
           .toList();
     } catch (e) {
-      debugPrint('Error getting leaderboard: $e');
+      SecureLogger.error('Failed to get leaderboard', error: e, tag: 'Firebase');
       return [];
     }
   }
@@ -287,7 +285,7 @@ class FirebaseStatsService {
 
       return (higherScoresCount.count ?? 0) + 1;
     } catch (e) {
-      debugPrint('Error getting user rank: $e');
+      SecureLogger.error('Failed to get user rank', error: e, tag: 'Firebase');
       return null;
     }
   }

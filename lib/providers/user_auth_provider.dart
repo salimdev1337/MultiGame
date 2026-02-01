@@ -5,15 +5,19 @@ import 'package:multigame/services/nickname_service.dart';
 
 /// Provider for authentication state management
 class UserAuthProvider extends ChangeNotifier {
-  final AuthService _authService = AuthService();
-  final NicknameService _nicknameService = NicknameService();
+  final AuthService _authService;
+  final NicknameService _nicknameService;
 
   User? _user;
   bool _isLoading = false;
   String? _error;
   String? _persistentUserId; // Persistent ID from SharedPreferences
 
-  UserAuthProvider() {
+  UserAuthProvider({
+    required AuthService authService,
+    required NicknameService nicknameService,
+  })  : _authService = authService,
+        _nicknameService = nicknameService {
     _initializePersistentId();
     // Listen to auth state changes
     _authService.authStateChanges.listen((user) {

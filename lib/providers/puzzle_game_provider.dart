@@ -3,9 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'package:multigame/games/puzzle_game_logic.dart';
 import 'package:multigame/services/achievement_service.dart';
 import 'package:multigame/services/firebase_stats_service.dart';
+import 'package:multigame/utils/secure_logger.dart';
 
 /// Provider for managing puzzle game state
 class PuzzleGameNotifier extends ChangeNotifier {
+  final AchievementService _achievementService;
+  final FirebaseStatsService _statsService;
+
   PuzzleGame? _game;
   int _gridSize = 4;
   bool _isLoading = true;
@@ -14,10 +18,14 @@ class PuzzleGameNotifier extends ChangeNotifier {
   int _elapsedSeconds = 0;
   Timer? _timer;
   bool _showImagePreview = false;
-  final AchievementService _achievementService = AchievementService();
-  final FirebaseStatsService _statsService = FirebaseStatsService();
   String? _userId;
   String? _displayName;
+
+  PuzzleGameNotifier({
+    required AchievementService achievementService,
+    required FirebaseStatsService statsService,
+  })  : _achievementService = achievementService,
+        _statsService = statsService;
 
   /// Set user info for saving stats
   void setUserInfo(String? userId, String? displayName) {
@@ -182,9 +190,6 @@ class PuzzleGameNotifier extends ChangeNotifier {
 
   /// Save score to Firebase
   void _saveScore() {
-    debugPrint(
-      'Puzzle _saveScore called: userId=$_userId, moveCount=$_moveCount',
-    );
     if (_userId != null && _moveCount > 0) {
       // Calculate score based on moves and time (lower is better)
       // Score = 10000 - (moves * 10) - elapsed seconds
@@ -192,7 +197,8 @@ class PuzzleGameNotifier extends ChangeNotifier {
         0,
         10000,
       );
-      debugPrint('Saving puzzle score to Firebase: $score');
+
+      SecureLogger.firebase('Saving puzzle score', details: 'score: $score');
 
       _statsService
           .saveUserStats(
@@ -202,10 +208,10 @@ class PuzzleGameNotifier extends ChangeNotifier {
             score: score,
           )
           .then((_) {
-            debugPrint('Puzzle score saved successfully!');
+            SecureLogger.firebase('Puzzle score saved successfully');
           })
           .catchError((e) {
-            debugPrint('Error saving puzzle score: $e');
+            SecureLogger.error('Failed to save puzzle score', error: e, tag: 'Firebase');
           });
     }
   }

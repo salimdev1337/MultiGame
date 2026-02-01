@@ -12,6 +12,8 @@ enum GameMode { classic, wrap, speed }
 class SnakeGameProvider extends ChangeNotifier {
   static const int gridSize = 20;
 
+  final FirebaseStatsService _statsService;
+
   // Game state
   List<Offset> _snake = [const Offset(10, 10)];
   Offset _food = const Offset(10, 10);
@@ -23,7 +25,6 @@ class SnakeGameProvider extends ChangeNotifier {
   int _score = 0;
   int _highScore = 0;
   bool _initialized = false; // Track if game has been initialized
-  final FirebaseStatsService _statsService = FirebaseStatsService();
   String? _userId;
   String? _displayName;
 
@@ -53,7 +54,9 @@ class SnakeGameProvider extends ChangeNotifier {
     }
   }
 
-  SnakeGameProvider();
+  SnakeGameProvider({
+    required FirebaseStatsService statsService,
+  }) : _statsService = statsService;
 
   void startGame() {
     _timer?.cancel();

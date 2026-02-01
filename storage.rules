@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Default: deny all access
+    // Add specific rules here if you use Firebase Storage in the future
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

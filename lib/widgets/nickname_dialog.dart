@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:multigame/utils/input_validator.dart';
 
 /// Dialog to prompt user for nickname
 class NicknameDialog extends StatefulWidget {
@@ -45,24 +46,20 @@ class _NicknameDialogState extends State<NicknameDialog>
   }
 
   void _submit() {
-    final nickname = _controller.text.trim();
+    final input = _controller.text;
 
-    if (nickname.isEmpty) {
-      setState(() => _error = 'Please enter a nickname');
+    // Validate and sanitize input
+    final validation = InputValidator.validateNickname(input);
+
+    if (!validation.isValid) {
+      setState(() => _error = validation.error);
       return;
     }
 
-    if (nickname.length < 2) {
-      setState(() => _error = 'Nickname must be at least 2 characters');
-      return;
-    }
+    // Use validated and sanitized value
+    final sanitized = InputValidator.sanitizeForFirestore(validation.value as String);
 
-    if (nickname.length > 20) {
-      setState(() => _error = 'Nickname must be less than 20 characters');
-      return;
-    }
-
-    Navigator.of(context).pop(nickname);
+    Navigator.of(context).pop(sanitized);
   }
 
   @override

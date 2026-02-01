@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:multigame/config/api_config.dart';
+import 'package:multigame/utils/secure_logger.dart';
 
 class UnsplashApiException implements Exception {
   final String message;
@@ -40,9 +40,7 @@ class UnsplashService {
     if (_cachedImageUrl != null && _cacheTime != null) {
       final hourAgo = DateTime.now().subtract(const Duration(hours: 1));
       if (_cacheTime!.isAfter(hourAgo)) {
-        if (kDebugMode) {
-          debugPrint('UnsplashService: Using cached image');
-        }
+        SecureLogger.log('Using cached image', tag: 'Unsplash');
         return _cachedImageUrl!;
       }
     }
@@ -57,11 +55,10 @@ class UnsplashService {
 
     for (int attempt = 1; attempt <= _maxRetries; attempt++) {
       try {
-        if (kDebugMode) {
-          debugPrint(
-            'UnsplashService: Fetching image (attempt $attempt/$_maxRetries)',
-          );
-        }
+        SecureLogger.api(
+          endpoint: '/photos/random',
+          message: 'Fetching image (attempt $attempt/$_maxRetries)',
+        );
 
         final imageUrl = await _fetchImageFromApi();
 
@@ -69,9 +66,11 @@ class UnsplashService {
         _cachedImageUrl = imageUrl;
         _cacheTime = DateTime.now();
 
-        if (kDebugMode) {
-          debugPrint('UnsplashService: Successfully fetched image: $imageUrl');
-        }
+        SecureLogger.api(
+          endpoint: '/photos/random',
+          statusCode: 200,
+          message: 'Successfully fetched image',
+        );
 
         return imageUrl;
       } on UnsplashNetworkException catch (e) {
@@ -128,11 +127,6 @@ class UnsplashService {
 
     final url = Uri.parse('$_baseUrl/photos/random');
 
-    if (kDebugMode) {
-      debugPrint('UnsplashService: Request URL: $url');
-      debugPrint('UnsplashService: API Key length: ${apiKey.length}');
-    }
-
     try {
       final response = await http
           .get(url, headers: {'Authorization': 'Client-ID $apiKey'})
@@ -183,12 +177,8 @@ class UnsplashService {
           );
         }
       } else if (response.statusCode == 400) {
-        // Log the response body for debugging
-        if (kDebugMode) {
-          debugPrint('400 Error Response: ${response.body}');
-        }
         throw UnsplashApiException(
-          'Bad Request: ${response.body}',
+          'Bad Request - Invalid API parameters',
           statusCode: response.statusCode,
         );
       } else if (response.statusCode == 401) {
@@ -247,12 +237,7 @@ class UnsplashService {
 
   /// Log errors with optional stack trace
   void _logError(String message, {StackTrace? stackTrace}) {
-    if (kDebugMode) {
-      debugPrint('UnsplashService ERROR: $message');
-      if (stackTrace != null) {
-        debugPrint('Stack trace: $stackTrace');
-      }
-    }
+    SecureLogger.error(message, tag: 'Unsplash');
     // In production, you could send to crash reporting service here
     // Example: Firebase Crashlytics, Sentry, etc.
   }

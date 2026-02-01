@@ -4,15 +4,23 @@ import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'config/firebase_options.dart';
+import 'config/service_locator.dart';
 import 'package:multigame/providers/puzzle_game_provider.dart';
 import 'package:multigame/providers/game_2048_provider.dart';
 import 'package:multigame/providers/snake_game_provider.dart';
 import 'package:multigame/providers/user_auth_provider.dart';
 import 'package:multigame/screens/main_navigation.dart';
+import 'package:multigame/services/achievement_service.dart';
+import 'package:multigame/services/auth_service.dart';
+import 'package:multigame/services/firebase_stats_service.dart';
 import 'package:multigame/services/nickname_service.dart';
+import 'package:multigame/utils/secure_logger.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize dependency injection container
+  await setupServiceLocator();
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -33,10 +41,29 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => UserAuthProvider()),
-        ChangeNotifierProvider(create: (_) => PuzzleGameNotifier()),
-        ChangeNotifierProvider(create: (_) => Game2048Provider()),
-        ChangeNotifierProvider(create: (_) => SnakeGameProvider()),
+        ChangeNotifierProvider(
+          create: (_) => UserAuthProvider(
+            authService: getIt<AuthService>(),
+            nicknameService: getIt<NicknameService>(),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => PuzzleGameNotifier(
+            achievementService: getIt<AchievementService>(),
+            statsService: getIt<FirebaseStatsService>(),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => Game2048Provider(
+            achievementService: getIt<AchievementService>(),
+            statsService: getIt<FirebaseStatsService>(),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => SnakeGameProvider(
+            statsService: getIt<FirebaseStatsService>(),
+          ),
+        ),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -80,12 +107,13 @@ class _FirebaseInitializerState extends State<FirebaseInitializer> {
         options: DefaultFirebaseOptions.currentPlatform,
       );
 
-      final nicknameService = NicknameService();
+      // Get NicknameService from service locator
+      final nicknameService = getIt<NicknameService>();
 
       // Always sign in to Firebase (needed for Firestore access)
       if (FirebaseAuth.instance.currentUser == null) {
         await FirebaseAuth.instance.signInAnonymously();
-        debugPrint('🔐 Signed in to Firebase anonymously');
+        SecureLogger.firebase('Signed in anonymously');
       }
 
       // Check if we have a persistent userId saved
@@ -93,18 +121,13 @@ class _FirebaseInitializerState extends State<FirebaseInitializer> {
 
       if (savedUserId != null) {
         // User has played before - keep using their saved persistent ID
-        debugPrint(
-          '✅ Returning user - using saved persistent ID: $savedUserId',
-        );
-        debugPrint(
-          '   (Firebase Auth userId: ${FirebaseAuth.instance.currentUser?.uid})',
-        );
+        SecureLogger.user('Returning user with saved persistent ID', userId: savedUserId);
       } else {
         // First time user - save current Firebase userId as persistent ID
         final firebaseUserId = FirebaseAuth.instance.currentUser?.uid;
         if (firebaseUserId != null) {
           await nicknameService.saveUserId(firebaseUserId);
-          debugPrint('🆕 New user - saved persistent ID: $firebaseUserId');
+          SecureLogger.user('New user - saved persistent ID', userId: firebaseUserId);
         }
       }
 
@@ -112,7 +135,7 @@ class _FirebaseInitializerState extends State<FirebaseInitializer> {
         _initialized = true;
       });
     } catch (e) {
-      debugPrint('Firebase initialization error: $e');
+      SecureLogger.error('Firebase initialization failed', error: e, tag: 'Firebase');
       setState(() {
         _error = true;
       });

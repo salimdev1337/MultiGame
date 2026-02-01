@@ -47,6 +47,7 @@ app.*.map.json
 .env
 .env.local
 lib/config/secrets.dart
+lib/config/firebase_options.dart
 *.key
 *.pem
 *.env

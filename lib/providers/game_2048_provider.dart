@@ -5,6 +5,9 @@ import 'package:multigame/services/firebase_stats_service.dart';
 
 /// Provider for managing 2048 game state
 class Game2048Provider extends ChangeNotifier {
+  final AchievementService _achievementService;
+  final FirebaseStatsService _statsService;
+
   // Game state
   late List<List<int>> _grid;
   int _score = 0;
@@ -17,8 +20,6 @@ class Game2048Provider extends ChangeNotifier {
   final List<String> _objectiveLabels = ['Easy', 'Medium', 'Hard', 'Expert'];
 
   final Random _random = Random();
-  final AchievementService _achievementService = AchievementService();
-  final FirebaseStatsService _statsService = FirebaseStatsService();
   String? _userId;
   String? _displayName;
 
@@ -39,7 +40,11 @@ class Game2048Provider extends ChangeNotifier {
   int get currentObjective => _objectives[_currentObjectiveIndex];
   String get currentObjectiveLabel => _objectiveLabels[_currentObjectiveIndex];
 
-  Game2048Provider() {
+  Game2048Provider({
+    required AchievementService achievementService,
+    required FirebaseStatsService statsService,
+  })  : _achievementService = achievementService,
+        _statsService = statsService {
     initializeGame();
   }
 

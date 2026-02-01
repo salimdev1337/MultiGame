@@ -1,0 +1,101 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidScore(score) {
+      return score is int && score >= 0 && score <= 100000;
+    }
+
+    function isValidDisplayName(name) {
+      return name is string &&
+             name.size() >= 2 &&
+             name.size() <= 20 &&
+             name.matches('^[a-zA-Z0-9_\\- ]+$');
+    }
+
+    function hasRequiredUserFields() {
+      return request.resource.data.keys().hasAll([
+        'displayName',
+        'totalGamesPlayed',
+        'totalScore',
+        'lastPlayed'
+      ]);
+    }
+
+    function hasRequiredLeaderboardFields() {
+      return request.resource.data.keys().hasAll([
+        'userId',
+        'displayName',
+        'highScore',
+        'lastUpdated'
+      ]);
+    }
+
+    // Users collection - user statistics and game data
+    match /users/{userId} {
+      // Users can read their own data
+      allow read: if isOwner(userId);
+
+      // Users can create their own document
+      allow create: if isOwner(userId) &&
+                       hasRequiredUserFields() &&
+                       isValidDisplayName(request.resource.data.displayName) &&
+                       isValidScore(request.resource.data.totalScore);
+
+      // Users can update their own document
+      allow update: if isOwner(userId) &&
+                       hasRequiredUserFields() &&
+                       isValidDisplayName(request.resource.data.displayName) &&
+                       isValidScore(request.resource.data.totalScore) &&
+                       // Prevent score manipulation - total can only increase
+                       request.resource.data.totalScore >= resource.data.totalScore &&
+                       request.resource.data.totalGamesPlayed >= resource.data.totalGamesPlayed;
+
+      // Users cannot delete their own document (use admin SDK for cleanup)
+      allow delete: if false;
+    }
+
+    // Leaderboard collection - game-specific high scores
+    match /leaderboard/{gameType}/scores/{userId} {
+      // Anyone can read leaderboard (for displaying rankings)
+      allow read: if isAuthenticated();
+
+      // Only the user can create their leaderboard entry
+      allow create: if isOwner(userId) &&
+                       hasRequiredLeaderboardFields() &&
+                       isValidDisplayName(request.resource.data.displayName) &&
+                       isValidScore(request.resource.data.highScore) &&
+                       request.resource.data.userId == userId &&
+                       // Validate game type
+                       gameType in ['puzzle', '2048', 'snake', 'infinite_runner'];
+
+      // Only the user can update their leaderboard entry
+      allow update: if isOwner(userId) &&
+                       hasRequiredLeaderboardFields() &&
+                       isValidDisplayName(request.resource.data.displayName) &&
+                       isValidScore(request.resource.data.highScore) &&
+                       request.resource.data.userId == userId &&
+                       // High score can only increase
+                       request.resource.data.highScore >= resource.data.highScore &&
+                       gameType in ['puzzle', '2048', 'snake', 'infinite_runner'];
+
+      // Users cannot delete leaderboard entries
+      allow delete: if false;
+    }
+
+    // Deny all other collections by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
