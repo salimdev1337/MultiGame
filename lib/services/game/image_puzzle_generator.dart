@@ -1,5 +1,5 @@
 import 'dart:math';
-import '../models/puzzle_piece.dart';
+import '../../models/puzzle_piece.dart';
 import 'unsplash_service.dart';
 
 class ImagePuzzleGenerator {

@@ -1,8 +1,7 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:multigame/providers/puzzle_game_provider.dart';
+import 'package:multigame/providers/puzzle_ui_provider.dart';
 import 'package:multigame/widgets/image_puzzle_piece.dart';
 
 class PuzzlePage extends StatefulWidget {
@@ -32,8 +31,12 @@ class _PuzzlePageState extends State<PuzzlePage>
 
     // Initialize game after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final notifier = context.read<PuzzleGameNotifier>();
-      notifier.initializeGame().then((_) {
+      final gameNotifier = context.read<PuzzleGameNotifier>();
+      final uiNotifier = context.read<PuzzleUIProvider>();
+
+      uiNotifier.setLoading(true);
+      gameNotifier.initializeGame().then((_) {
+        uiNotifier.setLoading(false);
         if (mounted) {
           _showImagePreviewAnimation();
         }
@@ -48,8 +51,8 @@ class _PuzzlePageState extends State<PuzzlePage>
   }
 
   void _showImagePreviewAnimation() {
-    final notifier = context.read<PuzzleGameNotifier>();
-    notifier.setShowImagePreview(true);
+    final uiNotifier = context.read<PuzzleUIProvider>();
+    uiNotifier.setShowImagePreview(true);
     _previewAnimationController.reset();
 
     // Wait 3 seconds, then animate to hint button
@@ -57,7 +60,7 @@ class _PuzzlePageState extends State<PuzzlePage>
       if (mounted) {
         _previewAnimationController.forward().then((_) {
           if (mounted) {
-            notifier.setShowImagePreview(false);
+            uiNotifier.setShowImagePreview(false);
           }
         });
       }
@@ -87,7 +90,7 @@ class _PuzzlePageState extends State<PuzzlePage>
                   border: Border.all(color: const Color(0xFF00d4ff), width: 2),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF00d4ff).withOpacity(0.3),
+                      color: const Color(0xFF00d4ff).withValues(alpha: 0.3),
                       blurRadius: 20,
                       spreadRadius: 5,
                     ),
@@ -186,22 +189,22 @@ class _PuzzlePageState extends State<PuzzlePage>
           children: [
             // Backdrop blur overlay
             Positioned.fill(
-              child: Container(color: const Color(0xFF0a0b0e).withOpacity(0.6)),
+              child: Container(color: const Color(0xFF0a0b0e).withValues(alpha: 0.6)),
             ),
             Center(
               child: Container(
                 margin: const EdgeInsets.all(32),
                 constraints: const BoxConstraints(maxWidth: 400),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF21242b).withOpacity(0.85),
+                  color: const Color(0xFF21242b).withValues(alpha: 0.85),
                   borderRadius: BorderRadius.circular(40),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       blurRadius: 40,
                       spreadRadius: 10,
                     ),
@@ -219,14 +222,14 @@ class _PuzzlePageState extends State<PuzzlePage>
                           height: 96,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: const Color(0xFFffd700).withOpacity(0.1),
+                            color: const Color(0xFFffd700).withValues(alpha: 0.1),
                             border: Border.all(
-                              color: const Color(0xFFffd700).withOpacity(0.2),
+                              color: const Color(0xFFffd700).withValues(alpha: 0.2),
                               width: 1,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFffd700).withOpacity(0.3),
+                                color: const Color(0xFFffd700).withValues(alpha: 0.3),
                                 blurRadius: 25,
                                 spreadRadius: 5,
                               ),
@@ -272,10 +275,10 @@ class _PuzzlePageState extends State<PuzzlePage>
                               child: Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05),
+                                  color: Colors.white.withValues(alpha: 0.05),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: Colors.white.withOpacity(0.05),
+                                    color: Colors.white.withValues(alpha: 0.05),
                                   ),
                                 ),
                                 child: Column(
@@ -311,10 +314,10 @@ class _PuzzlePageState extends State<PuzzlePage>
                               child: Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05),
+                                  color: Colors.white.withValues(alpha: 0.05),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: Colors.white.withOpacity(0.05),
+                                    color: Colors.white.withValues(alpha: 0.05),
                                   ),
                                 ),
                                 child: Column(
@@ -356,10 +359,10 @@ class _PuzzlePageState extends State<PuzzlePage>
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFffd700).withOpacity(0.15),
+                              color: const Color(0xFFffd700).withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: const Color(0xFFffd700).withOpacity(0.3),
+                                color: const Color(0xFFffd700).withValues(alpha: 0.3),
                               ),
                             ),
                             child: Row(
@@ -392,9 +395,14 @@ class _PuzzlePageState extends State<PuzzlePage>
                           child: InkWell(
                             onTap: () {
                               Navigator.of(context).pop();
-                              final notifier = context
+                              final gameNotifier = context
                                   .read<PuzzleGameNotifier>();
-                              notifier.newImageGame().then((_) {
+                              final uiNotifier = context
+                                  .read<PuzzleUIProvider>();
+
+                              uiNotifier.setNewImageLoading(true);
+                              gameNotifier.newImageGame().then((_) {
+                                uiNotifier.setNewImageLoading(false);
                                 if (mounted) {
                                   _showImagePreviewAnimation();
                                 }
@@ -415,7 +423,7 @@ class _PuzzlePageState extends State<PuzzlePage>
                                   BoxShadow(
                                     color: const Color(
                                       0xFFff5c00,
-                                    ).withOpacity(0.2),
+                                    ).withValues(alpha: 0.2),
                                     blurRadius: 20,
                                     spreadRadius: 2,
                                   ),
@@ -444,9 +452,9 @@ class _PuzzlePageState extends State<PuzzlePage>
                           child: InkWell(
                             onTap: () {
                               Navigator.of(context).pop();
-                              final notifier = context
+                              final gameNotifier = context
                                   .read<PuzzleGameNotifier>();
-                              notifier.resetGame().then((_) {
+                              gameNotifier.resetGame().then((_) {
                                 if (mounted) {
                                   _showImagePreviewAnimation();
                                 }
@@ -492,8 +500,8 @@ class _PuzzlePageState extends State<PuzzlePage>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<PuzzleGameNotifier>(
-      builder: (context, notifier, _) {
+    return Consumer2<PuzzleGameNotifier, PuzzleUIProvider>(
+      builder: (context, gameNotifier, uiNotifier, _) {
         return Scaffold(
           body: SafeArea(
             child: Stack(
@@ -501,12 +509,12 @@ class _PuzzlePageState extends State<PuzzlePage>
                 Column(
                   children: [
                     // Top App Bar
-                    _buildTopAppBar(notifier),
+                    _buildTopAppBar(gameNotifier),
 
                     // Main Content
                     Expanded(
-                      child: notifier.isLoading
-                          ? _buildLoadingScreen(notifier)
+                      child: uiNotifier.isLoading
+                          ? _buildLoadingScreen(gameNotifier)
                           : SingleChildScrollView(
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
@@ -516,16 +524,16 @@ class _PuzzlePageState extends State<PuzzlePage>
                                   children: [
                                     const SizedBox(height: 16),
                                     // Stats Section
-                                    _buildStatsSection(notifier),
+                                    _buildStatsSection(gameNotifier),
                                     const SizedBox(height: 32),
                                     // Puzzle Grid
-                                    _buildPuzzleGridContainer(notifier),
+                                    _buildPuzzleGridContainer(gameNotifier),
                                     const SizedBox(height: 32),
                                     // Progress Section
-                                    _buildProgressSection(notifier),
+                                    _buildProgressSection(gameNotifier),
                                     const SizedBox(height: 24),
                                     // Footer Controls
-                                    _buildFooterControls(notifier),
+                                    _buildFooterControls(gameNotifier, uiNotifier),
                                     const SizedBox(height: 24),
                                   ],
                                 ),
@@ -536,8 +544,8 @@ class _PuzzlePageState extends State<PuzzlePage>
                 ),
 
                 // Image Preview Overlay
-                if (notifier.showImagePreview)
-                  _buildImagePreviewOverlay(notifier),
+                if (uiNotifier.showImagePreview)
+                  _buildImagePreviewOverlay(gameNotifier),
               ],
             ),
           ),
@@ -830,7 +838,7 @@ class _PuzzlePageState extends State<PuzzlePage>
     );
   }
 
-  Widget _buildFooterControls(PuzzleGameNotifier notifier) {
+  Widget _buildFooterControls(PuzzleGameNotifier gameNotifier, PuzzleUIProvider uiNotifier) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -851,7 +859,7 @@ class _PuzzlePageState extends State<PuzzlePage>
             child: _buildFooterButton(
               label: 'RESET',
               onPressed: () {
-                notifier.resetGame().then((_) {
+                gameNotifier.resetGame().then((_) {
                   if (mounted) {
                     _showImagePreviewAnimation();
                   }
@@ -866,14 +874,16 @@ class _PuzzlePageState extends State<PuzzlePage>
             child: _buildFooterButton(
               label: 'PLAY AGAIN',
               onPressed: () {
-                notifier.newImageGame().then((_) {
+                uiNotifier.setNewImageLoading(true);
+                gameNotifier.newImageGame().then((_) {
+                  uiNotifier.setNewImageLoading(false);
                   if (mounted) {
                     _showImagePreviewAnimation();
                   }
                 });
               },
               isPrimary: true,
-              isLoading: notifier.isNewImageLoading,
+              isLoading: uiNotifier.isNewImageLoading,
             ),
           ),
         ],
@@ -985,7 +995,10 @@ class _PuzzlePageState extends State<PuzzlePage>
     return GestureDetector(
       onTap: () {
         Navigator.pop(context);
+        final uiNotifier = context.read<PuzzleUIProvider>();
+        uiNotifier.setLoading(true);
         notifier.changeGridSize(size).then((_) {
+          uiNotifier.setLoading(false);
           if (mounted) {
             _showImagePreviewAnimation();
           }
@@ -1000,7 +1013,7 @@ class _PuzzlePageState extends State<PuzzlePage>
           border: Border.all(
             color: isSelected
                 ? const Color(0xFF00d4ff)
-                : Colors.white.withOpacity(0.1),
+                : Colors.white.withValues(alpha: 0.1),
             width: 2,
           ),
         ),
@@ -1033,7 +1046,7 @@ class _PuzzlePageState extends State<PuzzlePage>
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF00d4ff).withOpacity(0.4),
+                  color: const Color(0xFF00d4ff).withValues(alpha: 0.4),
                   blurRadius: 20,
                   spreadRadius: 5,
                 ),
@@ -1125,8 +1138,8 @@ class _PuzzlePageState extends State<PuzzlePage>
             // Dark overlay
             Positioned.fill(
               child: Container(
-                color: Colors.black.withOpacity(
-                  0.8 * (1 - _previewAnimation.value),
+                color: Colors.black.withValues(
+                  alpha: 0.8 * (1 - _previewAnimation.value),
                 ),
               ),
             ),
@@ -1147,14 +1160,14 @@ class _PuzzlePageState extends State<PuzzlePage>
                     border: Border.all(
                       color: const Color(
                         0xFF00d4ff,
-                      ).withOpacity(currentOpacity),
+                      ).withValues(alpha: currentOpacity),
                       width: 3,
                     ),
                     boxShadow: [
                       BoxShadow(
                         color: const Color(
                           0xFF00d4ff,
-                        ).withOpacity(0.5 * currentOpacity),
+                        ).withValues(alpha: 0.5 * currentOpacity),
                         blurRadius: 20,
                         spreadRadius: 5,
                       ),

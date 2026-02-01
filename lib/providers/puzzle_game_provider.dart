@@ -1,25 +1,24 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:multigame/games/puzzle_game_logic.dart';
-import 'package:multigame/services/achievement_service.dart';
-import 'package:multigame/services/firebase_stats_service.dart';
+import 'package:multigame/providers/mixins/game_stats_mixin.dart';
+import 'package:multigame/services/data/achievement_service.dart';
+import 'package:multigame/services/data/firebase_stats_service.dart';
 import 'package:multigame/utils/secure_logger.dart';
 
 /// Provider for managing puzzle game state
-class PuzzleGameNotifier extends ChangeNotifier {
+class PuzzleGameNotifier extends ChangeNotifier with GameStatsMixin {
   final AchievementService _achievementService;
   final FirebaseStatsService _statsService;
 
+  @override
+  FirebaseStatsService get statsService => _statsService;
+
   PuzzleGame? _game;
   int _gridSize = 4;
-  bool _isLoading = true;
-  bool _isNewImageLoading = false;
   int _moveCount = 0;
   int _elapsedSeconds = 0;
   Timer? _timer;
-  bool _showImagePreview = false;
-  String? _userId;
-  String? _displayName;
 
   PuzzleGameNotifier({
     required AchievementService achievementService,
@@ -27,31 +26,20 @@ class PuzzleGameNotifier extends ChangeNotifier {
   })  : _achievementService = achievementService,
         _statsService = statsService;
 
-  /// Set user info for saving stats
-  void setUserInfo(String? userId, String? displayName) {
-    _userId = userId;
-    _displayName = displayName;
-  }
-
   // Getters
   PuzzleGame? get game => _game;
   int get gridSize => _gridSize;
-  bool get isLoading => _isLoading;
-  bool get isNewImageLoading => _isNewImageLoading;
   int get moveCount => _moveCount;
   int get elapsedSeconds => _elapsedSeconds;
-  bool get showImagePreview => _showImagePreview;
   bool get isGameInitialized => _game != null;
 
   /// Initialize the game
   Future<void> initializeGame() async {
-    _setLoading(true);
     _setMoveCount(0);
 
     _game = PuzzleGame(gridSize: _gridSize);
     await _game!.loadPuzzleImages();
 
-    _setLoading(false);
     _startTimer();
     notifyListeners();
   }
@@ -60,7 +48,6 @@ class PuzzleGameNotifier extends ChangeNotifier {
   Future<void> resetGame() async {
     if (_game == null) return;
 
-    _setNewImageLoading(false);
     _setMoveCount(0);
 
     await _game!.loadPuzzleImages();
@@ -72,12 +59,10 @@ class PuzzleGameNotifier extends ChangeNotifier {
   Future<void> newImageGame() async {
     if (_game == null) return;
 
-    _setNewImageLoading(true);
     _setMoveCount(0);
 
     await _game!.loadNewPuzzle();
     _startTimer();
-    _setNewImageLoading(false);
     notifyListeners();
   }
 
@@ -86,13 +71,11 @@ class PuzzleGameNotifier extends ChangeNotifier {
     if (newSize == _gridSize) return;
 
     _gridSize = newSize;
-    _setLoading(true);
     _setMoveCount(0);
 
     _game = PuzzleGame(gridSize: _gridSize);
     await _game!.loadPuzzleImages();
     _startTimer();
-    _setLoading(false);
     notifyListeners();
   }
 
@@ -145,34 +128,10 @@ class PuzzleGameNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Set loading state
-  void _setLoading(bool value) {
-    if (_isLoading != value) {
-      _isLoading = value;
-      notifyListeners();
-    }
-  }
-
-  /// Set new image loading state
-  void _setNewImageLoading(bool value) {
-    if (_isNewImageLoading != value) {
-      _isNewImageLoading = value;
-      notifyListeners();
-    }
-  }
-
   /// Set move count
   void _setMoveCount(int value) {
     if (_moveCount != value) {
       _moveCount = value;
-      notifyListeners();
-    }
-  }
-
-  /// Set image preview visibility
-  void setShowImagePreview(bool value) {
-    if (_showImagePreview != value) {
-      _showImagePreview = value;
       notifyListeners();
     }
   }
@@ -190,7 +149,7 @@ class PuzzleGameNotifier extends ChangeNotifier {
 
   /// Save score to Firebase
   void _saveScore() {
-    if (_userId != null && _moveCount > 0) {
+    if (_moveCount > 0) {
       // Calculate score based on moves and time (lower is better)
       // Score = 10000 - (moves * 10) - elapsed seconds
       final score = (10000 - (_moveCount * 10) - _elapsedSeconds).clamp(
@@ -199,20 +158,7 @@ class PuzzleGameNotifier extends ChangeNotifier {
       );
 
       SecureLogger.firebase('Saving puzzle score', details: 'score: $score');
-
-      _statsService
-          .saveUserStats(
-            userId: _userId!,
-            displayName: _displayName,
-            gameType: 'puzzle',
-            score: score,
-          )
-          .then((_) {
-            SecureLogger.firebase('Puzzle score saved successfully');
-          })
-          .catchError((e) {
-            SecureLogger.error('Failed to save puzzle score', error: e, tag: 'Firebase');
-          });
+      saveScore('puzzle', score);
     }
   }
 

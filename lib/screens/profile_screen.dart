@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:multigame/services/achievement_service.dart';
-import 'package:multigame/services/nickname_service.dart';
+import 'package:multigame/services/data/achievement_service.dart';
+import 'package:multigame/services/storage/nickname_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});

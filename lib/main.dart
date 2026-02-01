@@ -6,14 +6,17 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'config/firebase_options.dart';
 import 'config/service_locator.dart';
 import 'package:multigame/providers/puzzle_game_provider.dart';
+import 'package:multigame/providers/puzzle_ui_provider.dart';
 import 'package:multigame/providers/game_2048_provider.dart';
+import 'package:multigame/providers/game_2048_ui_provider.dart';
 import 'package:multigame/providers/snake_game_provider.dart';
+import 'package:multigame/providers/snake_ui_provider.dart';
 import 'package:multigame/providers/user_auth_provider.dart';
 import 'package:multigame/screens/main_navigation.dart';
-import 'package:multigame/services/achievement_service.dart';
-import 'package:multigame/services/auth_service.dart';
-import 'package:multigame/services/firebase_stats_service.dart';
-import 'package:multigame/services/nickname_service.dart';
+import 'package:multigame/services/data/achievement_service.dart';
+import 'package:multigame/services/auth/auth_service.dart';
+import 'package:multigame/services/data/firebase_stats_service.dart';
+import 'package:multigame/services/storage/nickname_service.dart';
 import 'package:multigame/utils/secure_logger.dart';
 
 void main() async {
@@ -47,6 +50,7 @@ class MyApp extends StatelessWidget {
             nicknameService: getIt<NicknameService>(),
           ),
         ),
+        // Puzzle game providers
         ChangeNotifierProvider(
           create: (_) => PuzzleGameNotifier(
             achievementService: getIt<AchievementService>(),
@@ -54,15 +58,26 @@ class MyApp extends StatelessWidget {
           ),
         ),
         ChangeNotifierProvider(
+          create: (_) => PuzzleUIProvider(),
+        ),
+        // 2048 game providers
+        ChangeNotifierProvider(
           create: (_) => Game2048Provider(
             achievementService: getIt<AchievementService>(),
             statsService: getIt<FirebaseStatsService>(),
           ),
         ),
         ChangeNotifierProvider(
+          create: (_) => Game2048UIProvider(),
+        ),
+        // Snake game providers
+        ChangeNotifierProvider(
           create: (_) => SnakeGameProvider(
             statsService: getIt<FirebaseStatsService>(),
           ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => SnakeUIProvider(),
         ),
       ],
       child: MaterialApp(

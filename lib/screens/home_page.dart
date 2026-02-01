@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:multigame/models/achievement_model.dart';
 import 'package:multigame/models/game_model.dart';
-import 'package:multigame/services/achievement_service.dart';
-import 'package:multigame/services/nickname_service.dart';
+import 'package:multigame/services/data/achievement_service.dart';
+import 'package:multigame/services/storage/nickname_service.dart';
 import 'package:multigame/widgets/achievement_card.dart';
 import 'package:multigame/widgets/game_carousel.dart';
 import 'package:multigame/widgets/nickname_dialog.dart';

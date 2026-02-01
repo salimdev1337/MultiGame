@@ -67,6 +67,9 @@ flutter analyze
 dart format lib/ test/
 ```
 
+
+DO NOT USE withOpacity() use withValues()
+
 ## Architecture
 
 ### State Management

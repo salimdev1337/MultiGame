@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:multigame/services/achievement_service.dart';
+import 'package:multigame/services/data/achievement_service.dart';
 
 // Mock class to test 2048 game logic
 class Game2048Logic {

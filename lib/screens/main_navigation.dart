@@ -5,7 +5,7 @@ import 'package:multigame/providers/user_auth_provider.dart';
 import 'package:multigame/providers/game_2048_provider.dart';
 import 'package:multigame/providers/snake_game_provider.dart';
 import 'package:multigame/providers/puzzle_game_provider.dart';
-import 'package:multigame/services/nickname_service.dart';
+import 'package:multigame/services/storage/nickname_service.dart';
 import 'package:multigame/widgets/nickname_dialog.dart';
 import 'package:multigame/screens/home_page.dart';
 import 'package:multigame/screens/profile_screen.dart';

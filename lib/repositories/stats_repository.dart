@@ -8,8 +8,6 @@ class UserStats {
   final int totalGamesPlayed;
   final int totalScore;
   final DateTime lastPlayed;
-
-  // Game-specific stats
   final Map<String, GameStats> gameStats;
 
   UserStats({
@@ -84,14 +82,84 @@ class GameStats {
   }
 }
 
-/// Service for managing user statistics in Firestore
-class FirebaseStatsService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+/// Model for leaderboard entry
+class LeaderboardEntry {
+  final String userId;
+  final String displayName;
+  final int highScore;
+  final DateTime? lastUpdated;
+
+  LeaderboardEntry({
+    required this.userId,
+    required this.displayName,
+    required this.highScore,
+    this.lastUpdated,
+  });
+
+  factory LeaderboardEntry.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return LeaderboardEntry(
+      userId: data['userId'] ?? doc.id,
+      displayName: data['displayName'] ?? 'Anonymous',
+      highScore: data['highScore'] ?? 0,
+      lastUpdated: data['lastUpdated'] != null
+          ? (data['lastUpdated'] as Timestamp).toDate()
+          : null,
+    );
+  }
+}
+
+/// Abstract interface for game statistics persistence
+///
+/// This repository handles user statistics and leaderboard data.
+abstract class StatsRepository {
+  /// Save or update user statistics for a game
+  Future<void> saveUserStats({
+    required String userId,
+    String? displayName,
+    required String gameType,
+    required int score,
+  });
+
+  /// Get user statistics
+  Future<UserStats?> getUserStats(String userId);
+
+  /// Stream of user statistics for real-time updates
+  Stream<UserStats?> userStatsStream(String userId);
+
+  /// Get leaderboard for a specific game
+  Future<List<LeaderboardEntry>> getLeaderboard({
+    required String gameType,
+    int limit = 100,
+  });
+
+  /// Get user's rank in a game's leaderboard
+  Future<int?> getUserRank({
+    required String userId,
+    required String gameType,
+  });
+
+  /// Stream of leaderboard updates
+  Stream<List<LeaderboardEntry>> leaderboardStream({
+    required String gameType,
+    int limit = 100,
+  });
+}
+
+/// Firebase implementation of StatsRepository
+///
+/// Stores statistics and leaderboard data in Firestore.
+class FirebaseStatsRepository implements StatsRepository {
+  final FirebaseFirestore _firestore;
 
   static const String _usersCollection = 'users';
   static const String _leaderboardCollection = 'leaderboard';
 
-  /// Save or update user statistics
+  FirebaseStatsRepository({
+    FirebaseFirestore? firestore,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance;
+
+  @override
   Future<void> saveUserStats({
     required String userId,
     String? displayName,
@@ -152,11 +220,12 @@ class FirebaseStatsService {
         score: score,
       );
     } catch (e) {
+      SecureLogger.error('Failed to save user stats', error: e, tag: 'StatsRepository');
       rethrow;
     }
   }
 
-  /// Update leaderboard for a specific game
+  /// Internal method to update leaderboard
   Future<void> _updateLeaderboard({
     required String userId,
     String? displayName,
@@ -192,11 +261,11 @@ class FirebaseStatsService {
         SecureLogger.firebase('Score not higher than current high score, skipping update');
       }
     } catch (e) {
-      SecureLogger.error('Failed to update leaderboard', error: e, tag: 'Firebase');
+      SecureLogger.error('Failed to update leaderboard', error: e, tag: 'StatsRepository');
     }
   }
 
-  /// Get user statistics
+  @override
   Future<UserStats?> getUserStats(String userId) async {
     try {
       final doc = await _firestore
@@ -210,12 +279,12 @@ class FirebaseStatsService {
 
       return UserStats.fromFirestore(doc);
     } catch (e) {
-      SecureLogger.error('Failed to get user stats', error: e, tag: 'Firebase');
+      SecureLogger.error('Failed to get user stats', error: e, tag: 'StatsRepository');
       return null;
     }
   }
 
-  /// Get user statistics stream for real-time updates
+  @override
   Stream<UserStats?> userStatsStream(String userId) {
     return _firestore
         .collection(_usersCollection)
@@ -228,12 +297,12 @@ class FirebaseStatsService {
           return UserStats.fromFirestore(doc);
         })
         .handleError((error) {
-          SecureLogger.error('Error in user stats stream', tag: 'Firebase');
+          SecureLogger.error('Error in user stats stream', tag: 'StatsRepository');
           return null;
         });
   }
 
-  /// Get leaderboard for a specific game
+  @override
   Future<List<LeaderboardEntry>> getLeaderboard({
     required String gameType,
     int limit = 100,
@@ -251,12 +320,12 @@ class FirebaseStatsService {
           .map((doc) => LeaderboardEntry.fromFirestore(doc))
           .toList();
     } catch (e) {
-      SecureLogger.error('Failed to get leaderboard', error: e, tag: 'Firebase');
+      SecureLogger.error('Failed to get leaderboard', error: e, tag: 'StatsRepository');
       return [];
     }
   }
 
-  /// Get user's rank in leaderboard
+  @override
   Future<int?> getUserRank({
     required String userId,
     required String gameType,
@@ -285,12 +354,12 @@ class FirebaseStatsService {
 
       return (higherScoresCount.count ?? 0) + 1;
     } catch (e) {
-      SecureLogger.error('Failed to get user rank', error: e, tag: 'Firebase');
+      SecureLogger.error('Failed to get user rank', error: e, tag: 'StatsRepository');
       return null;
     }
   }
 
-  /// Stream of leaderboard updates
+  @override
   Stream<List<LeaderboardEntry>> leaderboardStream({
     required String gameType,
     int limit = 100,
@@ -307,32 +376,5 @@ class FirebaseStatsService {
               .map((doc) => LeaderboardEntry.fromFirestore(doc))
               .toList(),
         );
-  }
-}
-
-/// Model for leaderboard entry
-class LeaderboardEntry {
-  final String userId;
-  final String displayName;
-  final int highScore;
-  final DateTime? lastUpdated;
-
-  LeaderboardEntry({
-    required this.userId,
-    required this.displayName,
-    required this.highScore,
-    this.lastUpdated,
-  });
-
-  factory LeaderboardEntry.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    return LeaderboardEntry(
-      userId: data['userId'] ?? doc.id,
-      displayName: data['displayName'] ?? 'Anonymous',
-      highScore: data['highScore'] ?? 0,
-      lastUpdated: data['lastUpdated'] != null
-          ? (data['lastUpdated'] as Timestamp).toDate()
-          : null,
-    );
   }
 }

@@ -1,12 +1,16 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart';
-import 'package:multigame/services/achievement_service.dart';
-import 'package:multigame/services/firebase_stats_service.dart';
+import 'package:multigame/providers/mixins/game_stats_mixin.dart';
+import 'package:multigame/services/data/achievement_service.dart';
+import 'package:multigame/services/data/firebase_stats_service.dart';
 
 /// Provider for managing 2048 game state
-class Game2048Provider extends ChangeNotifier {
+class Game2048Provider extends ChangeNotifier with GameStatsMixin {
   final AchievementService _achievementService;
   final FirebaseStatsService _statsService;
+
+  @override
+  FirebaseStatsService get statsService => _statsService;
 
   // Game state
   late List<List<int>> _grid;
@@ -20,14 +24,6 @@ class Game2048Provider extends ChangeNotifier {
   final List<String> _objectiveLabels = ['Easy', 'Medium', 'Hard', 'Expert'];
 
   final Random _random = Random();
-  String? _userId;
-  String? _displayName;
-
-  /// Set user info for saving stats
-  void setUserInfo(String? userId, String? displayName) {
-    _userId = userId;
-    _displayName = displayName;
-  }
 
   // Getters
   List<List<int>> get grid => _grid;
@@ -313,25 +309,7 @@ class Game2048Provider extends ChangeNotifier {
 
   /// Save score to Firebase
   void _saveScore() {
-    debugPrint('2048 _saveScore called: userId=$_userId, score=$_score');
-    if (_userId != null && _score > 0) {
-      debugPrint('Saving 2048 score to Firebase: $_score');
-      _statsService
-          .saveUserStats(
-            userId: _userId!,
-            displayName: _displayName,
-            gameType: '2048',
-            score: _score,
-          )
-          .then((_) {
-            debugPrint('2048 score saved successfully!');
-          })
-          .catchError((e) {
-            debugPrint('Error saving 2048 score: $e');
-          });
-    } else {
-      debugPrint('Not saving 2048 score: userId is null or score is 0');
-    }
+    saveScore('2048', _score);
   }
 
   /// Record game completion achievement

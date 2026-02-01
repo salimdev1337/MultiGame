@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:multigame/providers/user_auth_provider.dart';
-import 'package:multigame/services/firebase_stats_service.dart';
+import 'package:multigame/services/data/firebase_stats_service.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});

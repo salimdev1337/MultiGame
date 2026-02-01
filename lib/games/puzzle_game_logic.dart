@@ -1,5 +1,5 @@
 import '../models/puzzle_piece.dart';
-import '../services/image_puzzle_generator.dart';
+import '../services/game/image_puzzle_generator.dart';
 
 class PuzzleGame {
   List<PuzzlePiece> pieces = [];

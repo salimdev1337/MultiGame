@@ -2,17 +2,21 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
-import 'package:multigame/services/firebase_stats_service.dart';
+import 'package:multigame/providers/mixins/game_stats_mixin.dart';
+import 'package:multigame/services/data/firebase_stats_service.dart';
 
 enum Direction { up, down, left, right }
 
 enum GameMode { classic, wrap, speed }
 
 /// Provider for managing Snake game state
-class SnakeGameProvider extends ChangeNotifier {
+class SnakeGameProvider extends ChangeNotifier with GameStatsMixin {
   static const int gridSize = 20;
 
   final FirebaseStatsService _statsService;
+
+  @override
+  FirebaseStatsService get statsService => _statsService;
 
   // Game state
   List<Offset> _snake = [const Offset(10, 10)];
@@ -25,14 +29,6 @@ class SnakeGameProvider extends ChangeNotifier {
   int _score = 0;
   int _highScore = 0;
   bool _initialized = false; // Track if game has been initialized
-  String? _userId;
-  String? _displayName;
-
-  /// Set user info for saving stats
-  void setUserInfo(String? userId, String? displayName) {
-    _userId = userId;
-    _displayName = displayName;
-  }
 
   // Getters
   List<Offset> get snake => _snake;
@@ -178,25 +174,7 @@ class SnakeGameProvider extends ChangeNotifier {
 
   /// Save score to Firebase
   void _saveScore() {
-    debugPrint('Snake _saveScore called: userId=$_userId, score=$_score');
-    if (_userId != null && _score > 0) {
-      debugPrint('Saving snake score to Firebase: $_score');
-      _statsService
-          .saveUserStats(
-            userId: _userId!,
-            displayName: _displayName,
-            gameType: 'snake',
-            score: _score,
-          )
-          .then((_) {
-            debugPrint('Snake score saved successfully!');
-          })
-          .catchError((e) {
-            debugPrint('Error saving snake score: $e');
-          });
-    } else {
-      debugPrint('Not saving snake score: userId is null or score is 0');
-    }
+    saveScore('snake', _score);
   }
 
   /// Change snake direction

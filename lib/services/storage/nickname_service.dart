@@ -1,22 +1,22 @@
+import 'package:multigame/repositories/user_repository.dart';
 import 'package:multigame/repositories/secure_storage_repository.dart';
 import 'package:multigame/utils/storage_migrator.dart';
 
 /// Service for managing user nickname and ID using secure encrypted storage
 ///
-/// Data is now stored in encrypted storage instead of plain text SharedPreferences
+/// Data is now stored in encrypted storage instead of plain text SharedPreferences.
+/// This service now uses UserRepository for data persistence.
 class NicknameService {
-  static const String _nicknameKey = 'user_nickname';
-  static const String _userIdKey = 'user_id';
-
-  final SecureStorageRepository _secureStorage;
+  final UserRepository _userRepository;
   final StorageMigrator _migrator;
 
   bool _migrationChecked = false;
 
   NicknameService({
-    SecureStorageRepository? secureStorage,
-  })  : _secureStorage = secureStorage ?? SecureStorageRepository(),
-        _migrator = StorageMigrator(secureStorage ?? SecureStorageRepository());
+    UserRepository? userRepository,
+    StorageMigrator? migrator,
+  })  : _userRepository = userRepository ?? SecureUserRepository(),
+        _migrator = migrator ?? StorageMigrator(SecureStorageRepository());
 
   /// Ensure migration is performed before any operation
   Future<void> _ensureMigration() async {
@@ -30,48 +30,48 @@ class NicknameService {
   /// Get saved nickname
   Future<String?> getNickname() async {
     await _ensureMigration();
-    return await _secureStorage.read(_nicknameKey);
+    return await _userRepository.getDisplayName();
   }
 
   /// Get saved userId
   Future<String?> getUserId() async {
     await _ensureMigration();
-    return await _secureStorage.read(_userIdKey);
+    return await _userRepository.getUserId();
   }
 
   /// Save userId
   Future<bool> saveUserId(String userId) async {
     await _ensureMigration();
-    return await _secureStorage.write(_userIdKey, userId);
+    return await _userRepository.saveUserId(userId);
   }
 
   /// Check if userId exists
   Future<bool> hasUserId() async {
     await _ensureMigration();
-    return await _secureStorage.containsKey(_userIdKey);
+    return await _userRepository.hasUserId();
   }
 
   /// Clear userId
   Future<bool> clearUserId() async {
     await _ensureMigration();
-    return await _secureStorage.delete(_userIdKey);
+    return await _userRepository.clearUserId();
   }
 
   /// Save nickname
   Future<bool> saveNickname(String nickname) async {
     await _ensureMigration();
-    return await _secureStorage.write(_nicknameKey, nickname);
+    return await _userRepository.saveDisplayName(nickname);
   }
 
   /// Check if nickname is set
   Future<bool> hasNickname() async {
     await _ensureMigration();
-    return await _secureStorage.containsKey(_nicknameKey);
+    return await _userRepository.hasDisplayName();
   }
 
   /// Clear nickname (for testing/reset)
   Future<bool> clearNickname() async {
     await _ensureMigration();
-    return await _secureStorage.delete(_nicknameKey);
+    return await _userRepository.clearDisplayName();
   }
 }

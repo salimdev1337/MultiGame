@@ -1,10 +1,13 @@
 import 'package:get_it/get_it.dart';
 import 'package:multigame/repositories/secure_storage_repository.dart';
-import 'package:multigame/services/achievement_service.dart';
-import 'package:multigame/services/auth_service.dart';
-import 'package:multigame/services/firebase_stats_service.dart';
-import 'package:multigame/services/nickname_service.dart';
-import 'package:multigame/services/unsplash_service.dart';
+import 'package:multigame/repositories/user_repository.dart';
+import 'package:multigame/repositories/stats_repository.dart';
+import 'package:multigame/repositories/achievement_repository.dart';
+import 'package:multigame/services/data/achievement_service.dart';
+import 'package:multigame/services/auth/auth_service.dart';
+import 'package:multigame/services/data/firebase_stats_service.dart';
+import 'package:multigame/services/storage/nickname_service.dart';
+import 'package:multigame/services/game/unsplash_service.dart';
 import 'package:multigame/utils/storage_migrator.dart';
 
 /// Global service locator instance
@@ -15,37 +18,64 @@ final getIt = GetIt.instance;
 /// This should be called once at app startup before runApp()
 /// Services are registered as lazy singletons - they are created only when first accessed
 Future<void> setupServiceLocator() async {
-  // Register repositories (bottom level - no dependencies)
+  // ========== Register Repositories (Data Layer) ==========
+  // These are the lowest level - handle data persistence
+
+  // Secure storage repository for encrypted data
   getIt.registerLazySingleton<SecureStorageRepository>(
     () => SecureStorageRepository(),
   );
 
-  // Register storage utilities
+  // User repository for user profile data (uses SecureStorageRepository)
+  getIt.registerLazySingleton<UserRepository>(
+    () => SecureUserRepository(
+      secureStorage: getIt<SecureStorageRepository>(),
+    ),
+  );
+
+  // Stats repository for Firebase statistics and leaderboards
+  getIt.registerLazySingleton<StatsRepository>(
+    () => FirebaseStatsRepository(),
+  );
+
+  // Achievement repository for local achievements and stats
+  getIt.registerLazySingleton<AchievementRepository>(
+    () => SharedPrefsAchievementRepository(),
+  );
+
+  // ========== Register Utilities ==========
+
   getIt.registerLazySingleton<StorageMigrator>(
     () => StorageMigrator(getIt<SecureStorageRepository>()),
   );
 
-  // Register independent services (no dependencies on other services)
+  // ========== Register Services (Business Logic Layer) ==========
+  // These use repositories for data persistence
+
   getIt.registerLazySingleton<AuthService>(
     () => AuthService(),
   );
 
   getIt.registerLazySingleton<FirebaseStatsService>(
-    () => FirebaseStatsService(),
+    () => FirebaseStatsService(
+      statsRepository: getIt<StatsRepository>(),
+    ),
   );
 
   getIt.registerLazySingleton<AchievementService>(
-    () => AchievementService(),
+    () => AchievementService(
+      repository: getIt<AchievementRepository>(),
+    ),
   );
 
   getIt.registerLazySingleton<UnsplashService>(
     () => UnsplashService(),
   );
 
-  // Register services with dependencies
   getIt.registerLazySingleton<NicknameService>(
     () => NicknameService(
-      secureStorage: getIt<SecureStorageRepository>(),
+      userRepository: getIt<UserRepository>(),
+      migrator: getIt<StorageMigrator>(),
     ),
   );
 

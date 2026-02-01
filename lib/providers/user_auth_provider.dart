@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:multigame/services/auth_service.dart';
-import 'package:multigame/services/nickname_service.dart';
+import 'package:multigame/services/auth/auth_service.dart';
+import 'package:multigame/services/storage/nickname_service.dart';
 
 /// Provider for authentication state management
 class UserAuthProvider extends ChangeNotifier {
