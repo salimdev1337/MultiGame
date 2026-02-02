@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 MultiGame is a Flutter-based multi-platform gaming app featuring:
+- **Sudoku** (Classic, Rush, and 1v1 Online modes with difficulty levels)
 - Image Puzzle (sliding puzzle with Unsplash images)
 - 2048 Game
 - Snake Game
@@ -106,6 +107,13 @@ lib/
 │   └── game_registry.dart         # Game registry
 │
 ├── games/                         # Feature-based organization
+│   ├── sudoku/                    # Sudoku game (3 modes: Classic, Rush, 1v1)
+│   │   ├── models/                # Game state models
+│   │   ├── logic/                 # Pure game logic (generator, solver, validator)
+│   │   ├── providers/             # State management
+│   │   ├── services/              # Persistence, stats, sound, haptics
+│   │   ├── screens/               # Mode selection, game screens
+│   │   └── widgets/               # Grid, cell, number pad, controls
 │   ├── puzzle/
 │   │   ├── models/
 │   │   ├── logic/
@@ -200,14 +208,21 @@ ChangeNotifierProvider(
 The app uses **Provider** for state management with **separation of game state and UI state**:
 
 **Game State Providers** (business logic):
+- **SudokuProvider** - Classic mode: board state, moves, hints, validation
+- **SudokuRushProvider** - Rush mode: timer, score, difficulty progression
+- **SudokuOnlineProvider** - 1v1 mode: matchmaking, opponent sync, game state
 - **PuzzleGameProvider** - Puzzle grid, moves, timer, game logic
 - **Game2048Provider** - 2048 grid, score, tile operations
 - **SnakeGameProvider** - Snake position, direction, food, collisions
 
 **UI State Providers** (presentation):
+- **SudokuUIProvider** - Loading state, dialogs, animations for sudoku
 - **PuzzleUIProvider** - Loading state, dialogs, animations
 - **Game2048UIProvider** - UI state for 2048 game
 - **SnakeUIProvider** - UI state for snake game
+
+**Global Settings Providers**:
+- **SudokuSettingsProvider** - User preferences (sound, haptics, theme) - injected via GetIt
 
 **Global Providers**:
 - **UserAuthProvider** - User authentication and profile
@@ -256,6 +271,59 @@ The app initializes Firebase in [lib/main.dart](lib/main.dart) with anonymous au
 - **game/** - UnsplashService (image fetching)
 - **storage/** - NicknameService (persistent storage)
 
+### Sudoku Game Architecture
+
+The Sudoku game features **three game modes** with complete state management and persistence:
+
+**Game Modes:**
+1. **Classic Mode** - Traditional sudoku with difficulty levels (Easy, Medium, Hard, Expert)
+2. **Rush Mode** - Time-limited challenges with progressive difficulty
+3. **1v1 Online** - Real-time multiplayer via Firebase (matchmaking + live gameplay)
+
+**Key Features:**
+- **Pure Logic Layer**: Generator, solver, and validator are pure functions (no dependencies)
+- **Auto-save**: Games automatically save progress using secure local storage
+- **Statistics Tracking**: Personal stats and global leaderboards via Firebase
+- **Sound & Haptics**: Configurable audio feedback and vibration (Phase 6 polish)
+- **Settings System**: Persistent user preferences for sound, haptics, and difficulty
+
+**Architecture:**
+```
+lib/games/sudoku/
+├── models/           # Data models (cell, board, stats, match)
+├── logic/            # Pure functions (generator, solver, validator)
+├── services/         # Persistence, stats, matchmaking, sound, haptics
+├── providers/        # State management (Classic, Rush, Online, UI, Settings)
+├── screens/          # Mode selection, difficulty, game screens
+└── widgets/          # Reusable UI components (grid, cell, number pad)
+```
+
+**Providers:**
+- **SudokuProvider** - Classic mode game state
+- **SudokuRushProvider** - Rush mode with timer
+- **SudokuOnlineProvider** - 1v1 multiplayer state
+- **SudokuUIProvider** - UI state (loading, dialogs)
+- **SudokuSettingsProvider** - User preferences (injected via GetIt)
+
+**Services:**
+- **SudokuPersistenceService** - Save/load games from secure storage
+- **SudokuStatsService** - Track personal statistics
+- **MatchmakingService** - Firebase-based matchmaking
+- **SudokuSoundService** - Audio feedback (Phase 6)
+- **SudokuHapticService** - Vibration feedback (Phase 6)
+
+**Files:**
+- [lib/games/sudoku/sudoku_game_definition.dart](lib/games/sudoku/sudoku_game_definition.dart) - Game registry definition
+- [lib/games/sudoku/screens/mode_selection_screen.dart](lib/games/sudoku/screens/mode_selection_screen.dart) - Choose Classic/Rush/1v1
+- [lib/games/sudoku/logic/sudoku_generator.dart](lib/games/sudoku/logic/sudoku_generator.dart) - Puzzle generation algorithm
+- [lib/games/sudoku/logic/sudoku_solver.dart](lib/games/sudoku/logic/sudoku_solver.dart) - Backtracking solver
+- [lib/games/sudoku/logic/sudoku_validator.dart](lib/games/sudoku/logic/sudoku_validator.dart) - Rule validation
+
+**Testing:**
+- Comprehensive unit tests for generator, solver, validator
+- Model tests for board and cell logic
+- Provider tests with mocked services
+
 ### Infinite Runner Architecture
 
 The Infinite Runner game uses **Flame engine** with an ECS-inspired architecture. See [docs/INFINITE_RUNNER_ARCHITECTURE.md](docs/INFINITE_RUNNER_ARCHITECTURE.md) for detailed diagrams.
@@ -278,9 +346,15 @@ Files:
 ### Navigation Structure
 
 Bottom navigation managed by [lib/screens/main_navigation.dart](lib/screens/main_navigation.dart):
-1. Home - Game carousel
-2. Profile - Stats and achievements
-3. Leaderboard - Firebase leaderboard
+1. **Home** - Game carousel with available games:
+   - Sudoku (Classic, Rush, 1v1 Online)
+   - Infinite Runner
+   - Snake
+   - Image Puzzle
+   - 2048
+   - Memory Game (coming soon - locked)
+2. **Profile** - Stats and achievements
+3. **Leaderboard** - Firebase global leaderboard
 
 ### Image Loading
 
@@ -502,6 +576,8 @@ lib/games/your_game/
 8. Register game in `GameRegistry`
 9. Add tests
 10. Update documentation
+
+**Example:** See [lib/games/sudoku/](lib/games/sudoku/) for a complete implementation with multiple game modes, persistence, and online multiplayer.
 
 **Full guide:** [docs/ADDING_GAMES.md](docs/ADDING_GAMES.md)
 
