@@ -19,7 +19,7 @@ migrate_working_dir/
 *.iws
 .idea/
 
-
+task.md
 .vscode/
 
 # Flutter/Dart/Pub related

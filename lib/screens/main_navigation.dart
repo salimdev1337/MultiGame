@@ -5,6 +5,7 @@ import 'package:multigame/providers/user_auth_provider.dart';
 import 'package:multigame/games/puzzle/index.dart';
 import 'package:multigame/games/game_2048/index.dart';
 import 'package:multigame/games/snake/index.dart';
+import 'package:multigame/games/sudoku/index.dart';
 import 'package:multigame/services/storage/nickname_service.dart';
 import 'package:multigame/widgets/nickname_dialog.dart';
 import 'package:multigame/screens/home_page.dart';
@@ -73,6 +74,10 @@ class _MainNavigationState extends State<MainNavigation> {
         authProvider.userId,
         displayName,
       );
+      context.read<SudokuProvider>().setUserInfo(
+        authProvider.userId,
+        displayName,
+      );
       debugPrint('User info updated: ${authProvider.userId} - $displayName');
     } else {
       debugPrint('User info is null, waiting for auth...');
@@ -87,6 +92,7 @@ class _MainNavigationState extends State<MainNavigation> {
     if (game.id == 'image_puzzle' ||
         game.id == '2048' ||
         game.id == 'snake_game' ||
+        game.id == 'sudoku' ||
         game.id == 'infinite_runner') {
       setState(() {
         _selectedGame = game;
@@ -112,6 +118,8 @@ class _MainNavigationState extends State<MainNavigation> {
           return const Game2048Page();
         } else if (_selectedGame?.id == 'snake_game') {
           return const SnakeGamePage();
+        } else if (_selectedGame?.id == 'sudoku') {
+          return const DifficultySelectionScreen();
         } else if (_selectedGame?.id == 'infinite_runner') {
           return const InfiniteRunnerPage();
         } else {

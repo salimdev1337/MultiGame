@@ -16,6 +16,13 @@ class GameModel {
   static List<GameModel> getAvailableGames() {
     return [
       GameModel(
+        id: 'sudoku',
+        name: 'Sudoku',
+        description: 'classic, rush and 1v1 sudoku games',
+        imagePath: 'assets/images/magic-image.png',
+        isAvailable: true,
+      ),
+      GameModel(
         id: 'infinite_runner',
         name: 'Infinite Runner',
         description: 'Run, jump and avoid obstacles!',

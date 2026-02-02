@@ -21,6 +21,8 @@ dependencies:
   firebase_auth: ^6.1.4
   cloud_firestore: ^6.1.2
   flame: ^1.22.0
+  audioplayers: ^6.1.0
+  vibration: ^2.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

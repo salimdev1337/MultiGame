@@ -76,6 +76,10 @@ class StorageMigrator {
       // Add other sensitive keys here as needed
     ];
 
+    // Check if any keys exist in SharedPreferences before migration
+    final prefs = await SharedPreferences.getInstance();
+    final keysExist = keysToMigrate.any((key) => prefs.containsKey(key));
+
     final results = await migrateKeys(keysToMigrate);
 
     final successCount = results.values.where((success) => success).length;
@@ -86,8 +90,10 @@ class StorageMigrator {
       tag: 'Migration',
     );
 
-    // Return true if at least one key was migrated or all keys were already migrated
-    return successCount > 0 || totalCount == 0;
+    // Return true if:
+    // - At least one key was successfully migrated, OR
+    // - No keys existed in SharedPreferences (nothing to migrate)
+    return successCount > 0 || !keysExist;
   }
 
   /// Check if migration has been completed

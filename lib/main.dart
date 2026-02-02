@@ -8,6 +8,7 @@ import 'config/service_locator.dart';
 import 'package:multigame/games/puzzle/index.dart';
 import 'package:multigame/games/game_2048/index.dart';
 import 'package:multigame/games/snake/index.dart';
+import 'package:multigame/games/sudoku/index.dart';
 import 'package:multigame/providers/user_auth_provider.dart';
 import 'package:multigame/screens/main_navigation.dart';
 import 'package:multigame/services/data/achievement_service.dart';
@@ -23,6 +24,9 @@ void main() async {
   // Initialize dependency injection container
   await setupServiceLocator();
 
+  // Initialize Sudoku Phase 6 services (settings, sound, haptics)
+  await _initializeSudokuPhase6Services();
+
   // Initialize game registry
   initializeGames();
 
@@ -36,6 +40,27 @@ void main() async {
   );
 
   runApp(const MyApp());
+}
+
+/// Initializes Sudoku Phase 6 services (settings, sound, haptics)
+Future<void> _initializeSudokuPhase6Services() async {
+  try {
+    // Initialize settings provider (loads persisted settings)
+    final settingsProvider = getIt<SudokuSettingsProvider>();
+    await settingsProvider.initialize();
+
+    // Initialize sound service
+    final soundService = getIt<SudokuSoundService>();
+    await soundService.initialize();
+
+    // Initialize haptic service
+    final hapticService = getIt<SudokuHapticService>();
+    await hapticService.initialize();
+
+    SecureLogger.log('Sudoku Phase 6 services initialized', tag: 'Sudoku');
+  } catch (e) {
+    SecureLogger.error('Failed to initialize Sudoku Phase 6 services', error: e);
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -79,6 +104,31 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => SnakeUIProvider(),
+        ),
+        // Sudoku game providers (Classic Mode)
+        ChangeNotifierProvider(
+          create: (_) => SudokuProvider(
+            statsService: getIt<FirebaseStatsService>(),
+            persistenceService: getIt<SudokuPersistenceService>(),
+            sudokuStatsService: getIt<SudokuStatsService>(),
+            soundService: getIt<SudokuSoundService>(),
+            hapticService: getIt<SudokuHapticService>(),
+          ),
+        ),
+        // Sudoku Rush Mode provider
+        ChangeNotifierProvider(
+          create: (_) => SudokuRushProvider(
+            statsService: getIt<FirebaseStatsService>(),
+            persistenceService: getIt<SudokuPersistenceService>(),
+            sudokuStatsService: getIt<SudokuStatsService>(),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => SudokuUIProvider(),
+        ),
+        // Sudoku settings provider (Phase 6 - Polish & UX)
+        ChangeNotifierProvider(
+          create: (_) => getIt<SudokuSettingsProvider>(),
         ),
       ],
       child: MaterialApp(

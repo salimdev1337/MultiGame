@@ -2,6 +2,7 @@ import 'game_registry.dart';
 import 'package:multigame/games/puzzle/puzzle_game_definition.dart';
 import 'package:multigame/games/game_2048/game_2048_definition.dart';
 import 'package:multigame/games/snake/snake_game_definition.dart';
+import 'package:multigame/games/sudoku/sudoku_game_definition.dart';
 import 'package:multigame/infinite_runner/infinite_runner_definition.dart';
 
 /// Initialize and register all games
@@ -13,5 +14,6 @@ void initializeGames() {
   registry.register(PuzzleGameDefinition());
   registry.register(Game2048Definition());
   registry.register(SnakeGameDefinition());
+  registry.register(SudokuGameDefinition());
   registry.register(InfiniteRunnerDefinition());
 }

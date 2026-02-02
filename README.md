@@ -40,9 +40,35 @@ Unlock achievements by completing challenges:
 - 💎 **4x4 Pro**: Complete a 4x4 in under 200 moves
 - ⚡ **Speed Demon**: Complete any puzzle in under 60 seconds
 
+## 🏗️ Architecture
+
+MultiGame follows a **clean, layered architecture** with:
+- **Dependency Injection** via GetIt for loose coupling
+- **Repository Pattern** for data persistence abstraction
+- **Provider Pattern** for reactive state management
+- **Feature-First Structure** for scalability
+- **Separation of Concerns** between UI, business logic, and data layers
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed documentation.
+
+### Security Features
+
+- 🔒 **Encrypted local storage** for sensitive data (Flutter Secure Storage)
+- ✅ **Input validation** on all user inputs
+- 🛡️ **Secure logging** that prevents credential leakage
+- 🔥 **Firestore security rules** to protect database access
+- 🔑 **API key protection** through build-time configuration
+
+See [docs/SECURITY.md](docs/SECURITY.md) for security best practices.
+
 ## 🛠️ Built With
 
 - [Flutter](https://flutter.dev/) - UI Framework
+- [Provider](https://pub.dev/packages/provider) - State management
+- [GetIt](https://pub.dev/packages/get_it) - Dependency injection
+- [Firebase](https://firebase.google.com/) - Backend services
+- [Flutter Secure Storage](https://pub.dev/packages/flutter_secure_storage) - Encrypted storage
+- [Flame](https://flame-engine.org/) - Game engine (Infinite Runner)
 - [Shared Preferences](https://pub.dev/packages/shared_preferences) - Local storage
 - [Carousel Slider](https://pub.dev/packages/carousel_slider) - Game carousel
 - [HTTP](https://pub.dev/packages/http) - Image fetching
@@ -80,14 +106,28 @@ cd puzzle
 flutter pub get
 ```
 
-3. Configure API keys (optional):
+3. Set up Firebase (required for score tracking):
+```bash
+# Install FlutterFire CLI
+dart pub global activate flutterfire_cli
+
+# Configure Firebase (generates lib/config/firebase_options.dart)
+flutterfire configure
+
+# Follow the prompts to select/create a Firebase project
+# See docs/FIREBASE_SETUP_GUIDE.md for detailed instructions
+```
+
+**Important:** Add `lib/config/firebase_options.dart` to your `.gitignore` (already configured).
+
+4. Configure API keys (optional):
 ```bash
 # See docs/API_CONFIGURATION.md for detailed instructions
 # The app will work with fallback images without API configuration
 flutter run --dart-define=UNSPLASH_ACCESS_KEY=your_key_here
 ```
 
-4. Run the app:
+5. Run the app:
 ```bash
 # Android/iOS
 flutter run
@@ -133,48 +173,73 @@ flutter build web --release
 
 ```
 lib/
-├── main.dart                      # App entry point
-├── puzzle_game_logic.dart         # Puzzle game logic
-├── screens/
-│   ├── main_navigation.dart       # Bottom navigation
-│   ├── home_page.dart            # Home with carousel
-│   ├── puzzle.dart               # Image puzzle game
-│   └── profile_screen.dart       # User profile & stats
-├── models/
-│   ├── game_model.dart           # Game definitions
-│   ├── achievement_model.dart    # Achievement system
-│   └── puzzle_piece.dart         # Puzzle piece model
-├── services/
-│   ├── achievement_service.dart  # Achievement logic
-│   ├── image_puzzle_generator.dart
-│   └── unsplash_service.dart
-├── widgets/
-│   ├── game_carousel.dart        # Game selection carousel
-│   ├── achievement_card.dart     # Achievement display
-│   └── image_puzzle_piece.dart   # Puzzle tile widget
-├── providers/
-│   ├── puzzle_game_provider.dart # Puzzle state management
-│   ├── game_2048_provider.dart   # 2048 game provider
-│   └── snake_game_provider.dart  # Snake game provider
-├── infinite_runner/               # Infinite runner game module
-│   ├── components/
-│   ├── state/
-│   ├── systems/
-│   └── ui/
-└── config/
-    └── api_config.dart           # API configuration
+├── main.dart                      # App entry point, DI setup
+│
+├── config/                        # Configuration
+│   ├── service_locator.dart      # Dependency injection setup
+│   ├── api_config.dart           # API key management
+│   └── firebase_options.dart     # Firebase config (gitignored)
+│
+├── core/                          # Core interfaces
+│   ├── game_interface.dart       # Game registration interface
+│   └── game_registry.dart        # Game registry system
+│
+├── games/                         # Feature-based game modules
+│   ├── puzzle/                   # Image Puzzle
+│   ├── game_2048/                # 2048 Game
+│   ├── snake/                    # Snake Game
+│   └── infinite_runner/          # Infinite Runner (Flame)
+│
+├── models/                        # Shared data models
+│   ├── game_model.dart
+│   ├── achievement_model.dart
+│   └── user_stats_model.dart
+│
+├── providers/                     # State management
+│   ├── user_auth_provider.dart
+│   └── mixins/
+│       └── game_stats_mixin.dart
+│
+├── repositories/                  # Data access layer
+│   ├── secure_storage_repository.dart
+│   ├── user_repository.dart
+│   └── stats_repository.dart
+│
+├── services/                      # Business logic
+│   ├── auth/                     # Authentication
+│   ├── data/                     # Firebase operations
+│   ├── game/                     # Game services
+│   └── storage/                  # Persistence
+│
+├── screens/                       # UI screens
+│   ├── main_navigation.dart
+│   ├── home_page.dart
+│   └── [game]_page.dart
+│
+├── widgets/                       # Reusable widgets
+│   ├── game_carousel.dart
+│   ├── achievement_card.dart
+│   └── dialogs/
+│
+└── utils/                         # Utilities
+    ├── input_validator.dart
+    ├── secure_logger.dart
+    └── dialog_utils.dart
 
 docs/                              # Documentation
-├── API_CONFIGURATION.md
-├── FIREBASE_SETUP_GUIDE.md
-├── INFINITE_RUNNER_ARCHITECTURE.md
-└── ...more documentation files
+├── ARCHITECTURE.md                # Architecture guide
+├── SECURITY.md                    # Security best practices
+├── ADDING_GAMES.md                # Game integration guide
+├── API_CONFIGURATION.md           # API setup
+├── FIREBASE_SETUP_GUIDE.md        # Firebase setup
+└── INFINITE_RUNNER_ARCHITECTURE.md
 
 assets/
 ├── images/                        # Game images and sprites
-├── audio/                         # Sound effects (coming soon)
-└── fonts/                         # Custom fonts (coming soon)
+└── (audio, fonts coming soon)
 ```
+
+**See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed architecture documentation.**
 
 ## 🤝 Contributing
 
@@ -212,11 +277,35 @@ If you encounter any issues or have questions:
 
 ## 📚 Documentation
 
-For detailed guides and documentation, see:
-- [API Configuration](docs/API_CONFIGURATION.md)
-- [Firebase Setup](docs/FIREBASE_SETUP_GUIDE.md)
-- [Infinite Runner Architecture](docs/INFINITE_RUNNER_ARCHITECTURE.md)
-- [CI/CD Setup](docs/CI_CD_SETUP_COMPLETE.md)
-- [Security Improvements](docs/SECURITY_IMPROVEMENTS.md)
+### For Developers
+- **[Architecture Guide](docs/ARCHITECTURE.md)** - Application architecture, patterns, and design decisions
+- **[Security Best Practices](docs/SECURITY.md)** - Security guidelines and implementation
+- **[Adding Games](docs/ADDING_GAMES.md)** - Step-by-step guide for adding new games
+
+### Setup & Configuration
+- [API Configuration](docs/API_CONFIGURATION.md) - Unsplash API setup
+- [Firebase Setup](docs/FIREBASE_SETUP_GUIDE.md) - Firebase configuration guide
+- [CI/CD Setup](docs/CI_CD_SETUP_COMPLETE.md) - GitHub Actions workflows
+
+### Technical Details
+- [Infinite Runner Architecture](docs/INFINITE_RUNNER_ARCHITECTURE.md) - Flame engine architecture
+- [Security Improvements](docs/SECURITY_IMPROVEMENTS.md) - Security changelog
+
+### Sudoku Game (NEW)
+- **[Sudoku Quick Reference](docs/SUDOKU_QUICK_REFERENCE.md)** - API reference and usage examples
+- **[Sudoku Phase 1 Analysis](docs/SUDOKU_PHASE1_ANALYSIS.md)** - Complete implementation analysis and test coverage
+
+## 🔒 Security
+
+This project implements industry-standard security practices:
+- All sensitive data is encrypted using Flutter Secure Storage
+- API keys are never committed to version control
+- Input validation prevents injection attacks
+- Secure logging prevents credential leakage
+- Firebase security rules protect user data
+
+**Report security issues:** Do not open public issues. Email security concerns privately.
+
+See [docs/SECURITY.md](docs/SECURITY.md) for complete security documentation.
 
 

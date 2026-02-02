@@ -1,0 +1,334 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/sudoku_online_provider.dart';
+import '../widgets/sudoku_grid.dart';
+import '../widgets/number_pad.dart';
+import '../widgets/control_buttons.dart';
+import 'sudoku_online_result_screen.dart';
+
+// Color constants
+const _backgroundDark = Color(0xFF0f1115);
+const _surfaceDark = Color(0xFF1a1d24);
+const _accentBlue = Color(0xFF3b82f6);
+const _accentGreen = Color(0xFF4ade80);
+
+/// Online 1v1 Sudoku game screen with real-time opponent status
+class SudokuOnlineGameScreen extends StatefulWidget {
+  const SudokuOnlineGameScreen({super.key});
+
+  @override
+  State<SudokuOnlineGameScreen> createState() => _SudokuOnlineGameScreenState();
+}
+
+class _SudokuOnlineGameScreenState extends State<SudokuOnlineGameScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Listen for match completion
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _listenForCompletion();
+    });
+  }
+
+  void _listenForCompletion() {
+    final provider = context.read<SudokuOnlineProvider>();
+    provider.addListener(_checkCompletion);
+  }
+
+  void _checkCompletion() {
+    final provider = context.read<SudokuOnlineProvider>();
+    if (provider.isCompleted && mounted) {
+      // Remove listener
+      provider.removeListener(_checkCompletion);
+
+      // Navigate to result screen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => ChangeNotifierProvider.value(
+            value: provider,
+            child: const SudokuOnlineResultScreen(),
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    final provider = context.read<SudokuOnlineProvider>();
+    provider.removeListener(_checkCompletion);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _backgroundDark,
+      body: SafeArea(
+        child: Consumer<SudokuOnlineProvider>(
+          builder: (context, provider, child) {
+            if (provider.board == null) {
+              return _buildWaitingUI(provider);
+            }
+
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                return Column(
+                  children: [
+                    _buildHeader(context, provider),
+                    _buildOpponentBar(provider),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: Center(
+                        child: SudokuGrid(
+                          board: provider.board!,
+                          selectedRow: provider.selectedRow,
+                          selectedCol: provider.selectedCol,
+                          onCellTap: provider.selectCell,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ControlButtons(
+                      notesMode: provider.notesMode,
+                      canUndo: provider.canUndo,
+                      canErase: provider.selectedRow != null && provider.selectedCol != null,
+                      hintsRemaining: 0, // No hints in online mode
+                      onUndo: provider.canUndo ? () => provider.undo() : () {},
+                      onErase: provider.selectedRow != null && provider.selectedCol != null
+                          ? () => provider.clearCell()
+                          : () {},
+                      onToggleNotes: provider.toggleNotesMode,
+                      onHint: () {}, // No hints in online mode
+                    ),
+                    const SizedBox(height: 8),
+                    NumberPad(
+                      board: provider.board!,
+                      onNumberTap: (number) => provider.placeNumber(number),
+                      useCompactMode: constraints.maxHeight < 700,
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, SudokuOnlineProvider provider) {
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => _showLeaveDialog(context, provider),
+          ),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'ONLINE 1v1',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                Text(
+                  _formatTime(provider.elapsedSeconds),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6 * 255),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 48),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOpponentBar(SudokuOnlineProvider provider) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _surfaceDark,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: provider.opponentCompleted
+              ? _accentGreen
+              : _accentBlue.withValues(alpha: 0.3 * 255),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            provider.opponentCompleted
+                ? Icons.check_circle
+                : Icons.person,
+            color: provider.opponentCompleted ? _accentGreen : _accentBlue,
+            size: 28,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  provider.opponentName ?? 'Waiting for opponent...',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                if (provider.hasOpponent)
+                  Text(
+                    provider.opponentCompleted
+                        ? 'Completed!'
+                        : '${provider.opponentProgress ?? 0}/81 cells filled',
+                    style: TextStyle(
+                      color: provider.opponentCompleted
+                          ? _accentGreen
+                          : Colors.white.withValues(alpha: 0.6 * 255),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  )
+                else
+                  Text(
+                    'Waiting...',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.4 * 255),
+                      fontSize: 12,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (provider.hasOpponent && !provider.opponentCompleted)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _accentBlue.withValues(alpha: 0.15 * 255),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '${((provider.opponentProgress ?? 0) / 81 * 100).round()}%',
+                style: const TextStyle(
+                  color: _accentBlue,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWaitingUI(SudokuOnlineProvider provider) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(color: _accentBlue),
+          const SizedBox(height: 24),
+          Text(
+            provider.isWaiting
+                ? 'WAITING FOR OPPONENT'
+                : 'LOADING GAME',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            provider.isWaiting
+                ? 'Please wait while we find you an opponent...'
+                : 'Setting up the game...',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.6 * 255),
+              fontSize: 14,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+          TextButton(
+            onPressed: () async {
+              final navigator = Navigator.of(context);
+              await provider.leaveMatch();
+              navigator.pop();
+            },
+            child: const Text(
+              'CANCEL',
+              style: TextStyle(
+                color: Colors.red,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showLeaveDialog(BuildContext context, SudokuOnlineProvider provider) async {
+    final shouldLeave = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _surfaceDark,
+        title: const Text(
+          'Leave Match?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Are you sure you want to leave? This will count as a forfeit.',
+          style: TextStyle(color: Color(0x99FFFFFF)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('STAY'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('LEAVE'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLeave == true && context.mounted) {
+      await provider.leaveMatch();
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+    }
+  }
+
+  String _formatTime(int seconds) {
+    final minutes = seconds ~/ 60;
+    final remainingSeconds = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+  }
+}

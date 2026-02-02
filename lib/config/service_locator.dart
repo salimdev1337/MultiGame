@@ -9,6 +9,12 @@ import 'package:multigame/services/data/firebase_stats_service.dart';
 import 'package:multigame/services/storage/nickname_service.dart';
 import 'package:multigame/services/game/unsplash_service.dart';
 import 'package:multigame/utils/storage_migrator.dart';
+import 'package:multigame/games/sudoku/services/sudoku_persistence_service.dart';
+import 'package:multigame/games/sudoku/services/sudoku_stats_service.dart';
+import 'package:multigame/games/sudoku/services/matchmaking_service.dart';
+import 'package:multigame/games/sudoku/services/sudoku_sound_service.dart';
+import 'package:multigame/games/sudoku/services/sudoku_haptic_service.dart';
+import 'package:multigame/games/sudoku/providers/sudoku_settings_provider.dart';
 
 /// Global service locator instance
 final getIt = GetIt.instance;
@@ -76,6 +82,40 @@ Future<void> setupServiceLocator() async {
     () => NicknameService(
       userRepository: getIt<UserRepository>(),
       migrator: getIt<StorageMigrator>(),
+    ),
+  );
+
+  // Sudoku game services
+  getIt.registerLazySingleton<SudokuPersistenceService>(
+    () => SudokuPersistenceService(
+      storage: getIt<SecureStorageRepository>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<SudokuStatsService>(
+    () => SudokuStatsService(
+      storage: getIt<SecureStorageRepository>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<MatchmakingService>(
+    () => MatchmakingService(),
+  );
+
+  // Sudoku settings and feedback services (Phase 6)
+  getIt.registerLazySingleton<SudokuSettingsProvider>(
+    () => SudokuSettingsProvider(),
+  );
+
+  getIt.registerLazySingleton<SudokuSoundService>(
+    () => SudokuSoundService(
+      settings: getIt<SudokuSettingsProvider>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<SudokuHapticService>(
+    () => SudokuHapticService(
+      settings: getIt<SudokuSettingsProvider>(),
     ),
   );
 

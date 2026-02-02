@@ -16,19 +16,15 @@ class InputValidator {
       return ValidationResult.error('Nickname cannot be empty');
     }
 
-    if (trimmed.length < 2) {
-      return ValidationResult.error('Nickname must be at least 2 characters');
-    }
-
-    if (trimmed.length > 20) {
-      return ValidationResult.error('Nickname must be less than 20 characters');
+    if (trimmed.length < 2 || trimmed.length > 20) {
+      return ValidationResult.error('Nickname must be between 2 and 20 characters');
     }
 
     // Only allow alphanumeric, spaces, hyphens, and underscores
     final validChars = RegExp(r'^[a-zA-Z0-9_\- ]+$');
     if (!validChars.hasMatch(trimmed)) {
       return ValidationResult.error(
-        'Nickname can only contain letters, numbers, spaces, hyphens, and underscores',
+        'Nickname can only contain alphanumeric characters, spaces, hyphens, and underscores',
       );
     }
 
@@ -39,7 +35,7 @@ class InputValidator {
 
     // No leading or trailing spaces (should already be trimmed)
     if (trimmed != input) {
-      return ValidationResult.error('Nickname cannot have leading or trailing spaces');
+      return ValidationResult.error('Nickname cannot have leading or trailing whitespace');
     }
 
     return ValidationResult.success(trimmed);
@@ -52,28 +48,29 @@ class InputValidator {
     // Trim whitespace
     String sanitized = input.trim();
 
+    // Remove potential HTML/script tags AND their content
+    sanitized = sanitized.replaceAll(RegExp(r'<script[^>]*>.*?</script>', caseSensitive: false, dotAll: true), '');
+    sanitized = sanitized.replaceAll(RegExp(r'<[^>]*>'), '');
+
     // Replace multiple spaces with single space
     sanitized = sanitized.replaceAll(RegExp(r'\s+'), ' ');
 
     // Remove control characters
     sanitized = sanitized.replaceAll(RegExp(r'[\x00-\x1F\x7F]'), '');
 
-    // Remove potential HTML/script tags
-    sanitized = sanitized.replaceAll(RegExp(r'<[^>]*>'), '');
-
-    return sanitized;
+    return sanitized.trim();
   }
 
   /// Validate score value
   ///
   /// Ensures score is within valid range for the game
   static ValidationResult validateScore(int score, {int min = 0, int max = 100000}) {
-    if (score < min) {
-      return ValidationResult.error('Score cannot be negative');
-    }
-
-    if (score > max) {
-      return ValidationResult.error('Score exceeds maximum allowed value');
+    if (score < min || score > max) {
+      // Include "maximum" in the message when above max for custom ranges
+      if (score > max && max != 100000) {
+        return ValidationResult.error('Score must be between $min and $max (maximum: $max)');
+      }
+      return ValidationResult.error('Score must be between $min and $max');
     }
 
     return ValidationResult.success(score);
@@ -86,7 +83,7 @@ class InputValidator {
     const validGameTypes = ['puzzle', '2048', 'snake', 'infinite_runner'];
 
     if (!validGameTypes.contains(gameType)) {
-      return ValidationResult.error('Invalid game type');
+      return ValidationResult.error('Invalid game type. Valid game types are: ${validGameTypes.join(", ")}');
     }
 
     return ValidationResult.success(gameType);
@@ -96,7 +93,7 @@ class InputValidator {
   static bool containsDangerousChars(String input) {
     // Check for script tags, SQL injection patterns, etc.
     final dangerous = RegExp(
-      r'(<script|javascript:|onerror=|onclick=|<iframe|eval\(|\.\.\/)',
+      r"(<script|javascript:|onerror=|onclick=|<iframe|eval\(|\.\.\/|'|--|union\s+select)",
       caseSensitive: false,
     );
 
