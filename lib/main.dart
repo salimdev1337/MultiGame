@@ -121,6 +121,8 @@ class MyApp extends StatelessWidget {
             statsService: getIt<FirebaseStatsService>(),
             persistenceService: getIt<SudokuPersistenceService>(),
             sudokuStatsService: getIt<SudokuStatsService>(),
+            soundService: getIt<SudokuSoundService>(),
+            hapticService: getIt<SudokuHapticService>(),
           ),
         ),
         ChangeNotifierProvider(

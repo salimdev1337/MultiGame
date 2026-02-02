@@ -11,6 +11,8 @@ import '../logic/sudoku_validator.dart';
 import '../logic/sudoku_solver.dart';
 import '../services/sudoku_persistence_service.dart';
 import '../services/sudoku_stats_service.dart';
+import '../services/sudoku_sound_service.dart';
+import '../services/sudoku_haptic_service.dart';
 
 /// Provider for Sudoku Rush Mode game state and logic.
 ///
@@ -28,6 +30,8 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
   final FirebaseStatsService _statsService;
   final SudokuPersistenceService _persistenceService;
   final SudokuStatsService _sudokuStatsService;
+  final SudokuSoundService _soundService;
+  final SudokuHapticService _hapticService;
 
   @override
   FirebaseStatsService get statsService => _statsService;
@@ -76,9 +80,13 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     required FirebaseStatsService statsService,
     required SudokuPersistenceService persistenceService,
     required SudokuStatsService sudokuStatsService,
+    required SudokuSoundService soundService,
+    required SudokuHapticService hapticService,
   })  : _statsService = statsService,
         _persistenceService = persistenceService,
-        _sudokuStatsService = sudokuStatsService {
+        _sudokuStatsService = sudokuStatsService,
+        _soundService = soundService,
+        _hapticService = hapticService {
     _generator = SudokuGenerator();
   }
 
@@ -214,6 +222,8 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
 
     _selectedRow = row;
     _selectedCol = col;
+    _soundService.playSelectCell();
+    _hapticService.lightTap();
     notifyListeners();
   }
 
@@ -271,6 +281,11 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     // Validate and check for errors
     final hadErrors = _validateAndApplyPenalty();
 
+    if (!hadErrors) {
+      _soundService.playNumberEntry();
+      _hapticService.mediumTap();
+    }
+
     // Check win condition (only if no errors)
     if (!hadErrors && _checkWinCondition()) {
       _handleVictory();
@@ -314,6 +329,9 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
   void _applyTimePenalty() {
     _remainingSeconds = (_remainingSeconds - penaltySeconds).clamp(0, initialTimeSeconds);
     _penaltiesApplied++;
+
+    _soundService.playError();
+    _hapticService.errorShake();
 
     // Trigger penalty animation
     _showPenalty = true;
@@ -401,12 +419,16 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
       _currentBoard!.getCell(position.row, position.col).isError = true;
     }
 
+    _soundService.playErase();
+    _hapticService.mediumTap();
     notifyListeners();
   }
 
   /// Toggles notes mode on/off
   void toggleNotesMode() {
     _notesMode = !_notesMode;
+    _soundService.playNotesToggle();
+    _hapticService.lightTap();
     notifyListeners();
   }
 
@@ -420,6 +442,8 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
   void _handleVictory() {
     _isVictory = true;
     _isGameOver = true;
+    _soundService.playVictory();
+    _hapticService.successPattern();
     _cancelTimer();
 
     // Save score via GameStatsMixin
@@ -554,6 +578,8 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     }
 
     notifyListeners();
+    _soundService.playHint();
+    _hapticService.doubleTap();
   }
 
   /// Undoes the last action
@@ -607,6 +633,8 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     }
 
     notifyListeners();
+    _soundService.playUndo();
+    _hapticService.mediumTap();
   }
 
   /// Toggles error highlighting on/off

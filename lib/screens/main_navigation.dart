@@ -119,7 +119,7 @@ class _MainNavigationState extends State<MainNavigation> {
         } else if (_selectedGame?.id == 'snake_game') {
           return const SnakeGamePage();
         } else if (_selectedGame?.id == 'sudoku') {
-          return const DifficultySelectionScreen();
+          return const ModernModeDifficultyScreen();
         } else if (_selectedGame?.id == 'infinite_runner') {
           return const InfiniteRunnerPage();
         } else {

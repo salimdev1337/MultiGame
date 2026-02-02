@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../core/game_interface.dart';
-import 'screens/mode_selection_screen.dart';
+import 'screens/modern_mode_difficulty_screen.dart';
 
 /// Game definition for Sudoku.
 ///
 /// Registers Sudoku with the GameRegistry for display in the
 /// main game carousel and handles navigation to the game.
 ///
-/// Entry point: Mode selection screen (Classic or Rush Mode)
+/// Entry point: Modern carousel-based mode and difficulty selection screen
 class SudokuGameDefinition extends BaseGameDefinition {
   @override
   String get id => 'sudoku';
@@ -37,5 +37,5 @@ class SudokuGameDefinition extends BaseGameDefinition {
   int get maxScore => 10000;
 
   @override
-  Widget createScreen() => const ModeSelectionScreen();
+  Widget createScreen() => const ModernModeDifficultyScreen();
 }
