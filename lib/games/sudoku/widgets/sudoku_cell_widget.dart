@@ -68,9 +68,10 @@ class _SudokuCellWidgetState extends State<SudokuCellWidget>
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
-      CurvedAnimation(parent: _scaleController, curve: Curves.easeOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.15,
+    ).animate(CurvedAnimation(parent: _scaleController, curve: Curves.easeOut));
   }
 
   @override
@@ -114,8 +115,8 @@ class _SudokuCellWidgetState extends State<SudokuCellWidget>
             child: widget.cell.hasValue
                 ? _buildValueText()
                 : widget.cell.hasNotes
-                    ? _buildNotesGrid()
-                    : const SizedBox.shrink(),
+                ? _buildNotesGrid()
+                : const SizedBox.shrink(),
           ),
         ),
       ),
@@ -131,7 +132,7 @@ class _SudokuCellWidgetState extends State<SudokuCellWidget>
       return _primaryCyan.withValues(alpha: 0.2 * 255);
     }
     if (widget.isHighlighted) {
-      return Colors.white.withValues(alpha: 0.05 * 255);
+      return Colors.white.withValues(alpha: 0.001 * 255);
     }
     return _surfaceLighter;
   }
@@ -175,8 +176,8 @@ class _SudokuCellWidgetState extends State<SudokuCellWidget>
         color: hasError
             ? _errorRed
             : isGiven
-                ? _textWhite
-                : _primaryCyan,
+            ? _textWhite
+            : _primaryCyan,
         shadows: !isGiven && !hasError
             ? [
                 Shadow(

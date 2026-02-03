@@ -3,7 +3,7 @@ import 'package:multigame/games/puzzle/puzzle_game_definition.dart';
 import 'package:multigame/games/game_2048/game_2048_definition.dart';
 import 'package:multigame/games/snake/snake_game_definition.dart';
 import 'package:multigame/games/sudoku/sudoku_game_definition.dart';
-import 'package:multigame/infinite_runner/infinite_runner_definition.dart';
+import 'package:multigame/games/infinite_runner/infinite_runner_definition.dart';
 
 /// Initialize and register all games
 /// Should be called once during app startup

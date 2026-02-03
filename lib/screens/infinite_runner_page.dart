@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flame/game.dart';
-import 'package:multigame/infinite_runner/infinite_runner_game.dart';
-import 'package:multigame/infinite_runner/ui/overlays.dart';
+import 'package:multigame/games/infinite_runner/infinite_runner_game.dart';
+import 'package:multigame/games/infinite_runner/ui/overlays.dart';
 
 /// Page that hosts the Infinite Runner game
 /// Integrates with the multigame app architecture

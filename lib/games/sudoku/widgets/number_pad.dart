@@ -7,16 +7,6 @@ const _surfaceDark = Color(0xFF2a2e36);
 const _surfaceLighter = Color(0xFF3a3e46);
 const _textGray = Color(0xFF64748b);
 
-/// Number pad widget for inputting values 1-9.
-///
-/// Design:
-/// - Single row inline layout for all screen sizes
-/// - Numbers 1-9 in order
-/// - Remaining count badge in top-right corner of each button
-/// - Press animation (border-bottom effect with translate)
-/// - Disabled state when all instances of a number are placed
-/// - Dark background with cyan text
-/// - Responsive sizing based on available screen width
 class NumberPad extends StatelessWidget {
   /// The current game board (to calculate remaining counts)
   final SudokuBoard board;
@@ -50,9 +40,7 @@ class NumberPad extends StatelessWidget {
 
           return Expanded(
             child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: useCompactMode ? 2 : 4,
-              ),
+              padding: EdgeInsets.symmetric(horizontal: useCompactMode ? 2 : 4),
               child: _NumberButton(
                 number: number,
                 remaining: remaining,
@@ -67,10 +55,6 @@ class NumberPad extends StatelessWidget {
     );
   }
 
-  /// Calculates how many more of this number can be placed
-  ///
-  /// Returns 9 - (count of this number on board)
-  /// Maximum of 9 instances of each number in a valid Sudoku
   int _calculateRemaining(int number) {
     int count = 0;
     for (int row = 0; row < 9; row++) {
