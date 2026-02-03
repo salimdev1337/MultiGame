@@ -53,3 +53,4 @@ lib/config/firebase_options.dart
 *.env
 
 node_modules/
+task.md

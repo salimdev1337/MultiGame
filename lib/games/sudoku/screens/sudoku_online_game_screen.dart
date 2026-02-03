@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/sudoku_online_provider.dart';
+import '../models/connection_state.dart' as sudoku;
 import '../widgets/sudoku_grid.dart';
 import '../widgets/number_pad.dart';
 import '../widgets/control_buttons.dart';
@@ -93,13 +94,13 @@ class _SudokuOnlineGameScreenState extends State<SudokuOnlineGameScreen> {
                       notesMode: provider.notesMode,
                       canUndo: provider.canUndo,
                       canErase: provider.selectedRow != null && provider.selectedCol != null,
-                      hintsRemaining: 0, // No hints in online mode
+                      hintsRemaining: provider.hintsRemaining,
                       onUndo: provider.canUndo ? () => provider.undo() : () {},
                       onErase: provider.selectedRow != null && provider.selectedCol != null
                           ? () => provider.clearCell()
                           : () {},
                       onToggleNotes: provider.toggleNotesMode,
-                      onHint: () {}, // No hints in online mode
+                      onHint: provider.canUseHint ? () => _useHint(context, provider) : () {},
                     ),
                     const SizedBox(height: 8),
                     NumberPad(
@@ -132,14 +133,21 @@ class _SudokuOnlineGameScreenState extends State<SudokuOnlineGameScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
-                  'ONLINE 1v1',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'ONLINE 1v1',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildConnectionDot(provider.connectionState),
+                  ],
                 ),
                 Text(
                   _formatTime(provider.elapsedSeconds),
@@ -186,28 +194,74 @@ class _SudokuOnlineGameScreenState extends State<SudokuOnlineGameScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  provider.opponentName ?? 'Waiting for opponent...',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                if (provider.hasOpponent)
-                  Text(
-                    provider.opponentCompleted
-                        ? 'Completed!'
-                        : '${provider.opponentProgress ?? 0}/81 cells filled',
-                    style: TextStyle(
-                      color: provider.opponentCompleted
-                          ? _accentGreen
-                          : Colors.white.withValues(alpha: 0.6 * 255),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                Row(
+                  children: [
+                    // Connection status dot
+                    _buildConnectionDot(provider.opponentConnectionState),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        provider.opponentName ?? 'Waiting for opponent...',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                if (provider.hasOpponent)
+                  Row(
+                    children: [
+                      // Mistakes count
+                      Icon(
+                        Icons.close,
+                        size: 14,
+                        color: Colors.red.withValues(alpha: 0.8 * 255),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${provider.opponentMistakes}',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6 * 255),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Hints used count
+                      Icon(
+                        Icons.lightbulb_outline,
+                        size: 14,
+                        color: Colors.amber.withValues(alpha: 0.8 * 255),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${provider.opponentHintsUsed}',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6 * 255),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Progress
+                      Text(
+                        provider.opponentCompleted
+                            ? 'Completed!'
+                            : '${provider.opponentProgress ?? 0}/81',
+                        style: TextStyle(
+                          color: provider.opponentCompleted
+                              ? _accentGreen
+                              : Colors.white.withValues(alpha: 0.6 * 255),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   )
                 else
                   Text(
@@ -330,5 +384,62 @@ class _SudokuOnlineGameScreenState extends State<SudokuOnlineGameScreen> {
     final minutes = seconds ~/ 60;
     final remainingSeconds = seconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+  }
+
+  /// Build connection status indicator dot
+  Widget _buildConnectionDot(sudoku.ConnectionState state) {
+    final Color dotColor;
+    final String tooltip;
+
+    switch (state) {
+      case sudoku.ConnectionState.online:
+        dotColor = _accentGreen;
+        tooltip = 'Online';
+        break;
+      case sudoku.ConnectionState.offline:
+        dotColor = Colors.red;
+        tooltip = 'Offline';
+        break;
+      case sudoku.ConnectionState.reconnecting:
+        dotColor = Colors.orange;
+        tooltip = 'Reconnecting';
+        break;
+    }
+
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        width: 8,
+        height: 8,
+        decoration: BoxDecoration(
+          color: dotColor,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: dotColor.withValues(alpha: 0.5 * 255),
+              blurRadius: 4,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Use a hint for the selected cell
+  Future<void> _useHint(BuildContext context, SudokuOnlineProvider provider) async {
+    try {
+      await provider.useHint();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 }
