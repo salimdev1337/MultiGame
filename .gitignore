@@ -1,4 +1,6 @@
-# Miscellaneous
+# ==========================================
+# Miscellaneous OS/Editor Files
+# ==========================================
 *.class
 *.log
 *.pyc
@@ -12,45 +14,144 @@
 .swiftpm/
 migrate_working_dir/
 ~/
+Thumbs.db
 
-# IntelliJ related
+# ==========================================
+# IDE & Editor Configuration
+# ==========================================
+# IntelliJ IDEA / Android Studio
 *.iml
 *.ipr
 *.iws
 .idea/
 
-task.md
+# VSCode
 .vscode/
+*.code-workspace
 
-# Flutter/Dart/Pub related
+# ==========================================
+# Flutter/Dart/Pub Related
+# ==========================================
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
+.packages
 .pub-cache/
 .pub/
 /build/
+
+# Coverage and test reports
 /coverage/
+/test/coverage/
+coverage/
+lcov.info
+*.lcov
 
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
+# ==========================================
+# Platform-Specific Build Artifacts
+# ==========================================
+# Android
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/.gradle/
+/android/captures/
+/android/gradlew
+/android/gradlew.bat
+/android/local.properties
+*.jks
+*.keystore
 
-# Environment variables and secrets
-.env
-.env.local
-lib/config/secrets.dart
+# iOS
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+ios/Pods/
+ios/Podfile.lock
+ios/.symlinks/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xcuserstate
+*.xcworkspace/
+
+# Web
+/web/*.js
+/web/*.js.map
+/web/*.js_
+/web/*.js.deps
+/web/*.js.map.deps
+
+# Windows
+/windows/flutter/ephemeral/
+
+# Linux
+/linux/flutter/ephemeral/
+
+# macOS
+/macos/Flutter/ephemeral/
+/macos/Flutter/Flutter-Generated.xcconfig
+
+# ==========================================
+# Symbolication & Obfuscation
+# ==========================================
+app.*.symbols
+app.*.map.json
+
+# ==========================================
+# Environment Variables & Secrets (CRITICAL)
+# ==========================================
+# Firebase
 lib/config/firebase_options.dart
-*.key
-*.pem
+google-services.json
+GoogleService-Info.plist
+
+# Environment files
+.env
+.env.*
+!.env.example
 *.env
 
+# API Keys & Secrets
+lib/config/secrets.dart
+lib/config/api_keys.dart
+*.key
+*.pem
+*.p12
+*.mobileprovision
+
+# ==========================================
+# Claude Code & AI Agents
+# ==========================================
+.claude/
+.claude/agents/
+
+# ==========================================
+# Dependencies
+# ==========================================
 node_modules/
+
+# ==========================================
+# Project-Specific
+# ==========================================
+# Task tracking (internal use only)
 task.md
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Archive files (build artifacts)
+*.zip
+*.tar.gz
+*.rar
