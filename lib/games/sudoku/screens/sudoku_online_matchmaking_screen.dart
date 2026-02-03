@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:multigame/games/sudoku/logic/sudoku_generator.dart';
 import 'package:multigame/games/sudoku/providers/sudoku_online_provider.dart';
@@ -26,11 +27,14 @@ class _SudokuOnlineMatchmakingScreenState
   SudokuDifficulty _selectedDifficulty = SudokuDifficulty.medium;
   bool _isSearching = false;
   String? _errorMessage;
+  String? _roomCode; // Room code for created match
+  final TextEditingController _roomCodeController = TextEditingController();
 
   Future<void> _startMatchmaking() async {
     setState(() {
       _isSearching = true;
       _errorMessage = null;
+      _roomCode = null;
     });
 
     try {
@@ -49,8 +53,65 @@ class _SudokuOnlineMatchmakingScreenState
         displayName: displayName,
       );
 
-      // Start matchmaking
-      await provider.joinMatch(_difficultyToString(_selectedDifficulty));
+      // Create match and get room code
+      await provider.createMatch(_difficultyToString(_selectedDifficulty));
+
+      if (!mounted) return;
+
+      // Get the room code from the match
+      final roomCode = provider.currentMatch?.roomCode;
+
+      setState(() {
+        _roomCode = roomCode;
+      });
+
+      // Navigate to game screen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => ChangeNotifierProvider.value(
+            value: provider,
+            child: const SudokuOnlineGameScreen(),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isSearching = false;
+        _errorMessage = 'Failed to create match: ${e.toString()}';
+      });
+    }
+  }
+
+  Future<void> _joinByRoomCode(String roomCode) async {
+    setState(() {
+      _isSearching = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final authService = getIt<AuthService>();
+      final userId = authService.getUserId();
+      final displayName = authService.getDisplayName() ?? 'Player';
+
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Validate room code format (6 digits)
+      if (roomCode.length != 6 || !RegExp(r'^[0-9]+$').hasMatch(roomCode)) {
+        throw Exception('Invalid room code format. Must be 6 digits.');
+      }
+
+      // Create provider
+      final provider = SudokuOnlineProvider(
+        matchmakingService: getIt<MatchmakingService>(),
+        userId: userId,
+        displayName: displayName,
+      );
+
+      // Join match by room code
+      await provider.joinByRoomCode(roomCode);
 
       if (!mounted) return;
 
@@ -67,8 +128,125 @@ class _SudokuOnlineMatchmakingScreenState
       if (!mounted) return;
       setState(() {
         _isSearching = false;
-        _errorMessage = 'Failed to find match: ${e.toString()}';
+        _errorMessage = 'Failed to join match: ${e.toString()}';
       });
+    }
+  }
+
+  Future<void> _showJoinByCodeDialog() async {
+    _roomCodeController.clear();
+
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _surfaceDark,
+        title: const Text(
+          'Join with Code',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Enter the 6-digit room code:',
+              style: TextStyle(
+                color: Color(0x99FFFFFF),
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _roomCodeController,
+              keyboardType: TextInputType.number,
+              maxLength: 6,
+              autofocus: true,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 8,
+              ),
+              textAlign: TextAlign.center,
+              decoration: InputDecoration(
+                counterText: '',
+                hintText: '000000',
+                hintStyle: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.3 * 255),
+                  letterSpacing: 8,
+                ),
+                filled: true,
+                fillColor: _backgroundDark,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              'CANCEL',
+              style: TextStyle(
+                color: Color(0x99FFFFFF),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final code = _roomCodeController.text.trim();
+              if (code.isNotEmpty) {
+                Navigator.of(context).pop();
+                _joinByRoomCode(code);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _accentBlue,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'JOIN',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _copyRoomCode() async {
+    if (_roomCode != null) {
+      await Clipboard.setData(ClipboardData(text: _roomCode!));
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Room code copied to clipboard!'),
+          duration: Duration(seconds: 2),
+          backgroundColor: _accentBlue,
+        ),
+      );
     }
   }
 
@@ -83,6 +261,12 @@ class _SudokuOnlineMatchmakingScreenState
       case SudokuDifficulty.expert:
         return 'expert';
     }
+  }
+
+  @override
+  void dispose() {
+    _roomCodeController.dispose();
+    super.dispose();
   }
 
   @override
@@ -137,7 +321,7 @@ class _SudokuOnlineMatchmakingScreenState
           ),
           const SizedBox(height: 32),
           const Text(
-            'FINDING OPPONENT',
+            'WAITING FOR OPPONENT',
             style: TextStyle(
               color: Colors.white,
               fontSize: 20,
@@ -154,14 +338,83 @@ class _SudokuOnlineMatchmakingScreenState
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 24),
-          const Text(
-            'Please wait...',
-            style: TextStyle(
-              color: Color(0x99FFFFFF),
-              fontSize: 14,
+          if (_roomCode != null) ...[
+            const SizedBox(height: 32),
+            Container(
+              padding: const EdgeInsets.all(24),
+              margin: const EdgeInsets.symmetric(horizontal: 32),
+              decoration: BoxDecoration(
+                color: _surfaceDark,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _accentBlue.withValues(alpha: 0.3 * 255),
+                  width: 2,
+                ),
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    'ROOM CODE',
+                    style: TextStyle(
+                      color: Color(0x99FFFFFF),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _roomCode!,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 36,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 8,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: _copyRoomCode,
+                    icon: const Icon(Icons.copy, size: 18),
+                    label: const Text('COPY CODE'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _accentBlue,
+                      side: const BorderSide(color: _accentBlue, width: 1.5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+            const SizedBox(height: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                'Share this code with a friend to play together!',
+                style: TextStyle(
+                  color: Color(0x99FFFFFF),
+                  fontSize: 13,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+          if (_roomCode == null) ...[
+            const SizedBox(height: 24),
+            const Text(
+              'Please wait...',
+              style: TextStyle(
+                color: Color(0x99FFFFFF),
+                fontSize: 14,
+              ),
+            ),
+          ],
           if (_errorMessage != null) ...[
             const SizedBox(height: 24),
             Padding(
@@ -182,6 +435,7 @@ class _SudokuOnlineMatchmakingScreenState
               setState(() {
                 _isSearching = false;
                 _errorMessage = null;
+                _roomCode = null;
               });
             },
             style: TextButton.styleFrom(
@@ -289,6 +543,50 @@ class _SudokuOnlineMatchmakingScreenState
               fontSize: 12,
             ),
             textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: 32),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Expanded(child: Divider(color: Color(0x33FFFFFF))),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'OR',
+                  style: TextStyle(
+                    color: Color(0x99FFFFFF),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Expanded(child: Divider(color: Color(0x33FFFFFF))),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: OutlinedButton(
+            onPressed: _showJoinByCodeDialog,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _accentBlue,
+              side: const BorderSide(color: _accentBlue, width: 2),
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'JOIN WITH CODE',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+              ),
+            ),
           ),
         ),
       ],

@@ -22,6 +22,18 @@ class MatchPlayer {
   /// Timestamp when player joined the match
   final DateTime joinedAt;
 
+  /// Number of mistakes made (incorrect placements)
+  final int mistakeCount;
+
+  /// Number of hints used
+  final int hintsUsed;
+
+  /// Last time this player was seen online (for connection tracking)
+  final DateTime lastSeenAt;
+
+  /// Whether player is currently connected
+  final bool isConnected;
+
   MatchPlayer({
     required this.userId,
     required this.displayName,
@@ -30,6 +42,10 @@ class MatchPlayer {
     required this.isCompleted,
     this.completionTime,
     required this.joinedAt,
+    this.mistakeCount = 0,
+    this.hintsUsed = 0,
+    required this.lastSeenAt,
+    this.isConnected = true,
   });
 
   /// Create initial player state with empty board
@@ -37,6 +53,7 @@ class MatchPlayer {
     required String userId,
     required String displayName,
   }) {
+    final now = DateTime.now();
     return MatchPlayer(
       userId: userId,
       displayName: displayName,
@@ -44,7 +61,11 @@ class MatchPlayer {
       filledCells: 0,
       isCompleted: false,
       completionTime: null,
-      joinedAt: DateTime.now(),
+      joinedAt: now,
+      mistakeCount: 0,
+      hintsUsed: 0,
+      lastSeenAt: now,
+      isConnected: true,
     );
   }
 
@@ -58,6 +79,10 @@ class MatchPlayer {
       'isCompleted': isCompleted,
       'completionTime': completionTime?.toIso8601String(),
       'joinedAt': joinedAt.toIso8601String(),
+      'mistakeCount': mistakeCount,
+      'hintsUsed': hintsUsed,
+      'lastSeenAt': lastSeenAt.toIso8601String(),
+      'isConnected': isConnected,
     };
   }
 
@@ -75,6 +100,12 @@ class MatchPlayer {
           ? DateTime.parse(json['completionTime'] as String)
           : null,
       joinedAt: DateTime.parse(json['joinedAt'] as String),
+      mistakeCount: json['mistakeCount'] as int? ?? 0,
+      hintsUsed: json['hintsUsed'] as int? ?? 0,
+      lastSeenAt: json['lastSeenAt'] != null
+          ? DateTime.parse(json['lastSeenAt'] as String)
+          : DateTime.parse(json['joinedAt'] as String), // Default to joinedAt
+      isConnected: json['isConnected'] as bool? ?? true,
     );
   }
 
@@ -87,6 +118,10 @@ class MatchPlayer {
     bool? isCompleted,
     DateTime? completionTime,
     DateTime? joinedAt,
+    int? mistakeCount,
+    int? hintsUsed,
+    DateTime? lastSeenAt,
+    bool? isConnected,
   }) {
     return MatchPlayer(
       userId: userId ?? this.userId,
@@ -96,6 +131,10 @@ class MatchPlayer {
       isCompleted: isCompleted ?? this.isCompleted,
       completionTime: completionTime ?? this.completionTime,
       joinedAt: joinedAt ?? this.joinedAt,
+      mistakeCount: mistakeCount ?? this.mistakeCount,
+      hintsUsed: hintsUsed ?? this.hintsUsed,
+      lastSeenAt: lastSeenAt ?? this.lastSeenAt,
+      isConnected: isConnected ?? this.isConnected,
     );
   }
 }

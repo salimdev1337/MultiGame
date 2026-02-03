@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:multigame/games/sudoku/models/match_room.dart';
 import 'package:multigame/games/sudoku/models/match_player.dart';
@@ -30,6 +31,9 @@ class MatchmakingService {
       final puzzle = generator.generate(difficultyEnum);
       final puzzleData = puzzle.toValues();
 
+      // Generate unique room code
+      final roomCode = _generateRoomCode();
+
       // Create player 1
       final player1 = MatchPlayer.initial(
         userId: userId,
@@ -43,11 +47,12 @@ class MatchmakingService {
         puzzleData: puzzleData,
         difficulty: difficulty,
         player1: player1,
+        roomCode: roomCode,
       );
 
       await docRef.set(matchRoom.toJson());
 
-      SecureLogger.firebase('Match created: ${docRef.id} ($difficulty)');
+      SecureLogger.firebase('Match created: ${docRef.id} ($difficulty) - Code: $roomCode');
 
       return docRef.id;
     } catch (e) {
@@ -205,6 +210,7 @@ class MatchmakingService {
       // Prepare update data
       final updateData = <String, dynamic>{
         isPlayer1 ? 'player1' : 'player2': updatedPlayer.toJson(),
+        'lastActivityAt': DateTime.now().toIso8601String(), // Track activity
       };
 
       // Check if this player just won (completed first)
@@ -331,6 +337,148 @@ class MatchmakingService {
       SecureLogger.error('Failed to handle timeout', error: e);
       rethrow;
     }
+  }
+
+  /// Join a match by room code
+  ///
+  /// Returns the match ID if joined successfully
+  /// Throws exception if code is invalid or room is full
+  Future<String> joinByRoomCode({
+    required String roomCode,
+    required String userId,
+    required String displayName,
+  }) async {
+    try {
+      // Query for match with matching room code
+      final snapshot = await _firestore
+          .collection(_matchesCollection)
+          .where('roomCode', isEqualTo: roomCode)
+          .where('status', isEqualTo: MatchStatus.waiting.toJson())
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        throw Exception('Invalid room code or room not available');
+      }
+
+      final matchDoc = snapshot.docs.first;
+      final matchRoom = MatchRoom.fromJson(matchDoc.data());
+
+      // Check if user is already in the match
+      if (matchRoom.hasPlayer(userId)) {
+        throw Exception('You are already in this match');
+      }
+
+      // Check if match is full
+      if (matchRoom.isFull) {
+        throw Exception('Room is full');
+      }
+
+      // Create player 2
+      final player2 = MatchPlayer.initial(
+        userId: userId,
+        displayName: displayName,
+      );
+
+      // Join the match
+      await matchDoc.reference.update({
+        'player2': player2.toJson(),
+        'status': MatchStatus.playing.toJson(),
+        'startedAt': DateTime.now().toIso8601String(),
+        'lastActivityAt': DateTime.now().toIso8601String(),
+      });
+
+      SecureLogger.firebase('Joined match via code: ${matchDoc.id} (code: $roomCode)');
+
+      return matchDoc.id;
+    } catch (e) {
+      SecureLogger.error('Failed to join match by code', error: e);
+      rethrow;
+    }
+  }
+
+  /// Update player connection state
+  ///
+  /// Updates lastSeenAt timestamp and isConnected flag
+  Future<void> updateConnectionState({
+    required String matchId,
+    required String userId,
+    required bool isConnected,
+  }) async {
+    try {
+      final matchDoc = _firestore.collection(_matchesCollection).doc(matchId);
+      final snapshot = await matchDoc.get();
+
+      if (!snapshot.exists) {
+        throw Exception('Match not found');
+      }
+
+      final matchRoom = MatchRoom.fromJson(snapshot.data()!);
+      final isPlayer1 = matchRoom.player1?.userId == userId;
+
+      if (!isPlayer1 && matchRoom.player2?.userId != userId) {
+        throw Exception('User not in match');
+      }
+
+      final currentPlayer = isPlayer1 ? matchRoom.player1! : matchRoom.player2!;
+      final updatedPlayer = currentPlayer.copyWith(
+        lastSeenAt: DateTime.now(),
+        isConnected: isConnected,
+      );
+
+      await matchDoc.update({
+        isPlayer1 ? 'player1' : 'player2': updatedPlayer.toJson(),
+        'lastActivityAt': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      SecureLogger.error('Failed to update connection state', error: e);
+      rethrow;
+    }
+  }
+
+  /// Update player stats (mistakes and hints used)
+  ///
+  /// Lightweight update that only syncs stats, not full board state
+  Future<void> updatePlayerStats({
+    required String matchId,
+    required String userId,
+    required int mistakeCount,
+    required int hintsUsed,
+  }) async {
+    try {
+      final matchDoc = _firestore.collection(_matchesCollection).doc(matchId);
+      final snapshot = await matchDoc.get();
+
+      if (!snapshot.exists) {
+        throw Exception('Match not found');
+      }
+
+      final matchRoom = MatchRoom.fromJson(snapshot.data()!);
+      final isPlayer1 = matchRoom.player1?.userId == userId;
+
+      if (!isPlayer1 && matchRoom.player2?.userId != userId) {
+        throw Exception('User not in match');
+      }
+
+      final currentPlayer = isPlayer1 ? matchRoom.player1! : matchRoom.player2!;
+      final updatedPlayer = currentPlayer.copyWith(
+        mistakeCount: mistakeCount,
+        hintsUsed: hintsUsed,
+      );
+
+      await matchDoc.update({
+        isPlayer1 ? 'player1' : 'player2': updatedPlayer.toJson(),
+      });
+    } catch (e) {
+      SecureLogger.error('Failed to update player stats', error: e);
+      rethrow;
+    }
+  }
+
+  /// Generate a unique 6-digit room code
+  String _generateRoomCode() {
+    final random = Random();
+    return List.generate(6, (_) => random.nextInt(10)).join();
   }
 
   /// Parse difficulty string to enum

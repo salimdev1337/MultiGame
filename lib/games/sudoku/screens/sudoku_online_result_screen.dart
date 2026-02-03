@@ -21,7 +21,6 @@ class SudokuOnlineResultScreen extends StatelessWidget {
         child: Consumer<SudokuOnlineProvider>(
           builder: (context, provider, child) {
             final isWinner = provider.isWinner;
-            final match = provider.currentMatch;
             final opponentName = provider.opponentName ?? 'Opponent';
 
             return Center(
@@ -94,7 +93,7 @@ class SudokuOnlineResultScreen extends StatelessWidget {
                       child: Column(
                         children: [
                           _StatRow(
-                            label: 'Your Time',
+                            label: 'Time',
                             value: _formatTime(provider.elapsedSeconds),
                             color: _accentBlue,
                           ),
@@ -106,22 +105,10 @@ class SudokuOnlineResultScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 16),
                           _StatRow(
-                            label: 'Completion',
-                            value: '${((match?.getPlayer(provider.userId)?.filledCells ?? 0) / 81 * 100).round()}%',
+                            label: 'Hints Used',
+                            value: '${provider.hintsUsed}',
                             color: _accentGreen,
                           ),
-                          if (match?.winnerId != null && match?.winnerId != provider.userId) ...[
-                            const SizedBox(height: 16),
-                            Divider(color: Colors.white.withValues(alpha: 0.1 * 255)),
-                            const SizedBox(height: 16),
-                            _StatRow(
-                              label: '$opponentName\'s Time',
-                              value: _formatTime((DateTime.now().difference(
-                                match!.startedAt ?? match.createdAt
-                              )).inSeconds),
-                              color: _accentBlue.withValues(alpha: 0.6 * 255),
-                            ),
-                          ],
                         ],
                       ),
                     ),

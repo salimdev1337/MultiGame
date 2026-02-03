@@ -93,6 +93,63 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Sudoku online matches collection
+    match /sudoku_matches/{matchId} {
+      // Helper function to check if user is a player in the match
+      function isPlayerInMatch() {
+        return isAuthenticated() &&
+               (resource.data.player1.userId == request.auth.uid ||
+                (resource.data.player2 != null &&
+                 resource.data.player2.userId == request.auth.uid));
+      }
+
+      // Anyone authenticated can read matches (for matchmaking)
+      allow read: if isAuthenticated();
+
+      // Only authenticated users can create matches
+      allow create: if isAuthenticated() &&
+                       // Validate required fields
+                       request.resource.data.keys().hasAll([
+                         'matchId', 'status', 'puzzleData', 'difficulty',
+                         'player1', 'roomCode', 'createdAt', 'timeoutSeconds',
+                         'lastActivityAt', 'reconnectionGracePeriodSeconds'
+                       ]) &&
+                       // Match must start in waiting status
+                       request.resource.data.status == 'waiting' &&
+                       // Creator must be player1
+                       request.resource.data.player1.userId == request.auth.uid &&
+                       // Room code must be 6 digits
+                       request.resource.data.roomCode is string &&
+                       request.resource.data.roomCode.matches('^[0-9]{6}$') &&
+                       // Puzzle data must be 9x9 grid
+                       request.resource.data.puzzleData.size() == 9 &&
+                       // Difficulty must be valid
+                       request.resource.data.difficulty in ['Easy', 'Medium', 'Hard', 'Expert'] &&
+                       // Player1 must have required fields
+                       request.resource.data.player1.keys().hasAll([
+                         'userId', 'displayName', 'boardState', 'filledCells',
+                         'isCompleted', 'joinedAt', 'mistakeCount', 'hintsUsed',
+                         'lastSeenAt', 'isConnected'
+                       ]);
+
+      // Players in the match can update it
+      allow update: if isPlayerInMatch() &&
+                       // Cannot modify puzzle data after creation
+                       request.resource.data.puzzleData == resource.data.puzzleData &&
+                       // Cannot modify room code
+                       request.resource.data.roomCode == resource.data.roomCode &&
+                       // Cannot modify opponent's player data
+                       (resource.data.player1.userId == request.auth.uid ?
+                         // If user is player1, cannot modify player2 (except when joining)
+                         (request.resource.data.player2 == resource.data.player2 ||
+                          (resource.data.player2 == null && request.resource.data.player2 != null)) :
+                         // If user is player2, cannot modify player1
+                         request.resource.data.player1 == resource.data.player1);
+
+      // Matches can be deleted by admin only (or cloud function)
+      allow delete: if false;
+    }
+
     // Deny all other collections by default
     match /{document=**} {
       allow read, write: if false;

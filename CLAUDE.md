@@ -286,6 +286,15 @@ The Sudoku game features **three game modes** with complete state management and
 - **Statistics Tracking**: Personal stats and global leaderboards via Firebase
 - **Sound & Haptics**: Configurable audio feedback and vibration (Phase 6 polish)
 - **Settings System**: Persistent user preferences for sound, haptics, and difficulty
+- **Online Multiplayer** (1v1 mode):
+  - Room code matchmaking (6-digit PIN codes)
+  - Real-time opponent sync with debounced Firestore writes (80-90% cost reduction)
+  - Hints system (3 per game, pre-solved board) with in-game UI
+  - Connection handling with automatic reconnection (60s grace period)
+  - Heartbeat monitoring (5-second intervals)
+  - Opponent stats tracking (mistakes, hints used, connection state)
+  - Live connection status indicators (color-coded dots for online/offline/reconnecting)
+  - Real-time opponent stat display in game UI
 
 **Architecture:**
 ```
@@ -308,7 +317,7 @@ lib/games/sudoku/
 **Services:**
 - **SudokuPersistenceService** - Save/load games from secure storage
 - **SudokuStatsService** - Track personal statistics
-- **MatchmakingService** - Firebase-based matchmaking
+- **MatchmakingService** - Firebase-based matchmaking with room codes, connection state tracking, and player stats sync
 - **SudokuSoundService** - Audio feedback (Phase 6)
 - **SudokuHapticService** - Vibration feedback (Phase 6)
 

@@ -37,6 +37,15 @@ class MatchRoom {
   /// Match timeout in seconds (default 10 minutes)
   final int timeoutSeconds;
 
+  /// 6-digit room code for joining matches (e.g., "123456")
+  final String roomCode;
+
+  /// Timestamp of last activity for server-side timeout detection
+  final DateTime? lastActivityAt;
+
+  /// Grace period for reconnection in seconds (default 60 seconds)
+  final int reconnectionGracePeriodSeconds;
+
   MatchRoom({
     required this.matchId,
     required this.status,
@@ -49,6 +58,9 @@ class MatchRoom {
     this.startedAt,
     this.endedAt,
     this.timeoutSeconds = 600, // 10 minutes default
+    required this.roomCode,
+    this.lastActivityAt,
+    this.reconnectionGracePeriodSeconds = 60, // 60 seconds default
   });
 
   /// Create initial match room with puzzle
@@ -57,7 +69,9 @@ class MatchRoom {
     required List<List<int>> puzzleData,
     required String difficulty,
     required MatchPlayer player1,
+    required String roomCode,
   }) {
+    final now = DateTime.now();
     return MatchRoom(
       matchId: matchId,
       status: MatchStatus.waiting,
@@ -66,9 +80,11 @@ class MatchRoom {
       player1: player1,
       player2: null,
       winnerId: null,
-      createdAt: DateTime.now(),
+      createdAt: now,
       startedAt: null,
       endedAt: null,
+      roomCode: roomCode,
+      lastActivityAt: now,
     );
   }
 
@@ -124,6 +140,9 @@ class MatchRoom {
       'startedAt': startedAt?.toIso8601String(),
       'endedAt': endedAt?.toIso8601String(),
       'timeoutSeconds': timeoutSeconds,
+      'roomCode': roomCode,
+      'lastActivityAt': lastActivityAt?.toIso8601String(),
+      'reconnectionGracePeriodSeconds': reconnectionGracePeriodSeconds,
     };
   }
 
@@ -151,6 +170,12 @@ class MatchRoom {
           ? DateTime.parse(json['endedAt'] as String)
           : null,
       timeoutSeconds: json['timeoutSeconds'] as int? ?? 600,
+      roomCode: json['roomCode'] as String? ?? '', // Default to empty for old matches
+      lastActivityAt: json['lastActivityAt'] != null
+          ? DateTime.parse(json['lastActivityAt'] as String)
+          : null,
+      reconnectionGracePeriodSeconds:
+          json['reconnectionGracePeriodSeconds'] as int? ?? 60,
     );
   }
 
@@ -167,6 +192,9 @@ class MatchRoom {
     DateTime? startedAt,
     DateTime? endedAt,
     int? timeoutSeconds,
+    String? roomCode,
+    DateTime? lastActivityAt,
+    int? reconnectionGracePeriodSeconds,
   }) {
     return MatchRoom(
       matchId: matchId ?? this.matchId,
@@ -180,6 +208,10 @@ class MatchRoom {
       startedAt: startedAt ?? this.startedAt,
       endedAt: endedAt ?? this.endedAt,
       timeoutSeconds: timeoutSeconds ?? this.timeoutSeconds,
+      roomCode: roomCode ?? this.roomCode,
+      lastActivityAt: lastActivityAt ?? this.lastActivityAt,
+      reconnectionGracePeriodSeconds: reconnectionGracePeriodSeconds ??
+          this.reconnectionGracePeriodSeconds,
     );
   }
 }
