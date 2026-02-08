@@ -1,3 +1,5 @@
+// Sudoku grid widget - see docs/SUDOKU_ARCHITECTURE.md
+
 import 'package:flutter/material.dart';
 import '../models/sudoku_board.dart';
 import 'sudoku_cell_widget.dart';
@@ -14,7 +16,6 @@ class SudokuGrid extends StatelessWidget {
 
   final Function(int row, int col) onCellTap;
 
-  /// Value of the selected cell (for highlighting matching numbers)
   final int? selectedCellValue;
 
   const SudokuGrid({
@@ -80,17 +81,14 @@ class SudokuGrid extends StatelessWidget {
   }
 
   bool _shouldHighlight(int? cellValue, int row, int col) {
-    // No selection, no highlight
     if (selectedRow == null || selectedCol == null) {
       return false;
     }
 
-    // Don't highlight the selected cell itself
     if (row == selectedRow && col == selectedCol) {
       return false;
     }
 
-    // Highlight same row, column, or box
     final sameRow = row == selectedRow;
     final sameCol = col == selectedCol;
     final sameBox =
@@ -100,7 +98,6 @@ class SudokuGrid extends StatelessWidget {
       return true;
     }
 
-    // Highlight cells with same number as selected cell
     if (selectedCellValue != null &&
         cellValue != null &&
         cellValue == selectedCellValue) {

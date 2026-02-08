@@ -1,3 +1,5 @@
+// Sudoku online matchmaking service - see docs/SUDOKU_SERVICES.md
+
 import 'dart:async';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -8,7 +10,6 @@ import 'package:multigame/games/sudoku/logic/sudoku_generator.dart';
 import 'package:multigame/games/sudoku/models/sudoku_board.dart';
 import 'package:multigame/utils/secure_logger.dart';
 
-/// Service for managing online 1v1 Sudoku matches with Firestore
 class MatchmakingService {
   final FirebaseFirestore _firestore;
   static const String _matchesCollection = 'sudoku_matches';
@@ -16,31 +17,24 @@ class MatchmakingService {
   MatchmakingService({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  /// Create a new match room and wait for opponent
-  ///
-  /// Returns the match ID
   Future<String> createMatch({
     required String userId,
     required String displayName,
     required String difficulty,
   }) async {
     try {
-      // Generate a new puzzle
       final generator = SudokuGenerator();
       final difficultyEnum = _parseDifficulty(difficulty);
       final puzzle = generator.generate(difficultyEnum);
       final puzzleData = puzzle.toValues();
 
-      // Generate unique room code
       final roomCode = _generateRoomCode();
 
-      // Create player 1
       final player1 = MatchPlayer.initial(
         userId: userId,
         displayName: displayName,
       );
 
-      // Create match room
       final docRef = _firestore.collection(_matchesCollection).doc();
       final matchRoom = MatchRoom.create(
         matchId: docRef.id,
@@ -61,23 +55,18 @@ class MatchmakingService {
     }
   }
 
-  /// Find and join an available match
-  ///
-  /// Returns the match ID if joined successfully, null if no matches available
   Future<String?> joinAvailableMatch({
     required String userId,
     required String displayName,
     String? preferredDifficulty,
   }) async {
     try {
-      // Query for waiting matches
       Query query = _firestore
           .collection(_matchesCollection)
           .where('status', isEqualTo: MatchStatus.waiting.toJson())
           .orderBy('createdAt', descending: false)
           .limit(1);
 
-      // Filter by difficulty if specified
       if (preferredDifficulty != null) {
         query = query.where('difficulty', isEqualTo: preferredDifficulty);
       }
@@ -92,19 +81,16 @@ class MatchmakingService {
       final matchDoc = snapshot.docs.first;
       final matchRoom = MatchRoom.fromJson(matchDoc.data() as Map<String, dynamic>);
 
-      // Check if user is already in the match (creator trying to join own match)
       if (matchRoom.player1?.userId == userId) {
         SecureLogger.log('Cannot join own match', tag: 'Matchmaking');
         return null;
       }
 
-      // Create player 2
       final player2 = MatchPlayer.initial(
         userId: userId,
         displayName: displayName,
       );
 
-      // Join the match
       await matchDoc.reference.update({
         'player2': player2.toJson(),
         'status': MatchStatus.playing.toJson(),
@@ -120,15 +106,11 @@ class MatchmakingService {
     }
   }
 
-  /// Quick match: Find available match or create new one
-  ///
-  /// Returns the match ID
   Future<String> quickMatch({
     required String userId,
     required String displayName,
     required String difficulty,
   }) async {
-    // Try to join an existing match first
     final matchId = await joinAvailableMatch(
       userId: userId,
       displayName: displayName,
@@ -139,7 +121,6 @@ class MatchmakingService {
       return matchId;
     }
 
-    // No matches available, create new one
     return await createMatch(
       userId: userId,
       displayName: displayName,
@@ -147,7 +128,6 @@ class MatchmakingService {
     );
   }
 
-  /// Listen to match updates in real-time
   Stream<MatchRoom> watchMatch(String matchId) {
     return _firestore
         .collection(_matchesCollection)
@@ -161,7 +141,6 @@ class MatchmakingService {
     });
   }
 
-  /// Update player's board state
   Future<void> updatePlayerBoard({
     required String matchId,
     required String userId,
@@ -183,10 +162,8 @@ class MatchmakingService {
         throw Exception('User not in match');
       }
 
-      // Get current player data
       final currentPlayer = isPlayer1 ? matchRoom.player1! : matchRoom.player2!;
 
-      // Count filled cells (excluding fixed cells from original puzzle)
       int filledCells = 0;
       for (int row = 0; row < 9; row++) {
         for (int col = 0; col < 9; col++) {
@@ -197,7 +174,6 @@ class MatchmakingService {
         }
       }
 
-      // Create updated player data
       final updatedPlayer = currentPlayer.copyWith(
         boardState: board.toValues(),
         filledCells: filledCells,
@@ -207,13 +183,11 @@ class MatchmakingService {
             : currentPlayer.completionTime,
       );
 
-      // Prepare update data
       final updateData = <String, dynamic>{
         isPlayer1 ? 'player1' : 'player2': updatedPlayer.toJson(),
-        'lastActivityAt': DateTime.now().toIso8601String(), // Track activity
+        'lastActivityAt': DateTime.now().toIso8601String(),
       };
 
-      // Check if this player just won (completed first)
       if (isCompleted && matchRoom.winnerId == null) {
         updateData['winnerId'] = userId;
         updateData['status'] = MatchStatus.completed.toJson();
@@ -229,7 +203,6 @@ class MatchmakingService {
     }
   }
 
-  /// Cancel a match (for when player leaves before/during game)
   Future<void> cancelMatch(String matchId) async {
     try {
       await _firestore.collection(_matchesCollection).doc(matchId).update({
@@ -244,7 +217,6 @@ class MatchmakingService {
     }
   }
 
-  /// Get match by ID
   Future<MatchRoom?> getMatch(String matchId) async {
     try {
       final snapshot = await _firestore
@@ -263,13 +235,11 @@ class MatchmakingService {
     }
   }
 
-  /// Leave a match room
   Future<void> leaveMatch(String matchId, String userId) async {
     try {
       final matchRoom = await getMatch(matchId);
       if (matchRoom == null) return;
 
-      // If match is still waiting or playing, cancel it
       if (matchRoom.status == MatchStatus.waiting ||
           matchRoom.status == MatchStatus.playing) {
         await cancelMatch(matchId);
@@ -280,7 +250,6 @@ class MatchmakingService {
     }
   }
 
-  /// Clean up old matches (completed/cancelled matches older than 24 hours)
   Future<void> cleanupOldMatches() async {
     try {
       final cutoffTime = DateTime.now().subtract(const Duration(hours: 24));
@@ -300,18 +269,15 @@ class MatchmakingService {
       SecureLogger.firebase('Cleaned up ${snapshot.docs.length} old matches');
     } catch (e) {
       SecureLogger.error('Failed to cleanup old matches', error: e);
-      // Don't rethrow - cleanup is not critical
     }
   }
 
-  /// Handle match timeout
   Future<void> handleTimeout(String matchId) async {
     try {
       final matchRoom = await getMatch(matchId);
       if (matchRoom == null) return;
 
       if (matchRoom.hasTimedOut && matchRoom.winnerId == null) {
-        // Determine winner based on progress (most filled cells wins)
         String? winnerId;
         if (matchRoom.player1 != null && matchRoom.player2 != null) {
           final p1Filled = matchRoom.player1!.filledCells;
@@ -322,7 +288,6 @@ class MatchmakingService {
           } else if (p2Filled > p1Filled) {
             winnerId = matchRoom.player2!.userId;
           }
-          // If tied, no winner
         }
 
         await _firestore.collection(_matchesCollection).doc(matchId).update({
@@ -339,17 +304,12 @@ class MatchmakingService {
     }
   }
 
-  /// Join a match by room code
-  ///
-  /// Returns the match ID if joined successfully
-  /// Throws exception if code is invalid or room is full
   Future<String> joinByRoomCode({
     required String roomCode,
     required String userId,
     required String displayName,
   }) async {
     try {
-      // Query for match with matching room code
       final snapshot = await _firestore
           .collection(_matchesCollection)
           .where('roomCode', isEqualTo: roomCode)
@@ -364,23 +324,19 @@ class MatchmakingService {
       final matchDoc = snapshot.docs.first;
       final matchRoom = MatchRoom.fromJson(matchDoc.data());
 
-      // Check if user is already in the match
       if (matchRoom.hasPlayer(userId)) {
         throw Exception('You are already in this match');
       }
 
-      // Check if match is full
       if (matchRoom.isFull) {
         throw Exception('Room is full');
       }
 
-      // Create player 2
       final player2 = MatchPlayer.initial(
         userId: userId,
         displayName: displayName,
       );
 
-      // Join the match
       await matchDoc.reference.update({
         'player2': player2.toJson(),
         'status': MatchStatus.playing.toJson(),
@@ -397,9 +353,6 @@ class MatchmakingService {
     }
   }
 
-  /// Update player connection state
-  ///
-  /// Updates lastSeenAt timestamp and isConnected flag
   Future<void> updateConnectionState({
     required String matchId,
     required String userId,
@@ -436,9 +389,6 @@ class MatchmakingService {
     }
   }
 
-  /// Update player stats (mistakes and hints used)
-  ///
-  /// Lightweight update that only syncs stats, not full board state
   Future<void> updatePlayerStats({
     required String matchId,
     required String userId,
@@ -475,13 +425,11 @@ class MatchmakingService {
     }
   }
 
-  /// Generate a unique 6-digit room code
   String _generateRoomCode() {
     final random = Random();
     return List.generate(6, (_) => random.nextInt(10)).join();
   }
 
-  /// Parse difficulty string to enum
   SudokuDifficulty _parseDifficulty(String difficulty) {
     switch (difficulty.toLowerCase()) {
       case 'easy':

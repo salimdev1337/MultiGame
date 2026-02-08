@@ -1,34 +1,20 @@
+// Rush game screen - see docs/SUDOKU_ARCHITECTURE.md
+
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../logic/sudoku_generator.dart';
+import 'package:provider/provider.dart';import '../logic/sudoku_generator.dart';
 import '../providers/sudoku_rush_provider.dart';
 import '../providers/sudoku_ui_provider.dart';
 import '../widgets/sudoku_grid.dart';
 import '../widgets/number_pad.dart';
 import '../widgets/control_buttons.dart';
 
-// Color constants
 const _backgroundDark = Color(0xFF0f1115);
 const _surfaceDark = Color(0xFF1a1d24);
 const _primaryCyan = Color(0xFF00d4ff);
 const _dangerRed = Color(0xFFef4444);
 const _warningOrange = Color(0xFFfb923c);
 
-/// Main game screen for Sudoku Rush Mode.
-///
-/// Rush Mode features:
-/// - 5-minute countdown timer
-/// - -10 second penalty per wrong entry
-/// - Time-based scoring system
-/// - Lose condition when timer reaches zero
-///
-/// Reuses most UI components from Classic Mode but adds:
-/// - Countdown timer display
-/// - Penalty animation
-/// - Failure dialog
-/// - Rush-specific victory stats
 class SudokuRushScreen extends StatefulWidget {
-  /// Difficulty level for this game
   final SudokuDifficulty difficulty;
 
   const SudokuRushScreen({
@@ -44,13 +30,11 @@ class _SudokuRushScreenState extends State<SudokuRushScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize game after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeGame();
     });
   }
 
-  /// Initializes the game with loading state
   Future<void> _initializeGame() async {
     final uiProvider = context.read<SudokuUIProvider>();
     final gameProvider = context.read<SudokuRushProvider>();
@@ -67,36 +51,30 @@ class _SudokuRushScreenState extends State<SudokuRushScreen> {
       body: SafeArea(
         child: Consumer2<SudokuRushProvider, SudokuUIProvider>(
           builder: (context, gameProvider, uiProvider, child) {
-            // Show loading indicator during generation
             if (uiProvider.isLoading || gameProvider.currentBoard == null) {
               return _buildLoading();
             }
 
-            // Show victory dialog if game won
             if (gameProvider.isVictory && !uiProvider.showVictoryDialog) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _showVictoryDialog(gameProvider);
               });
             }
 
-            // Show defeat dialog if time ran out
             if (gameProvider.isDefeat && !uiProvider.showVictoryDialog) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _showDefeatDialog(gameProvider);
               });
             }
 
-            // Use LayoutBuilder to detect available space
             return LayoutBuilder(
               builder: (context, constraints) {
-                // Calculate space taken by fixed-height widgets
                 const headerHeight = 44.0;
-                const statsHeight = 100.0; // Slightly taller for Rush stats
+                const statsHeight = 100.0;
                 const controlButtonsHeight = 90.0;
                 const numberPadHeight = 60.0;
                 const spacing = 32.0;
 
-                // Calculate remaining space for grid
                 final remainingHeight = constraints.maxHeight -
                     headerHeight -
                     statsHeight -
@@ -104,10 +82,8 @@ class _SudokuRushScreenState extends State<SudokuRushScreen> {
                     numberPadHeight -
                     spacing;
 
-                // Determine if we should use compact mode
                 final useCompactMode = constraints.maxHeight < 700;
 
-                // Calculate grid size
                 final maxWidth = constraints.maxWidth - 32;
                 final gridSize = (maxWidth < remainingHeight ? maxWidth : remainingHeight)
                     .clamp(250.0, 600.0);
@@ -116,12 +92,9 @@ class _SudokuRushScreenState extends State<SudokuRushScreen> {
                   children: [
                     Column(
                       children: [
-                        // Header
                         _buildHeader(context),
-                        // Rush Mode stats panel
                         _buildRushStatsPanel(gameProvider),
                         const SizedBox(height: 8),
-                        // Sudoku grid
                         Expanded(
                           child: Center(
                             child: Padding(
@@ -149,7 +122,6 @@ class _SudokuRushScreenState extends State<SudokuRushScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        // Control buttons
                         ControlButtons(
                           notesMode: gameProvider.notesMode,
                           canUndo: gameProvider.canUndo,
@@ -160,7 +132,6 @@ class _SudokuRushScreenState extends State<SudokuRushScreen> {
                           onToggleNotes: gameProvider.toggleNotesMode,
                           onHint: gameProvider.useHint,
                         ),
-                        // Number pad
                         NumberPad(
                           board: gameProvider.currentBoard!,
                           onNumberTap: gameProvider.placeNumber,
@@ -169,7 +140,6 @@ class _SudokuRushScreenState extends State<SudokuRushScreen> {
                         SizedBox(height: useCompactMode ? 8 : 12),
                       ],
                     ),
-                    // Penalty overlay
                     if (gameProvider.showPenalty) _buildPenaltyOverlay(),
                   ],
                 );
@@ -181,21 +151,18 @@ class _SudokuRushScreenState extends State<SudokuRushScreen> {
     );
   }
 
-  /// Builds the header with back and settings buttons
   Widget _buildHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Back button
           IconButton(
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back_ios_new),
             color: Colors.white.withValues(alpha: 0.7 * 255),
             iconSize: 20,
           ),
-          // Title
           const Column(
             children: [
               Text(
@@ -218,10 +185,8 @@ class _SudokuRushScreenState extends State<SudokuRushScreen> {
               ),
             ],
           ),
-          // Settings button
           IconButton(
             onPressed: () {
-              // TODO: Show settings dialog
             },
             icon: const Icon(Icons.settings),
             color: Colors.white.withValues(alpha: 0.7 * 255),
@@ -232,16 +197,14 @@ class _SudokuRushScreenState extends State<SudokuRushScreen> {
     );
   }
 
-  /// Builds the Rush Mode stats panel with countdown timer
   Widget _buildRushStatsPanel(SudokuRushProvider provider) {
-    // Determine timer color based on remaining time
     Color timerColor;
     if (provider.remainingSeconds > 120) {
-      timerColor = _primaryCyan; // > 2 minutes: cyan
+      timerColor = _primaryCyan;
     } else if (provider.remainingSeconds > 60) {
-      timerColor = _warningOrange; // 1-2 minutes: orange
+      timerColor = _warningOrange;
     } else {
-      timerColor = _dangerRed; // < 1 minute: red
+      timerColor = _dangerRed;
     }
 
     return Container(
@@ -257,7 +220,6 @@ class _SudokuRushScreenState extends State<SudokuRushScreen> {
       ),
       child: Column(
         children: [
-          // Countdown timer (large and prominent)
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -278,7 +240,6 @@ class _SudokuRushScreenState extends State<SudokuRushScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          // Stats row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -307,7 +268,6 @@ class _SudokuRushScreenState extends State<SudokuRushScreen> {
     );
   }
 
-  /// Builds the penalty overlay animation
   Widget _buildPenaltyOverlay() {
     return Positioned.fill(
       child: IgnorePointer(
@@ -351,7 +311,6 @@ class _SudokuRushScreenState extends State<SudokuRushScreen> {
     );
   }
 
-  /// Builds the loading indicator
   Widget _buildLoading() {
     return Center(
       child: Column(
@@ -373,7 +332,6 @@ class _SudokuRushScreenState extends State<SudokuRushScreen> {
     );
   }
 
-  /// Shows the victory dialog
   void _showVictoryDialog(SudokuRushProvider gameProvider) {
     final uiProvider = context.read<SudokuUIProvider>();
     uiProvider.setShowVictoryDialog(true);
@@ -439,8 +397,8 @@ class _SudokuRushScreenState extends State<SudokuRushScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Return to mode selection
+              Navigator.pop(context);
+              Navigator.pop(context);
             },
             child: const Text(
               'NEW GAME',
@@ -452,7 +410,7 @@ class _SudokuRushScreenState extends State<SudokuRushScreen> {
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // Close dialog
+              Navigator.pop(context);
               gameProvider.resetGame();
               context.read<SudokuUIProvider>().setShowVictoryDialog(false);
             },
@@ -469,10 +427,9 @@ class _SudokuRushScreenState extends State<SudokuRushScreen> {
     );
   }
 
-  /// Shows the defeat dialog when time runs out
   void _showDefeatDialog(SudokuRushProvider gameProvider) {
     final uiProvider = context.read<SudokuUIProvider>();
-    uiProvider.setShowVictoryDialog(true); // Reuse flag to prevent multiple dialogs
+    uiProvider.setShowVictoryDialog(true);
 
     showDialog(
       context: context,
@@ -532,8 +489,8 @@ class _SudokuRushScreenState extends State<SudokuRushScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Return to mode selection
+              Navigator.pop(context);
+              Navigator.pop(context);
             },
             child: const Text(
               'NEW GAME',
@@ -545,7 +502,7 @@ class _SudokuRushScreenState extends State<SudokuRushScreen> {
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // Close dialog
+              Navigator.pop(context);
               gameProvider.resetGame();
               context.read<SudokuUIProvider>().setShowVictoryDialog(false);
             },
@@ -563,7 +520,6 @@ class _SudokuRushScreenState extends State<SudokuRushScreen> {
   }
 }
 
-/// Stat item widget for Rush Mode stats panel
 class _StatItem extends StatelessWidget {
   final IconData icon;
   final String value;
@@ -603,7 +559,6 @@ class _StatItem extends StatelessWidget {
   }
 }
 
-/// Victory/defeat dialog stat row
 class _VictoryStat extends StatelessWidget {
   final String label;
   final String value;

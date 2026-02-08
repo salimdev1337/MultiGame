@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:multigame/models/game_model.dart';
 import 'package:multigame/providers/user_auth_provider.dart';
+import 'package:multigame/utils/secure_logger.dart';
 import 'package:multigame/games/puzzle/index.dart';
 import 'package:multigame/games/game_2048/index.dart';
 import 'package:multigame/games/snake/index.dart';
@@ -78,9 +79,9 @@ class _MainNavigationState extends State<MainNavigation> {
         authProvider.userId,
         displayName,
       );
-      debugPrint('User info updated: ${authProvider.userId} - $displayName');
+      SecureLogger.user('User info updated', userId: authProvider.userId);
     } else {
-      debugPrint('User info is null, waiting for auth...');
+      SecureLogger.log('Waiting for user auth...', tag: 'MainNav');
       // Retry after a delay
       Future.delayed(const Duration(seconds: 1), () {
         if (mounted) _updateGameProvidersUserInfo();

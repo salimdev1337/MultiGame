@@ -77,7 +77,7 @@ service cloud.firestore {
                        isValidScore(request.resource.data.highScore) &&
                        request.resource.data.userId == userId &&
                        // Validate game type
-                       gameType in ['puzzle', '2048', 'snake', 'infinite_runner'];
+                       gameType in ['puzzle', '2048', 'snake', 'infinite_runner', 'sudoku'];
 
       // Only the user can update their leaderboard entry
       allow update: if isOwner(userId) &&
@@ -87,7 +87,7 @@ service cloud.firestore {
                        request.resource.data.userId == userId &&
                        // High score can only increase
                        request.resource.data.highScore >= resource.data.highScore &&
-                       gameType in ['puzzle', '2048', 'snake', 'infinite_runner'];
+                       gameType in ['puzzle', '2048', 'snake', 'infinite_runner', 'sudoku'];
 
       // Users cannot delete leaderboard entries
       allow delete: if false;

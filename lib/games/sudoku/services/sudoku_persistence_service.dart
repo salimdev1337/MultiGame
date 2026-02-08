@@ -1,3 +1,5 @@
+// Sudoku persistence service - see docs/SUDOKU_SERVICES.md
+
 import 'dart:convert';
 import 'package:multigame/repositories/secure_storage_repository.dart';
 import 'package:multigame/utils/secure_logger.dart';
@@ -5,17 +7,9 @@ import '../models/saved_game.dart';
 import '../models/completed_game.dart';
 import '../logic/sudoku_generator.dart';
 
-/// Service for persisting Sudoku game state and history.
-///
-/// This service uses SecureStorageRepository for encrypted local storage.
-/// Handles:
-/// - Saving/loading unfinished games
-/// - Storing completed game history
-/// - Managing best scores per difficulty
 class SudokuPersistenceService {
   final SecureStorageRepository _storage;
 
-  // Storage keys
   static const String _keyClassicSavedGame = 'sudoku_saved_game_classic';
   static const String _keyRushSavedGame = 'sudoku_saved_game_rush';
   static const String _keyCompletedGames = 'sudoku_completed_games';
@@ -26,9 +20,6 @@ class SudokuPersistenceService {
     SecureStorageRepository? storage,
   }) : _storage = storage ?? SecureStorageRepository();
 
-  // ========== SAVED GAMES (Unfinished) ==========
-
-  /// Saves an unfinished game
   Future<bool> saveSavedGame(SavedGame game) async {
     try {
       final key = game.mode == 'classic' ? _keyClassicSavedGame : _keyRushSavedGame;
@@ -46,7 +37,6 @@ class SudokuPersistenceService {
     }
   }
 
-  /// Loads a saved game by mode ('classic' or 'rush')
   Future<SavedGame?> loadSavedGame(String mode) async {
     try {
       final key = mode == 'classic' ? _keyClassicSavedGame : _keyRushSavedGame;
@@ -63,7 +53,6 @@ class SudokuPersistenceService {
     }
   }
 
-  /// Deletes a saved game by mode
   Future<bool> deleteSavedGame(String mode) async {
     try {
       final key = mode == 'classic' ? _keyClassicSavedGame : _keyRushSavedGame;
@@ -74,7 +63,6 @@ class SudokuPersistenceService {
     }
   }
 
-  /// Checks if a saved game exists for the given mode
   Future<bool> hasSavedGame(String mode) async {
     try {
       final key = mode == 'classic' ? _keyClassicSavedGame : _keyRushSavedGame;
@@ -85,15 +73,11 @@ class SudokuPersistenceService {
     }
   }
 
-  // ========== COMPLETED GAMES (History) ==========
-
-  /// Saves a completed game to history
   Future<bool> saveCompletedGame(CompletedGame game) async {
     try {
       final games = await getCompletedGames();
       games.add(game);
 
-      // Keep only last 100 games to avoid storage bloat
       if (games.length > 100) {
         games.removeRange(0, games.length - 100);
       }
@@ -114,7 +98,6 @@ class SudokuPersistenceService {
     }
   }
 
-  /// Gets all completed games from history
   Future<List<CompletedGame>> getCompletedGames() async {
     try {
       final jsonString = await _storage.read(_keyCompletedGames);
@@ -133,13 +116,11 @@ class SudokuPersistenceService {
     }
   }
 
-  /// Gets completed games filtered by mode
   Future<List<CompletedGame>> getCompletedGamesByMode(String mode) async {
     final allGames = await getCompletedGames();
     return allGames.where((game) => game.mode == mode).toList();
   }
 
-  /// Gets completed games filtered by difficulty
   Future<List<CompletedGame>> getCompletedGamesByDifficulty(
     SudokuDifficulty difficulty,
   ) async {
@@ -147,7 +128,6 @@ class SudokuPersistenceService {
     return allGames.where((game) => game.difficulty == difficulty).toList();
   }
 
-  /// Clears all completed game history
   Future<bool> clearCompletedGames() async {
     try {
       return await _storage.delete(_keyCompletedGames);
@@ -157,17 +137,13 @@ class SudokuPersistenceService {
     }
   }
 
-  // ========== BEST SCORES ==========
-
-  /// Saves best score for a difficulty/mode
   Future<bool> saveBestScore(String mode, SudokuDifficulty difficulty, int score) async {
     try {
       final scores = await getBestScores(mode);
 
-      // Only save if it's a new high score
       final currentBest = scores[difficulty] ?? 0;
       if (score <= currentBest) {
-        return true; // No need to update
+        return true;
       }
 
       scores[difficulty] = score;
@@ -183,7 +159,6 @@ class SudokuPersistenceService {
     }
   }
 
-  /// Gets all best scores for a mode
   Future<Map<SudokuDifficulty, int>> getBestScores(String mode) async {
     try {
       final key = mode == 'classic' ? _keyBestScoresClassic : _keyBestScoresRush;
@@ -209,13 +184,11 @@ class SudokuPersistenceService {
     }
   }
 
-  /// Gets best score for a specific difficulty/mode
   Future<int?> getBestScore(String mode, SudokuDifficulty difficulty) async {
     final scores = await getBestScores(mode);
     return scores[difficulty];
   }
 
-  /// Clears all best scores for a mode
   Future<bool> clearBestScores(String mode) async {
     try {
       final key = mode == 'classic' ? _keyBestScoresClassic : _keyBestScoresRush;
@@ -226,9 +199,6 @@ class SudokuPersistenceService {
     }
   }
 
-  // ========== GENERAL ==========
-
-  /// Clears all Sudoku persistent data (for testing/reset)
   Future<bool> clearAllData() async {
     try {
       await _storage.delete(_keyClassicSavedGame);

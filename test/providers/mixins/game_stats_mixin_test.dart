@@ -7,6 +7,8 @@ import 'package:multigame/services/data/firebase_stats_service.dart';
 class MockFirebaseStatsService implements FirebaseStatsService {
   final List<Map<String, dynamic>> savedStats = [];
   bool shouldThrowError = false;
+  int failureCount = 0; // Number of times to fail before succeeding
+  int attemptCount = 0; // Track number of attempts made
 
   @override
   Future<void> saveUserStats({
@@ -15,8 +17,16 @@ class MockFirebaseStatsService implements FirebaseStatsService {
     required String gameType,
     required int score,
   }) async {
+    attemptCount++;
+
     if (shouldThrowError) {
       throw Exception('Mock error saving stats');
+    }
+
+    // Support for testing retries: fail N times then succeed
+    if (failureCount > 0) {
+      failureCount--;
+      throw Exception('Mock temporary network error');
     }
 
     savedStats.add({
@@ -30,6 +40,8 @@ class MockFirebaseStatsService implements FirebaseStatsService {
   void clear() {
     savedStats.clear();
     shouldThrowError = false;
+    failureCount = 0;
+    attemptCount = 0;
   }
 
   // Other FirebaseStatsService methods (not tested here)
@@ -347,6 +359,151 @@ void main() {
         expect(stat['userId'], 'user_stable');
         expect(stat['displayName'], 'StablePlayer');
       }
+    });
+  });
+
+  group('GameStatsMixin - Retry mechanism', () {
+    test('succeeds on first attempt without retry', () async {
+      provider.setUserInfo('user_123', 'Player1');
+
+      final result = await provider.saveScore('puzzle', 100);
+
+      expect(result, isTrue);
+      expect(mockStatsService.attemptCount, 1);
+      expect(mockStatsService.savedStats.length, 1);
+      expect(provider.retryAttempt, 0);
+    });
+
+    test('retries once after first failure and succeeds', () async {
+      provider.setUserInfo('user_123', 'Player1');
+      mockStatsService.failureCount = 1; // Fail once, then succeed
+
+      final result = await provider.saveScore('puzzle', 100);
+
+      expect(result, isTrue);
+      expect(mockStatsService.attemptCount, 2); // 2 total attempts
+      expect(mockStatsService.savedStats.length, 1);
+      expect(provider.retryAttempt, 0); // Reset after success
+    });
+
+    test('retries twice after failures and succeeds', () async {
+      provider.setUserInfo('user_123', 'Player1');
+      mockStatsService.failureCount = 2; // Fail twice, then succeed
+
+      final result = await provider.saveScore('puzzle', 100);
+
+      expect(result, isTrue);
+      expect(mockStatsService.attemptCount, 3); // 3 total attempts
+      expect(mockStatsService.savedStats.length, 1);
+      expect(provider.retryAttempt, 0); // Reset after success
+    });
+
+    test('retries 3 times after failures and succeeds on final attempt', () async {
+      provider.setUserInfo('user_123', 'Player1');
+      mockStatsService.failureCount = 3; // Fail 3 times, succeed on 4th
+
+      final result = await provider.saveScore('puzzle', 100);
+
+      expect(result, isTrue);
+      expect(mockStatsService.attemptCount, 4); // 4 total attempts (1 initial + 3 retries)
+      expect(mockStatsService.savedStats.length, 1);
+      expect(provider.retryAttempt, 0); // Reset after success
+    });
+
+    test('fails after exhausting all 3 retries', () async {
+      provider.setUserInfo('user_123', 'Player1');
+      mockStatsService.shouldThrowError = true; // Always fail
+
+      final result = await provider.saveScore('puzzle', 100);
+
+      expect(result, isFalse);
+      expect(mockStatsService.attemptCount, 4); // 4 total attempts (1 initial + 3 retries)
+      expect(mockStatsService.savedStats, isEmpty);
+      expect(provider.lastError, contains('after 4 attempts'));
+      expect(provider.retryAttempt, 0); // Reset after final failure
+    });
+
+    test('tracks retry attempt during retries', () async {
+      provider.setUserInfo('user_123', 'Player1');
+      mockStatsService.failureCount = 2; // Fail twice
+
+      // Start the save (don't await yet to check intermediate state)
+      final future = provider.saveScore('puzzle', 100);
+
+      // Give it time to start and fail first attempt
+      await Future.delayed(const Duration(milliseconds: 100));
+      // At this point it should be on retry attempt 1
+
+      // Wait for completion
+      await future;
+
+      // After success, retry count should be reset
+      expect(provider.retryAttempt, 0);
+    });
+
+    test('sets error message after all retries fail', () async {
+      provider.setUserInfo('user_123', 'Player1');
+      mockStatsService.shouldThrowError = true;
+
+      await provider.saveScore('puzzle', 100);
+
+      expect(provider.lastError, isNotNull);
+      expect(provider.lastError, contains('Failed to save score'));
+      expect(provider.lastError, contains('4 attempts'));
+      expect(provider.lastError, contains('internet connection'));
+    });
+
+    test('clears error on successful retry', () async {
+      provider.setUserInfo('user_123', 'Player1');
+
+      // First save fails completely
+      mockStatsService.shouldThrowError = true;
+      await provider.saveScore('puzzle', 100);
+      expect(provider.lastError, isNotNull);
+
+      // Second save succeeds (with one retry)
+      mockStatsService.clear();
+      mockStatsService.failureCount = 1;
+      provider.setUserInfo('user_123', 'Player1'); // Reset user info
+      await provider.saveScore('puzzle', 200);
+
+      expect(provider.lastError, isNull);
+    });
+
+    test('isSavingScore is true during save and retry', () async {
+      provider.setUserInfo('user_123', 'Player1');
+      mockStatsService.failureCount = 1;
+
+      expect(provider.isSavingScore, isFalse);
+
+      final future = provider.saveScore('puzzle', 100);
+
+      // Should be true during save
+      await Future.delayed(const Duration(milliseconds: 10));
+      expect(provider.isSavingScore, isTrue);
+
+      await future;
+
+      // Should be false after completion
+      expect(provider.isSavingScore, isFalse);
+    });
+
+    test('multiple consecutive saves work correctly', () async {
+      provider.setUserInfo('user_123', 'Player1');
+
+      // First save with retry
+      mockStatsService.failureCount = 1;
+      final result1 = await provider.saveScore('puzzle', 100);
+
+      // Second save without retry
+      mockStatsService.clear();
+      mockStatsService.attemptCount = 0;
+      provider.setUserInfo('user_123', 'Player1');
+      final result2 = await provider.saveScore('2048', 200);
+
+      expect(result1, isTrue);
+      expect(result2, isTrue);
+      expect(mockStatsService.attemptCount, 1); // Second save was first attempt
     });
   });
 }

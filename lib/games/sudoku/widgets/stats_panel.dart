@@ -1,32 +1,20 @@
+// Stats panel widget - see docs/SUDOKU_ARCHITECTURE.md
+
 import 'package:flutter/material.dart';
 
-// Color constants matching the HTML design
 const _primaryCyan = Color(0xFF00d4ff);
 const _surfaceDark = Color(0xFF1a1d24);
 const _errorRed = Color(0xFFff6b6b);
 const _textWhite = Color(0xFFffffff);
 const _textGray = Color(0xFF9ca3af);
 
-/// Stats panel displaying game statistics with glass morphism effect.
-///
-/// Design from HTML:
-/// - Semi-transparent dark background with blur
-/// - Rounded corners and subtle border
-/// - Box shadow for depth
-/// - 3 columns: Mistakes | Score | Time
-/// - Score has cyan glow effect
-/// - Mistakes turn red when >= 3
 class StatsPanel extends StatelessWidget {
-  /// Number of mistakes made
   final int mistakes;
 
-  /// Current game score
   final int score;
 
-  /// Formatted time string (MM:SS)
   final String formattedTime;
 
-  /// Maximum mistakes allowed before game over
   final int maxMistakes;
 
   const StatsPanel({
@@ -60,33 +48,28 @@ class StatsPanel extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          // Mistakes
           _StatItem(
             label: 'MISTAKES',
             value: '$mistakes/$maxMistakes',
             color: mistakes >= maxMistakes ? _errorRed : _textWhite,
             hasGlow: false,
           ),
-          // Divider
           Container(
             width: 1,
             height: 32,
             color: Colors.white.withValues(alpha: 0.1 * 255),
           ),
-          // Score
           _StatItem(
             label: 'SCORE',
             value: _formatScore(score),
             color: _primaryCyan,
             hasGlow: true,
           ),
-          // Divider
           Container(
             width: 1,
             height: 32,
             color: Colors.white.withValues(alpha: 0.1 * 255),
           ),
-          // Time
           _StatItem(
             label: 'TIME',
             value: formattedTime,
@@ -98,7 +81,6 @@ class StatsPanel extends StatelessWidget {
     );
   }
 
-  /// Formats score with comma separators
   String _formatScore(int score) {
     return score.toString().replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
@@ -107,7 +89,6 @@ class StatsPanel extends StatelessWidget {
   }
 }
 
-/// Individual stat item widget
 class _StatItem extends StatelessWidget {
   final String label;
   final String value;
@@ -126,7 +107,6 @@ class _StatItem extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Label
         Text(
           label,
           style: TextStyle(
@@ -138,7 +118,6 @@ class _StatItem extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        // Value
         Text(
           value,
           style: TextStyle(

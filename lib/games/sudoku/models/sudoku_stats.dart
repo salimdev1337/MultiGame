@@ -1,35 +1,22 @@
+// Statistics model - see docs/SUDOKU_ARCHITECTURE.md
+
 import 'dart:convert';
 import '../logic/sudoku_generator.dart';
 
-/// Model representing player statistics for Sudoku games.
-///
-/// This model tracks aggregate player performance across
-/// all games, including win rates, best scores, and averages.
-///
-/// Supports separate tracking for Classic and Rush modes.
 class SudokuStats {
-  // Overall statistics
   final int totalGamesPlayed;
   final int totalGamesWon;
-  final int totalTimePlayed; // Total seconds played
-
-  // Classic Mode statistics
+  final int totalTimePlayed;
   final int classicGamesPlayed;
   final int classicGamesWon;
-  final int classicTotalTime; // Total solve time in seconds
+  final int classicTotalTime;
   final Map<SudokuDifficulty, int> classicBestScores;
-
-  // Rush Mode statistics
   final int rushGamesPlayed;
   final int rushGamesWon;
   final int rushGamesLost;
   final Map<SudokuDifficulty, int> rushBestScores;
-
-  // Additional stats
   final int totalHintsUsed;
   final int totalMistakes;
-
-  // Last played timestamp
   final DateTime? lastPlayedAt;
 
   SudokuStats({
@@ -50,31 +37,26 @@ class SudokuStats {
   })  : classicBestScores = classicBestScores ?? {},
         rushBestScores = rushBestScores ?? {};
 
-  /// Win rate (0.0 to 1.0)
   double get winRate {
     if (totalGamesPlayed == 0) return 0.0;
     return totalGamesWon / totalGamesPlayed;
   }
 
-  /// Classic mode win rate
   double get classicWinRate {
     if (classicGamesPlayed == 0) return 0.0;
     return classicGamesWon / classicGamesPlayed;
   }
 
-  /// Rush mode win rate
   double get rushWinRate {
     if (rushGamesPlayed == 0) return 0.0;
     return rushGamesWon / rushGamesPlayed;
   }
 
-  /// Average solve time for classic mode (in seconds)
   double get averageSolveTime {
     if (classicGamesWon == 0) return 0.0;
     return classicTotalTime / classicGamesWon;
   }
 
-  /// Converts the stats to JSON for storage
   Map<String, dynamic> toJson() {
     return {
       'totalGamesPlayed': totalGamesPlayed,
@@ -94,7 +76,6 @@ class SudokuStats {
     };
   }
 
-  /// Creates stats from JSON
   factory SudokuStats.fromJson(Map<String, dynamic> json) {
     return SudokuStats(
       totalGamesPlayed: json['totalGamesPlayed'] as int? ?? 0,
@@ -116,7 +97,6 @@ class SudokuStats {
     );
   }
 
-  /// Helper to parse score maps from JSON
   static Map<SudokuDifficulty, int> _parseScoreMap(dynamic json) {
     if (json == null) return {};
     final map = json as Map<String, dynamic>;
@@ -131,16 +111,13 @@ class SudokuStats {
     );
   }
 
-  /// Converts the stats to a JSON string for storage
   String toJsonString() => jsonEncode(toJson());
 
-  /// Creates stats from a JSON string
   factory SudokuStats.fromJsonString(String jsonString) {
     final json = jsonDecode(jsonString) as Map<String, dynamic>;
     return SudokuStats.fromJson(json);
   }
 
-  /// Creates a copy with updated fields
   SudokuStats copyWith({
     int? totalGamesPlayed,
     int? totalGamesWon,

@@ -1,4 +1,4 @@
-package com.example.puzzle
+package com.salimdev.multigame
 
 import io.flutter.embedding.android.FlutterActivity
 

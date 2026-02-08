@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:multigame/services/data/achievement_service.dart';
 import 'package:multigame/services/storage/nickname_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -257,9 +258,123 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
                     ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                    // Legal Information
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Legal & Privacy',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            _buildLegalButton(
+                              context,
+                              icon: Icons.privacy_tip_outlined,
+                              label: 'Privacy Policy',
+                              url: 'https://salimdev1337.github.io/MultiGame/index.html',
+                            ),
+                            const SizedBox(height: 8),
+                            _buildLegalButton(
+                              context,
+                              icon: Icons.description_outlined,
+                              label: 'Terms of Service',
+                              url: 'https://salimdev1337.github.io/MultiGame/terms.html',
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                     const SliverToBoxAdapter(child: SizedBox(height: 24)),
                   ],
                 ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLegalButton(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String url,
+  }) {
+    return InkWell(
+      onTap: () async {
+        try {
+          final uri = Uri.parse(url);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } else {
+            // Fallback: show URL in dialog if can't launch
+            if (context.mounted) {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text(label),
+                  content: SelectableText(
+                    url,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              );
+            }
+          }
+        } catch (e) {
+          // Show error message
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Could not open $label')),
+            );
+          }
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: (0.2 * 255)),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: Theme.of(context).colorScheme.primary,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const Spacer(),
+            Icon(
+              Icons.open_in_new,
+              color: Colors.white.withValues(alpha: (0.5 * 255)),
+              size: 16,
+            ),
+          ],
         ),
       ),
     );

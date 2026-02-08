@@ -1,28 +1,18 @@
+// Completed game model - see docs/SUDOKU_ARCHITECTURE.md
+
 import 'dart:convert';
 import '../logic/sudoku_generator.dart';
 
-/// Model representing a completed Sudoku game.
-///
-/// This model stores summary information about a finished game
-/// for historical tracking and statistics.
-///
-/// Supports both Classic and Rush modes.
 class CompletedGame {
-  final String id; // Unique identifier
-  final String mode; // 'classic' or 'rush'
+  final String id;
+  final String mode;
   final SudokuDifficulty difficulty;
-
-  // Game results
   final int score;
-  final int timeSeconds; // Time taken or remaining time (for rush)
+  final int timeSeconds;
   final int mistakes;
   final int hintsUsed;
-  final bool victory; // true if won, false if lost (rush mode timeout)
-
-  // Rush mode specific (null for classic mode)
+  final bool victory;
   final int? penaltiesApplied;
-
-  // Metadata
   final DateTime completedAt;
 
   CompletedGame({
@@ -38,7 +28,6 @@ class CompletedGame {
     required this.completedAt,
   });
 
-  /// Converts the completed game to JSON for storage
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -54,7 +43,6 @@ class CompletedGame {
     };
   }
 
-  /// Creates a completed game from JSON
   factory CompletedGame.fromJson(Map<String, dynamic> json) {
     return CompletedGame(
       id: json['id'] as String,
@@ -73,16 +61,13 @@ class CompletedGame {
     );
   }
 
-  /// Converts the completed game to a JSON string for storage
   String toJsonString() => jsonEncode(toJson());
 
-  /// Creates a completed game from a JSON string
   factory CompletedGame.fromJsonString(String jsonString) {
     final json = jsonDecode(jsonString) as Map<String, dynamic>;
     return CompletedGame.fromJson(json);
   }
 
-  /// Creates a copy with updated fields
   CompletedGame copyWith({
     String? id,
     String? mode,

@@ -59,6 +59,11 @@ flutter run -d chrome
 flutter build web --release
 ```
 
+**⚠️ PRODUCTION BUILD WARNING:**
+- Current release builds use **debug signing keys** (see `android/app/build.gradle.kts:37`)
+- Package name is `com.example.multigame` (invalid for Play Store)
+- Must fix before Play Store submission - see [task.md](task.md) Phase 1
+
 ### Linting
 ```bash
 # Analyze code
@@ -694,6 +699,56 @@ try {
 3. **Profile with DevTools** before optimizing
 4. **Lazy-load services** via GetIt
 
+## Production Readiness
+
+**Current Status:** ⚠️ NOT READY FOR PLAY STORE SUBMISSION
+**Assessment Date:** 2026-02-05
+**Overall Score:** 6.5/10
+
+### Critical Blockers (Must Fix Before Submission)
+1. **Invalid package name** (`com.example.multigame`) - Play Store will reject
+2. **Debug signing keys** in production build - Cannot submit
+3. **Missing privacy policy** - Required by Play Store
+
+### High Priority Issues
+1. Exposed Firebase API keys (already in git history)
+2. Debug print statements in production code
+3. Silent error handling (no user notifications)
+4. Incomplete Firestore security rules
+
+### Production Readiness Checklist
+See **[task.md](task.md)** for comprehensive production readiness plan with:
+- ✅ Phase 1: Critical Blockers (package name, signing, privacy policy)
+- ⚠️ Phase 2: High Priority Fixes (security, error handling, logging)
+- 🔧 Phase 3: Quality & Testing (coverage, device testing, crashlytics)
+- 🎨 Phase 4: Store Preparation (assets, listing, beta testing)
+- 🚀 Phase 5: CI/CD & Automation (optional)
+
+**IMPORTANT:** Before submitting to Play Store, complete at minimum Phase 1 + Phase 2 (estimated 3-5 days).
+
+### Strengths
+- ⭐ World-class architecture (9/10)
+- ⭐ Competitive feature set - 5 games with online multiplayer (9/10)
+- ⭐ Above-average code quality with comprehensive docs (7.5/10)
+- ⭐ Good security foundation (SecureLogger, SecureStorage, Firebase rules) (7/10)
+
+### Weaknesses
+- 🔴 Incomplete release configuration (3/10)
+- 🔴 Missing legal compliance (privacy policy, ToS) (2/10)
+- 🟠 Error handling needs improvement (5/10)
+- 🟠 Testing adequate but not comprehensive (6/10)
+
+### Next Steps
+1. **Immediate:** Fix package name to unique reverse-domain format
+2. **Urgent:** Generate production keystore and configure signing
+3. **Required:** Create and publish privacy policy
+4. **High Priority:** Rotate Firebase keys, replace debugPrint, add error notifications
+5. **Recommended:** Complete testing, add crashlytics, prepare store assets
+
+**Full Details:** See [task.md](task.md) for detailed implementation guide with commands, code examples, and checklists.
+
+---
+
 ## Additional Documentation
 
 ### Architecture & Design
@@ -705,6 +760,10 @@ try {
 - [docs/API_CONFIGURATION.md](docs/API_CONFIGURATION.md) - Unsplash API setup
 - [docs/FIREBASE_SETUP_GUIDE.md](docs/FIREBASE_SETUP_GUIDE.md) - Firebase configuration
 - [docs/CI_CD_SETUP_COMPLETE.md](docs/CI_CD_SETUP_COMPLETE.md) - GitHub Actions
+
+### Production & Release
+- **[task.md](task.md)** - Production readiness tasks and deployment guide
+- [firestore.rules](firestore.rules) - Firebase security rules
 
 ### Technical Deep Dives
 - [docs/INFINITE_RUNNER_ARCHITECTURE.md](docs/INFINITE_RUNNER_ARCHITECTURE.md) - Flame engine architecture

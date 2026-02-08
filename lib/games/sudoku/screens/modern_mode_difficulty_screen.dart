@@ -1,3 +1,5 @@
+// Mode/difficulty selection screen - see docs/SUDOKU_ARCHITECTURE.md
+
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../constants/sudoku_colors.dart';
@@ -17,12 +19,10 @@ class ModernModeDifficultyScreen extends StatefulWidget {
 class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
     with TickerProviderStateMixin {
 
-  // Controllers
   late PageController _pageController;
   late AnimationController _buttonAnimationController;
   late Animation<Offset> _buttonSlideAnimation;
 
-  // State
   int _currentPage = 0;
   SudokuDifficulty? _selectedDifficulty;
   bool _isOnlinePage = false;
@@ -54,28 +54,23 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
     super.dispose();
   }
 
-  /// Handle page change
   void _onPageChanged(int page) {
     setState(() {
       _currentPage = page;
-      _selectedDifficulty = null; // Clear selection on page change
-      _isOnlinePage = page == 2; // Online is page 2
+      _selectedDifficulty = null;
+      _isOnlinePage = page == 2;
 
-      // Hide button when changing pages
       _buttonAnimationController.reverse();
     });
   }
 
-  /// Handle difficulty card selection
   void _onDifficultySelected(SudokuDifficulty difficulty) {
     setState(() {
       _selectedDifficulty = difficulty;
-      // Show button
       _buttonAnimationController.forward();
     });
   }
 
-  /// Handle online mode selection (no difficulty needed)
   void _onOnlineModeSelected() {
     Navigator.push(
       context,
@@ -85,7 +80,6 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
     );
   }
 
-  /// Handle start game button press
   void _onStartGame() {
     if (_selectedDifficulty == null) return;
 
@@ -93,10 +87,10 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
     Widget gameScreen;
 
     switch (_currentPage) {
-      case 0: // Classic
+      case 0:
         gameScreen = SudokuClassicScreen(difficulty: difficulty);
         break;
-      case 1: // Rush
+      case 1:
         gameScreen = SudokuRushScreen(difficulty: difficulty);
         break;
       default:
@@ -138,12 +132,10 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
               children: [
                 const SizedBox(height: 16),
 
-                // Animated mode header
                 _buildModeHeader(),
 
                 const SizedBox(height: 24),
 
-                // Carousel with pages
                 Expanded(
                   child: PageView(
                     controller: _pageController,
@@ -158,14 +150,12 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
 
                 const SizedBox(height: 16),
 
-                // Page indicators
                 _buildPageIndicator(),
 
-                const SizedBox(height: 80), // Space for button
+                const SizedBox(height: 80),
               ],
             ),
 
-            // Animated start button
             _buildStartButton(),
           ],
         ),
@@ -173,7 +163,6 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
     );
   }
 
-  /// Builds animated mode header
   Widget _buildModeHeader() {
     final modeData = _getModeData(_currentPage);
 
@@ -228,7 +217,6 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
     );
   }
 
-  /// Builds Classic mode page with difficulty grid
   Widget _buildClassicPage() {
     return _buildDifficultyGrid(
       difficulties: [
@@ -264,7 +252,6 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
     );
   }
 
-  /// Builds Rush mode page with difficulty grid
   Widget _buildRushPage() {
     return _buildDifficultyGrid(
       difficulties: [
@@ -300,7 +287,6 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
     );
   }
 
-  /// Builds Online mode page with single "Find Match" card
   Widget _buildOnlinePage() {
     return Center(
       child: Padding(
@@ -371,7 +357,6 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
     );
   }
 
-  /// Builds difficulty selection grid (2x2)
   Widget _buildDifficultyGrid({required List<_DifficultyData> difficulties}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -398,7 +383,6 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
     );
   }
 
-  /// Builds individual difficulty card with glassmorphism
   Widget _buildDifficultyCard({
     required _DifficultyData data,
     required bool isSelected,
@@ -450,7 +434,6 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Icon
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -466,7 +449,6 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
 
                     const SizedBox(height: 20),
 
-                    // Difficulty name
                     Text(
                       data.name,
                       style: TextStyle(
@@ -479,7 +461,6 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
 
                     const SizedBox(height: 8),
 
-                    // Description
                     Text(
                       data.description,
                       style: TextStyle(
@@ -498,7 +479,6 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
     );
   }
 
-  /// Builds page indicator dots
   Widget _buildPageIndicator() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -532,7 +512,6 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
     );
   }
 
-  /// Builds animated start button
   Widget _buildStartButton() {
     final canStart = _selectedDifficulty != null && !_isOnlinePage;
 
@@ -621,7 +600,6 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
     );
   }
 
-  /// Get mode data for current page
   _ModeData _getModeData(int page) {
     switch (page) {
       case 0:
@@ -652,7 +630,6 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
   }
 }
 
-/// Data class for difficulty information
 class _DifficultyData {
   final SudokuDifficulty difficulty;
   final String name;
@@ -669,7 +646,6 @@ class _DifficultyData {
   });
 }
 
-/// Data class for mode information
 class _ModeData {
   final String title;
   final IconData icon;

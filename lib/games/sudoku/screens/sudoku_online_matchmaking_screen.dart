@@ -1,3 +1,5 @@
+// Online matchmaking screen - see docs/SUDOKU_ARCHITECTURE.md
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -8,12 +10,10 @@ import 'package:multigame/services/auth/auth_service.dart';
 import 'package:multigame/games/sudoku/services/matchmaking_service.dart';
 import 'sudoku_online_game_screen.dart';
 
-// Color constants
 const _backgroundDark = Color(0xFF0f1115);
 const _surfaceDark = Color(0xFF1a1d24);
 const _accentBlue = Color(0xFF3b82f6);
 
-/// Online matchmaking screen for 1v1 Sudoku
 class SudokuOnlineMatchmakingScreen extends StatefulWidget {
   const SudokuOnlineMatchmakingScreen({super.key});
 
@@ -27,7 +27,7 @@ class _SudokuOnlineMatchmakingScreenState
   SudokuDifficulty _selectedDifficulty = SudokuDifficulty.medium;
   bool _isSearching = false;
   String? _errorMessage;
-  String? _roomCode; // Room code for created match
+  String? _roomCode;
   final TextEditingController _roomCodeController = TextEditingController();
 
   Future<void> _startMatchmaking() async {
@@ -46,26 +46,22 @@ class _SudokuOnlineMatchmakingScreenState
         throw Exception('User not authenticated');
       }
 
-      // Create provider
       final provider = SudokuOnlineProvider(
         matchmakingService: getIt<MatchmakingService>(),
         userId: userId,
         displayName: displayName,
       );
 
-      // Create match and get room code
       await provider.createMatch(_difficultyToString(_selectedDifficulty));
 
       if (!mounted) return;
 
-      // Get the room code from the match
       final roomCode = provider.currentMatch?.roomCode;
 
       setState(() {
         _roomCode = roomCode;
       });
 
-      // Navigate to game screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => ChangeNotifierProvider.value(
@@ -98,24 +94,20 @@ class _SudokuOnlineMatchmakingScreenState
         throw Exception('User not authenticated');
       }
 
-      // Validate room code format (6 digits)
       if (roomCode.length != 6 || !RegExp(r'^[0-9]+$').hasMatch(roomCode)) {
         throw Exception('Invalid room code format. Must be 6 digits.');
       }
 
-      // Create provider
       final provider = SudokuOnlineProvider(
         matchmakingService: getIt<MatchmakingService>(),
         userId: userId,
         displayName: displayName,
       );
 
-      // Join match by room code
       await provider.joinByRoomCode(roomCode);
 
       if (!mounted) return;
 
-      // Navigate to game screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => ChangeNotifierProvider.value(

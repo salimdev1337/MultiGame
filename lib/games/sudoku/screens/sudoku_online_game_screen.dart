@@ -1,3 +1,5 @@
+// Online game screen - see docs/SUDOKU_ARCHITECTURE.md
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/sudoku_online_provider.dart';
@@ -7,13 +9,11 @@ import '../widgets/number_pad.dart';
 import '../widgets/control_buttons.dart';
 import 'sudoku_online_result_screen.dart';
 
-// Color constants
 const _backgroundDark = Color(0xFF0f1115);
 const _surfaceDark = Color(0xFF1a1d24);
 const _accentBlue = Color(0xFF3b82f6);
 const _accentGreen = Color(0xFF4ade80);
 
-/// Online 1v1 Sudoku game screen with real-time opponent status
 class SudokuOnlineGameScreen extends StatefulWidget {
   const SudokuOnlineGameScreen({super.key});
 
@@ -25,7 +25,6 @@ class _SudokuOnlineGameScreenState extends State<SudokuOnlineGameScreen> {
   @override
   void initState() {
     super.initState();
-    // Listen for match completion
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _listenForCompletion();
     });
@@ -39,10 +38,8 @@ class _SudokuOnlineGameScreenState extends State<SudokuOnlineGameScreen> {
   void _checkCompletion() {
     final provider = context.read<SudokuOnlineProvider>();
     if (provider.isCompleted && mounted) {
-      // Remove listener
       provider.removeListener(_checkCompletion);
 
-      // Navigate to result screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => ChangeNotifierProvider.value(
@@ -196,7 +193,6 @@ class _SudokuOnlineGameScreenState extends State<SudokuOnlineGameScreen> {
               children: [
                 Row(
                   children: [
-                    // Connection status dot
                     _buildConnectionDot(provider.opponentConnectionState),
                     const SizedBox(width: 8),
                     Expanded(
@@ -216,7 +212,6 @@ class _SudokuOnlineGameScreenState extends State<SudokuOnlineGameScreen> {
                 if (provider.hasOpponent)
                   Row(
                     children: [
-                      // Mistakes count
                       Icon(
                         Icons.close,
                         size: 14,
@@ -232,7 +227,6 @@ class _SudokuOnlineGameScreenState extends State<SudokuOnlineGameScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      // Hints used count
                       Icon(
                         Icons.lightbulb_outline,
                         size: 14,
@@ -248,7 +242,6 @@ class _SudokuOnlineGameScreenState extends State<SudokuOnlineGameScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      // Progress
                       Text(
                         provider.opponentCompleted
                             ? 'Completed!'
@@ -386,7 +379,6 @@ class _SudokuOnlineGameScreenState extends State<SudokuOnlineGameScreen> {
     return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
-  /// Build connection status indicator dot
   Widget _buildConnectionDot(sudoku.ConnectionState state) {
     final Color dotColor;
     final String tooltip;
@@ -426,7 +418,6 @@ class _SudokuOnlineGameScreenState extends State<SudokuOnlineGameScreen> {
     );
   }
 
-  /// Use a hint for the selected cell
   Future<void> _useHint(BuildContext context, SudokuOnlineProvider provider) async {
     try {
       await provider.useHint();

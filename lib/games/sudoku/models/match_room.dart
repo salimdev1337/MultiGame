@@ -1,49 +1,22 @@
+// Online match room model - see docs/SUDOKU_ARCHITECTURE.md
+
 import 'match_status.dart';
 import 'match_player.dart';
 
-/// Represents an online 1v1 Sudoku match room
 class MatchRoom {
-  /// Unique match ID (Firestore document ID)
   final String matchId;
-
-  /// Current match status
   final MatchStatus status;
-
-  /// The Sudoku puzzle data (9x9 grid) - same for both players
-  /// 0 = empty cell, 1-9 = fixed puzzle clues
   final List<List<int>> puzzleData;
-
-  /// Difficulty level of the puzzle
   final String difficulty;
-
-  /// Player 1 (match creator)
   final MatchPlayer? player1;
-
-  /// Player 2 (match joiner)
   final MatchPlayer? player2;
-
-  /// User ID of the winner (null if no winner yet)
   final String? winnerId;
-
-  /// Timestamp when match was created
   final DateTime createdAt;
-
-  /// Timestamp when match started (both players joined)
   final DateTime? startedAt;
-
-  /// Timestamp when match ended
   final DateTime? endedAt;
-
-  /// Match timeout in seconds (default 10 minutes)
   final int timeoutSeconds;
-
-  /// 6-digit room code for joining matches (e.g., "123456")
   final String roomCode;
-
-  /// Timestamp of last activity for server-side timeout detection
   final DateTime? lastActivityAt;
-
-  /// Grace period for reconnection in seconds (default 60 seconds)
   final int reconnectionGracePeriodSeconds;
 
   MatchRoom({
@@ -57,13 +30,12 @@ class MatchRoom {
     required this.createdAt,
     this.startedAt,
     this.endedAt,
-    this.timeoutSeconds = 600, // 10 minutes default
+    this.timeoutSeconds = 600,
     required this.roomCode,
     this.lastActivityAt,
-    this.reconnectionGracePeriodSeconds = 60, // 60 seconds default
+    this.reconnectionGracePeriodSeconds = 60,
   });
 
-  /// Create initial match room with puzzle
   factory MatchRoom.create({
     required String matchId,
     required List<List<int>> puzzleData,
@@ -88,45 +60,36 @@ class MatchRoom {
     );
   }
 
-  /// Check if match is full (has both players)
   bool get isFull => player1 != null && player2 != null;
 
-  /// Check if match is in progress
   bool get isInProgress => status == MatchStatus.playing;
 
-  /// Check if match is completed
   bool get isCompleted => status == MatchStatus.completed;
 
-  /// Check if match is waiting for players
   bool get isWaiting => status == MatchStatus.waiting;
 
-  /// Check if match has timed out
   bool get hasTimedOut {
     if (startedAt == null) return false;
     final elapsed = DateTime.now().difference(startedAt!);
     return elapsed.inSeconds > timeoutSeconds;
   }
 
-  /// Get the opponent's player data for a given user ID
   MatchPlayer? getOpponent(String userId) {
     if (player1?.userId == userId) return player2;
     if (player2?.userId == userId) return player1;
     return null;
   }
 
-  /// Get player data for a given user ID
   MatchPlayer? getPlayer(String userId) {
     if (player1?.userId == userId) return player1;
     if (player2?.userId == userId) return player2;
     return null;
   }
 
-  /// Check if user is in this match
   bool hasPlayer(String userId) {
     return player1?.userId == userId || player2?.userId == userId;
   }
 
-  /// Convert to JSON for Firestore
   Map<String, dynamic> toJson() {
     return {
       'matchId': matchId,
@@ -146,7 +109,6 @@ class MatchRoom {
     };
   }
 
-  /// Create from Firestore JSON
   factory MatchRoom.fromJson(Map<String, dynamic> json) {
     return MatchRoom(
       matchId: json['matchId'] as String,
@@ -170,7 +132,7 @@ class MatchRoom {
           ? DateTime.parse(json['endedAt'] as String)
           : null,
       timeoutSeconds: json['timeoutSeconds'] as int? ?? 600,
-      roomCode: json['roomCode'] as String? ?? '', // Default to empty for old matches
+      roomCode: json['roomCode'] as String? ?? '',
       lastActivityAt: json['lastActivityAt'] != null
           ? DateTime.parse(json['lastActivityAt'] as String)
           : null,
@@ -179,7 +141,6 @@ class MatchRoom {
     );
   }
 
-  /// Create a copy with updated fields
   MatchRoom copyWith({
     String? matchId,
     MatchStatus? status,

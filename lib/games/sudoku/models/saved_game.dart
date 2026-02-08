@@ -1,43 +1,27 @@
+// Saved game model - see docs/SUDOKU_ARCHITECTURE.md
+
 import 'dart:convert';
 import 'sudoku_board.dart';
 import 'sudoku_action.dart';
 import '../logic/sudoku_generator.dart';
 
-/// Model representing a saved (unfinished) Sudoku game.
-///
-/// This model captures the complete state of a game in progress,
-/// allowing players to pause and resume their games later.
-///
-/// Supports both Classic and Rush modes.
 class SavedGame {
-  final String id; // Unique identifier for the saved game
-  final String mode; // 'classic' or 'rush'
+  final String id;
+  final String mode;
   final SudokuDifficulty difficulty;
-
-  // Board state
   final SudokuBoard currentBoard;
   final SudokuBoard originalBoard;
   final SudokuBoard? solvedBoard;
-
-  // Game progress
   final int elapsedSeconds;
   final int mistakes;
   final int hintsUsed;
   final int hintsRemaining;
-
-  // Rush mode specific (null for classic mode)
   final int? remainingSeconds;
   final int? penaltiesApplied;
-
-  // Selection state
   final int? selectedRow;
   final int? selectedCol;
   final bool notesMode;
-
-  // Action history for undo
   final List<SudokuAction> actionHistory;
-
-  // Metadata
   final DateTime savedAt;
 
   SavedGame({
@@ -60,7 +44,6 @@ class SavedGame {
     required this.savedAt,
   });
 
-  /// Converts the saved game to JSON for storage
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -83,7 +66,6 @@ class SavedGame {
     };
   }
 
-  /// Creates a saved game from JSON
   factory SavedGame.fromJson(Map<String, dynamic> json) {
     return SavedGame(
       id: json['id'] as String,
@@ -113,16 +95,13 @@ class SavedGame {
     );
   }
 
-  /// Converts the saved game to a JSON string for storage
   String toJsonString() => jsonEncode(toJson());
 
-  /// Creates a saved game from a JSON string
   factory SavedGame.fromJsonString(String jsonString) {
     final json = jsonDecode(jsonString) as Map<String, dynamic>;
     return SavedGame.fromJson(json);
   }
 
-  /// Creates a copy with updated fields
   SavedGame copyWith({
     String? id,
     String? mode,

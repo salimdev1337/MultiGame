@@ -1,15 +1,15 @@
+// Online result screen - see docs/SUDOKU_ARCHITECTURE.md
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/sudoku_online_provider.dart';
 
-// Color constants
 const _backgroundDark = Color(0xFF0f1115);
 const _surfaceDark = Color(0xFF1a1d24);
 const _accentGreen = Color(0xFF4ade80);
 const _accentRed = Color(0xFFef4444);
 const _accentBlue = Color(0xFF3b82f6);
 
-/// Result screen for online 1v1 matches showing winner/loser
 class SudokuOnlineResultScreen extends StatelessWidget {
   const SudokuOnlineResultScreen({super.key});
 
@@ -29,7 +29,6 @@ class SudokuOnlineResultScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Result icon
                     Container(
                       width: 120,
                       height: 120,
@@ -51,7 +50,6 @@ class SudokuOnlineResultScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 32),
 
-                    // Result title
                     Text(
                       isWinner ? 'VICTORY!' : 'DEFEATED',
                       style: TextStyle(
@@ -63,7 +61,6 @@ class SudokuOnlineResultScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
 
-                    // Result message
                     Text(
                       isWinner
                           ? 'You completed the puzzle first!'
@@ -77,7 +74,6 @@ class SudokuOnlineResultScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 40),
 
-                    // Match stats
                     Container(
                       decoration: BoxDecoration(
                         color: _surfaceDark,
@@ -114,12 +110,10 @@ class SudokuOnlineResultScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 40),
 
-                    // Action buttons
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          // Go back to mode selection or home
                           Navigator.of(context).popUntil((route) => route.isFirst);
                         },
                         style: ElevatedButton.styleFrom(

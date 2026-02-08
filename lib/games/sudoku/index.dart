@@ -1,6 +1,5 @@
-// Barrel file for Sudoku game module
+// Sudoku module barrel file - see docs/SUDOKU_ARCHITECTURE.md
 
-// Models
 export 'models/game_mode.dart';
 export 'models/sudoku_cell.dart';
 export 'models/sudoku_board.dart';
@@ -12,29 +11,24 @@ export 'models/match_status.dart';
 export 'models/match_player.dart';
 export 'models/match_room.dart';
 
-// Constants
 export 'constants/sudoku_colors.dart';
 
-// Logic (Pure functions - no dependencies)
 export 'logic/sudoku_validator.dart';
 export 'logic/sudoku_solver.dart';
 export 'logic/sudoku_generator.dart';
 
-// Services
 export 'services/sudoku_persistence_service.dart';
 export 'services/sudoku_stats_service.dart';
 export 'services/matchmaking_service.dart';
-export 'services/sudoku_sound_service.dart'; // Phase 6
-export 'services/sudoku_haptic_service.dart'; // Phase 6
+export 'services/sudoku_sound_service.dart';
+export 'services/sudoku_haptic_service.dart';
 
-// Providers
 export 'providers/sudoku_provider.dart';
 export 'providers/sudoku_rush_provider.dart';
 export 'providers/sudoku_ui_provider.dart';
 export 'providers/sudoku_online_provider.dart';
-export 'providers/sudoku_settings_provider.dart'; // Phase 6
+export 'providers/sudoku_settings_provider.dart';
 
-// Screens
 export 'screens/modern_mode_difficulty_screen.dart';
 export 'screens/sudoku_classic_screen.dart';
 export 'screens/sudoku_rush_screen.dart';
@@ -43,12 +37,10 @@ export 'screens/sudoku_online_game_screen.dart';
 export 'screens/sudoku_online_result_screen.dart';
 export 'screens/sudoku_settings_screen.dart';
 
-// Widgets
 export 'widgets/sudoku_grid.dart';
 export 'widgets/sudoku_cell_widget.dart';
 export 'widgets/number_pad.dart';
 export 'widgets/control_buttons.dart';
 export 'widgets/stats_panel.dart';
 
-// Game definition
 export 'sudoku_game_definition.dart';

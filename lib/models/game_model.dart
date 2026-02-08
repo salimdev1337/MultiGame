@@ -19,7 +19,7 @@ class GameModel {
         id: 'sudoku',
         name: 'Sudoku',
         description: 'classic, rush and 1v1 sudoku games',
-        imagePath: 'assets/images/magic-image.png',
+        imagePath: 'assets/images/sudoku.png',
         isAvailable: true,
       ),
       GameModel(

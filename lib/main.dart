@@ -1,8 +1,11 @@
+import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'config/firebase_options.dart';
 import 'config/service_locator.dart';
 import 'package:multigame/games/puzzle/index.dart';
@@ -39,7 +42,18 @@ void main() async {
     ),
   );
 
-  runApp(const MyApp());
+  // Note: Crashlytics is initialized in _initializeFirebase() after Firebase.initializeApp()
+  // Flutter errors will be caught and reported in the error zone below
+
+  // Run app in an error zone to catch async errors
+  runZonedGuarded(() {
+    runApp(const MyApp());
+  }, (error, stack) {
+    // This catches errors that occur outside of Flutter's framework
+    SecureLogger.error('Uncaught error in root zone', error: error);
+    // Crashlytics will be set up after Firebase initialization
+    // For now, just log - Crashlytics reporting will be added in _initializeFirebase
+  });
 }
 
 /// Initializes Sudoku Phase 6 services (settings, sound, haptics)
@@ -174,6 +188,22 @@ class _FirebaseInitializerState extends State<FirebaseInitializer> {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
+
+      // Initialize Firebase Crashlytics
+      FlutterError.onError = (errorDetails) {
+        // Pass Flutter framework errors to Crashlytics
+        FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+        SecureLogger.error('Flutter framework error', error: errorDetails.exception);
+      };
+
+      // Pass async errors to Crashlytics
+      PlatformDispatcher.instance.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        SecureLogger.error('Platform dispatcher error', error: error);
+        return true;
+      };
+
+      SecureLogger.log('Crashlytics initialized', tag: 'Crashlytics');
 
       // Get NicknameService from service locator
       final nicknameService = getIt<NicknameService>();

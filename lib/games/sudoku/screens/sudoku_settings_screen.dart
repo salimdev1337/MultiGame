@@ -1,8 +1,10 @@
+// Settings screen - see docs/SUDOKU_ARCHITECTURE.md
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:multigame/utils/error_notifier_mixin.dart';
 import '../providers/sudoku_settings_provider.dart';
 
-// Color constants matching the Sudoku theme
 const _backgroundDark = Color(0xFF0f1115);
 const _surfaceDark = Color(0xFF1a1d24);
 const _surfaceLighter = Color(0xFF2a2e36);
@@ -10,16 +12,33 @@ const _primaryCyan = Color(0xFF00d4ff);
 const _textWhite = Color(0xFFffffff);
 const _textGray = Color(0xFF94a3b8);
 
-/// Settings screen for Sudoku game preferences.
-///
-/// Allows users to configure:
-/// - Sound effects (on/off)
-/// - Haptic feedback (on/off)
-/// - Error highlighting (on/off)
-///
-/// All settings are persisted using SharedPreferences.
-class SudokuSettingsScreen extends StatelessWidget {
+class SudokuSettingsScreen extends StatefulWidget {
   const SudokuSettingsScreen({super.key});
+
+  @override
+  State<SudokuSettingsScreen> createState() => _SudokuSettingsScreenState();
+}
+
+class _SudokuSettingsScreenState extends State<SudokuSettingsScreen>
+    with ErrorNotifierMixin {
+  @override
+  void initState() {
+    super.initState();
+    // Listen for errors from settings provider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _checkForErrors();
+      }
+    });
+  }
+
+  void _checkForErrors() {
+    final settings = context.read<SudokuSettingsProvider>();
+    if (settings.lastError != null) {
+      showErrorSnackBar(settings.lastError!);
+      settings.clearError();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +78,12 @@ class SudokuSettingsScreen extends StatelessWidget {
                 title: 'Sound Effects',
                 subtitle: 'Play sounds for game actions',
                 value: settings.soundEnabled,
-                onChanged: (value) => settings.toggleSound(),
+                onChanged: (value) async {
+                  final success = await settings.toggleSound();
+                  if (mounted && !success) {
+                    _checkForErrors();
+                  }
+                },
               ),
               const SizedBox(height: 12),
               _buildSettingCard(
@@ -67,7 +91,12 @@ class SudokuSettingsScreen extends StatelessWidget {
                 title: 'Haptic Feedback',
                 subtitle: 'Vibration for touch interactions',
                 value: settings.hapticsEnabled,
-                onChanged: (value) => settings.toggleHaptics(),
+                onChanged: (value) async {
+                  final success = await settings.toggleHaptics();
+                  if (mounted && !success) {
+                    _checkForErrors();
+                  }
+                },
               ),
               const SizedBox(height: 24),
               _buildSectionHeader('Gameplay'),
@@ -77,7 +106,12 @@ class SudokuSettingsScreen extends StatelessWidget {
                 title: 'Error Highlighting',
                 subtitle: 'Highlight conflicting numbers in red',
                 value: settings.errorHighlightingEnabled,
-                onChanged: (value) => settings.toggleErrorHighlighting(),
+                onChanged: (value) async {
+                  final success = await settings.toggleErrorHighlighting();
+                  if (mounted && !success) {
+                    _checkForErrors();
+                  }
+                },
               ),
               const SizedBox(height: 32),
               _buildResetButton(context, settings),
@@ -88,7 +122,6 @@ class SudokuSettingsScreen extends StatelessWidget {
     );
   }
 
-  /// Builds a section header with styling
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 4),
@@ -104,7 +137,6 @@ class SudokuSettingsScreen extends StatelessWidget {
     );
   }
 
-  /// Builds a setting card with toggle switch
   Widget _buildSettingCard({
     required IconData icon,
     required String title,
@@ -168,7 +200,6 @@ class SudokuSettingsScreen extends StatelessWidget {
     );
   }
 
-  /// Builds the reset to defaults button
   Widget _buildResetButton(
     BuildContext context,
     SudokuSettingsProvider settings,
@@ -215,7 +246,6 @@ class SudokuSettingsScreen extends StatelessWidget {
     );
   }
 
-  /// Shows confirmation dialog for resetting settings
   void _showResetConfirmation(
     BuildContext context,
     SudokuSettingsProvider settings,
@@ -255,19 +285,25 @@ class SudokuSettingsScreen extends StatelessWidget {
             ),
           ),
           ElevatedButton(
-            onPressed: () {
-              settings.resetToDefaults();
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Settings reset to defaults'),
-                  backgroundColor: _primaryCyan,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              );
+            onPressed: () async {
+              final success = await settings.resetToDefaults();
+              if (context.mounted) {
+                Navigator.pop(context);
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Settings reset to defaults'),
+                      backgroundColor: _primaryCyan,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  );
+                } else {
+                  _checkForErrors();
+                }
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: _primaryCyan,

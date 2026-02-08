@@ -1,44 +1,27 @@
+// Control buttons widget - see docs/SUDOKU_ARCHITECTURE.md
+
 import 'package:flutter/material.dart';
 
-// Color constants matching the HTML design
 const _primaryCyan = Color(0xFF00d4ff);
 const _surfaceDark = Color(0xFF2a2e36);
 const _textWhite = Color(0xFFffffff);
 const _textGray = Color(0xFF64748b);
 
-/// Control buttons for game actions: Undo, Erase, Notes, Hint.
-///
-/// Design from HTML:
-/// - Horizontal row of circular buttons
-/// - 50-60px diameter
-/// - Dark background (#2a2e36)
-/// - Cyan icons (#00d4ff)
-/// - Active state for Notes (filled cyan background)
-/// - Badge for Hint showing remaining count
-/// - Disabled states with visual feedback
 class ControlButtons extends StatelessWidget {
-  /// Whether notes mode is currently active
   final bool notesMode;
 
-  /// Whether undo action is available
   final bool canUndo;
 
-  /// Whether erase action is available
   final bool canErase;
 
-  /// Number of hints remaining
   final int hintsRemaining;
 
-  /// Callback for undo button
   final VoidCallback onUndo;
 
-  /// Callback for erase button
   final VoidCallback onErase;
 
-  /// Callback for notes toggle button
   final VoidCallback onToggleNotes;
 
-  /// Callback for hint button
   final VoidCallback onHint;
 
   const ControlButtons({
@@ -92,7 +75,6 @@ class ControlButtons extends StatelessWidget {
   }
 }
 
-/// Individual circular control button
 class _ControlButton extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -129,7 +111,6 @@ class _ControlButton extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Circular button
         GestureDetector(
           onTap: onTap,
           child: AnimatedContainer(
@@ -146,7 +127,6 @@ class _ControlButton extends StatelessWidget {
             ),
             child: Stack(
               children: [
-                // Icon
                 Center(
                   child: Icon(
                     icon,
@@ -154,7 +134,6 @@ class _ControlButton extends StatelessWidget {
                     size: 24,
                   ),
                 ),
-                // Badge (if present)
                 if (badge != null)
                   Positioned(
                     top: 6,
@@ -191,7 +170,6 @@ class _ControlButton extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        // Label
         Text(
           label,
           style: TextStyle(

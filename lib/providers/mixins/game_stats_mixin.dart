@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:multigame/services/data/firebase_stats_service.dart';
+import 'package:multigame/utils/secure_logger.dart';
 
 /// Mixin that provides common game statistics functionality
 /// for saving scores and managing user information across all game providers.
@@ -13,12 +14,31 @@ mixin GameStatsMixin on ChangeNotifier {
 
   String? _userId;
   String? _displayName;
+  String? _lastError;
+  bool _isSavingScore = false;
+  int _retryAttempt = 0;
+  static const int _maxRetries = 3;
 
   /// Get the current user ID
   String? get userId => _userId;
 
   /// Get the current display name
   String? get displayName => _displayName;
+
+  /// Get the last error message (null if no error)
+  String? get lastError => _lastError;
+
+  /// Whether a score save operation is in progress
+  bool get isSavingScore => _isSavingScore;
+
+  /// Current retry attempt (0 if not retrying)
+  int get retryAttempt => _retryAttempt;
+
+  /// Clear the last error message
+  void clearError() {
+    _lastError = null;
+    notifyListeners();
+  }
 
   /// Set user information for saving stats
   ///
@@ -29,31 +49,88 @@ mixin GameStatsMixin on ChangeNotifier {
     _displayName = displayName;
   }
 
-  /// Save the game score to Firebase
+  /// Save the game score to Firebase with automatic retry on failure
   ///
   /// [gameType] - The type of game (e.g., 'puzzle', '2048', 'snake')
   /// [score] - The score to save
   ///
   /// This method will only save if userId is not null and score is greater than 0.
-  void saveScore(String gameType, int score) {
-    debugPrint('$gameType _saveScore called: userId=$_userId, score=$score');
-    if (_userId != null && score > 0) {
-      debugPrint('Saving $gameType score to Firebase: $score');
-      statsService
-          .saveUserStats(
-            userId: _userId!,
-            displayName: _displayName,
-            gameType: gameType,
-            score: score,
-          )
-          .then((_) {
-            debugPrint('$gameType score saved successfully!');
-          })
-          .catchError((e) {
-            debugPrint('Error saving $gameType score: $e');
-          });
-    } else {
-      debugPrint('Not saving $gameType score: userId is null or score is 0');
+  /// On failure, it will retry up to 3 times with exponential backoff (1s, 2s, 4s).
+  /// Returns true if save was successful, false otherwise.
+  Future<bool> saveScore(String gameType, int score) async {
+    SecureLogger.log('Score save initiated: $gameType (score: $score)', tag: 'GameStats');
+
+    if (_userId == null || score <= 0) {
+      final reason = _userId == null ? 'no userId' : 'zero score';
+      SecureLogger.log('Score save skipped for $gameType: $reason', tag: 'GameStats');
+      return false;
     }
+
+    _isSavingScore = true;
+    _lastError = null;
+    _retryAttempt = 0;
+    notifyListeners();
+
+    // Try saving with retries
+    for (int attempt = 0; attempt <= _maxRetries; attempt++) {
+      try {
+        if (attempt > 0) {
+          _retryAttempt = attempt;
+          notifyListeners();
+
+          // Exponential backoff: 1s, 2s, 4s
+          final delaySeconds = 1 << (attempt - 1);
+          SecureLogger.log(
+            'Retrying score save (attempt $attempt/$_maxRetries) after ${delaySeconds}s delay',
+            tag: 'GameStats',
+          );
+          await Future.delayed(Duration(seconds: delaySeconds));
+        }
+
+        SecureLogger.firebase('saveUserStats', details: 'gameType: $gameType, score: $score, attempt: $attempt');
+        await statsService.saveUserStats(
+          userId: _userId!,
+          displayName: _displayName,
+          gameType: gameType,
+          score: score,
+        );
+
+        // Success!
+        SecureLogger.firebase('saveUserStats - success', details: '$gameType (attempt: $attempt)');
+        _isSavingScore = false;
+        _retryAttempt = 0;
+        notifyListeners();
+        return true;
+
+      } catch (e) {
+        final isLastAttempt = attempt == _maxRetries;
+
+        if (isLastAttempt) {
+          // Final attempt failed - give up
+          SecureLogger.error(
+            'Failed to save $gameType score after ${_maxRetries + 1} attempts',
+            error: e,
+            tag: 'GameStats',
+          );
+          _lastError = 'Failed to save score after ${_maxRetries + 1} attempts. Check your internet connection.';
+          _isSavingScore = false;
+          _retryAttempt = 0;
+          notifyListeners();
+          return false;
+        } else {
+          // Will retry
+          SecureLogger.log(
+            'Score save attempt $attempt failed, will retry: ${e.toString()}',
+            tag: 'GameStats',
+          );
+        }
+      }
+    }
+
+    // Should never reach here, but handle it
+    _isSavingScore = false;
+    _retryAttempt = 0;
+    notifyListeners();
+    return false;
   }
 }

@@ -61,6 +61,7 @@ lcov.info
 /android/gradlew
 /android/gradlew.bat
 /android/local.properties
+/android/key.properties
 *.jks
 *.keystore
 
@@ -155,3 +156,6 @@ task.md
 *.zip
 *.tar.gz
 *.rar
+
+.vscode/
+linux/

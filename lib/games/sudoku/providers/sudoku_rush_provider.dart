@@ -1,3 +1,5 @@
+// Sudoku Rush Mode provider - see docs/SUDOKU_ARCHITECTURE.md
+
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:multigame/providers/mixins/game_stats_mixin.dart';
@@ -14,18 +16,6 @@ import '../services/sudoku_stats_service.dart';
 import '../services/sudoku_sound_service.dart';
 import '../services/sudoku_haptic_service.dart';
 
-/// Provider for Sudoku Rush Mode game state and logic.
-///
-/// Rush Mode features:
-/// - Countdown timer (5 minutes)
-/// - Penalty system (-10 seconds per wrong entry)
-/// - Time-based scoring (base score + time bonus)
-/// - Lose condition when timer reaches zero
-///
-/// This provider follows the MultiGame architecture:
-/// - Uses GameStatsMixin for Firebase score saving
-/// - Injects services via GetIt dependency injection
-/// - Separates game logic from UI state (UI state in SudokuUIProvider)
 class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
   final FirebaseStatsService _statsService;
   final SudokuPersistenceService _persistenceService;
@@ -36,21 +26,17 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
   @override
   FirebaseStatsService get statsService => _statsService;
 
-  // Constants
-  static const int initialTimeSeconds = 300; // 5 minutes
-  static const int penaltySeconds = 10; // 10 seconds penalty per wrong entry
+  static const int initialTimeSeconds = 300;
+  static const int penaltySeconds = 10;
 
-  // Game state
   SudokuBoard? _currentBoard;
-  SudokuBoard? _originalBoard; // For reset functionality
-  SudokuBoard? _solvedBoard; // Cached solution for hints
+  SudokuBoard? _originalBoard;
+  SudokuBoard? _solvedBoard;
   SudokuDifficulty _difficulty = SudokuDifficulty.medium;
 
-  // Selection state
   int? _selectedRow;
   int? _selectedCol;
 
-  // Game progress
   int _mistakes = 0;
   int _hintsUsed = 0;
   int _hintsRemaining = 3;
@@ -61,19 +47,14 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
   bool _isVictory = false;
   bool _isDefeat = false;
 
-  // Input mode
   bool _notesMode = false;
 
-  // History for undo
   final List<SudokuAction> _actionHistory = [];
 
-  // Settings
   bool _errorHighlightEnabled = true;
 
-  // Generator
   late final SudokuGenerator _generator;
 
-  // Penalty animation trigger
   bool _showPenalty = false;
 
   SudokuRushProvider({
@@ -90,7 +71,6 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     _generator = SudokuGenerator();
   }
 
-  // Getters
   SudokuBoard? get currentBoard => _currentBoard;
   SudokuBoard? get originalBoard => _originalBoard;
   SudokuDifficulty get difficulty => _difficulty;
@@ -116,14 +96,12 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
 
   int get score => _calculateScore();
 
-  /// Formats remaining time as MM:SS
   String get formattedTime {
     final minutes = _remainingSeconds ~/ 60;
     final seconds = _remainingSeconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
-  /// Initializes a new Rush Mode game with the specified difficulty
   Future<void> initializeGame(SudokuDifficulty difficulty) async {
     _difficulty = difficulty;
     _isGameOver = false;
@@ -141,19 +119,16 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     _actionHistory.clear();
     _cancelTimer();
 
-    // Generate puzzle
     await Future.delayed(const Duration(milliseconds: 100));
     _currentBoard = _generator.generate(difficulty);
     _originalBoard = _currentBoard!.clone();
 
-    // Pre-solve for hint system
     _solvedBoard = SudokuSolver.getSolution(_currentBoard!);
 
     _startTimer();
     notifyListeners();
   }
 
-  /// Resets the game to the original puzzle state
   void resetGame() {
     if (_originalBoard == null) return;
 
@@ -177,7 +152,6 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     notifyListeners();
   }
 
-  /// Starts the countdown timer
   void _startTimer() {
     _cancelTimer();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -189,26 +163,22 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
       _remainingSeconds--;
       notifyListeners();
 
-      // Check lose condition
       if (_remainingSeconds <= 0) {
         _handleDefeat();
       }
     });
   }
 
-  /// Cancels the game timer
   void _cancelTimer() {
     _timer?.cancel();
     _timer = null;
   }
 
-  /// Pauses the game timer
   void pauseTimer() {
     _cancelTimer();
     notifyListeners();
   }
 
-  /// Resumes the game timer
   void resumeTimer() {
     if (!_isGameOver) {
       _startTimer();
@@ -216,7 +186,6 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     notifyListeners();
   }
 
-  /// Selects a cell at the specified position
   void selectCell(int row, int col) {
     if (_isGameOver) return;
 
@@ -227,14 +196,12 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     notifyListeners();
   }
 
-  /// Clears the current cell selection
   void clearSelection() {
     _selectedRow = null;
     _selectedCol = null;
     notifyListeners();
   }
 
-  /// Places a number in the selected cell (or toggles note in notes mode)
   void placeNumber(int number) {
     if (_isGameOver ||
         _selectedRow == null ||
@@ -245,27 +212,22 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
 
     final cell = _currentBoard!.getCell(_selectedRow!, _selectedCol!);
 
-    // Can't edit fixed cells
     if (cell.isFixed) {
       return;
     }
 
     if (_notesMode) {
-      // Notes mode: toggle note
       _toggleNote(number);
     } else {
-      // Value mode: place number
       _placeValue(number);
     }
   }
 
-  /// Places a value in the selected cell
   void _placeValue(int number) {
     final cell = _currentBoard!.getCell(_selectedRow!, _selectedCol!);
     final previousValue = cell.value;
     final previousNotes = Set<int>.from(cell.notes);
 
-    // Record action for undo
     _actionHistory.add(SudokuAction.setValue(
       row: _selectedRow!,
       col: _selectedCol!,
@@ -274,11 +236,9 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
       previousNotes: previousNotes,
     ));
 
-    // Set the value
     cell.value = number;
-    cell.notes.clear(); // Clear notes when placing value
+    cell.notes.clear();
 
-    // Validate and check for errors
     final hadErrors = _validateAndApplyPenalty();
 
     if (!hadErrors) {
@@ -286,7 +246,6 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
       _hapticService.mediumTap();
     }
 
-    // Check win condition (only if no errors)
     if (!hadErrors && _checkWinCondition()) {
       _handleVictory();
     }
@@ -294,30 +253,23 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     notifyListeners();
   }
 
-  /// Validates the board and applies penalty if there are errors
-  /// Returns true if errors were found
   bool _validateAndApplyPenalty() {
     if (!_errorHighlightEnabled || _currentBoard == null) return false;
 
-    // Clear all error flags first
     _currentBoard!.clearErrors();
 
-    // Get positions with conflicts
     final conflicts = SudokuValidator.getConflictPositions(_currentBoard!);
 
     if (conflicts.isNotEmpty) {
-      // Mark conflicting cells as errors
       for (final position in conflicts) {
         final cell = _currentBoard!.getCell(position.row, position.col);
         cell.isError = true;
 
-        // Increment mistakes for user-entered cells
         if (!cell.isFixed) {
           _mistakes++;
         }
       }
 
-      // Apply time penalty in Rush Mode
       _applyTimePenalty();
       return true;
     }
@@ -325,7 +277,6 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     return false;
   }
 
-  /// Applies a time penalty (-10 seconds) and triggers visual feedback
   void _applyTimePenalty() {
     _remainingSeconds = (_remainingSeconds - penaltySeconds).clamp(0, initialTimeSeconds);
     _penaltiesApplied++;
@@ -333,27 +284,22 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     _soundService.playError();
     _hapticService.errorShake();
 
-    // Trigger penalty animation
     _showPenalty = true;
     notifyListeners();
 
-    // Reset penalty flag after animation
     Future.delayed(const Duration(milliseconds: 500), () {
       _showPenalty = false;
       notifyListeners();
     });
 
-    // Check if time ran out due to penalty
     if (_remainingSeconds <= 0) {
       _handleDefeat();
     }
   }
 
-  /// Toggles a note in the selected cell
   void _toggleNote(int number) {
     final cell = _currentBoard!.getCell(_selectedRow!, _selectedCol!);
 
-    // Can't add notes to cells with values
     if (cell.hasValue) {
       return;
     }
@@ -361,7 +307,6 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     final previousNotes = Set<int>.from(cell.notes);
 
     if (cell.notes.contains(number)) {
-      // Remove note
       _actionHistory.add(SudokuAction.removeNote(
         row: _selectedRow!,
         col: _selectedCol!,
@@ -370,7 +315,6 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
       ));
       cell.notes.remove(number);
     } else {
-      // Add note
       _actionHistory.add(SudokuAction.addNote(
         row: _selectedRow!,
         col: _selectedCol!,
@@ -383,7 +327,6 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     notifyListeners();
   }
 
-  /// Erases the selected cell
   void eraseCell() {
     if (_isGameOver ||
         _selectedRow == null ||
@@ -394,12 +337,10 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
 
     final cell = _currentBoard!.getCell(_selectedRow!, _selectedCol!);
 
-    // Can't erase fixed cells
     if (cell.isFixed) {
       return;
     }
 
-    // Record action for undo
     _actionHistory.add(SudokuAction.clearValue(
       row: _selectedRow!,
       col: _selectedCol!,
@@ -407,12 +348,10 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
       previousNotes: Set<int>.from(cell.notes),
     ));
 
-    // Clear cell
     cell.value = null;
     cell.notes.clear();
     cell.isError = false;
 
-    // Re-validate board (no penalty for erasing)
     _currentBoard!.clearErrors();
     final conflicts = SudokuValidator.getConflictPositions(_currentBoard!);
     for (final position in conflicts) {
@@ -424,7 +363,6 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     notifyListeners();
   }
 
-  /// Toggles notes mode on/off
   void toggleNotesMode() {
     _notesMode = !_notesMode;
     _soundService.playNotesToggle();
@@ -432,13 +370,11 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     notifyListeners();
   }
 
-  /// Checks if the puzzle is solved correctly
   bool _checkWinCondition() {
     if (_currentBoard == null) return false;
     return SudokuValidator.isSolved(_currentBoard!);
   }
 
-  /// Handles victory state
   void _handleVictory() {
     _isVictory = true;
     _isGameOver = true;
@@ -446,44 +382,33 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     _hapticService.successPattern();
     _cancelTimer();
 
-    // Save score via GameStatsMixin
     _saveScore();
 
-    // Record achievement
     _recordAchievement();
 
-    // Save completed game and update stats
     _saveCompletedGame(victory: true);
 
-    // Delete saved game (no longer needed)
     _persistenceService.deleteSavedGame('rush');
   }
 
-  /// Handles defeat state (time ran out)
   void _handleDefeat() {
     _isDefeat = true;
     _isGameOver = true;
     _remainingSeconds = 0;
     _cancelTimer();
 
-    // Save completed game as a loss
     _saveCompletedGame(victory: false);
 
-    // Delete saved game (no longer needed)
     _persistenceService.deleteSavedGame('rush');
 
     notifyListeners();
   }
 
-  /// Calculates the final Rush Mode score
-  /// Base score + time bonus - penalties
   int _calculateScore() {
     const baseScore = 10000;
 
-    // Time bonus: remaining seconds × 10 points
     final timeBonus = _remainingSeconds * 10;
 
-    // Penalties
     final mistakePenalty = _mistakes * 100;
     final hintPenalty = _hintsUsed * 200;
 
@@ -491,23 +416,14 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     return score;
   }
 
-  /// Saves score to Firebase
   void _saveScore() {
     final finalScore = _calculateScore();
     saveScore('sudoku_rush', finalScore);
   }
 
-  /// Records achievement
   Future<void> _recordAchievement() async {
-    // TODO: Implement Rush Mode specific achievements
-    // Examples:
-    // - First Rush Mode completion
-    // - Complete with 4+ minutes remaining
-    // - Complete without penalties
-    // - Speed demon (under 3 minutes)
   }
 
-  /// Uses a hint to reveal one cell
   void useHint() {
     if (_isGameOver ||
         _hintsRemaining <= 0 ||
@@ -516,7 +432,6 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
       return;
     }
 
-    // Find all empty cells
     final emptyCells = <Position>[];
     for (int row = 0; row < 9; row++) {
       for (int col = 0; col < 9; col++) {
@@ -528,21 +443,18 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     }
 
     if (emptyCells.isEmpty) {
-      return; // No empty cells to hint
+      return;
     }
 
-    // Pick a random empty cell
     final randomIndex = _generator.hashCode % emptyCells.length;
     final hintPosition = emptyCells[randomIndex];
 
-    // Get the correct value from solved board
     final correctValue = _solvedBoard!.getCell(hintPosition.row, hintPosition.col).value;
 
     if (correctValue == null) {
-      return; // Safety check
+      return;
     }
 
-    // Record action for undo
     final cell = _currentBoard!.getCell(hintPosition.row, hintPosition.col);
     _actionHistory.add(SudokuAction.setValue(
       row: hintPosition.row,
@@ -552,27 +464,22 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
       previousNotes: Set<int>.from(cell.notes),
     ));
 
-    // Place the hint value
     cell.value = correctValue;
     cell.notes.clear();
     cell.isError = false;
 
-    // Decrement hints
     _hintsUsed++;
     _hintsRemaining--;
 
-    // Select the hinted cell to show the player
     _selectedRow = hintPosition.row;
     _selectedCol = hintPosition.col;
 
-    // Re-validate (no penalty for hints)
     _currentBoard!.clearErrors();
     final conflicts = SudokuValidator.getConflictPositions(_currentBoard!);
     for (final position in conflicts) {
       _currentBoard!.getCell(position.row, position.col).isError = true;
     }
 
-    // Check win condition
     if (_checkWinCondition()) {
       _handleVictory();
     }
@@ -582,7 +489,6 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     _hapticService.doubleTap();
   }
 
-  /// Undoes the last action
   void undo() {
     if (_actionHistory.isEmpty || _isGameOver || _currentBoard == null) {
       return;
@@ -593,7 +499,6 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
 
     switch (lastAction.type) {
       case SudokuActionType.setValue:
-        // Restore previous value and notes
         cell.value = lastAction.previousValue;
         cell.notes.clear();
         if (lastAction.previousNotes != null) {
@@ -602,7 +507,6 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
         break;
 
       case SudokuActionType.clearValue:
-        // Restore previous value and notes
         cell.value = lastAction.previousValue;
         cell.notes.clear();
         if (lastAction.previousNotes != null) {
@@ -611,21 +515,18 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
         break;
 
       case SudokuActionType.addNote:
-        // Remove the note that was added
         if (lastAction.value != null) {
           cell.notes.remove(lastAction.value!);
         }
         break;
 
       case SudokuActionType.removeNote:
-        // Re-add the note that was removed
         if (lastAction.value != null) {
           cell.notes.add(lastAction.value!);
         }
         break;
     }
 
-    // Re-validate (no penalty for undo)
     _currentBoard!.clearErrors();
     final conflicts = SudokuValidator.getConflictPositions(_currentBoard!);
     for (final position in conflicts) {
@@ -637,7 +538,6 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     _hapticService.mediumTap();
   }
 
-  /// Toggles error highlighting on/off
   void toggleErrorHighlighting(bool enabled) {
     _errorHighlightEnabled = enabled;
     if (enabled) {
@@ -652,9 +552,6 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     notifyListeners();
   }
 
-  // ========== PERSISTENCE METHODS (Phase 4) ==========
-
-  /// Saves the completed game to history and updates statistics
   Future<void> _saveCompletedGame({required bool victory}) async {
     if (_currentBoard == null) return;
 
@@ -671,22 +568,18 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
       completedAt: DateTime.now(),
     );
 
-    // Save to history
     await _persistenceService.saveCompletedGame(completedGame);
 
-    // Update statistics
     await _sudokuStatsService.recordGameCompletion(completedGame);
 
-    // Update best score if applicable (only for victories)
     if (victory) {
       await _persistenceService.saveBestScore('rush', _difficulty, _calculateScore());
     }
   }
 
-  /// Saves the current game state (auto-save)
   Future<void> saveGameState() async {
     if (_currentBoard == null || _originalBoard == null || _isGameOver) {
-      return; // Don't save if no game in progress or game is over
+      return;
     }
 
     final savedGame = SavedGame(
@@ -696,7 +589,7 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
       currentBoard: _currentBoard!,
       originalBoard: _originalBoard!,
       solvedBoard: _solvedBoard,
-      elapsedSeconds: initialTimeSeconds - _remainingSeconds, // Convert to elapsed
+      elapsedSeconds: initialTimeSeconds - _remainingSeconds,
       mistakes: _mistakes,
       hintsUsed: _hintsUsed,
       hintsRemaining: _hintsRemaining,
@@ -712,7 +605,6 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     await _persistenceService.saveSavedGame(savedGame);
   }
 
-  /// Loads a saved game state
   Future<bool> loadGameState() async {
     final savedGame = await _persistenceService.loadSavedGame('rush');
 
@@ -720,7 +612,6 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
       return false;
     }
 
-    // Restore game state
     _difficulty = savedGame.difficulty;
     _currentBoard = savedGame.currentBoard;
     _originalBoard = savedGame.originalBoard;
@@ -740,14 +631,12 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     _isDefeat = false;
     _showPenalty = false;
 
-    // Restart timer
     _startTimer();
 
     notifyListeners();
     return true;
   }
 
-  /// Checks if a saved game exists
   Future<bool> hasSavedGame() async {
     return await _persistenceService.hasSavedGame('rush');
   }

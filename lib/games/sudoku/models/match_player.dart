@@ -1,37 +1,16 @@
-/// Represents a player in an online 1v1 match
+// Online match player model - see docs/SUDOKU_ARCHITECTURE.md
+
 class MatchPlayer {
-  /// Firebase user ID
   final String userId;
-
-  /// Display name
   final String displayName;
-
-  /// Current board state (9x9 grid of integers, 0 = empty, 1-9 = values)
-  /// Notes are NOT synced - only actual cell values
   final List<List<int>> boardState;
-
-  /// Number of filled cells (for progress tracking)
   final int filledCells;
-
-  /// Whether player has completed the puzzle
   final bool isCompleted;
-
-  /// Timestamp when player completed (null if not completed)
   final DateTime? completionTime;
-
-  /// Timestamp when player joined the match
   final DateTime joinedAt;
-
-  /// Number of mistakes made (incorrect placements)
   final int mistakeCount;
-
-  /// Number of hints used
   final int hintsUsed;
-
-  /// Last time this player was seen online (for connection tracking)
   final DateTime lastSeenAt;
-
-  /// Whether player is currently connected
   final bool isConnected;
 
   MatchPlayer({
@@ -48,7 +27,6 @@ class MatchPlayer {
     this.isConnected = true,
   });
 
-  /// Create initial player state with empty board
   factory MatchPlayer.initial({
     required String userId,
     required String displayName,
@@ -69,7 +47,6 @@ class MatchPlayer {
     );
   }
 
-  /// Convert to JSON for Firestore
   Map<String, dynamic> toJson() {
     return {
       'userId': userId,
@@ -86,7 +63,6 @@ class MatchPlayer {
     };
   }
 
-  /// Create from Firestore JSON
   factory MatchPlayer.fromJson(Map<String, dynamic> json) {
     return MatchPlayer(
       userId: json['userId'] as String,
@@ -104,12 +80,11 @@ class MatchPlayer {
       hintsUsed: json['hintsUsed'] as int? ?? 0,
       lastSeenAt: json['lastSeenAt'] != null
           ? DateTime.parse(json['lastSeenAt'] as String)
-          : DateTime.parse(json['joinedAt'] as String), // Default to joinedAt
+          : DateTime.parse(json['joinedAt'] as String),
       isConnected: json['isConnected'] as bool? ?? true,
     );
   }
 
-  /// Create a copy with updated fields
   MatchPlayer copyWith({
     String? userId,
     String? displayName,

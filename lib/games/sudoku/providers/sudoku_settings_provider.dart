@@ -1,42 +1,36 @@
+// Sudoku settings provider - see docs/SUDOKU_ARCHITECTURE.md
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:multigame/utils/secure_logger.dart';
 
-/// Provider for Sudoku game settings and preferences.
-///
-/// Manages user preferences with persistent storage:
-/// - Sound effects toggle
-/// - Haptic feedback toggle
-/// - Error highlighting toggle
-/// - Theme preferences (future: light/dark)
-///
-/// All settings are persisted using SharedPreferences and loaded on init.
 class SudokuSettingsProvider extends ChangeNotifier {
-  // Settings keys for SharedPreferences
   static const String _keySoundEnabled = 'sudoku_sound_enabled';
   static const String _keyHapticsEnabled = 'sudoku_haptics_enabled';
   static const String _keyErrorHighlighting = 'sudoku_error_highlighting';
 
-  // Settings state
   bool _soundEnabled = true;
   bool _hapticsEnabled = true;
   bool _errorHighlightingEnabled = true;
   bool _isInitialized = false;
+  String? _lastError;
 
-  // Getters
   bool get soundEnabled => _soundEnabled;
   bool get hapticsEnabled => _hapticsEnabled;
   bool get errorHighlightingEnabled => _errorHighlightingEnabled;
   bool get isInitialized => _isInitialized;
+  String? get lastError => _lastError;
 
-  /// Initializes settings by loading from SharedPreferences.
-  ///
-  /// Should be called once when the provider is created.
-  /// Returns true if successful, false if error occurred.
+  /// Clear the last error message
+  void clearError() {
+    _lastError = null;
+    notifyListeners();
+  }
+
   Future<bool> initialize() async {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // Load settings (default to true if not found)
       _soundEnabled = prefs.getBool(_keySoundEnabled) ?? true;
       _hapticsEnabled = prefs.getBool(_keyHapticsEnabled) ?? true;
       _errorHighlightingEnabled =
@@ -46,59 +40,66 @@ class SudokuSettingsProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('Error loading Sudoku settings: $e');
+      SecureLogger.error('Failed to load Sudoku settings', error: e, tag: 'SudokuSettings');
       _isInitialized = false;
       return false;
     }
   }
 
-  /// Toggles sound effects on/off.
-  ///
-  /// Persists the setting to SharedPreferences.
-  Future<void> toggleSound() async {
-    _soundEnabled = !_soundEnabled;
-    notifyListeners();
+  Future<bool> toggleSound() async {
+    final newValue = !_soundEnabled;
+    _lastError = null;
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_keySoundEnabled, _soundEnabled);
+      await prefs.setBool(_keySoundEnabled, newValue);
+      _soundEnabled = newValue;
+      notifyListeners();
+      return true;
     } catch (e) {
-      debugPrint('Error saving sound setting: $e');
+      SecureLogger.error('Failed to save sound setting', error: e, tag: 'SudokuSettings');
+      _lastError = 'Failed to save sound setting';
+      notifyListeners();
+      return false;
     }
   }
 
-  /// Toggles haptic feedback on/off.
-  ///
-  /// Persists the setting to SharedPreferences.
-  Future<void> toggleHaptics() async {
-    _hapticsEnabled = !_hapticsEnabled;
-    notifyListeners();
+  Future<bool> toggleHaptics() async {
+    final newValue = !_hapticsEnabled;
+    _lastError = null;
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_keyHapticsEnabled, _hapticsEnabled);
+      await prefs.setBool(_keyHapticsEnabled, newValue);
+      _hapticsEnabled = newValue;
+      notifyListeners();
+      return true;
     } catch (e) {
-      debugPrint('Error saving haptics setting: $e');
+      SecureLogger.error('Failed to save haptics setting', error: e, tag: 'SudokuSettings');
+      _lastError = 'Failed to save haptics setting';
+      notifyListeners();
+      return false;
     }
   }
 
-  /// Toggles error highlighting on/off.
-  ///
-  /// When enabled, conflicting cells are highlighted in red.
-  /// Persists the setting to SharedPreferences.
-  Future<void> toggleErrorHighlighting() async {
-    _errorHighlightingEnabled = !_errorHighlightingEnabled;
-    notifyListeners();
+  Future<bool> toggleErrorHighlighting() async {
+    final newValue = !_errorHighlightingEnabled;
+    _lastError = null;
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_keyErrorHighlighting, _errorHighlightingEnabled);
+      await prefs.setBool(_keyErrorHighlighting, newValue);
+      _errorHighlightingEnabled = newValue;
+      notifyListeners();
+      return true;
     } catch (e) {
-      debugPrint('Error saving error highlighting setting: $e');
+      SecureLogger.error('Failed to save error highlighting setting', error: e, tag: 'SudokuSettings');
+      _lastError = 'Failed to save error highlighting setting';
+      notifyListeners();
+      return false;
     }
   }
 
-  /// Sets sound enabled state directly (used for testing).
   void setSoundEnabled(bool value) {
     if (_soundEnabled != value) {
       _soundEnabled = value;
@@ -106,7 +107,6 @@ class SudokuSettingsProvider extends ChangeNotifier {
     }
   }
 
-  /// Sets haptics enabled state directly (used for testing).
   void setHapticsEnabled(bool value) {
     if (_hapticsEnabled != value) {
       _hapticsEnabled = value;
@@ -114,7 +114,6 @@ class SudokuSettingsProvider extends ChangeNotifier {
     }
   }
 
-  /// Sets error highlighting state directly (used for testing).
   void setErrorHighlightingEnabled(bool value) {
     if (_errorHighlightingEnabled != value) {
       _errorHighlightingEnabled = value;
@@ -122,20 +121,25 @@ class SudokuSettingsProvider extends ChangeNotifier {
     }
   }
 
-  /// Resets all settings to defaults and persists them.
-  Future<void> resetToDefaults() async {
-    _soundEnabled = true;
-    _hapticsEnabled = true;
-    _errorHighlightingEnabled = true;
-    notifyListeners();
+  Future<bool> resetToDefaults() async {
+    _lastError = null;
 
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_keySoundEnabled, true);
       await prefs.setBool(_keyHapticsEnabled, true);
       await prefs.setBool(_keyErrorHighlighting, true);
+
+      _soundEnabled = true;
+      _hapticsEnabled = true;
+      _errorHighlightingEnabled = true;
+      notifyListeners();
+      return true;
     } catch (e) {
-      debugPrint('Error resetting settings: $e');
+      SecureLogger.error('Failed to reset settings', error: e, tag: 'SudokuSettings');
+      _lastError = 'Failed to reset settings';
+      notifyListeners();
+      return false;
     }
   }
 }

@@ -1,20 +1,18 @@
+// Number pad widget - see docs/SUDOKU_ARCHITECTURE.md
+
 import 'package:flutter/material.dart';
 import '../models/sudoku_board.dart';
 
-// Color constants matching the HTML design
 const _primaryCyan = Color(0xFF00d4ff);
 const _surfaceDark = Color(0xFF2a2e36);
 const _surfaceLighter = Color(0xFF3a3e46);
 const _textGray = Color(0xFF64748b);
 
 class NumberPad extends StatelessWidget {
-  /// The current game board (to calculate remaining counts)
   final SudokuBoard board;
 
-  /// Callback when a number is tapped
   final Function(int number) onNumberTap;
 
-  /// Whether to use compact mode (smaller buttons)
   final bool useCompactMode;
 
   const NumberPad({
@@ -69,7 +67,6 @@ class NumberPad extends StatelessWidget {
   }
 }
 
-/// Individual number button widget with press animation
 class _NumberButton extends StatefulWidget {
   final int number;
   final int remaining;
@@ -102,7 +99,6 @@ class _NumberButtonState extends State<_NumberButton> {
         ? _textGray.withValues(alpha: 0.5 * 255)
         : _textGray;
 
-    // Adjust sizing based on compact mode
     final fontSize = widget.isCompact ? 16.0 : 24.0;
     final badgeFontSize = widget.isCompact ? 8.0 : 10.0;
     final borderRadius = widget.isCompact ? 8.0 : 12.0;
@@ -136,7 +132,6 @@ class _NumberButtonState extends State<_NumberButton> {
         ),
         child: Stack(
           children: [
-            // Number in center
             Center(
               child: Text(
                 widget.number.toString(),
@@ -147,7 +142,6 @@ class _NumberButtonState extends State<_NumberButton> {
                 ),
               ),
             ),
-            // Remaining count badge in top-right
             Positioned(
               top: badgeTop,
               right: badgeRight,

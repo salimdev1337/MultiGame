@@ -1,44 +1,27 @@
+// Sudoku cell widget - see docs/SUDOKU_ARCHITECTURE.md
+
 import 'package:flutter/material.dart';
 import '../models/sudoku_cell.dart';
 
-// Color constants matching the HTML design
 const _primaryCyan = Color(0xFF00d4ff);
 const _surfaceLighter = Color(0xFF2a2e36);
 const _errorRed = Color(0xFFff6b6b);
 const _textWhite = Color(0xFFffffff);
 const _textGray = Color(0xFF94a3b8);
 
-/// Renders an individual Sudoku cell with all visual states.
-///
-/// States:
-/// - Given (fixed): White text, bold, cannot be edited
-/// - User input: Cyan text, normal weight
-/// - Selected: Cyan background with glow
-/// - Error: Red background and text
-/// - Notes: 3x3 mini-grid of pencil marks
-///
-/// Design matches the HTML specification with neon theme.
-/// Enhanced with smooth scale and fade animations.
 class SudokuCellWidget extends StatefulWidget {
-  /// The cell data to render
   final SudokuCell cell;
 
-  /// Row position (0-8)
   final int row;
 
-  /// Column position (0-8)
   final int col;
 
-  /// Whether this cell is currently selected
   final bool isSelected;
 
-  /// Whether this cell has the same number as selected cell
   final bool isHighlighted;
 
-  /// Whether this cell is currently animating (number entry)
   final bool isAnimating;
 
-  /// Callback when cell is tapped
   final VoidCallback onTap;
 
   const SudokuCellWidget({
@@ -77,7 +60,6 @@ class _SudokuCellWidgetState extends State<SudokuCellWidget>
   @override
   void didUpdateWidget(SudokuCellWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Trigger scale animation when cell is animating
     if (widget.isAnimating && !oldWidget.isAnimating) {
       _scaleController.forward().then((_) => _scaleController.reverse());
     }
@@ -123,7 +105,6 @@ class _SudokuCellWidgetState extends State<SudokuCellWidget>
     );
   }
 
-  /// Determines background color based on cell state
   Color _getBackgroundColor() {
     if (widget.cell.isError) {
       return _errorRed.withValues(alpha: 0.15 * 255);
@@ -137,13 +118,12 @@ class _SudokuCellWidgetState extends State<SudokuCellWidget>
     return _surfaceLighter;
   }
 
-  /// Determines border based on position in 3x3 grid
   Border? _getBorder() {
     final isRightEdgeOfBox = widget.col % 3 == 2 && widget.col != 8;
     final isBottomEdgeOfBox = widget.row % 3 == 2 && widget.row != 8;
 
     if (!isRightEdgeOfBox && !isBottomEdgeOfBox) {
-      return null; // Thin borders handled by grid
+      return null;
     }
 
     return Border(
@@ -162,7 +142,6 @@ class _SudokuCellWidgetState extends State<SudokuCellWidget>
     );
   }
 
-  /// Builds the text widget for cell value
   Widget _buildValueText() {
     final value = widget.cell.value.toString();
     final isGiven = widget.cell.isFixed;
@@ -190,7 +169,6 @@ class _SudokuCellWidgetState extends State<SudokuCellWidget>
     );
   }
 
-  /// Builds a 3x3 grid of notes (pencil marks)
   Widget _buildNotesGrid() {
     return Padding(
       padding: const EdgeInsets.all(2.0),

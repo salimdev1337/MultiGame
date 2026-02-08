@@ -1,13 +1,11 @@
+// Sudoku statistics service - see docs/SUDOKU_SERVICES.md
+
 import 'package:multigame/repositories/secure_storage_repository.dart';
 import 'package:multigame/utils/secure_logger.dart';
 import '../models/sudoku_stats.dart';
 import '../models/completed_game.dart';
 import '../logic/sudoku_generator.dart';
 
-/// Service for managing Sudoku player statistics.
-///
-/// This service calculates and updates player statistics based on
-/// completed games. Statistics are stored locally using SecureStorage.
 class SudokuStatsService {
   final SecureStorageRepository _storage;
 
@@ -17,23 +15,21 @@ class SudokuStatsService {
     SecureStorageRepository? storage,
   }) : _storage = storage ?? SecureStorageRepository();
 
-  /// Loads current player statistics
   Future<SudokuStats> getStats() async {
     try {
       final jsonString = await _storage.read(_keyStats);
 
       if (jsonString == null) {
-        return SudokuStats(); // Return empty stats
+        return SudokuStats();
       }
 
       return SudokuStats.fromJsonString(jsonString);
     } catch (e) {
       SecureLogger.error('Failed to load stats', error: e, tag: 'SudokuStats');
-      return SudokuStats(); // Return empty stats on error
+      return SudokuStats();
     }
   }
 
-  /// Saves player statistics
   Future<bool> saveStats(SudokuStats stats) async {
     try {
       final jsonString = stats.toJsonString();
@@ -44,19 +40,16 @@ class SudokuStatsService {
     }
   }
 
-  /// Records a completed game and updates statistics
   Future<SudokuStats> recordGameCompletion(CompletedGame game) async {
     try {
       final currentStats = await getStats();
 
-      // Update overall statistics
       final newTotalPlayed = currentStats.totalGamesPlayed + 1;
       final newTotalWon = game.victory
           ? currentStats.totalGamesWon + 1
           : currentStats.totalGamesWon;
       final newTotalTime = currentStats.totalTimePlayed + game.timeSeconds;
 
-      // Update mode-specific statistics
       int newClassicPlayed = currentStats.classicGamesPlayed;
       int newClassicWon = currentStats.classicGamesWon;
       int newClassicTime = currentStats.classicTotalTime;
@@ -73,7 +66,6 @@ class SudokuStatsService {
           newClassicWon++;
           newClassicTime += game.timeSeconds;
 
-          // Update best score if applicable
           final currentBest = newClassicBestScores[game.difficulty] ?? 0;
           if (game.score > currentBest) {
             newClassicBestScores[game.difficulty] = game.score;
@@ -84,7 +76,6 @@ class SudokuStatsService {
         if (game.victory) {
           newRushWon++;
 
-          // Update best score if applicable
           final currentBest = newRushBestScores[game.difficulty] ?? 0;
           if (game.score > currentBest) {
             newRushBestScores[game.difficulty] = game.score;
@@ -94,11 +85,9 @@ class SudokuStatsService {
         }
       }
 
-      // Update additional stats
       final newTotalHints = currentStats.totalHintsUsed + game.hintsUsed;
       final newTotalMistakes = currentStats.totalMistakes + game.mistakes;
 
-      // Create updated stats
       final updatedStats = SudokuStats(
         totalGamesPlayed: newTotalPlayed,
         totalGamesWon: newTotalWon,
@@ -116,7 +105,6 @@ class SudokuStatsService {
         lastPlayedAt: game.completedAt,
       );
 
-      // Save updated stats
       await saveStats(updatedStats);
 
       SecureLogger.log(
@@ -127,11 +115,10 @@ class SudokuStatsService {
       return updatedStats;
     } catch (e) {
       SecureLogger.error('Failed to record game completion', error: e, tag: 'SudokuStats');
-      return await getStats(); // Return current stats on error
+      return await getStats();
     }
   }
 
-  /// Gets best score for a specific mode and difficulty
   Future<int?> getBestScore(String mode, SudokuDifficulty difficulty) async {
     final stats = await getStats();
     if (mode == 'classic') {
@@ -142,7 +129,6 @@ class SudokuStatsService {
     return null;
   }
 
-  /// Gets all best scores for a mode
   Future<Map<SudokuDifficulty, int>> getBestScores(String mode) async {
     final stats = await getStats();
     if (mode == 'classic') {
@@ -153,7 +139,6 @@ class SudokuStatsService {
     return {};
   }
 
-  /// Gets win rate for a specific mode
   Future<double> getWinRate(String mode) async {
     final stats = await getStats();
     if (mode == 'classic') {
@@ -164,13 +149,11 @@ class SudokuStatsService {
     return stats.winRate;
   }
 
-  /// Gets average solve time for classic mode
   Future<double> getAverageSolveTime() async {
     final stats = await getStats();
     return stats.averageSolveTime;
   }
 
-  /// Clears all player statistics (for testing/reset)
   Future<bool> clearStats() async {
     try {
       final success = await _storage.delete(_keyStats);
@@ -184,7 +167,6 @@ class SudokuStatsService {
     }
   }
 
-  /// Resets statistics (creates fresh stats object)
   Future<bool> resetStats() async {
     try {
       final freshStats = SudokuStats();
