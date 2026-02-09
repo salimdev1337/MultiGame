@@ -9,13 +9,14 @@ import 'package:multigame/games/snake/index.dart';
 import 'package:multigame/games/sudoku/index.dart';
 import 'package:multigame/services/storage/nickname_service.dart';
 import 'package:multigame/widgets/nickname_dialog.dart';
-import 'package:multigame/screens/home_page.dart';
+import 'package:multigame/screens/home_page_premium.dart';
 import 'package:multigame/screens/profile_screen.dart';
 import 'package:multigame/screens/puzzle.dart';
 import 'package:multigame/screens/game_2048_page.dart';
 import 'package:multigame/screens/snake_game_page.dart';
 import 'package:multigame/screens/infinite_runner_page.dart';
 import 'package:multigame/screens/leaderboard_screen.dart';
+import 'package:multigame/widgets/shared/floating_nav_bar.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -111,7 +112,7 @@ class _MainNavigationState extends State<MainNavigation> {
   Widget _getCurrentPage() {
     switch (_currentIndex) {
       case 0:
-        return HomePage(onGameSelected: _onGameSelected);
+        return HomePagePremium(onGameSelected: _onGameSelected);
       case 1:
         if (_selectedGame?.id == 'image_puzzle') {
           return const PuzzlePage();
@@ -131,7 +132,7 @@ class _MainNavigationState extends State<MainNavigation> {
       case 3:
         return ProfilePage();
       default:
-        return HomePage(onGameSelected: _onGameSelected);
+        return HomePagePremium(onGameSelected: _onGameSelected);
     }
   }
 
@@ -195,122 +196,11 @@ class _MainNavigationState extends State<MainNavigation> {
       body: _getCurrentPage(),
       bottomNavigationBar: hideBottomNav
           ? null
-          : Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: (0.3 * 255)),
-                    blurRadius: 10,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildNavItem(
-                        icon: Icons.home_rounded,
-                        label: 'Home',
-                        index: 0,
-                      ),
-                      _buildNavItem(
-                        icon: Icons.games_rounded,
-                        label: 'Game',
-                        index: 1,
-                      ),
-                      _buildNavItem(
-                        icon: Icons.emoji_events_rounded,
-                        label: 'Leaderboard',
-                        index: 2,
-                      ),
-                      _buildNavItem(
-                        icon: Icons.person_rounded,
-                        label: 'Profile',
-                        index: 3,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+          : FloatingNavBar(
+              currentIndex: _currentIndex,
+              onTap: onTabTapped,
+              items: MultiGameNavItems.items,
             ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required int index,
-  }) {
-    final isSelected = _currentIndex == index;
-
-    return GestureDetector(
-      onTap: () => onTabTapped(index),
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 🔵 Top indicator
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            height: 4,
-            width: isSelected ? 24 : 0,
-            margin: const EdgeInsets.only(bottom: 6),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? Theme.of(
-                      context,
-                    ).colorScheme.primary.withAlpha((0.1 * 255).toInt())
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AnimatedScale(
-                  scale: isSelected ? 1.15 : 1.0,
-                  duration: const Duration(milliseconds: 200),
-                  child: Icon(
-                    icon,
-                    size: 28,
-                    color: isSelected
-                        ? Theme.of(context).colorScheme.primary
-                        : Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: isSelected
-                        ? FontWeight.bold
-                        : FontWeight.normal,
-                    color: isSelected
-                        ? Theme.of(context).colorScheme.primary
-                        : Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

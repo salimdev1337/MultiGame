@@ -20,6 +20,7 @@ import 'package:multigame/services/data/firebase_stats_service.dart';
 import 'package:multigame/services/storage/nickname_service.dart';
 import 'package:multigame/utils/secure_logger.dart';
 import 'package:multigame/core/game_initializer.dart';
+import 'package:multigame/design_system/design_system.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -149,16 +150,8 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'Multi Game',
-        theme: ThemeData.dark().copyWith(
-          scaffoldBackgroundColor: const Color(0xFF16181d),
-          primaryColor: const Color(0xFF00d4ff),
-          colorScheme: const ColorScheme.dark(
-            primary: Color(0xFF00d4ff),
-            secondary: Color(0xFFff5c00),
-            surface: Color(0xFF21242b),
-          ),
-        ),
+        title: 'MultiGame',
+        theme: DSTheme.buildDarkTheme(),
         home: const FirebaseInitializer(),
       ),
     );
