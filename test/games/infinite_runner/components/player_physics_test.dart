@@ -110,7 +110,10 @@ void main() {
         expect(player.currentState, PlayerState.dead);
 
         player.jump();
-        expect(player.currentState, PlayerState.dead); // Still dead, not jumping
+        expect(
+          player.currentState,
+          PlayerState.dead,
+        ); // Still dead, not jumping
       });
 
       test('cannot jump when sliding', () {
@@ -154,7 +157,6 @@ void main() {
 
       test('does not work when dead', () {
         player.die();
-        final initialY = player.position.y;
         player.fastDrop();
         // State shouldn't change since fastDrop is guarded by dead check
         expect(player.currentState, PlayerState.dead);

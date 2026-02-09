@@ -27,6 +27,8 @@ class FakeSudokuSettingsProvider extends SudokuSettingsProvider {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('SudokuHapticService', () {
     late SudokuHapticService service;
     late FakeSudokuSettingsProvider fakeSettings;

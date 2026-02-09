@@ -64,6 +64,8 @@ void main() {
   setUp(() {
     mockStatsService = MockFirebaseStatsService();
     provider = TestGameProvider(mockStatsService);
+    // Use milliseconds instead of seconds for faster tests
+    provider.retryDelayCalculator = (factor) => Duration(milliseconds: factor);
   });
 
   tearDown(() {
@@ -478,8 +480,8 @@ void main() {
 
       final future = provider.saveScore('puzzle', 100);
 
-      // Should be true during save
-      await Future.delayed(const Duration(milliseconds: 10));
+      // Should be true during save (check immediately after microtask)
+      await Future(() {});
       expect(provider.isSavingScore, isTrue);
 
       await future;

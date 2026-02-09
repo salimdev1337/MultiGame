@@ -19,6 +19,12 @@ mixin GameStatsMixin on ChangeNotifier {
   int _retryAttempt = 0;
   static const int _maxRetries = 3;
 
+  /// Delay multiplier for retries (use milliseconds in tests, seconds in production)
+  /// Set to 1 for production (seconds), 1 for tests (milliseconds)
+  @visibleForTesting
+  Duration Function(int exponentialFactor) retryDelayCalculator =
+      (factor) => Duration(seconds: factor);
+
   /// Get the current user ID
   String? get userId => _userId;
 
@@ -78,13 +84,14 @@ mixin GameStatsMixin on ChangeNotifier {
           _retryAttempt = attempt;
           notifyListeners();
 
-          // Exponential backoff: 1s, 2s, 4s
-          final delaySeconds = 1 << (attempt - 1);
+          // Exponential backoff: 1s, 2s, 4s (or 1ms, 2ms, 4ms in tests)
+          final delayFactor = 1 << (attempt - 1);
+          final delay = retryDelayCalculator(delayFactor);
           SecureLogger.log(
-            'Retrying score save (attempt $attempt/$_maxRetries) after ${delaySeconds}s delay',
+            'Retrying score save (attempt $attempt/$_maxRetries) after ${delayFactor}s delay',
             tag: 'GameStats',
           );
-          await Future.delayed(Duration(seconds: delaySeconds));
+          await Future.delayed(delay);
         }
 
         SecureLogger.firebase('saveUserStats', details: 'gameType: $gameType, score: $score, attempt: $attempt');

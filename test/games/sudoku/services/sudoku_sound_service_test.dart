@@ -1,5 +1,6 @@
 // Unit tests for SudokuSoundService
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:multigame/games/sudoku/services/sudoku_sound_service.dart';
 import 'package:multigame/games/sudoku/providers/sudoku_settings_provider.dart';
@@ -27,6 +28,44 @@ class FakeSudokuSettingsProvider extends SudokuSettingsProvider {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  // Mock audioplayers platform channels
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(
+    const MethodChannel('xyz.luan/audioplayers.global'),
+    (MethodCall methodCall) async {
+      // Mock responses for audioplayers global channel
+      if (methodCall.method == 'init') {
+        return null;
+      }
+      return null;
+    },
+  );
+
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(
+    const MethodChannel('xyz.luan/audioplayers'),
+    (MethodCall methodCall) async {
+      // Mock responses for audioplayers instance channel
+      return null;
+    },
+  );
+
+  tearDownAll(() {
+    // Clean up mock handlers
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('xyz.luan/audioplayers.global'),
+      null,
+    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('xyz.luan/audioplayers'),
+      null,
+    );
+  });
+
   group('SudokuSoundService', () {
     late SudokuSoundService service;
     late FakeSudokuSettingsProvider fakeSettings;
@@ -257,18 +296,22 @@ void main() {
 
     group('dispose', () {
       test('should dispose without errors', () async {
-        await service.initialize();
+        // Create a separate service instance to avoid double dispose
+        final testService = SudokuSoundService(settings: fakeSettings);
+        await testService.initialize();
 
         await expectLater(
-          service.dispose(),
+          testService.dispose(),
           completes,
         );
       });
 
       test('should dispose even if not initialized', () async {
+        // Create a separate service instance to avoid double dispose
+        final testService = SudokuSoundService(settings: fakeSettings);
         // Don't initialize
         await expectLater(
-          service.dispose(),
+          testService.dispose(),
           completes,
         );
       });

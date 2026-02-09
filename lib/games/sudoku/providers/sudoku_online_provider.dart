@@ -44,11 +44,20 @@ class SudokuOnlineProvider with ChangeNotifier {
   static const Duration _heartbeatInterval = Duration(seconds: 5);
   static const Duration _reconnectionGracePeriod = Duration(seconds: 60);
 
+  bool _isDisposed = false;
+
   SudokuOnlineProvider({
     required MatchmakingService matchmakingService,
     required this.userId,
     required this.displayName,
   }) : _matchmakingService = matchmakingService;
+
+  @override
+  void notifyListeners() {
+    if (!_isDisposed) {
+      super.notifyListeners();
+    }
+  }
 
   SudokuBoard? get board => _board;
   MatchRoom? get currentMatch => _currentMatch;
@@ -612,7 +621,7 @@ class SudokuOnlineProvider with ChangeNotifier {
     }
   }
 
-  Future<void> _cleanup() async {
+  Future<void> _cleanup({bool isDisposing = false}) async {
     _stopTimer();
     _stopTimeoutCheck();
     _stopHeartbeat();
@@ -639,13 +648,47 @@ class SudokuOnlineProvider with ChangeNotifier {
     _originalBoard = null;
     _solvedBoard = null;
     _connectionState = ConnectionState.offline;
-    clearSelection();
-    notifyListeners();
+
+    // Only clear selection and notify listeners if not disposing
+    if (!isDisposing) {
+      clearSelection();
+      notifyListeners();
+    } else {
+      // Just clear the selection state without notifying
+      _selectedRow = null;
+      _selectedCol = null;
+    }
   }
 
   @override
   void dispose() {
-    _cleanup();
+    // Prevent double-dispose
+    if (_isDisposed) return;
+
+    // Mark as disposed to prevent any pending callbacks from calling notifyListeners
+    _isDisposed = true;
+
+    // Call cleanup synchronously without awaiting to avoid async operations after dispose
+    _stopTimer();
+    _stopTimeoutCheck();
+    _stopHeartbeat();
+
+    // Cancel subscription first before disposing debouncers
+    _matchSubscription?.cancel();
+    _matchSubscription = null;
+
+    // Dispose debouncers
+    _boardSyncDebouncer.dispose();
+    _statsSyncDebouncer.dispose();
+
+    // Clear state
+    _currentMatch = null;
+    _board = null;
+    _originalBoard = null;
+    _solvedBoard = null;
+    _selectedRow = null;
+    _selectedCol = null;
+
     super.dispose();
   }
 }

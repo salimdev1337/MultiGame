@@ -1,7 +1,6 @@
 // Sudoku sound service - see docs/SUDOKU_SERVICES.md
 
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/foundation.dart';
 import 'package:multigame/utils/secure_logger.dart';
 import '../providers/sudoku_settings_provider.dart';
 
@@ -12,7 +11,7 @@ class SudokuSoundService {
   bool _isInitialized = false;
 
   SudokuSoundService({required SudokuSettingsProvider settings})
-      : _settings = settings;
+    : _settings = settings;
 
   Future<void> initialize() async {
     try {
@@ -20,7 +19,11 @@ class SudokuSoundService {
       await _player.setVolume(0.6);
       _isInitialized = true;
     } catch (e) {
-      SecureLogger.error('Failed to initialize sound service', error: e, tag: 'Sound');
+      SecureLogger.error(
+        'Failed to initialize sound service',
+        error: e,
+        tag: 'Sound',
+      );
       _isInitialized = false;
     }
   }
@@ -45,35 +48,19 @@ class SudokuSoundService {
   }
 
   Future<void> playSelectCell() async {
-    await _playSound(
-      frequency: 800,
-      duration: 50,
-      volume: 0.3,
-    );
+    await _playSound(frequency: 800, duration: 50, volume: 0.3);
   }
 
   Future<void> playNumberEntry() async {
-    await _playSound(
-      frequency: 1200,
-      duration: 100,
-      volume: 0.5,
-    );
+    await _playSound(frequency: 1200, duration: 100, volume: 0.5);
   }
 
   Future<void> playError() async {
-    await _playSound(
-      frequency: 300,
-      duration: 200,
-      volume: 0.6,
-    );
+    await _playSound(frequency: 300, duration: 200, volume: 0.6);
   }
 
   Future<void> playHint() async {
-    await _playSound(
-      frequency: 1500,
-      duration: 150,
-      volume: 0.5,
-    );
+    await _playSound(frequency: 1500, duration: 150, volume: 0.5);
   }
 
   Future<void> playVictory() async {
@@ -85,27 +72,15 @@ class SudokuSoundService {
   }
 
   Future<void> playUndo() async {
-    await _playSound(
-      frequency: 900,
-      duration: 80,
-      volume: 0.4,
-    );
+    await _playSound(frequency: 900, duration: 80, volume: 0.4);
   }
 
   Future<void> playErase() async {
-    await _playSound(
-      frequency: 700,
-      duration: 100,
-      volume: 0.4,
-    );
+    await _playSound(frequency: 700, duration: 100, volume: 0.4);
   }
 
   Future<void> playNotesToggle() async {
-    await _playSound(
-      frequency: 1000,
-      duration: 60,
-      volume: 0.3,
-    );
+    await _playSound(frequency: 1000, duration: 60, volume: 0.3);
   }
 
   Future<void> dispose() async {

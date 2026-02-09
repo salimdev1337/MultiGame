@@ -1,6 +1,5 @@
 // Sudoku haptic service - see docs/SUDOKU_SERVICES.md
 
-import 'package:flutter/foundation.dart';
 import 'package:vibration/vibration.dart';
 import 'package:multigame/utils/secure_logger.dart';
 import '../providers/sudoku_settings_provider.dart';
@@ -11,13 +10,17 @@ class SudokuHapticService {
   bool? _hasVibrator;
 
   SudokuHapticService({required SudokuSettingsProvider settings})
-      : _settings = settings;
+    : _settings = settings;
 
   Future<void> initialize() async {
     try {
       _hasVibrator = await Vibration.hasVibrator();
     } catch (e) {
-      SecureLogger.error('Failed to check vibration capability', error: e, tag: 'Haptics');
+      SecureLogger.error(
+        'Failed to check vibration capability',
+        error: e,
+        tag: 'Haptics',
+      );
       _hasVibrator = false;
     }
   }
@@ -60,9 +63,7 @@ class SudokuHapticService {
     if (!_canVibrate) return;
 
     try {
-      await Vibration.vibrate(
-        pattern: [0, 15, 50, 15],
-      );
+      await Vibration.vibrate(pattern: [0, 15, 50, 15]);
     } catch (e) {
       SecureLogger.error('Haptic feedback failed', error: e, tag: 'Haptics');
     }
@@ -72,9 +73,7 @@ class SudokuHapticService {
     if (!_canVibrate) return;
 
     try {
-      await Vibration.vibrate(
-        pattern: [0, 30, 100, 40, 100, 50],
-      );
+      await Vibration.vibrate(pattern: [0, 30, 100, 40, 100, 50]);
     } catch (e) {
       SecureLogger.error('Haptic feedback failed', error: e, tag: 'Haptics');
     }
@@ -84,9 +83,7 @@ class SudokuHapticService {
     if (!_canVibrate) return;
 
     try {
-      await Vibration.vibrate(
-        pattern: [0, 50, 50, 50],
-      );
+      await Vibration.vibrate(pattern: [0, 50, 50, 50]);
     } catch (e) {
       SecureLogger.error('Haptic feedback failed', error: e, tag: 'Haptics');
     }
@@ -96,7 +93,11 @@ class SudokuHapticService {
     try {
       await Vibration.cancel();
     } catch (e) {
-      SecureLogger.error('Failed to cancel vibration', error: e, tag: 'Haptics');
+      SecureLogger.error(
+        'Failed to cancel vibration',
+        error: e,
+        tag: 'Haptics',
+      );
     }
   }
 }

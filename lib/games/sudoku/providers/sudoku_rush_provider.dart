@@ -48,6 +48,7 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
   bool _isDefeat = false;
 
   bool _notesMode = false;
+  bool _isDisposed = false;
 
   final List<SudokuAction> _actionHistory = [];
 
@@ -69,6 +70,13 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
         _soundService = soundService,
         _hapticService = hapticService {
     _generator = SudokuGenerator();
+  }
+
+  @override
+  void notifyListeners() {
+    if (!_isDisposed) {
+      super.notifyListeners();
+    }
   }
 
   SudokuBoard? get currentBoard => _currentBoard;
@@ -643,6 +651,12 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
 
   @override
   void dispose() {
+    // Prevent double-dispose
+    if (_isDisposed) return;
+
+    // Mark as disposed to prevent any pending callbacks from calling notifyListeners
+    _isDisposed = true;
+
     _cancelTimer();
     super.dispose();
   }
