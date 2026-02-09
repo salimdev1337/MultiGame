@@ -234,7 +234,10 @@ void main() {
       test('should reset move count', () async {
         // Arrange
         await provider.initializeGame();
-        provider.movePiece(0);
+        // Find a valid move position (not the empty position)
+        final emptyPos = provider.game!.emptyPosition;
+        final validMovePos = emptyPos == 0 ? 1 : 0;
+        provider.movePiece(validMovePos);
         expect(provider.moveCount, greaterThan(0));
 
         // Act
@@ -287,7 +290,9 @@ void main() {
       test('should reset move count', () async {
         // Arrange
         await provider.initializeGame();
-        provider.movePiece(0);
+        final emptyPos = provider.game!.emptyPosition;
+        final validMovePos = emptyPos == 0 ? 1 : 0;
+        provider.movePiece(validMovePos);
         expect(provider.moveCount, greaterThan(0));
 
         // Act
@@ -339,7 +344,9 @@ void main() {
       test('should reset move count', () async {
         // Arrange
         await provider.initializeGame();
-        provider.movePiece(0);
+        final emptyPos = provider.game!.emptyPosition;
+        final validMovePos = emptyPos == 0 ? 1 : 0;
+        provider.movePiece(validMovePos);
         expect(provider.moveCount, greaterThan(0));
 
         // Act
@@ -547,7 +554,9 @@ void main() {
 
       test('should call achievement service with correct data', () async {
         // Arrange
-        provider.movePiece(0); // Make at least one move
+        final emptyPos = provider.game!.emptyPosition;
+        final validMovePos = emptyPos == 0 ? 1 : 0;
+        provider.movePiece(validMovePos); // Make at least one move
         await Future.delayed(const Duration(milliseconds: 1100));
 
         // Act
@@ -941,7 +950,9 @@ void main() {
         // Arrange
         provider.setUserInfo('player_123', 'Test Player');
         await provider.initializeGame();
-        provider.movePiece(0);
+        final emptyPos = provider.game!.emptyPosition;
+        final validMovePos = emptyPos == 0 ? 1 : 0;
+        provider.movePiece(validMovePos);
         await provider.recordGameCompletion();
 
         // Act: Reset and play again
@@ -956,7 +967,9 @@ void main() {
       test('should handle size change mid-game', () async {
         // Arrange
         await provider.initializeGame();
-        provider.movePiece(0);
+        final emptyPos = provider.game!.emptyPosition;
+        final validMovePos = emptyPos == 0 ? 1 : 0;
+        provider.movePiece(validMovePos);
         await Future.delayed(const Duration(milliseconds: 1100));
 
         // Act: Change size mid-game

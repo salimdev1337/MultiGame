@@ -44,11 +44,13 @@ jobs:
           cache: true
 
       - name: 🔧 Setup Firebase config
-        run: cp lib/config/firebase_options.dart.template lib/config/firebase_options.dart
+        run: |
+          echo "${{ secrets.FIREBASE_OPTIONS_DART }}" > lib/config/firebase_options.dart
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/app/google-services.json
 
       - name: 📦 Get dependencies
         run: flutter pub get
-        
+
       - name: 🔨 Build Android APK
         env:
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
@@ -89,7 +91,8 @@ jobs:
           cache: true
 
       - name: 🔧 Setup Firebase config
-        run: copy lib\config\firebase_options.dart.template lib\config\firebase_options.dart
+        run: echo "${{ secrets.FIREBASE_OPTIONS_DART }}" > lib/config/firebase_options.dart
+        shell: bash
 
       - name: 📦 Get dependencies
         run: flutter pub get
@@ -127,7 +130,7 @@ jobs:
           cache: true
 
       - name: 🔧 Setup Firebase config
-        run: cp lib/config/firebase_options.dart.template lib/config/firebase_options.dart
+        run: echo "${{ secrets.FIREBASE_OPTIONS_DART }}" > lib/config/firebase_options.dart
 
       - name: 📦 Get dependencies
         run: flutter pub get

@@ -52,10 +52,9 @@ jobs:
       - name: 📋 Flutter doctor
         run: flutter doctor -v
 
-      # STEP 5: Setup Firebase config for CI (use template with dummy values)
-      # The real firebase_options.dart is gitignored for security
+      # STEP 5: Setup Firebase config from repository secrets
       - name: 🔧 Setup Firebase config
-        run: cp lib/config/firebase_options.dart.template lib/config/firebase_options.dart
+        run: echo "${{ secrets.FIREBASE_OPTIONS_DART }}" > lib/config/firebase_options.dart
 
       # STEP 6: Get all dependencies from pubspec.yaml
       - name: 📦 Get dependencies
