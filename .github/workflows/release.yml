@@ -104,24 +104,27 @@ jobs:
     name: 🤖 Build & Upload Android
     needs: create-release
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        
+
       - name: ☕ Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
-          
+
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.7'
           channel: 'stable'
           cache: true
-          
+
+      - name: 🔧 Setup Firebase config
+        run: cp lib/config/firebase_options.dart.template lib/config/firebase_options.dart
+
       - name: 📦 Get dependencies
         run: flutter pub get
         
@@ -150,18 +153,21 @@ jobs:
     name: 🪟 Build & Upload Windows
     needs: create-release
     runs-on: windows-latest
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        
+
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.7'
           channel: 'stable'
           cache: true
-          
+
+      - name: 🔧 Setup Firebase config
+        run: copy lib\config\firebase_options.dart.template lib\config\firebase_options.dart
+
       - name: 📦 Get dependencies
         run: flutter pub get
         

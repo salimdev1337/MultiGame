@@ -25,24 +25,27 @@ jobs:
   build-android:
     name: 🤖 Build Android APK
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        
+
       - name: ☕ Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
-          
+
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.7'
           channel: 'stable'
           cache: true
-          
+
+      - name: 🔧 Setup Firebase config
+        run: cp lib/config/firebase_options.dart.template lib/config/firebase_options.dart
+
       - name: 📦 Get dependencies
         run: flutter pub get
         
@@ -73,18 +76,21 @@ jobs:
   build-windows:
     name: 🪟 Build Windows
     runs-on: windows-latest  # Windows machine required for Windows builds
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        
+
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.7'
           channel: 'stable'
           cache: true
-          
+
+      - name: 🔧 Setup Firebase config
+        run: copy lib\config\firebase_options.dart.template lib\config\firebase_options.dart
+
       - name: 📦 Get dependencies
         run: flutter pub get
         
@@ -108,18 +114,21 @@ jobs:
   build-web:
     name: 🌐 Build Web
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        
+
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.7'
           channel: 'stable'
           cache: true
-          
+
+      - name: 🔧 Setup Firebase config
+        run: cp lib/config/firebase_options.dart.template lib/config/firebase_options.dart
+
       - name: 📦 Get dependencies
         run: flutter pub get
         
