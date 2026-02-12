@@ -60,12 +60,10 @@ class DSTheme {
       // ==========================================
       // Cards
       // ==========================================
-      cardTheme: const CardTheme(
+      cardTheme: const CardThemeData(
         color: DSColors.surface,
         elevation: DSShadows.elevation2,
-        shape: RoundedRectangleBorder(
-          borderRadius: DSSpacing.borderRadiusLG,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: DSSpacing.borderRadiusLG),
         margin: DSSpacing.paddingMD,
       ),
 
@@ -81,9 +79,7 @@ class DSTheme {
             horizontal: DSSpacing.buttonHorizontal,
             vertical: DSSpacing.buttonVertical,
           ),
-          shape: RoundedRectangleBorder(
-            borderRadius: DSSpacing.borderRadiusMD,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: DSSpacing.borderRadiusMD),
           textStyle: DSTypography.labelLarge,
         ),
       ),
@@ -99,9 +95,7 @@ class DSTheme {
             horizontal: DSSpacing.buttonHorizontal,
             vertical: DSSpacing.buttonVertical,
           ),
-          shape: RoundedRectangleBorder(
-            borderRadius: DSSpacing.borderRadiusMD,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: DSSpacing.borderRadiusMD),
           textStyle: DSTypography.labelLarge,
         ),
       ),
@@ -113,9 +107,7 @@ class DSTheme {
             horizontal: DSSpacing.buttonHorizontal,
             vertical: DSSpacing.buttonVertical,
           ),
-          shape: RoundedRectangleBorder(
-            borderRadius: DSSpacing.borderRadiusMD,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: DSSpacing.borderRadiusMD),
           textStyle: DSTypography.labelLarge,
         ),
       ),
@@ -127,9 +119,7 @@ class DSTheme {
         backgroundColor: DSColors.primary,
         foregroundColor: Colors.white,
         elevation: DSShadows.elevation6,
-        shape: RoundedRectangleBorder(
-          borderRadius: DSSpacing.borderRadiusLG,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: DSSpacing.borderRadiusLG),
       ),
 
       // ==========================================
@@ -181,7 +171,7 @@ class DSTheme {
       // ==========================================
       // Dialogs
       // ==========================================
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: DSColors.surface,
         elevation: DSShadows.elevation16,
         shape: const RoundedRectangleBorder(
@@ -210,9 +200,7 @@ class DSTheme {
       snackBarTheme: SnackBarThemeData(
         backgroundColor: DSColors.surfaceElevated,
         contentTextStyle: DSTypography.bodyMedium,
-        shape: RoundedRectangleBorder(
-          borderRadius: DSSpacing.borderRadiusMD,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: DSSpacing.borderRadiusMD),
         behavior: SnackBarBehavior.floating,
         elevation: DSShadows.elevation4,
       ),
@@ -243,9 +231,7 @@ class DSTheme {
         selectedColor: DSColors.primary,
         labelStyle: DSTypography.labelMedium,
         padding: DSSpacing.paddingXS,
-        shape: RoundedRectangleBorder(
-          borderRadius: DSSpacing.borderRadiusSM,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: DSSpacing.borderRadiusSM),
       ),
 
       // ==========================================
@@ -265,9 +251,7 @@ class DSTheme {
         iconColor: DSColors.textSecondary,
         textColor: DSColors.textPrimary,
         contentPadding: DSSpacing.paddingMD,
-        shape: RoundedRectangleBorder(
-          borderRadius: DSSpacing.borderRadiusMD,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: DSSpacing.borderRadiusMD),
       ),
 
       // ==========================================
@@ -296,9 +280,7 @@ class DSTheme {
           return DSColors.surfaceElevated;
         }),
         checkColor: WidgetStateProperty.all(Colors.white),
-        shape: RoundedRectangleBorder(
-          borderRadius: DSSpacing.borderRadiusXS,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: DSSpacing.borderRadiusXS),
       ),
 
       // ==========================================
@@ -317,7 +299,7 @@ class DSTheme {
       // ==========================================
       // Tab Bar
       // ==========================================
-      tabBarTheme: TabBarTheme(
+      tabBarTheme: TabBarThemeData(
         labelColor: DSColors.primary,
         unselectedLabelColor: DSColors.textSecondary,
         labelStyle: DSTypography.labelLarge,
@@ -334,7 +316,6 @@ class DSTheme {
 
   /// Build light theme (optional - not primary theme)
   static ThemeData buildLightTheme() {
-    // TODO: Implement light theme if needed
     return buildDarkTheme();
   }
 
@@ -355,6 +336,66 @@ class DSTheme {
       statusBarIconBrightness: Brightness.dark,
       systemNavigationBarColor: Colors.white,
       systemNavigationBarIconBrightness: Brightness.dark,
+    );
+  }
+
+  /// Build a theme with custom primary / secondary colours.
+  ///
+  /// Used by [ThemeProvider] to apply user-selected theme presets at runtime.
+  /// Falls back to high-contrast palette when [highContrast] is true.
+  static ThemeData buildDynamicTheme({
+    required Color primary,
+    required Color secondary,
+    required Color background,
+    required Color surface,
+    bool highContrast = false,
+  }) {
+    final effectivePrimary =
+        highContrast ? DSColors.highContrastPrimary : primary;
+    final effectiveSecondary =
+        highContrast ? DSColors.highContrastSecondary : secondary;
+    final effectiveBackground =
+        highContrast ? DSColors.highContrastBackground : background;
+    final effectiveSurface =
+        highContrast ? DSColors.highContrastSurface : surface;
+    final onSurface = highContrast ? DSColors.highContrastText : DSColors.textPrimary;
+
+    return buildDarkTheme().copyWith(
+      scaffoldBackgroundColor: effectiveBackground,
+      primaryColor: effectivePrimary,
+      colorScheme: ColorScheme.dark(
+        primary: effectivePrimary,
+        secondary: effectiveSecondary,
+        surface: effectiveSurface,
+        error: DSColors.error,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+        onSurface: onSurface,
+        onError: Colors.white,
+      ),
+      cardTheme: CardThemeData(
+        color: effectiveSurface,
+        elevation: DSShadows.elevation2,
+        shape: const RoundedRectangleBorder(
+          borderRadius: DSSpacing.borderRadiusLG,
+        ),
+        margin: DSSpacing.paddingMD,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: effectivePrimary,
+          foregroundColor: Colors.white,
+          elevation: DSShadows.elevation2,
+          padding: const EdgeInsets.symmetric(
+            horizontal: DSSpacing.buttonHorizontal,
+            vertical: DSSpacing.buttonVertical,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: DSSpacing.borderRadiusMD,
+          ),
+          textStyle: DSTypography.labelLarge,
+        ),
+      ),
     );
   }
 }

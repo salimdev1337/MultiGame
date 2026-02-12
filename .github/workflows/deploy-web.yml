@@ -1,21 +1,3 @@
-# =============================================================================
-# WEB DEPLOYMENT - Deploy to GitHub Pages
-# =============================================================================
-# PURPOSE: Automatically deploy your Flutter web app to GitHub Pages
-# Users can play your puzzle game at: https://salimdev1337.github.io/puzzle
-#
-# WHAT YOU'LL LEARN:
-# - Automated deployment
-# - GitHub Pages hosting (free!)
-# - Deployment permissions and tokens
-# - Production builds
-#
-# SETUP REQUIRED:
-# 1. Go to your repo Settings > Pages
-# 2. Source: GitHub Actions
-# 3. That's it! GitHub handles the rest
-# =============================================================================
-
 name: Deploy Web to GitHub Pages
 
 on:
@@ -37,45 +19,45 @@ concurrency:
 jobs:
   # Job 1: Build the web app
   build:
-    name: 🌐 Build Web App
+    name:  Build Web App
     runs-on: ubuntu-latest
     
     steps:
-      - name: 📥 Checkout code
+      - name:  Checkout code
         uses: actions/checkout@v4
         
-      - name: 🐦 Setup Flutter
+      - name:  Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.7'
           channel: 'stable'
           cache: true
 
-      - name: 🔧 Setup Firebase config
+      - name:  Setup Firebase config
         run: echo "${{ secrets.FIREBASE_OPTIONS_DART }}" > lib/config/firebase_options.dart
 
-      - name: 📦 Get dependencies
+      - name:  Get dependencies
         run: flutter pub get
         
       # Build for web with proper base URL for GitHub Pages
-      - name: 🔨 Build Web
+      - name:  Build Web
         env:
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
         run: flutter build web --release --base-href "/MultiGame/" --dart-define=UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY
         
       # Setup GitHub Pages
-      - name: 🔧 Setup Pages
+      - name:  Setup Pages
         uses: actions/configure-pages@v4
         
       # Upload the web build
-      - name: 📤 Upload artifact
+      - name:  Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: 'build/web'
 
   # Job 2: Deploy to GitHub Pages
   deploy:
-    name: 🚀 Deploy to GitHub Pages
+    name:  Deploy to GitHub Pages
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -83,15 +65,15 @@ jobs:
     needs: build
     
     steps:
-      - name: 🌐 Deploy to GitHub Pages
+      - name:  Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
         
-      - name: 🎉 Deployment success
+      - name:  Deployment success
         run: |
-          echo "## 🎉 Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "##  Deployment Successful!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Your puzzle game is now live at:" >> $GITHUB_STEP_SUMMARY
           echo "${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🎮 Share with your friends!" >> $GITHUB_STEP_SUMMARY
+          echo "###  Share with your friends!" >> $GITHUB_STEP_SUMMARY

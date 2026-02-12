@@ -8,3 +8,4 @@ export 'ds_spacing.dart';
 export 'ds_shadows.dart';
 export 'ds_animations.dart';
 export 'ds_theme.dart';
+export 'ds_accessibility.dart';

@@ -16,82 +16,79 @@ class ModernModeDifficultyScreen extends StatefulWidget {
       _ModernModeDifficultyScreenState();
 }
 
-class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
-    with TickerProviderStateMixin {
+class _ModernModeDifficultyScreenState
+    extends State<ModernModeDifficultyScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
 
-  late PageController _pageController;
-  late AnimationController _buttonAnimationController;
-  late Animation<Offset> _buttonSlideAnimation;
-
-  int _currentPage = 0;
+  int _currentTab = 0;
   SudokuDifficulty? _selectedDifficulty;
-  bool _isOnlinePage = false;
+
+  static const _difficulties = [
+    _DifficultyData(
+      difficulty: SudokuDifficulty.easy,
+      name: 'Easy',
+      description: '36–40 clues',
+      icon: Icons.sentiment_satisfied,
+      color: SudokuColors.easyColor,
+    ),
+    _DifficultyData(
+      difficulty: SudokuDifficulty.medium,
+      name: 'Medium',
+      description: '32–35 clues',
+      icon: Icons.sentiment_neutral,
+      color: SudokuColors.mediumColor,
+    ),
+    _DifficultyData(
+      difficulty: SudokuDifficulty.hard,
+      name: 'Hard',
+      description: '28–31 clues',
+      icon: Icons.sentiment_dissatisfied,
+      color: SudokuColors.hardColor,
+    ),
+    _DifficultyData(
+      difficulty: SudokuDifficulty.expert,
+      name: 'Expert',
+      description: '24–27 clues',
+      icon: Icons.whatshot,
+      color: SudokuColors.expertColor,
+    ),
+  ];
 
   @override
   void initState() {
     super.initState();
-
-    _pageController = PageController(initialPage: 0);
-
-    _buttonAnimationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-
-    _buttonSlideAnimation = Tween<Offset>(
-      begin: const Offset(0, 1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _buttonAnimationController,
-      curve: Curves.easeOut,
-    ));
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        setState(() {
+          _currentTab = _tabController.index;
+          _selectedDifficulty = null;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
-    _pageController.dispose();
-    _buttonAnimationController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
-  void _onPageChanged(int page) {
-    setState(() {
-      _currentPage = page;
-      _selectedDifficulty = null;
-      _isOnlinePage = page == 2;
-
-      _buttonAnimationController.reverse();
-    });
-  }
-
   void _onDifficultySelected(SudokuDifficulty difficulty) {
-    setState(() {
-      _selectedDifficulty = difficulty;
-      _buttonAnimationController.forward();
-    });
-  }
-
-  void _onOnlineModeSelected() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const SudokuOnlineMatchmakingScreen(),
-      ),
-    );
+    setState(() => _selectedDifficulty = difficulty);
   }
 
   void _onStartGame() {
     if (_selectedDifficulty == null) return;
 
-    final difficulty = _selectedDifficulty!;
     Widget gameScreen;
-
-    switch (_currentPage) {
+    switch (_currentTab) {
       case 0:
-        gameScreen = SudokuClassicScreen(difficulty: difficulty);
+        gameScreen = SudokuClassicScreen(difficulty: _selectedDifficulty!);
         break;
       case 1:
-        gameScreen = SudokuRushScreen(difficulty: difficulty);
+        gameScreen = SudokuRushScreen(difficulty: _selectedDifficulty!);
         break;
       default:
         return;
@@ -103,8 +100,39 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
     );
   }
 
+  void _onOnlineModeSelected() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SudokuOnlineMatchmakingScreen(),
+      ),
+    );
+  }
+
+  _ModeData get _currentMode => switch (_currentTab) {
+        0 => const _ModeData(
+            title: 'Classic',
+            icon: Icons.grid_on,
+            gradient: SudokuColors.classicGradient,
+          ),
+        1 => const _ModeData(
+            title: 'Rush',
+            icon: Icons.flash_on,
+            gradient: SudokuColors.rushGradient,
+          ),
+        _ => const _ModeData(
+            title: 'Online 1v1',
+            icon: Icons.people,
+            gradient: SudokuColors.onlineGradient,
+          ),
+      };
+
   @override
   Widget build(BuildContext context) {
+    final mode = _currentMode;
+    final isOnline = _currentTab == 2;
+    final canStart = _selectedDifficulty != null && !isOnline;
+
     return Scaffold(
       backgroundColor: SudokuColors.backgroundDark,
       appBar: AppBar(
@@ -112,363 +140,193 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'SUDOKU',
           style: TextStyle(
             color: Colors.white,
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.w700,
             letterSpacing: 1.5,
           ),
         ),
       ),
       body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                const SizedBox(height: 16),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: Column(
+            children: [
+              // Mode tabs
+              _buildModeTabs(mode),
 
-                _buildModeHeader(),
+              const SizedBox(height: 16),
 
-                const SizedBox(height: 24),
+              // Content
+              Expanded(
+                child: isOnline
+                    ? _buildOnlineCard()
+                    : _buildDifficultyGrid(mode),
+              ),
 
-                Expanded(
-                  child: PageView(
-                    controller: _pageController,
-                    onPageChanged: _onPageChanged,
-                    children: [
-                      _buildClassicPage(),
-                      _buildRushPage(),
-                      _buildOnlinePage(),
-                    ],
-                  ),
-                ),
+              const SizedBox(height: 12),
 
-                const SizedBox(height: 16),
+              // Start button
+              _buildStartButton(mode, canStart),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-                _buildPageIndicator(),
-
-                const SizedBox(height: 80),
-              ],
+  Widget _buildModeTabs(_ModeData mode) {
+    return Container(
+      height: 44,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        indicator: BoxDecoration(
+          gradient: LinearGradient(
+            colors: mode.gradient,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: mode.gradient[0].withValues(alpha: 0.4),
+              blurRadius: 8,
             ),
-
-            _buildStartButton(),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildModeHeader() {
-    final modeData = _getModeData(_currentPage);
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: modeData.gradient,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: Colors.transparent,
+        labelColor: Colors.white,
+        unselectedLabelColor: Colors.white.withValues(alpha: 0.5),
+        labelStyle: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.5,
         ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: modeData.gradient[0].withValues(alpha: 0.3 * 255),
-            blurRadius: 20,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: Icon(
-              modeData.icon,
-              key: ValueKey(_currentPage),
-              color: Colors.white,
-              size: 32,
-            ),
-          ),
-          const SizedBox(width: 12),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: Text(
-              modeData.title,
-              key: ValueKey(_currentPage),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
+        tabs: const [
+          Tab(text: 'Classic'),
+          Tab(text: 'Rush'),
+          Tab(text: 'Online'),
         ],
       ),
     );
   }
 
-  Widget _buildClassicPage() {
-    return _buildDifficultyGrid(
-      difficulties: [
-        _DifficultyData(
-          difficulty: SudokuDifficulty.easy,
-          name: 'EASY',
-          description: '36-40 clues',
-          icon: Icons.sentiment_satisfied,
-          color: SudokuColors.easyColor,
-        ),
-        _DifficultyData(
-          difficulty: SudokuDifficulty.medium,
-          name: 'MEDIUM',
-          description: '32-35 clues',
-          icon: Icons.sentiment_neutral,
-          color: SudokuColors.mediumColor,
-        ),
-        _DifficultyData(
-          difficulty: SudokuDifficulty.hard,
-          name: 'HARD',
-          description: '28-31 clues',
-          icon: Icons.sentiment_dissatisfied,
-          color: SudokuColors.hardColor,
-        ),
-        _DifficultyData(
-          difficulty: SudokuDifficulty.expert,
-          name: 'EXPERT',
-          description: '24-27 clues',
-          icon: Icons.whatshot,
-          color: SudokuColors.expertColor,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRushPage() {
-    return _buildDifficultyGrid(
-      difficulties: [
-        _DifficultyData(
-          difficulty: SudokuDifficulty.easy,
-          name: 'EASY',
-          description: '36-40 clues',
-          icon: Icons.sentiment_satisfied,
-          color: SudokuColors.easyColor,
-        ),
-        _DifficultyData(
-          difficulty: SudokuDifficulty.medium,
-          name: 'MEDIUM',
-          description: '32-35 clues',
-          icon: Icons.sentiment_neutral,
-          color: SudokuColors.mediumColor,
-        ),
-        _DifficultyData(
-          difficulty: SudokuDifficulty.hard,
-          name: 'HARD',
-          description: '28-31 clues',
-          icon: Icons.sentiment_dissatisfied,
-          color: SudokuColors.hardColor,
-        ),
-        _DifficultyData(
-          difficulty: SudokuDifficulty.expert,
-          name: 'EXPERT',
-          description: '24-27 clues',
-          icon: Icons.whatshot,
-          color: SudokuColors.expertColor,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildOnlinePage() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: GestureDetector(
-          onTap: _onOnlineModeSelected,
-          child: Container(
-            padding: const EdgeInsets.all(40),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: SudokuColors.onlineGradient,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.3 * 255),
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: SudokuColors.onlineGradient[0].withValues(alpha: 0.4 * 255),
-                  blurRadius: 30,
-                  spreadRadius: 3,
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2 * 255),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.people,
-                    color: Colors.white,
-                    size: 64,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'FIND MATCH',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Compete against players worldwide',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9 * 255),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDifficultyGrid({required List<_DifficultyData> difficulties}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: GridView.builder(
-        padding: const EdgeInsets.only(bottom: 16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.85,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-        ),
-        itemCount: difficulties.length,
-        itemBuilder: (context, index) {
-          final data = difficulties[index];
-          final isSelected = _selectedDifficulty == data.difficulty;
-
-          return _buildDifficultyCard(
-            data: data,
-            isSelected: isSelected,
-            onTap: () => _onDifficultySelected(data.difficulty),
-          );
-        },
-      ),
+  Widget _buildDifficultyGrid(_ModeData mode) {
+    return GridView.count(
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      childAspectRatio: 1.55,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      children: _difficulties.map((data) {
+        final isSelected = _selectedDifficulty == data.difficulty;
+        return _buildDifficultyCard(data: data, isSelected: isSelected);
+      }).toList(),
     );
   }
 
   Widget _buildDifficultyCard({
     required _DifficultyData data,
     required bool isSelected,
-    required VoidCallback onTap,
   }) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () => _onDifficultySelected(data.difficulty),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
         transform: Matrix4.diagonal3Values(
-          isSelected ? 1.05 : 1.0,
-          isSelected ? 1.05 : 1.0,
+          isSelected ? 1.03 : 1.0,
+          isSelected ? 1.03 : 1.0,
           1.0,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(16),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    data.color.withValues(alpha: 0.2 * 255),
-                    data.color.withValues(alpha: 0.1 * 255),
+                    data.color.withValues(alpha: isSelected ? 0.25 : 0.15),
+                    data.color.withValues(alpha: isSelected ? 0.12 : 0.07),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isSelected
                       ? data.color
-                      : Colors.white.withValues(alpha: 0.2 * 255),
-                  width: isSelected ? 3 : 1.5,
+                      : Colors.white.withValues(alpha: 0.15),
+                  width: isSelected ? 2 : 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: isSelected
-                        ? data.color.withValues(alpha: 0.5 * 255)
-                        : data.color.withValues(alpha: 0.2 * 255),
-                    blurRadius: isSelected ? 25 : 12,
-                    spreadRadius: isSelected ? 3 : 0,
+                    color: data.color
+                        .withValues(alpha: isSelected ? 0.45 : 0.15),
+                    blurRadius: isSelected ? 18 : 8,
+                    spreadRadius: isSelected ? 1 : 0,
                   ),
                 ],
               ),
               child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 10),
+                child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: data.color.withValues(alpha: 0.25 * 255),
+                        color: data.color.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(
-                        data.icon,
-                        color: data.color,
-                        size: 48,
+                      child: Icon(data.icon, color: data.color, size: 26),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            data.name,
+                            style: TextStyle(
+                              color: isSelected ? data.color : Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            data.description,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.55),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-
-                    const SizedBox(height: 20),
-
-                    Text(
-                      data.name,
-                      style: TextStyle(
-                        color: isSelected ? data.color : Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    Text(
-                      data.description,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7 * 255),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    if (isSelected)
+                      Icon(Icons.check_circle,
+                          color: data.color, size: 18),
                   ],
                 ),
               ),
@@ -479,154 +337,149 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
     );
   }
 
-  Widget _buildPageIndicator() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(3, (index) {
-        final isActive = index == _currentPage;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: isActive ? 32 : 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: isActive
-                ? _getModeData(_currentPage).gradient[0]
-                : Colors.white.withValues(alpha: 0.3 * 255),
-            borderRadius: BorderRadius.circular(5),
-            boxShadow: isActive
-                ? [
-                    BoxShadow(
-                      color: _getModeData(_currentPage)
-                          .gradient[0]
-                          .withValues(alpha: 0.5 * 255),
-                      blurRadius: 8,
-                      spreadRadius: 1,
-                    ),
-                  ]
-                : [],
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _buildStartButton() {
-    final canStart = _selectedDifficulty != null && !_isOnlinePage;
-
-    return Positioned(
-      left: 0,
-      right: 0,
-      bottom: 0,
-      child: SlideTransition(
-        position: _buttonSlideAnimation,
+  Widget _buildOnlineCard() {
+    return Center(
+      child: GestureDetector(
+        onTap: _onOnlineModeSelected,
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
-            color: SudokuColors.surfaceDark,
+            gradient: const LinearGradient(
+              colors: SudokuColors.onlineGradient,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.25),
+              width: 1.5,
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3 * 255),
-                blurRadius: 20,
-                offset: const Offset(0, -4),
+                color: SudokuColors.onlineGradient[0].withValues(alpha: 0.35),
+                blurRadius: 24,
+                spreadRadius: 2,
               ),
             ],
           ),
-          child: SafeArea(
-            top: false,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: canStart ? _onStartGame : null,
-                borderRadius: BorderRadius.circular(16),
-                child: Ink(
-                  decoration: BoxDecoration(
-                    gradient: canStart
-                        ? LinearGradient(
-                            colors: _getModeData(_currentPage).gradient,
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          )
-                        : null,
-                    color: canStart ? null : Colors.grey.withValues(alpha: 0.3 * 255),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: canStart
-                        ? [
-                            BoxShadow(
-                              color: _getModeData(_currentPage)
-                                  .gradient[0]
-                                  .withValues(alpha: 0.4 * 255),
-                              blurRadius: 20,
-                              spreadRadius: 2,
-                            ),
-                          ]
-                        : [],
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    alignment: Alignment.center,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'START GAME',
-                          style: TextStyle(
-                            color: canStart
-                                ? Colors.white
-                                : Colors.white.withValues(alpha: 0.5 * 255),
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Icon(
-                          Icons.arrow_forward,
-                          color: canStart
-                              ? Colors.white
-                              : Colors.white.withValues(alpha: 0.5 * 255),
-                          size: 24,
-                        ),
-                      ],
-                    ),
-                  ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.people, color: Colors.white, size: 48),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'FIND MATCH',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.5,
                 ),
               ),
-            ),
+              const SizedBox(height: 8),
+              Text(
+                'Compete against players worldwide',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.85),
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Tap to find a match',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Icon(Icons.arrow_forward, color: Colors.white, size: 18),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  _ModeData _getModeData(int page) {
-    switch (page) {
-      case 0:
-        return _ModeData(
-          title: 'CLASSIC MODE',
-          icon: Icons.grid_on,
-          gradient: SudokuColors.classicGradient,
-        );
-      case 1:
-        return _ModeData(
-          title: 'RUSH MODE',
-          icon: Icons.flash_on,
-          gradient: SudokuColors.rushGradient,
-        );
-      case 2:
-        return _ModeData(
-          title: 'ONLINE 1v1',
-          icon: Icons.people,
-          gradient: SudokuColors.onlineGradient,
-        );
-      default:
-        return _ModeData(
-          title: 'CLASSIC MODE',
-          icon: Icons.grid_on,
-          gradient: SudokuColors.classicGradient,
-        );
-    }
+  Widget _buildStartButton(_ModeData mode, bool canStart) {
+    return SizedBox(
+      width: double.infinity,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: canStart ? _onStartGame : null,
+          borderRadius: BorderRadius.circular(14),
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: canStart
+                  ? LinearGradient(
+                      colors: mode.gradient,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : null,
+              color: canStart ? null : Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: canStart
+                  ? [
+                      BoxShadow(
+                        color: mode.gradient[0].withValues(alpha: 0.35),
+                        blurRadius: 16,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : [],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    canStart ? 'START GAME' : 'SELECT DIFFICULTY',
+                    style: TextStyle(
+                      color: canStart
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.4),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  if (canStart) ...[
+                    const SizedBox(width: 10),
+                    const Icon(Icons.arrow_forward,
+                        color: Colors.white, size: 20),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -637,7 +490,7 @@ class _DifficultyData {
   final IconData icon;
   final Color color;
 
-  _DifficultyData({
+  const _DifficultyData({
     required this.difficulty,
     required this.name,
     required this.description,
@@ -651,7 +504,7 @@ class _ModeData {
   final IconData icon;
   final List<Color> gradient;
 
-  _ModeData({
+  const _ModeData({
     required this.title,
     required this.icon,
     required this.gradient,

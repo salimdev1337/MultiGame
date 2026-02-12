@@ -175,11 +175,23 @@ class _FloatingNavBarState extends State<FloatingNavBar>
     required int index,
     required bool isActive,
   }) {
+    final tabLabel = isActive
+        ? '${item.label} tab, selected'
+        : '${item.label} tab';
+    final badgeHint = (item.badgeCount != null && item.badgeCount! > 0)
+        ? ', ${item.badgeCount} notification${item.badgeCount! > 1 ? 's' : ''}'
+        : '';
+
     return Expanded(
-      child: GestureDetector(
-        onTap: () => _handleTap(index),
-        behavior: HitTestBehavior.opaque,
-        child: Container(
+      child: Semantics(
+        label: '$tabLabel$badgeHint',
+        hint: 'Double tap to switch to ${item.label}',
+        button: true,
+        selected: isActive,
+        child: GestureDetector(
+          onTap: () => _handleTap(index),
+          behavior: HitTestBehavior.opaque,
+          child: Container(
           padding: const EdgeInsets.symmetric(
             vertical: DSSpacing.xs,
           ),
@@ -273,6 +285,7 @@ class _FloatingNavBarState extends State<FloatingNavBar>
           ),
         ),
       ),
+    ),
     );
   }
 

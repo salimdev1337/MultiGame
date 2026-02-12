@@ -9,6 +9,22 @@ class DSAnimations {
   DSAnimations._(); // Private constructor
 
   // ==========================================
+  // Reduced Motion State (Accessibility)
+  // ==========================================
+
+  /// Internal flag for reduced motion state
+  /// Set by AccessibilityProvider when user enables reduced motion
+  static bool _reducedMotionEnabled = false;
+
+  /// Get current reduced motion state
+  static bool get isReducedMotionEnabled => _reducedMotionEnabled;
+
+  /// Set reduced motion state (called by AccessibilityProvider)
+  static void setReducedMotion(bool enabled) {
+    _reducedMotionEnabled = enabled;
+  }
+
+  // ==========================================
   // Duration Constants
   // ==========================================
 
@@ -342,4 +358,60 @@ extension AnimationControllerExtensions on AnimationController {
     stop();
     value = 0.0;
   }
+}
+
+// ==========================================
+// Accessibility-Aware Animation Utilities
+// ==========================================
+
+/// Get duration respecting reduced motion setting
+/// If reduced motion is enabled, duration is reduced to 30% of original
+Duration getDuration(Duration standard) {
+  if (!DSAnimations.isReducedMotionEnabled) return standard;
+
+  final reducedDuration = Duration(
+    milliseconds: (standard.inMilliseconds * 0.3).round(),
+  );
+
+  // Ensure minimum duration of 50ms
+  return reducedDuration.inMilliseconds < 50
+      ? const Duration(milliseconds: 50)
+      : reducedDuration;
+}
+
+/// Extension for Duration to support reduced motion
+extension ReducedMotionDuration on Duration {
+  /// Get this duration with reduced motion applied if enabled
+  Duration get withReducedMotion {
+    return getDuration(this);
+  }
+}
+
+/// Create animation controller with reduced motion support
+AnimationController createAccessibleController(
+  TickerProvider vsync, {
+  Duration duration = DSAnimations.normal,
+}) {
+  return AnimationController(
+    vsync: vsync,
+    duration: getDuration(duration),
+  );
+}
+
+/// Create tween animation with reduced motion support
+Animation<double> createAccessibleTween(
+  AnimationController controller, {
+  double begin = 0.0,
+  double end = 1.0,
+  Curve curve = DSAnimations.easeOutCubic,
+}) {
+  return Tween<double>(
+    begin: begin,
+    end: end,
+  ).animate(
+    CurvedAnimation(
+      parent: controller,
+      curve: curve,
+    ),
+  );
 }

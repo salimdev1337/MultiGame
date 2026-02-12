@@ -10,6 +10,7 @@ import 'package:multigame/design_system/design_system.dart';
 class AnimatedWelcomeHeader extends StatelessWidget {
   final String nickname;
   final int totalCompleted;
+  final int currentStreak;
   final VoidCallback? onSettingsTap;
   final VoidCallback? onProfileTap;
 
@@ -17,6 +18,7 @@ class AnimatedWelcomeHeader extends StatelessWidget {
     super.key,
     required this.nickname,
     this.totalCompleted = 0,
+    this.currentStreak = 0,
     this.onSettingsTap,
     this.onProfileTap,
   });
@@ -152,7 +154,7 @@ class AnimatedWelcomeHeader extends StatelessWidget {
         _StatBadge(
           icon: Icons.local_fire_department_rounded,
           label: 'Streak',
-          value: '7d', // TODO: Implement streak tracking
+          value: '${currentStreak}d',
           color: DSColors.secondary,
         ),
         DSSpacing.gapHorizontalMD,

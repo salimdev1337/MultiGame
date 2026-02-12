@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:multigame/core/game_interface.dart';
-import 'package:multigame/screens/snake_game_page.dart';
+import 'package:multigame/games/snake/screens/snake_game_screen.dart';
 
 class SnakeGameDefinition extends BaseGameDefinition {
   @override

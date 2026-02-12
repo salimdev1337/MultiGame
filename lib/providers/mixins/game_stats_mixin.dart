@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:multigame/services/data/firebase_stats_service.dart';
+import 'package:multigame/services/data/streak_service.dart';
 import 'package:multigame/utils/secure_logger.dart';
 
 /// Mixin that provides common game statistics functionality
@@ -11,6 +12,9 @@ mixin GameStatsMixin on ChangeNotifier {
   /// The Firebase stats service for saving game data
   /// Must be implemented by the class using this mixin
   FirebaseStatsService get statsService;
+
+  /// Streak service for tracking daily play streaks
+  final StreakService _streakService = StreakService();
 
   String? _userId;
   String? _displayName;
@@ -104,6 +108,16 @@ mixin GameStatsMixin on ChangeNotifier {
 
         // Success!
         SecureLogger.firebase('saveUserStats - success', details: '$gameType (attempt: $attempt)');
+
+        // Update streak on successful game completion
+        try {
+          await _streakService.updateStreak();
+          SecureLogger.log('Streak updated after game completion', tag: 'GameStats');
+        } catch (e) {
+          // Don't fail the score save if streak update fails
+          SecureLogger.error('Failed to update streak', error: e, tag: 'GameStats');
+        }
+
         _isSavingScore = false;
         _retryAttempt = 0;
         notifyListeners();

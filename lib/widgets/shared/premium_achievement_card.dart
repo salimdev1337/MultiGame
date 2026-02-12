@@ -283,7 +283,10 @@ class AchievementSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return Semantics(
+      header: true,
+      label: 'Your Achievements section',
+      child: Padding(
       padding: const EdgeInsets.fromLTRB(
         DSSpacing.lg,
         DSSpacing.xl,
@@ -323,6 +326,7 @@ class AchievementSectionHeader extends StatelessWidget {
         begin: -0.2,
         duration: DSAnimations.normal,
         curve: DSAnimations.easeOutCubic,
+      ),
       ),
     );
   }

@@ -8,6 +8,7 @@ import 'package:multigame/design_system/design_system.dart';
 import 'package:multigame/models/achievement_model.dart';
 import 'package:multigame/models/game_model.dart';
 import 'package:multigame/services/data/achievement_service.dart';
+import 'package:multigame/services/data/streak_service.dart';
 import 'package:multigame/services/storage/nickname_service.dart';
 import 'package:multigame/widgets/shared/animated_welcome_header.dart';
 import 'package:multigame/widgets/shared/premium_game_carousel.dart';
@@ -15,6 +16,7 @@ import 'package:multigame/widgets/shared/premium_achievement_card.dart';
 import 'package:multigame/widgets/shared/ds_skeleton.dart';
 import 'package:multigame/widgets/shared/ds_button.dart';
 import 'package:multigame/widgets/nickname_dialog.dart';
+import 'package:multigame/screens/help_support_screen.dart';
 
 /// Enhanced home page with premium design system
 class HomePagePremium extends StatefulWidget {
@@ -29,9 +31,12 @@ class HomePagePremium extends StatefulWidget {
 class _HomePagePremiumState extends State<HomePagePremium> {
   final AchievementService _achievementService = AchievementService();
   final NicknameService _nicknameService = NicknameService();
+  final StreakService _streakService = StreakService();
+  final GlobalKey _carouselKey = GlobalKey();
   List<AchievementModel> _achievements = [];
   bool _isLoading = true;
   int _totalCompleted = 0;
+  int _currentStreak = 0;
   String _nickname = 'Puzzle Master';
 
   @override
@@ -41,10 +46,7 @@ class _HomePagePremiumState extends State<HomePagePremium> {
   }
 
   Future<void> _loadData() async {
-    await Future.wait([
-      _loadNickname(),
-      _loadAchievements(),
-    ]);
+    await Future.wait([_loadNickname(), _loadAchievements(), _loadStreak()]);
   }
 
   Future<void> _loadNickname() async {
@@ -52,6 +54,15 @@ class _HomePagePremiumState extends State<HomePagePremium> {
     if (mounted) {
       setState(() {
         _nickname = nickname ?? 'Puzzle Master';
+      });
+    }
+  }
+
+  Future<void> _loadStreak() async {
+    final streakData = await _streakService.getStreakData();
+    if (mounted) {
+      setState(() {
+        _currentStreak = streakData.currentStreak;
       });
     }
   }
@@ -105,6 +116,17 @@ class _HomePagePremiumState extends State<HomePagePremium> {
     }
   }
 
+  void _scrollToCarousel() {
+    final context = _carouselKey.currentContext;
+    if (context != null) {
+      Scrollable.ensureVisible(
+        context,
+        duration: DSAnimations.slow,
+        curve: DSAnimations.easeInOutCubic,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -133,37 +155,42 @@ class _HomePagePremiumState extends State<HomePagePremium> {
                   child: AnimatedWelcomeHeader(
                     nickname: _nickname,
                     totalCompleted: _totalCompleted,
+                    currentStreak: _currentStreak,
                     onSettingsTap: _showSettingsDialog,
                   ),
                 ),
 
                 // XP Progress Bar
                 SliverToBoxAdapter(
-                  child: XPProgressBar(
-                    currentXP: _totalCompleted * 100,
-                    nextLevelXP: ((_totalCompleted ~/ 5) + 1) * 500,
-                    level: (_totalCompleted ~/ 5) + 1,
-                  ).animate().fadeIn(
-                    duration: DSAnimations.normal,
-                    delay: 500.milliseconds,
-                  ),
+                  child:
+                      XPProgressBar(
+                        currentXP: _totalCompleted * 100,
+                        nextLevelXP: ((_totalCompleted ~/ 5) + 1) * 500,
+                        level: (_totalCompleted ~/ 5) + 1,
+                      ).animate().fadeIn(
+                        duration: DSAnimations.normal,
+                        delay: 500.milliseconds,
+                      ),
                 ),
 
-                DSSpacing.gapVerticalLG,
+                // Gap
+                const SliverToBoxAdapter(child: DSSpacing.gapVerticalLG),
 
                 // Premium Game Carousel
                 SliverToBoxAdapter(
-                  child: PremiumGameCarousel(
-                    onGameSelected: widget.onGameSelected,
+                  child: Container(
+                    key: _carouselKey,
+                    child: PremiumGameCarousel(
+                      onGameSelected: widget.onGameSelected,
+                    ),
                   ),
                 ),
 
-                DSSpacing.gapVerticalXL,
+                // Gap
+                const SliverToBoxAdapter(child: DSSpacing.gapVerticalXL),
 
                 // Achievement Section Header
-                const SliverToBoxAdapter(
-                  child: AchievementSectionHeader(),
-                ),
+                const SliverToBoxAdapter(child: AchievementSectionHeader()),
 
                 // Achievements List with skeleton loading
                 if (_isLoading)
@@ -177,29 +204,48 @@ class _HomePagePremiumState extends State<HomePagePremium> {
                     ),
                   )
                 else if (_achievements.isEmpty)
-                  SliverToBoxAdapter(
-                    child: _buildEmptyState(),
-                  )
+                  SliverToBoxAdapter(child: _buildEmptyState())
                 else
                   SliverPadding(
                     padding: DSSpacing.paddingHorizontalMD,
                     sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          return PremiumAchievementCard(
-                            achievement: _achievements[index],
-                            index: index,
-                          );
-                        },
-                        childCount: _achievements.length,
-                      ),
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        return PremiumAchievementCard(
+                          achievement: _achievements[index],
+                          index: index,
+                        );
+                      }, childCount: _achievements.length),
                     ),
                   ),
 
-                // Bottom padding
+                // Help & Support Button (Phase 7)
                 SliverToBoxAdapter(
-                  child: DSSpacing.gapVerticalXL,
+                  child: Padding(
+                    padding: DSSpacing.paddingHorizontalMD,
+                    child: Column(
+                      children: [
+                        DSSpacing.gapVerticalXL,
+                        DSButton(
+                          text: 'Help & Support',
+                          icon: Icons.help_outline_rounded,
+                          variant: DSButtonVariant.outline,
+                          fullWidth: true,
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const HelpSupportScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
+
+                // Bottom padding
+                SliverToBoxAdapter(child: DSSpacing.gapVerticalXL),
               ],
             ),
           ),
@@ -211,58 +257,57 @@ class _HomePagePremiumState extends State<HomePagePremium> {
   Widget _buildEmptyState() {
     return Padding(
       padding: DSSpacing.paddingXL,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: DSSpacing.paddingXL,
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                colors: [
-                  DSColors.withOpacity(DSColors.primary, 0.1),
-                  Colors.transparent,
+      child:
+          Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: DSSpacing.paddingXL,
+                    decoration: BoxDecoration(
+                      gradient: RadialGradient(
+                        colors: [
+                          DSColors.withOpacity(DSColors.primary, 0.1),
+                          Colors.transparent,
+                        ],
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.emoji_events_outlined,
+                      size: 80,
+                      color: DSColors.textTertiary,
+                    ),
+                  ),
+                  DSSpacing.gapVerticalLG,
+                  Text(
+                    'No achievements yet',
+                    style: DSTypography.titleLarge.copyWith(
+                      color: DSColors.textSecondary,
+                    ),
+                  ),
+                  DSSpacing.gapVerticalSM,
+                  Text(
+                    'Complete puzzles and games to unlock achievements!',
+                    style: DSTypography.bodyMedium.copyWith(
+                      color: DSColors.textTertiary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  DSSpacing.gapVerticalXL,
+                  DSButton.gradient(
+                    text: 'Start Playing',
+                    icon: Icons.play_arrow_rounded,
+                    gradient: DSColors.gradientPrimary,
+                    onPressed: _scrollToCarousel,
+                  ),
                 ],
+              )
+              .animate()
+              .fadeIn(duration: DSAnimations.normal)
+              .scale(
+                duration: DSAnimations.slow,
+                curve: DSAnimations.easeOutCubic,
               ),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.emoji_events_outlined,
-              size: 80,
-              color: DSColors.textTertiary,
-            ),
-          ),
-          DSSpacing.gapVerticalLG,
-          Text(
-            'No achievements yet',
-            style: DSTypography.titleLarge.copyWith(
-              color: DSColors.textSecondary,
-            ),
-          ),
-          DSSpacing.gapVerticalSM,
-          Text(
-            'Complete puzzles and games to unlock achievements!',
-            style: DSTypography.bodyMedium.copyWith(
-              color: DSColors.textTertiary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          DSSpacing.gapVerticalXL,
-          DSButton.gradient(
-            text: 'Start Playing',
-            icon: Icons.play_arrow_rounded,
-            gradient: DSColors.gradientPrimary,
-            onPressed: () {
-              // Scroll to game carousel
-              // TODO: Implement smooth scroll to carousel
-            },
-          ),
-        ],
-      ).animate().fadeIn(
-        duration: DSAnimations.normal,
-      ).scale(
-        duration: DSAnimations.slow,
-        curve: DSAnimations.easeOutCubic,
-      ),
     );
   }
 }

@@ -35,6 +35,9 @@ class DSButton extends StatefulWidget {
   final Gradient? gradient;
   final List<BoxShadow>? customShadow;
 
+  /// Accessible label for screen readers. Defaults to [text] if not provided.
+  final String? semanticLabel;
+
   const DSButton({
     super.key,
     required this.text,
@@ -47,6 +50,7 @@ class DSButton extends StatefulWidget {
     this.fullWidth = false,
     this.gradient,
     this.customShadow,
+    this.semanticLabel,
   });
 
   /// Factory: Primary button
@@ -201,8 +205,15 @@ class _DSButtonState extends State<DSButton>
   @override
   Widget build(BuildContext context) {
     final isDisabled = widget.onPressed == null || widget.loading;
+    final label = widget.loading
+        ? 'Loading'
+        : (widget.semanticLabel ?? widget.text);
 
-    return ScaleTransition(
+    return Semantics(
+      label: label,
+      button: true,
+      enabled: !isDisabled,
+      child: ScaleTransition(
       scale: _scaleAnimation,
       child: GestureDetector(
         onTapDown: isDisabled ? null : _handleTapDown,
@@ -260,6 +271,7 @@ class _DSButtonState extends State<DSButton>
           ),
         ),
       ),
+    ),
     );
   }
 

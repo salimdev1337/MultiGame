@@ -106,7 +106,12 @@ class _NumberButtonState extends State<_NumberButton> {
     final badgeTop = widget.isCompact ? 2.0 : 4.0;
     final badgeRight = widget.isCompact ? 4.0 : 8.0;
 
-    return GestureDetector(
+    return Semantics(
+      label: 'Number ${widget.number}, ${widget.remaining} remaining',
+      hint: widget.isDisabled ? 'All ${widget.number}s placed' : 'Double tap to enter',
+      button: true,
+      enabled: !widget.isDisabled,
+      child: GestureDetector(
       onTapDown: widget.isDisabled ? null : (_) => _setPressed(true),
       onTapUp: widget.isDisabled
           ? null
@@ -156,6 +161,7 @@ class _NumberButtonState extends State<_NumberButton> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

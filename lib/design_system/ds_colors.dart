@@ -195,4 +195,119 @@ class DSColors {
         return rarityCommon;
     }
   }
+
+  // ==========================================
+  // High Contrast Mode Colors (WCAG AAA)
+  // ==========================================
+
+  /// High contrast background - Pure black
+  static const Color highContrastBackground = Color(0xFF000000);
+
+  /// High contrast surface - Very dark gray
+  static const Color highContrastSurface = Color(0xFF1a1a1a);
+
+  /// High contrast surface elevated
+  static const Color highContrastSurfaceElevated = Color(0xFF2a2a2a);
+
+  /// High contrast text - Pure white
+  static const Color highContrastText = Color(0xFFFFFFFF);
+
+  /// High contrast text secondary
+  static const Color highContrastTextSecondary = Color(0xFFE0E0E0);
+
+  /// High contrast primary - Brighter cyan
+  static const Color highContrastPrimary = Color(0xFF00E5FF);
+
+  /// High contrast secondary - Brighter orange
+  static const Color highContrastSecondary = Color(0xFFFF7020);
+
+  /// High contrast success - Brighter green
+  static const Color highContrastSuccess = Color(0xFF00FF88);
+
+  /// High contrast error - Brighter red
+  static const Color highContrastError = Color(0xFFFF5566);
+
+  /// High contrast warning - Brighter yellow
+  static const Color highContrastWarning = Color(0xFFFFBB00);
+
+  /// High contrast info - Brighter blue
+  static const Color highContrastInfo = Color(0xFF6666FF);
+
+  // ==========================================
+  // Accessibility Methods
+  // ==========================================
+
+  /// Get color for accessibility mode
+  /// If high contrast is enabled, returns the high contrast variant
+  /// Otherwise returns the standard color
+  static Color getAccessibleColor(
+    Color standardColor,
+    bool highContrast, {
+    Color? highContrastVariant,
+  }) {
+    if (!highContrast) return standardColor;
+
+    // Return provided high contrast variant if available
+    if (highContrastVariant != null) return highContrastVariant;
+
+    // Map standard colors to high contrast equivalents
+    if (standardColor == primary) return highContrastPrimary;
+    if (standardColor == secondary) return highContrastSecondary;
+    if (standardColor == success) return highContrastSuccess;
+    if (standardColor == error) return highContrastError;
+    if (standardColor == warning) return highContrastWarning;
+    if (standardColor == info) return highContrastInfo;
+    if (standardColor == backgroundPrimary) return highContrastBackground;
+    if (standardColor == surface) return highContrastSurface;
+    if (standardColor == surfaceElevated) return highContrastSurfaceElevated;
+    if (standardColor == textPrimary) return highContrastText;
+    if (standardColor == textSecondary) return highContrastTextSecondary;
+
+    // Default: boost color brightness
+    return _boostColorBrightness(standardColor, 1.3);
+  }
+
+  /// Get background color based on accessibility settings
+  static Color getBackgroundColor(bool highContrast) {
+    return highContrast ? highContrastBackground : backgroundPrimary;
+  }
+
+  /// Get surface color based on accessibility settings
+  static Color getSurfaceColor(bool highContrast) {
+    return highContrast ? highContrastSurface : surface;
+  }
+
+  /// Get text color based on accessibility settings
+  static Color getTextColor(bool highContrast) {
+    return highContrast ? highContrastText : textPrimary;
+  }
+
+  /// Get primary color based on accessibility settings
+  static Color getPrimaryColor(bool highContrast) {
+    return highContrast ? highContrastPrimary : primary;
+  }
+
+  /// Boost color brightness for high contrast mode
+  static Color _boostColorBrightness(Color color, double factor) {
+    final hslColor = HSLColor.fromColor(color);
+    final boostedLightness = (hslColor.lightness * factor).clamp(0.0, 1.0);
+    return hslColor.withLightness(boostedLightness).toColor();
+  }
+
+  /// Create high contrast gradient
+  static LinearGradient getAccessibleGradient(
+    LinearGradient standardGradient,
+    bool highContrast,
+  ) {
+    if (!highContrast) return standardGradient;
+
+    return LinearGradient(
+      colors: standardGradient.colors
+          .map((c) => getAccessibleColor(c, true))
+          .toList(),
+      begin: standardGradient.begin,
+      end: standardGradient.end,
+      stops: standardGradient.stops,
+    );
+  }
 }

@@ -11,11 +11,11 @@ import 'package:multigame/services/storage/nickname_service.dart';
 import 'package:multigame/widgets/nickname_dialog.dart';
 import 'package:multigame/screens/home_page_premium.dart';
 import 'package:multigame/screens/profile_screen.dart';
-import 'package:multigame/screens/puzzle.dart';
-import 'package:multigame/screens/game_2048_page.dart';
-import 'package:multigame/screens/snake_game_page.dart';
-import 'package:multigame/screens/infinite_runner_page.dart';
-import 'package:multigame/screens/leaderboard_screen.dart';
+import 'package:multigame/games/puzzle/screens/puzzle_screen.dart';
+import 'package:multigame/games/game_2048/screens/game_2048_screen.dart';
+import 'package:multigame/games/snake/screens/snake_game_screen.dart';
+import 'package:multigame/games/infinite_runner/screens/infinite_runner_screen.dart';
+import 'package:multigame/screens/leaderboard_screen_premium.dart';
 import 'package:multigame/widgets/shared/floating_nav_bar.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -59,34 +59,38 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 
   void _updateGameProvidersUserInfo() {
-    final authProvider = context.read<UserAuthProvider>();
-    if (authProvider.userId != null) {
-      // Use nickname instead of displayName
-      final displayName = _userNickname ?? authProvider.displayName;
+    try {
+      final authProvider = context.read<UserAuthProvider>();
+      if (authProvider.userId != null) {
+        // Use nickname instead of displayName
+        final displayName = _userNickname ?? authProvider.displayName;
 
-      context.read<Game2048Provider>().setUserInfo(
-        authProvider.userId,
-        displayName,
-      );
-      context.read<SnakeGameProvider>().setUserInfo(
-        authProvider.userId,
-        displayName,
-      );
-      context.read<PuzzleGameNotifier>().setUserInfo(
-        authProvider.userId,
-        displayName,
-      );
-      context.read<SudokuProvider>().setUserInfo(
-        authProvider.userId,
-        displayName,
-      );
-      SecureLogger.user('User info updated', userId: authProvider.userId);
-    } else {
-      SecureLogger.log('Waiting for user auth...', tag: 'MainNav');
-      // Retry after a delay
-      Future.delayed(const Duration(seconds: 1), () {
-        if (mounted) _updateGameProvidersUserInfo();
-      });
+        context.read<Game2048Provider>().setUserInfo(
+          authProvider.userId,
+          displayName,
+        );
+        context.read<SnakeGameProvider>().setUserInfo(
+          authProvider.userId,
+          displayName,
+        );
+        context.read<PuzzleGameNotifier>().setUserInfo(
+          authProvider.userId,
+          displayName,
+        );
+        context.read<SudokuProvider>().setUserInfo(
+          authProvider.userId,
+          displayName,
+        );
+        SecureLogger.user('User info updated', userId: authProvider.userId);
+      } else {
+        SecureLogger.log('Waiting for user auth...', tag: 'MainNav');
+        // Retry after a delay
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) _updateGameProvidersUserInfo();
+        });
+      }
+    } catch (e) {
+      SecureLogger.log('Providers not ready: $e', tag: 'MainNav');
     }
   }
 
@@ -128,7 +132,7 @@ class _MainNavigationState extends State<MainNavigation> {
           return _buildNoGameSelectedView();
         }
       case 2:
-        return const LeaderboardScreen();
+        return const LeaderboardScreenPremium();
       case 3:
         return ProfilePage();
       default:

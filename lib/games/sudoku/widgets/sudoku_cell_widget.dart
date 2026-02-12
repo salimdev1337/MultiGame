@@ -11,17 +11,11 @@ const _textGray = Color(0xFF94a3b8);
 
 class SudokuCellWidget extends StatefulWidget {
   final SudokuCell cell;
-
   final int row;
-
   final int col;
-
   final bool isSelected;
-
   final bool isHighlighted;
-
   final bool isAnimating;
-
   final VoidCallback onTap;
 
   const SudokuCellWidget({
@@ -40,21 +34,36 @@ class SudokuCellWidget extends StatefulWidget {
 }
 
 class _SudokuCellWidgetState extends State<SudokuCellWidget>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _scaleController;
   late Animation<double> _scaleAnimation;
+
+  late AnimationController _shakeController;
+  late Animation<double> _shakeAnimation;
 
   @override
   void initState() {
     super.initState();
+
     _scaleController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.15,
-    ).animate(CurvedAnimation(parent: _scaleController, curve: Curves.easeOut));
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
+      CurvedAnimation(parent: _scaleController, curve: Curves.easeOut),
+    );
+
+    _shakeController = AnimationController(
+      duration: const Duration(milliseconds: 380),
+      vsync: this,
+    );
+    _shakeAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: -6.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -6.0, end: 6.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 6.0, end: -4.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: -4.0, end: 4.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 4.0, end: 0.0), weight: 1),
+    ]).animate(CurvedAnimation(parent: _shakeController, curve: Curves.easeInOut));
   }
 
   @override
@@ -63,42 +72,84 @@ class _SudokuCellWidgetState extends State<SudokuCellWidget>
     if (widget.isAnimating && !oldWidget.isAnimating) {
       _scaleController.forward().then((_) => _scaleController.reverse());
     }
+    if (widget.cell.isError && !oldWidget.cell.isError) {
+      _shakeController.forward(from: 0);
+    }
   }
 
   @override
   void dispose() {
     _scaleController.dispose();
+    _shakeController.dispose();
     super.dispose();
+  }
+
+  String get _semanticLabel {
+    final row = widget.row + 1;
+    final col = widget.col + 1;
+    String content;
+    if (widget.cell.hasValue) {
+      content =
+          'value ${widget.cell.value}${widget.cell.isError ? ", error" : ""}${widget.cell.isFixed ? ", given" : ""}';
+    } else if (widget.cell.hasNotes) {
+      final notesList = widget.cell.notes.join(', ');
+      content = 'notes: $notesList';
+    } else {
+      content = 'empty';
+    }
+    final selectedText = widget.isSelected ? ', selected' : '';
+    return 'Row $row, Column $col, $content$selectedText';
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeInOut,
-          decoration: BoxDecoration(
-            color: _getBackgroundColor(),
-            border: _getBorder(),
-            boxShadow: widget.isSelected
-                ? [
-                    BoxShadow(
-                      color: _primaryCyan.withValues(alpha: 0.4 * 255),
-                      blurRadius: 8,
-                      spreadRadius: 1,
-                    ),
-                  ]
-                : null,
+    return Semantics(
+      label: _semanticLabel,
+      hint: 'Double tap to select',
+      button: true,
+      selected: widget.isSelected,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedBuilder(
+          animation: _shakeAnimation,
+          builder: (context, child) => Transform.translate(
+            offset: Offset(_shakeAnimation.value, 0),
+            child: child,
           ),
-          child: Center(
-            child: widget.cell.hasValue
-                ? _buildValueText()
-                : widget.cell.hasNotes
-                ? _buildNotesGrid()
-                : const SizedBox.shrink(),
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              curve: Curves.easeInOut,
+              decoration: BoxDecoration(
+                color: _getBackgroundColor(),
+                border: _getBorder(),
+                boxShadow: widget.isSelected
+                    ? [
+                        BoxShadow(
+                          color: _primaryCyan.withValues(alpha: 0.4),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ]
+                    : widget.cell.isError
+                        ? [
+                            BoxShadow(
+                              color: _errorRed.withValues(alpha: 0.35),
+                              blurRadius: 6,
+                              spreadRadius: 0,
+                            ),
+                          ]
+                        : null,
+              ),
+              child: Center(
+                child: widget.cell.hasValue
+                    ? _buildValueText()
+                    : widget.cell.hasNotes
+                        ? _buildNotesGrid()
+                        : const SizedBox.shrink(),
+              ),
+            ),
           ),
         ),
       ),
@@ -107,13 +158,14 @@ class _SudokuCellWidgetState extends State<SudokuCellWidget>
 
   Color _getBackgroundColor() {
     if (widget.cell.isError) {
-      return _errorRed.withValues(alpha: 0.15 * 255);
+      return _errorRed.withValues(alpha: 0.18);
     }
     if (widget.isSelected) {
-      return _primaryCyan.withValues(alpha: 0.2 * 255);
+      return _primaryCyan.withValues(alpha: 0.2);
     }
     if (widget.isHighlighted) {
-      return Colors.white.withValues(alpha: 0.001 * 255);
+      // Visible subtle highlight for same row/col/box cells
+      return Colors.white.withValues(alpha: 0.06);
     }
     return _surfaceLighter;
   }
@@ -122,20 +174,18 @@ class _SudokuCellWidgetState extends State<SudokuCellWidget>
     final isRightEdgeOfBox = widget.col % 3 == 2 && widget.col != 8;
     final isBottomEdgeOfBox = widget.row % 3 == 2 && widget.row != 8;
 
-    if (!isRightEdgeOfBox && !isBottomEdgeOfBox) {
-      return null;
-    }
+    if (!isRightEdgeOfBox && !isBottomEdgeOfBox) return null;
 
     return Border(
       right: isRightEdgeOfBox
           ? BorderSide(
-              color: _primaryCyan.withValues(alpha: 0.6 * 255),
+              color: _primaryCyan.withValues(alpha: 0.6),
               width: 2,
             )
           : BorderSide.none,
       bottom: isBottomEdgeOfBox
           ? BorderSide(
-              color: _primaryCyan.withValues(alpha: 0.6 * 255),
+              color: _primaryCyan.withValues(alpha: 0.6),
               width: 2,
             )
           : BorderSide.none,
@@ -152,15 +202,11 @@ class _SudokuCellWidgetState extends State<SudokuCellWidget>
       style: TextStyle(
         fontSize: 24,
         fontWeight: isGiven ? FontWeight.w700 : FontWeight.w500,
-        color: hasError
-            ? _errorRed
-            : isGiven
-            ? _textWhite
-            : _primaryCyan,
+        color: hasError ? _errorRed : isGiven ? _textWhite : _primaryCyan,
         shadows: !isGiven && !hasError
             ? [
                 Shadow(
-                  color: _primaryCyan.withValues(alpha: 0.5 * 255),
+                  color: _primaryCyan.withValues(alpha: 0.5),
                   blurRadius: 8,
                 ),
               ]

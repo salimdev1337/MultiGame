@@ -9,6 +9,7 @@ import 'package:multigame/config/service_locator.dart';
 import 'package:multigame/services/auth/auth_service.dart';
 import 'package:multigame/games/sudoku/services/matchmaking_service.dart';
 import 'sudoku_online_game_screen.dart';
+import 'package:multigame/games/sudoku/widgets/sudoku_difficulty_card.dart';
 
 const _backgroundDark = Color(0xFF0f1115);
 const _surfaceDark = Color(0xFF1a1d24);
@@ -462,7 +463,7 @@ class _SudokuOnlineMatchmakingScreenState
           ),
         ),
         const SizedBox(height: 16),
-        _DifficultyCard(
+        SudokuDifficultyCard(
           difficulty: SudokuDifficulty.easy,
           name: 'Easy',
           description: '36-40 clues • Perfect for beginners',
@@ -472,7 +473,7 @@ class _SudokuOnlineMatchmakingScreenState
           onTap: () => setState(() => _selectedDifficulty = SudokuDifficulty.easy),
         ),
         const SizedBox(height: 12),
-        _DifficultyCard(
+        SudokuDifficultyCard(
           difficulty: SudokuDifficulty.medium,
           name: 'Medium',
           description: '30-35 clues • Intermediate challenge',
@@ -482,7 +483,7 @@ class _SudokuOnlineMatchmakingScreenState
           onTap: () => setState(() => _selectedDifficulty = SudokuDifficulty.medium),
         ),
         const SizedBox(height: 12),
-        _DifficultyCard(
+        SudokuDifficultyCard(
           difficulty: SudokuDifficulty.hard,
           name: 'Hard',
           description: '25-29 clues • Advanced players',
@@ -492,7 +493,7 @@ class _SudokuOnlineMatchmakingScreenState
           onTap: () => setState(() => _selectedDifficulty = SudokuDifficulty.hard),
         ),
         const SizedBox(height: 12),
-        _DifficultyCard(
+        SudokuDifficultyCard(
           difficulty: SudokuDifficulty.expert,
           name: 'Expert',
           description: '20-24 clues • For masters only',
@@ -596,99 +597,5 @@ class _SudokuOnlineMatchmakingScreenState
       case SudokuDifficulty.expert:
         return const Color(0xFFef4444);
     }
-  }
-}
-
-class _DifficultyCard extends StatelessWidget {
-  final SudokuDifficulty difficulty;
-  final String name;
-  final String description;
-  final IconData icon;
-  final Color color;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _DifficultyCard({
-    required this.difficulty,
-    required this.name,
-    required this.description,
-    required this.icon,
-    required this.color,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: _surfaceDark,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? color : Colors.transparent,
-            width: 2,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.3 * 255),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : [],
-        ),
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15 * 255),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 32,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6 * 255),
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (isSelected)
-              Icon(
-                Icons.check_circle,
-                color: color,
-                size: 28,
-              ),
-          ],
-        ),
-      ),
-    );
   }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:multigame/core/game_interface.dart';
-import 'package:multigame/screens/puzzle.dart';
+import 'package:multigame/games/puzzle/screens/puzzle_screen.dart';
 
 class PuzzleGameDefinition extends BaseGameDefinition {
   @override

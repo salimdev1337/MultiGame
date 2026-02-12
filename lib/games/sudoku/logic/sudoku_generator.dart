@@ -1,16 +1,11 @@
-// Sudoku puzzle generator - see docs/SUDOKU_ALGORITHMS.md
+// see docs/SUDOKU_ALGORITHMS.md
 
 import 'dart:math';
 import '../models/sudoku_board.dart';
 import '../models/sudoku_cell.dart';
 import 'sudoku_solver.dart';
 
-enum SudokuDifficulty {
-  easy,
-  medium,
-  hard,
-  expert,
-}
+enum SudokuDifficulty { easy, medium, hard, expert }
 
 class SudokuGenerator {
   final Random _random;
@@ -47,7 +42,10 @@ class SudokuGenerator {
     }
   }
 
-  SudokuBoard _removeClues(SudokuBoard completeBoard, SudokuDifficulty difficulty) {
+  SudokuBoard _removeClues(
+    SudokuBoard completeBoard,
+    SudokuDifficulty difficulty,
+  ) {
     final puzzle = completeBoard.clone();
 
     final targetClues = _getTargetClues(difficulty);
@@ -85,10 +83,7 @@ class SudokuGenerator {
       for (int col = 0; col < 9; col++) {
         final cell = puzzle.grid[row][col];
         if (cell.hasValue) {
-          puzzle.grid[row][col] = SudokuCell(
-            value: cell.value,
-            isFixed: true,
-          );
+          puzzle.grid[row][col] = SudokuCell(value: cell.value, isFixed: true);
         }
       }
     }

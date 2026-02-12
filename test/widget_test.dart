@@ -6,14 +6,15 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:multigame/main.dart';
 
 void main() {
   testWidgets('App loads successfully', (WidgetTester tester) async {
-    // Build our app and trigger initial frame
-    await tester.pumpWidget(const MyApp());
+    // MyApp is a ConsumerWidget and requires ProviderScope
+    await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await tester.pump();
 
     // Verify that the app loads with MaterialApp

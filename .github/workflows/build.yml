@@ -1,16 +1,3 @@
-# =============================================================================
-# BUILD WORKFLOW - Multi-Platform Builds
-# =============================================================================
-# PURPOSE: Build the app for Android, Windows, and Web platforms
-# This runs on push to main and when you create a tag/release
-#
-# WHAT YOU'LL LEARN:
-# - Building for multiple platforms
-# - Creating artifacts (downloadable builds)
-# - Matrix builds (running same job with different parameters)
-# - Uploading build outputs
-# =============================================================================
-
 name: Build - Multi-Platform
 
 on:
@@ -23,35 +10,35 @@ on:
 jobs:
   # Job 1: Build Android APK
   build-android:
-    name: 🤖 Build Android APK
+    name: Build Android APK
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout code
+      - name:  Checkout code
         uses: actions/checkout@v4
 
-      - name: ☕ Setup Java
+      - name:  Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: 🐦 Setup Flutter
+      - name:  Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.7'
           channel: 'stable'
           cache: true
 
-      - name: 🔧 Setup Firebase config
+      - name:  Setup Firebase config
         run: |
           echo "${{ secrets.FIREBASE_OPTIONS_DART }}" > lib/config/firebase_options.dart
           echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/app/google-services.json
 
-      - name: 📦 Get dependencies
+      - name:  Get dependencies
         run: flutter pub get
 
-      - name: 🔨 Build Android APK
+      - name:  Build Android APK
         env:
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
         run: flutter build apk --release --dart-define=UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY
@@ -62,13 +49,13 @@ jobs:
         run: flutter build appbundle --release --dart-define=UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY
         
       # Upload the built APK so you can download it
-      - name: 📤 Upload APK
+      - name:  Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           
-      - name: 📤 Upload App Bundle
+      - name:  Upload App Bundle
         uses: actions/upload-artifact@v4
         with:
           name: android-appbundle
@@ -76,38 +63,38 @@ jobs:
 
   # Job 2: Build Windows executable
   build-windows:
-    name: 🪟 Build Windows
+    name:  Build Windows
     runs-on: windows-latest  # Windows machine required for Windows builds
 
     steps:
-      - name: 📥 Checkout code
+      - name:  Checkout code
         uses: actions/checkout@v4
 
-      - name: 🐦 Setup Flutter
+      - name:  Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.7'
           channel: 'stable'
           cache: true
 
-      - name: 🔧 Setup Firebase config
+      - name:  Setup Firebase config
         run: echo "${{ secrets.FIREBASE_OPTIONS_DART }}" > lib/config/firebase_options.dart
         shell: bash
 
-      - name: 📦 Get dependencies
+      - name:  Get dependencies
         run: flutter pub get
         
-      - name: 🔨 Build Windows
+      - name:  Build Windows
         env:
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
         run: flutter build windows --release --dart-define=UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY
         
       # Zip the entire build folder
-      - name: 📦 Package Windows build
+      - name:  Package Windows build
         run: |
           Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath puzzle-windows.zip
         
-      - name: 📤 Upload Windows build
+      - name:  Upload Windows build
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
@@ -115,32 +102,32 @@ jobs:
 
   # Job 3: Build Web version
   build-web:
-    name: 🌐 Build Web
+    name:  Build Web
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout code
+      - name:  Checkout code
         uses: actions/checkout@v4
 
-      - name: 🐦 Setup Flutter
+      - name:  Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.7'
           channel: 'stable'
           cache: true
 
-      - name: 🔧 Setup Firebase config
+      - name:  Setup Firebase config
         run: echo "${{ secrets.FIREBASE_OPTIONS_DART }}" > lib/config/firebase_options.dart
 
-      - name: 📦 Get dependencies
+      - name:  Get dependencies
         run: flutter pub get
         
-      - name: 🔨 Build Web
+      - name:  Build Web
         env:
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
         run: flutter build web --release --base-href "/puzzle/" --dart-define=UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY
         
-      - name: 📤 Upload Web build
+      - name:  Upload Web build
         uses: actions/upload-artifact@v4
         with:
           name: web-build
@@ -148,15 +135,15 @@ jobs:
 
   # Job 4: Summary of all builds
   build-summary:
-    name: 📋 Build Summary
+    name:  Build Summary
     needs: [build-android, build-windows, build-web]
     runs-on: ubuntu-latest
     if: always()  # Run even if some builds fail
     
     steps:
-      - name: 📊 Create summary
+      - name:  Create summary
         run: |
-          echo "## 🎉 Build Results" >> $GITHUB_STEP_SUMMARY
+          echo "##  Build Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Platform | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
@@ -164,4 +151,4 @@ jobs:
           echo "| Windows  | ${{ needs.build-windows.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Web      | ${{ needs.build-web.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📥 Download artifacts from the Actions tab" >> $GITHUB_STEP_SUMMARY
+          echo "###  Download artifacts from the Actions tab" >> $GITHUB_STEP_SUMMARY
