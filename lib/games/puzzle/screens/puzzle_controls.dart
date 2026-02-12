@@ -170,7 +170,7 @@ class PuzzleFooterControls extends ConsumerWidget {
         children: [
           Expanded(
             child: _buildFooterButton(
-              label: 'RESET',
+              label: 'MAIN MENU',
               onPressed: onReset,
               isPrimary: false,
             ),

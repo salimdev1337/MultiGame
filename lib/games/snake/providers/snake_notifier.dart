@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +14,20 @@ enum GameMode { classic, wrap, speed }
 class SnakeState {
   static const int gridSize = 20;
 
+  // Cache all 400 grid cells once — used by _spawnFood
+  static final Set<Offset> _allCells = {
+    for (int x = 0; x < gridSize; x++)
+      for (int y = 0; y < gridSize; y++)
+        Offset(x.toDouble(), y.toDouble()),
+  };
+  static Set<Offset> get allCells => _allCells;
+
   final List<Offset> snake;
+  final Set<Offset> snakeSet;       // O(1) collision lookup
+  final List<Offset> previousSnake; // snapshot before last tick (for interpolation)
+  final int lastTickUs;             // microseconds epoch at last tick
+  final bool foodEaten;             // true only on the tick food was collected
+
   final Offset food;
   final Direction currentDirection;
   final GameMode gameMode;
@@ -24,6 +38,10 @@ class SnakeState {
 
   const SnakeState({
     this.snake = const [Offset(10, 10)],
+    this.snakeSet = const {},
+    this.previousSnake = const [Offset(10, 10)],
+    this.lastTickUs = 0,
+    this.foodEaten = false,
     this.food = const Offset(5, 5),
     this.currentDirection = Direction.right,
     this.gameMode = GameMode.classic,
@@ -39,6 +57,9 @@ class SnakeState {
 
   SnakeState copyWith({
     List<Offset>? snake,
+    List<Offset>? previousSnake,
+    int? lastTickUs,
+    bool? foodEaten,
     Offset? food,
     Direction? currentDirection,
     GameMode? gameMode,
@@ -47,8 +68,13 @@ class SnakeState {
     int? score,
     int? highScore,
   }) {
+    final nextSnake = snake ?? this.snake;
     return SnakeState(
-      snake: snake ?? this.snake,
+      snake: nextSnake,
+      snakeSet: nextSnake.toSet(),  // always derived from snake
+      previousSnake: previousSnake ?? this.previousSnake,
+      lastTickUs: lastTickUs ?? this.lastTickUs,
+      foodEaten: foodEaten ?? this.foodEaten,
       food: food ?? this.food,
       currentDirection: currentDirection ?? this.currentDirection,
       gameMode: gameMode ?? this.gameMode,
@@ -62,7 +88,7 @@ class SnakeState {
 
 class SnakeNotifier extends GameStatsNotifier<SnakeState> {
   Timer? _timer;
-  Direction _nextDirection = Direction.right;
+  final Queue<Direction> _inputQueue = Queue();
   final Random _random = Random();
 
   @override
@@ -77,10 +103,14 @@ class SnakeNotifier extends GameStatsNotifier<SnakeState> {
 
   void startGame() {
     _timer?.cancel();
-    _nextDirection = Direction.right;
-    final food = _spawnFood([const Offset(10, 10)]);
+    _inputQueue.clear();
+    const initialSnake = [Offset(10, 10)];
+    final food = _spawnFood(initialSnake.toSet());
     state = state.copyWith(
-      snake: [const Offset(10, 10)],
+      snake: initialSnake,
+      previousSnake: initialSnake,
+      lastTickUs: 0,
+      foodEaten: false,
       food: food,
       currentDirection: Direction.right,
       score: 0,
@@ -96,45 +126,46 @@ class SnakeNotifier extends GameStatsNotifier<SnakeState> {
   }
 
   void togglePause() {
-    if (state.playing) {
-      _timer?.cancel();
-      state = state.copyWith(playing: false);
-    } else {
-      state = state.copyWith(playing: true);
-      _startTimer();
-    }
+    // No timer cancel/recreate — timer guards with `if (state.playing)` already
+    state = state.copyWith(playing: !state.playing);
   }
 
   void changeDirection(Direction d) {
-    final cur = state.currentDirection;
-    if ((cur == Direction.up && d == Direction.down) ||
-        (cur == Direction.down && d == Direction.up) ||
-        (cur == Direction.left && d == Direction.right) ||
-        (cur == Direction.right && d == Direction.left)) {
-      return;
+    // Use last queued direction as effective current to allow rapid double-tap
+    final effectiveCurrent = _inputQueue.isNotEmpty
+        ? _inputQueue.last
+        : state.currentDirection;
+    if (_isReverse(effectiveCurrent, d)) return;
+    // Cap at 2 to avoid stale inputs accumulating
+    if (_inputQueue.length < 2) {
+      _inputQueue.addLast(d);
     }
-    _nextDirection = d;
   }
+
+  bool _isReverse(Direction a, Direction b) =>
+      (a == Direction.up && b == Direction.down) ||
+      (a == Direction.down && b == Direction.up) ||
+      (a == Direction.left && b == Direction.right) ||
+      (a == Direction.right && b == Direction.left);
 
   void _startTimer() {
     _timer = Timer.periodic(state.tickRate, (_) {
-      if (state.playing) { _tick(); }
+      if (state.playing) _tick();
     });
   }
 
-  Offset _spawnFood(List<Offset> snake) {
-    Offset pos;
-    do {
-      pos = Offset(
-        _random.nextInt(SnakeState.gridSize).toDouble(),
-        _random.nextInt(SnakeState.gridSize).toDouble(),
-      );
-    } while (snake.contains(pos));
-    return pos;
+  Offset _spawnFood(Set<Offset> occupied) {
+    final available = SnakeState.allCells.difference(occupied).toList();
+    if (available.isEmpty) return const Offset(0, 0); // board full = win
+    return available[_random.nextInt(available.length)];
   }
 
   void _tick() {
-    final dir = _nextDirection;
+    // Dequeue buffered input or keep current direction
+    final dir = _inputQueue.isNotEmpty
+        ? _inputQueue.removeFirst()
+        : state.currentDirection;
+
     final head = state.snake.first;
     Offset next;
 
@@ -162,23 +193,29 @@ class SnakeNotifier extends GameStatsNotifier<SnakeState> {
       return;
     }
 
-    if (state.snake.contains(next)) {
+    // O(1) collision detection via Set
+    if (state.snakeSet.contains(next)) {
       _gameOver();
       return;
     }
 
+    final prevSnake = state.snake; // snapshot before mutation
     final newSnake = [next, ...state.snake];
     int newScore = state.score;
     Offset newFood = state.food;
+    final bool ate = next == state.food;
 
-    if (next == state.food) {
+    if (ate) {
       newScore += 10;
-      newFood = _spawnFood(newSnake);
+      newFood = _spawnFood(newSnake.toSet());
     } else {
       newSnake.removeLast();
     }
 
     state = state.copyWith(
+      previousSnake: prevSnake,
+      lastTickUs: DateTime.now().microsecondsSinceEpoch,
+      foodEaten: ate,
       snake: newSnake,
       food: newFood,
       currentDirection: dir,
@@ -189,6 +226,7 @@ class SnakeNotifier extends GameStatsNotifier<SnakeState> {
   void reset() {
     _timer?.cancel();
     _timer = null;
+    _inputQueue.clear();
     state = const SnakeState();
   }
 

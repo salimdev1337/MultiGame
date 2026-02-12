@@ -41,7 +41,9 @@ jobs:
 
       # STEP 5: Setup Firebase config from repository secrets
       - name:  Setup Firebase config
-        run: echo "${{ secrets.FIREBASE_OPTIONS_DART }}" > lib/config/firebase_options.dart
+        env:
+          FIREBASE_OPTIONS_DART_B64: ${{ secrets.FIREBASE_OPTIONS_DART }}
+        run: echo "$FIREBASE_OPTIONS_DART_B64" | base64 --decode > lib/config/firebase_options.dart
 
       # STEP 6: Get all dependencies from pubspec.yaml
       - name:  Get dependencies

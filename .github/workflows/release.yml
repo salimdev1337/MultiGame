@@ -103,9 +103,12 @@ jobs:
           cache: true
 
       - name:  Setup Firebase config
+        env:
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          FIREBASE_OPTIONS_DART_B64: ${{ secrets.FIREBASE_OPTIONS_DART }}
         run: |
-          echo "${{ secrets.FIREBASE_OPTIONS_DART }}" > lib/config/firebase_options.dart
-          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/app/google-services.json
+          echo "$GOOGLE_SERVICES_JSON_B64" | base64 --decode > android/app/google-services.json
+          echo "$FIREBASE_OPTIONS_DART_B64" | base64 --decode > lib/config/firebase_options.dart
 
       - name:  Get dependencies
         run: flutter pub get
@@ -148,7 +151,9 @@ jobs:
           cache: true
 
       - name:  Setup Firebase config
-        run: echo "${{ secrets.FIREBASE_OPTIONS_DART }}" > lib/config/firebase_options.dart
+        env:
+          FIREBASE_OPTIONS_DART_B64: ${{ secrets.FIREBASE_OPTIONS_DART }}
+        run: echo "$FIREBASE_OPTIONS_DART_B64" | base64 --decode > lib/config/firebase_options.dart
         shell: bash
 
       - name:  Get dependencies

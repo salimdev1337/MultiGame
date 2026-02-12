@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:multigame/games/game_2048/providers/game_2048_notifier.dart';
+import 'package:multigame/widgets/shared/game_result_widget.dart';
 
 class Game2048Page extends ConsumerStatefulWidget {
   const Game2048Page({super.key});
@@ -14,6 +15,9 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
 
+  // Overlay entry for the milestone banner
+  OverlayEntry? _bannerEntry;
+
   @override
   void initState() {
     super.initState();
@@ -25,151 +29,199 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
 
   @override
   void dispose() {
+    _bannerEntry?.remove();
+    _bannerEntry = null;
     _animationController.dispose();
     super.dispose();
   }
 
   void _move(String direction) {
+    final prevState = ref.read(game2048Provider);
     final moved = ref.read(game2048Provider.notifier).move(direction);
 
     if (moved) {
       _animationController.forward(from: 0);
 
-      // Check if game is over
-      if (ref.read(game2048Provider).gameOver) {
-        // If user reached at least the minimum objective show win dialog
-        if (ref.read(game2048Provider.notifier).hasReachedObjective()) {
-          _showObjectiveCompleteDialog();
-        } else {
-          _showGameOverDialog();
-        }
+      final newState = ref.read(game2048Provider);
+
+      if (newState.gameOver) {
+        _showGameOverDialog(newState);
+      } else if (newState.highestMilestoneIndex > prevState.highestMilestoneIndex) {
+        _showMilestoneBanner(newState.highestMilestoneIndex);
       }
     }
   }
 
-  Future<void> _showGameOverDialog() async {
-    final score = ref.read(game2048Provider).score;
+  void _showMilestoneBanner(int milestoneIndex) {
+    _bannerEntry?.remove();
+    _bannerEntry = null;
+
+    final tile = Game2048State.milestones[milestoneIndex];
+    final label = Game2048State.milestoneLabels[milestoneIndex];
+
+    _bannerEntry = OverlayEntry(
+      builder: (context) => _MilestoneBanner(
+        tile: tile,
+        label: label,
+        onDismissed: () {
+          _bannerEntry?.remove();
+          _bannerEntry = null;
+        },
+      ),
+    );
+
+    Overlay.of(context).insert(_bannerEntry!);
+  }
+
+  Future<void> _showGameOverDialog(Game2048State state) async {
     final notifier = ref.read(game2048Provider.notifier);
+    final isNewBest = state.score >= state.bestScore && state.score > 0;
+
+    await notifier.recordGameCompletion();
 
     if (!mounted) return;
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 340),
-          padding: const EdgeInsets.all(32),
+    final highestTile = notifier.getHighestTile();
+    final milestoneLabel = state.currentMilestoneLabel;
+
+    GameResultWidget.show(
+      context,
+      GameResultConfig(
+        isVictory: state.highestMilestoneIndex >= 0,
+        title: state.highestMilestoneIndex >= 0 ? 'GAME OVER' : 'GAME OVER',
+        titleStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 30,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.5,
+        ),
+        icon: Container(
+          width: 80,
+          height: 80,
           decoration: BoxDecoration(
-            color: const Color(0xFF1a1e26),
+            color: state.highestMilestoneIndex >= 0
+                ? const Color(0xFF19e6a2).withValues(alpha: 0.15)
+                : const Color(0xFFff6b6b).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(40),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: (0.1 * 255)),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black..withValues(alpha: (0.5 * 255)),
-                blurRadius: 50,
-                spreadRadius: 10,
-              ),
-            ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Broken heart icon
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFff6b6b).withValues(alpha: (0.1 * 255)),
-                  borderRadius: BorderRadius.circular(40),
-                ),
-                child: const Icon(
-                  Icons.heart_broken,
-                  color: Color(0xFFff6b6b),
-                  size: 48,
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Title
-              const Text(
-                'GAME OVER',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 30,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Message with score
-              Column(
-                children: [
-                  Text(
-                    'Tough luck! You reached a final score of',
-                    style: TextStyle(
-                      color: Colors.grey[500],
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '$score points',
-                    style: const TextStyle(
-                      color: Color(0xFFff6b6b),
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-              // Try Again Button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    notifier.initializeGame();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFff6b6b),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 8,
-                    shadowColor: const Color(
-                      0xFFff6b6b,
-                    ).withValues(alpha: (0.3 * 255)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(Icons.replay, size: 24),
-                      SizedBox(width: 8),
-                      Text(
-                        'TRY AGAIN',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
+          child: Icon(
+            state.highestMilestoneIndex >= 0
+                ? Icons.workspace_premium_rounded
+                : Icons.heart_broken,
+            color: state.highestMilestoneIndex >= 0
+                ? const Color(0xFF19e6a2)
+                : const Color(0xFFff6b6b),
+            size: 48,
           ),
         ),
+        subtitle: Column(
+          children: [
+            // Milestone badge
+            if (state.highestMilestoneIndex >= 0) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF19e6a2).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: const Color(0xFF19e6a2).withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Text(
+                  '$milestoneLabel · ${state.currentMilestoneTile}',
+                  style: const TextStyle(
+                    color: Color(0xFF19e6a2),
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+            // Score line
+            Text(
+              'Final Score',
+              style: TextStyle(
+                color: Colors.grey[500],
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${state.score}',
+              style: TextStyle(
+                color: state.highestMilestoneIndex >= 0
+                    ? const Color(0xFF19e6a2)
+                    : const Color(0xFFff6b6b),
+                fontSize: 28,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            // New best badge
+            if (isNewBest) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFf59e0b).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFf59e0b).withValues(alpha: 0.5),
+                  ),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.emoji_events, color: Color(0xFFf59e0b), size: 14),
+                    SizedBox(width: 4),
+                    Text(
+                      'New Best Score!',
+                      style: TextStyle(
+                        color: Color(0xFFf59e0b),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            // Highest tile reached
+            const SizedBox(height: 8),
+            Text(
+              'Highest tile: $highestTile',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+        accentColor: state.highestMilestoneIndex >= 0
+            ? const Color(0xFF19e6a2)
+            : const Color(0xFFff6b6b),
+        stats: const [],
+        statsLayout: GameResultStatsLayout.cards,
+        primary: GameResultAction(
+          label: 'PLAY AGAIN',
+          icon: Icons.replay,
+          style: GameResultButtonStyle.solid,
+          color: state.highestMilestoneIndex >= 0
+              ? const Color(0xFF19e6a2)
+              : const Color(0xFFff6b6b),
+          onTap: () {
+            Navigator.pop(context);
+            notifier.initializeGame();
+          },
+        ),
+        presentation: GameResultPresentation.dialog,
+        animated: false,
+        containerBorderRadius: 40,
+        containerColor: const Color(0xFF1a1e26),
+        contentPadding: const EdgeInsets.all(32),
+        constraints: const BoxConstraints(maxWidth: 340),
       ),
     );
   }
@@ -249,168 +301,6 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
     );
   }
 
-  Future<void> _showObjectiveCompleteDialog() async {
-    final notifier = ref.read(game2048Provider.notifier);
-    final state = ref.read(game2048Provider);
-
-    // Save achievement
-    await notifier.recordGameCompletion();
-
-    if (!mounted) return;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 340),
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1a1e26),
-            borderRadius: BorderRadius.circular(40),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.1 * 255),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3 * 255),
-                blurRadius: 40,
-                spreadRadius: 5,
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Trophy icon with decorative elements
-              SizedBox(
-                height: 80,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: const Color(
-                          0xFF19e6a2,
-                        ).withValues(alpha: (0.2 * 255)),
-                        borderRadius: BorderRadius.circular(40),
-                      ),
-                      child: const Icon(
-                        Icons.workspace_premium_rounded,
-                        color: Color(0xFF19e6a2),
-                        size: 48,
-                      ),
-                    ),
-                    Positioned(
-                      top: -8,
-                      right: 8,
-                      child: Icon(
-                        Icons.celebration,
-                        color: const Color(0xFF0ea5e9),
-                        size: 24,
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      left: 8,
-                      child: Icon(
-                        Icons.auto_awesome,
-                        color: const Color(0xFFa855f7),
-                        size: 20,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Title
-              const Text(
-                'YOU WIN!',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 30,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.5,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Subtitle
-              RichText(
-                text: TextSpan(
-                  style: TextStyle(
-                    color: Colors.grey[500],
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  children: [
-                    const TextSpan(text: 'Target '),
-                    TextSpan(
-                      text: '${state.currentObjective}',
-                      style: const TextStyle(
-                        color: Color(0xFF19e6a2),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const TextSpan(text: ' reached!'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-              // Next Level Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    if (state.currentObjectiveIndex <
-                        Game2048State.objectives.length - 1) {
-                      notifier.nextObjective();
-                      notifier.initializeGame();
-                    } else {
-                      // All objectives complete, reset
-                      notifier.resetObjective();
-                      notifier.initializeGame();
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF19e6a2),
-                    foregroundColor: const Color(0xFF101318),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 8,
-                    shadowColor: const Color(
-                      0xFF19e6a2,
-                    ).withValues(alpha: (0.3 * 255)),
-                  ),
-                  child: Text(
-                    state.currentObjectiveIndex <
-                            Game2048State.objectives.length - 1
-                        ? 'NEXT LEVEL'
-                        : 'RESTART',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              const SizedBox(height: 12),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Color _getTileColor(int value) {
     switch (value) {
       case 0:
@@ -437,6 +327,10 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
         return const Color(0xFFf97316);
       case 2048:
         return const Color(0xFFeab308);
+      case 4096:
+        return const Color(0xFFe11d48);
+      case 8192:
+        return const Color(0xFF7c3aed);
       default:
         return const Color(0xFF19e6a2);
     }
@@ -523,76 +417,86 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
 
                 // Stats Section
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
                     children: [
-                      // Target Card
+                      // Level / Next milestone card
                       Expanded(
                         child: Container(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: const Color(0xFF1a1e26),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: Colors.grey.withValues(
-                                alpha: (0.2 * 255),
-                              ),
+                              color: Colors.grey.withValues(alpha: (0.2 * 255)),
                             ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'TARGET',
+                                'LEVEL',
                                 style: TextStyle(
-                                  color: Colors.grey.withValues(
-                                    alpha: (0.7 * 255),
-                                  ),
+                                  color: Colors.grey.withValues(alpha: (0.7 * 255)),
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 1.5,
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 6),
                               Row(
                                 children: [
                                   const Icon(
                                     Icons.stars,
                                     color: Color(0xFF19e6a2),
-                                    size: 20,
+                                    size: 18,
                                   ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '${state.currentObjective}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w800,
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      state.highestMilestoneIndex >= 0
+                                          ? state.currentMilestoneLabel
+                                          : '—',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                state.nextMilestoneTile != null
+                                    ? 'Next: ${state.nextMilestoneTile}'
+                                    : 'Max reached!',
+                                style: TextStyle(
+                                  color: Colors.grey.withValues(alpha: 0.55),
+                                  fontSize: 11,
+                                ),
                               ),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      // Score Card
+                      const SizedBox(width: 10),
+                      // Score card
                       Expanded(
                         child: Container(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: const Color(0xFF19e6a2),
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(
-                                  0xFF19e6a2,
-                                ).withValues(alpha: (0.2 * 255)),
+                                color: const Color(0xFF19e6a2)
+                                    .withValues(alpha: (0.2 * 255)),
                                 blurRadius: 16,
                                 offset: const Offset(0, 4),
                               ),
@@ -604,33 +508,55 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                               Text(
                                 'SCORE',
                                 style: TextStyle(
-                                  color: const Color(
-                                    0xFF101318,
-                                  ).withValues(alpha: (0.6 * 255)),
+                                  color: const Color(0xFF101318)
+                                      .withValues(alpha: (0.6 * 255)),
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 1.5,
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 6),
                               Row(
                                 children: [
                                   const Icon(
                                     Icons.bolt,
                                     color: Color(0xFF101318),
-                                    size: 20,
+                                    size: 18,
                                   ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '${state.score}',
-                                    style: const TextStyle(
-                                      color: Color(0xFF101318),
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w800,
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      '${state.score}',
+                                      style: const TextStyle(
+                                        color: Color(0xFF101318),
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ],
                               ),
+                              const SizedBox(height: 4),
+                              // Combo bonus hint
+                              if (state.lastComboBonus > 0)
+                                Text(
+                                  '+${state.lastComboBonus} combo!',
+                                  style: const TextStyle(
+                                    color: Color(0xFF101318),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                )
+                              else
+                                Text(
+                                  'Best: ${state.bestScore}',
+                                  style: TextStyle(
+                                    color: const Color(0xFF101318)
+                                        .withValues(alpha: 0.55),
+                                    fontSize: 11,
+                                  ),
+                                ),
                             ],
                           ),
                         ),
@@ -638,7 +564,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
 
                 // Game Grid
                 Expanded(
@@ -672,8 +598,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                                 return Transform.scale(
                                   scale: value != 0
                                       ? 1.0 -
-                                            (_animationController.value *
-                                                0.1)
+                                            (_animationController.value * 0.1)
                                       : 1.0,
                                   child: child,
                                 );
@@ -686,15 +611,11 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                                       ? [
                                           BoxShadow(
                                             color: _getTileColor(value)
-                                                .withValues(
-                                                  alpha: (0.4 * 255),
-                                                ),
-                                            blurRadius: value >= 512
-                                                ? 20
-                                                : 12,
-                                            spreadRadius: value >= 512
-                                                ? 2
-                                                : 0,
+                                                .withValues(alpha: (0.4 * 255)),
+                                            blurRadius:
+                                                value >= 512 ? 20 : 12,
+                                            spreadRadius:
+                                                value >= 512 ? 2 : 0,
                                           ),
                                         ]
                                       : null,
@@ -704,7 +625,9 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                                       ? Text(
                                           '$value',
                                           style: TextStyle(
-                                            fontSize: value >= 1024
+                                            fontSize: value >= 4096
+                                                ? 16
+                                                : value >= 1024
                                                 ? 20
                                                 : value >= 128
                                                 ? 24
@@ -723,8 +646,206 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
+                // Footer Controls
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF21242b).withValues(alpha: 0.5 * 255),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.05 * 255),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.3 * 255),
+                          blurRadius: 20,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildFooterButton(
+                            label: 'RESET',
+                            onPressed: () =>
+                                ref.read(game2048Provider.notifier).initializeGame(),
+                            isPrimary: false,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 2,
+                          child: _buildFooterButton(
+                            label: 'MAIN MENU',
+                            onPressed: () => Navigator.of(context).popUntil(
+                              (route) => route.isFirst,
+                            ),
+                            isPrimary: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFooterButton({
+    required String label,
+    required VoidCallback onPressed,
+    required bool isPrimary,
+  }) {
+    return Material(
+      color: isPrimary ? const Color(0xFF19e6a2) : const Color(0xFF16181d),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          height: 48,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border(
+              bottom: BorderSide(
+                color: isPrimary ? const Color(0xFF0a8a61) : Colors.black,
+                width: 4,
+              ),
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: isPrimary ? const Color(0xFF101318) : Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Slide-in banner shown when a new milestone is reached mid-game.
+/// Auto-dismisses after 2.5 seconds without pausing gameplay.
+class _MilestoneBanner extends StatefulWidget {
+  final int tile;
+  final String label;
+  final VoidCallback onDismissed;
+
+  const _MilestoneBanner({
+    required this.tile,
+    required this.label,
+    required this.onDismissed,
+  });
+
+  @override
+  State<_MilestoneBanner> createState() => _MilestoneBannerState();
+}
+
+class _MilestoneBannerState extends State<_MilestoneBanner>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<Offset> _slide;
+  late final Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _slide = Tween<Offset>(
+      begin: const Offset(0, -1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+    _fade = Tween<double>(begin: 0, end: 1)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+
+    _ctrl.forward();
+
+    Future.delayed(const Duration(milliseconds: 2500), () {
+      if (mounted) {
+        _ctrl.reverse().then((_) => widget.onDismissed());
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 12,
+      left: 24,
+      right: 24,
+      child: SlideTransition(
+        position: _slide,
+        child: FadeTransition(
+          opacity: _fade,
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1a1e26),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFF19e6a2).withValues(alpha: 0.6),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF19e6a2).withValues(alpha: 0.25),
+                    blurRadius: 20,
+                    offset: const Offset(0, 4),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.celebration, color: Color(0xFF19e6a2), size: 22),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Milestone! ',
+                    style: TextStyle(
+                      color: Colors.grey[300],
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    '${widget.label} · ${widget.tile}',
+                    style: const TextStyle(
+                      color: Color(0xFF19e6a2),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

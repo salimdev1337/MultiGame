@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:multigame/screens/main_navigation.dart';
+import 'package:go_router/go_router.dart';
+import 'package:multigame/config/app_router.dart';
 import '../infinite_runner_game.dart';
 
 /// Overlay shown when game is loading
@@ -427,13 +428,7 @@ class GameOverOverlay extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                    onPressed: () {
-                      // Navigate to home tab using MainNavigation's GlobalKey
-                      final state = MainNavigation.navigatorKey.currentState;
-                      if (state != null) {
-                        (state as dynamic).onTabTapped(0);
-                      }
-                    },
+                    onPressed: () => context.go(AppRoutes.home),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(
                         color: Color(0xFF00d4ff),

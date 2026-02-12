@@ -1,4 +1,6 @@
 // Barrel file for shared widgets
+export 'game_stat_item.dart';
+export 'game_result_widget.dart';
 export 'ds_button.dart';
 export 'ds_card.dart';
 export 'ds_skeleton.dart';

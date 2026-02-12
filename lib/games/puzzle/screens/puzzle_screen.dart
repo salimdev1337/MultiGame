@@ -147,15 +147,9 @@ class _PuzzlePageState extends ConsumerState<PuzzlePage>
                                 const SizedBox(height: 24),
                                 PuzzleFooterControls(
                                   onReset: () {
-                                    ref
-                                        .read(puzzleProvider.notifier)
-                                        .resetGame()
-                                        .then((_) {
-                                          if (mounted) {
-                                            _showImagePreviewAnimation();
-                                          }
-                                        })
-                                        .catchError((_) {});
+                                    Navigator.of(context).popUntil(
+                                      (route) => route.isFirst,
+                                    );
                                   },
                                   onPlayAgain: () {
                                     ref

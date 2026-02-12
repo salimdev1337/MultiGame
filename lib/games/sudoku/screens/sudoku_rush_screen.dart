@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:multigame/widgets/shared/game_result_widget.dart';
+import 'package:multigame/widgets/shared/game_stat_item.dart';
 import '../logic/sudoku_generator.dart';
 import '../providers/sudoku_rush_notifier.dart';
 import '../providers/sudoku_ui_notifier.dart';
@@ -365,37 +367,57 @@ class _SudokuRushScreenState extends ConsumerState<SudokuRushScreen>
     _timerPulseController.stop();
     final notifier = ref.read(sudokuRushProvider.notifier);
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      isDismissible: false,
-      enableDrag: false,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.75),
-      builder: (_) => _ResultSheet(
+    GameResultWidget.show(
+      context,
+      GameResultConfig(
         isVictory: true,
         title: 'Victory!',
-        subtitle: 'You beat the clock!',
+        subtitle: Text(
+          'You beat the clock!',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
+        ),
+        icon: Container(
+          width: 80,
+          height: 80,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFfb923c), Color(0xFFef4444)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            shape: BoxShape.circle,
+            boxShadow: [BoxShadow(color: Color(0x7Ffb923c), blurRadius: 24, spreadRadius: 4)],
+          ),
+          child: const Icon(Icons.emoji_events, color: Colors.white, size: 40),
+        ),
         accentColor: _primaryCyan,
         accentGradient: const [Color(0xFFfb923c), Color(0xFFef4444)],
         stats: [
-          _SheetStat('Time Remaining', state.formattedTime, isHighlighted: true),
-          _SheetStat('Mistakes', '${state.mistakes}'),
-          _SheetStat('Penalties', '${state.penaltiesApplied}'),
-          _SheetStat('Hints Used', '${state.hintsUsed}'),
-          _SheetStat('Final Score', '${state.score}', isHighlighted: true),
+          GameResultStat('Time Remaining', state.formattedTime, isHighlighted: true),
+          GameResultStat('Mistakes', '${state.mistakes}'),
+          GameResultStat('Penalties', '${state.penaltiesApplied}'),
+          GameResultStat('Hints Used', '${state.hintsUsed}'),
+          GameResultStat('Final Score', '${state.score}', isHighlighted: true),
         ],
-        primaryLabel: 'PLAY AGAIN',
-        secondaryLabel: 'NEW GAME',
-        onPrimary: () {
-          Navigator.pop(context);
-          notifier.resetGame();
-          ref.read(sudokuUIProvider.notifier).setShowVictoryDialog(false);
-        },
-        onSecondary: () {
-          Navigator.pop(context);
-          Navigator.pop(context);
-        },
+        primary: GameResultAction(
+          label: 'PLAY AGAIN',
+          onTap: () {
+            Navigator.pop(context);
+            notifier.resetGame();
+            ref.read(sudokuUIProvider.notifier).setShowVictoryDialog(false);
+          },
+          style: GameResultButtonStyle.gradient,
+        ),
+        secondary: GameResultAction(
+          label: 'NEW GAME',
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.pop(context);
+          },
+          style: GameResultButtonStyle.text,
+        ),
+        presentation: GameResultPresentation.bottomSheet,
+        animated: true,
       ),
     );
   }
@@ -406,35 +428,55 @@ class _SudokuRushScreenState extends ConsumerState<SudokuRushScreen>
     _timerPulseController.stop();
     final notifier = ref.read(sudokuRushProvider.notifier);
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      isDismissible: false,
-      enableDrag: false,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.75),
-      builder: (_) => _ResultSheet(
+    GameResultWidget.show(
+      context,
+      GameResultConfig(
         isVictory: false,
         title: "Time's Up!",
-        subtitle: 'Better luck next time.',
+        subtitle: Text(
+          'Better luck next time.',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
+        ),
+        icon: Container(
+          width: 80,
+          height: 80,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFef4444), Color(0xFF7f1d1d)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            shape: BoxShape.circle,
+            boxShadow: [BoxShadow(color: Color(0x7Fef4444), blurRadius: 24, spreadRadius: 4)],
+          ),
+          child: const Icon(Icons.timer_off, color: Colors.white, size: 40),
+        ),
         accentColor: _dangerRed,
         accentGradient: const [Color(0xFFef4444), Color(0xFF7f1d1d)],
         stats: [
-          _SheetStat('Mistakes', '${state.mistakes}'),
-          _SheetStat('Penalties', '${state.penaltiesApplied}', isHighlighted: true),
-          _SheetStat('Hints Used', '${state.hintsUsed}'),
+          GameResultStat('Mistakes', '${state.mistakes}'),
+          GameResultStat('Penalties', '${state.penaltiesApplied}', isHighlighted: true),
+          GameResultStat('Hints Used', '${state.hintsUsed}'),
         ],
-        primaryLabel: 'TRY AGAIN',
-        secondaryLabel: 'NEW GAME',
-        onPrimary: () {
-          Navigator.pop(context);
-          notifier.resetGame();
-          ref.read(sudokuUIProvider.notifier).setShowVictoryDialog(false);
-        },
-        onSecondary: () {
-          Navigator.pop(context);
-          Navigator.pop(context);
-        },
+        primary: GameResultAction(
+          label: 'TRY AGAIN',
+          onTap: () {
+            Navigator.pop(context);
+            notifier.resetGame();
+            ref.read(sudokuUIProvider.notifier).setShowVictoryDialog(false);
+          },
+          style: GameResultButtonStyle.gradient,
+        ),
+        secondary: GameResultAction(
+          label: 'NEW GAME',
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.pop(context);
+          },
+          style: GameResultButtonStyle.text,
+        ),
+        presentation: GameResultPresentation.bottomSheet,
+        animated: true,
       ),
     );
   }
@@ -476,298 +518,6 @@ class _DifficultyBadge extends StatelessWidget {
   }
 }
 
-// ─── Result bottom sheet ─────────────────────────────────────────────────────
-
-class _SheetStat {
-  final String label;
-  final String value;
-  final bool isHighlighted;
-
-  const _SheetStat(this.label, this.value, {this.isHighlighted = false});
-}
-
-class _ResultSheet extends StatefulWidget {
-  final bool isVictory;
-  final String title;
-  final String subtitle;
-  final Color accentColor;
-  final List<Color> accentGradient;
-  final List<_SheetStat> stats;
-  final String primaryLabel;
-  final String secondaryLabel;
-  final VoidCallback onPrimary;
-  final VoidCallback onSecondary;
-
-  const _ResultSheet({
-    required this.isVictory,
-    required this.title,
-    required this.subtitle,
-    required this.accentColor,
-    required this.accentGradient,
-    required this.stats,
-    required this.primaryLabel,
-    required this.secondaryLabel,
-    required this.onPrimary,
-    required this.onSecondary,
-  });
-
-  @override
-  State<_ResultSheet> createState() => _ResultSheetState();
-}
-
-class _ResultSheetState extends State<_ResultSheet>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _enterController;
-  late Animation<double> _iconScale;
-  late Animation<double> _contentFade;
-
-  @override
-  void initState() {
-    super.initState();
-    _enterController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    _iconScale = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _enterController,
-        curve: const Interval(0.0, 0.6, curve: Curves.elasticOut),
-      ),
-    );
-    _contentFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _enterController,
-        curve: const Interval(0.3, 1.0, curve: Curves.easeOut),
-      ),
-    );
-    _enterController.forward();
-  }
-
-  @override
-  void dispose() {
-    _enterController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF1a1d24),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-
-            const SizedBox(height: 28),
-
-            // Animated icon
-            ScaleTransition(
-              scale: _iconScale,
-              child: Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: widget.accentGradient,
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: widget.accentColor.withValues(alpha: 0.45),
-                      blurRadius: 24,
-                      spreadRadius: 4,
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  widget.isVictory ? Icons.emoji_events : Icons.timer_off,
-                  color: Colors.white,
-                  size: 40,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            FadeTransition(
-              opacity: _contentFade,
-              child: Column(
-                children: [
-                  Text(
-                    widget.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.subtitle,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            FadeTransition(
-              opacity: _contentFade,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.08),
-                  ),
-                ),
-                child: Column(
-                  children: widget.stats.asMap().entries.map((entry) {
-                    final i = entry.key;
-                    final stat = entry.value;
-                    return Column(
-                      children: [
-                        if (i > 0)
-                          Divider(
-                            height: 1,
-                            color: Colors.white.withValues(alpha: 0.06),
-                          ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 13),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                stat.label,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: Colors.white.withValues(alpha: 0.6),
-                                ),
-                              ),
-                              Text(
-                                stat.value,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: stat.isHighlighted
-                                      ? widget.accentColor
-                                      : Colors.white,
-                                  shadows: stat.isHighlighted
-                                      ? [
-                                          Shadow(
-                                            color: widget.accentColor
-                                                .withValues(alpha: 0.5),
-                                            blurRadius: 8,
-                                          ),
-                                        ]
-                                      : null,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            FadeTransition(
-              opacity: _contentFade,
-              child: SizedBox(
-                width: double.infinity,
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: widget.onPrimary,
-                    borderRadius: BorderRadius.circular(14),
-                    child: Ink(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: widget.accentGradient,
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: widget.accentColor.withValues(alpha: 0.35),
-                            blurRadius: 16,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Text(
-                          widget.primaryLabel,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            FadeTransition(
-              opacity: _contentFade,
-              child: SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: widget.onSecondary,
-                  child: Text(
-                    widget.secondaryLabel,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ─── Rush stats panel ─────────────────────────────────────────────────────────
 // Isolated ConsumerWidget so the countdown every second only rebuilds this
@@ -839,19 +589,19 @@ class _RushStatsPanel extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _StatItem(
+              GameStatItemWithIcon(
                 icon: Icons.close,
                 value: '${stats.mistakes}',
                 label: 'Errors',
                 color: _dangerRed,
               ),
-              _StatItem(
+              GameStatItemWithIcon(
                 icon: Icons.remove_circle_outline,
                 value: '${stats.penaltiesApplied}',
                 label: 'Penalties',
                 color: _warningOrange,
               ),
-              _StatItem(
+              GameStatItemWithIcon(
                 icon: Icons.emoji_events,
                 value: '${stats.score}',
                 label: 'Score',
@@ -861,47 +611,6 @@ class _RushStatsPanel extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ─── Stat item (in-game stats row) ───────────────────────────────────────────
-
-class _StatItem extends StatelessWidget {
-  final IconData icon;
-  final String value;
-  final String label;
-  final Color color;
-
-  const _StatItem({
-    required this.icon,
-    required this.value,
-    required this.label,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 16),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: color,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.white.withValues(alpha: 0.5),
-          ),
-        ),
-      ],
     );
   }
 }

@@ -2,13 +2,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:multigame/widgets/shared/game_stat_item.dart';
 import '../providers/sudoku_notifier.dart';
 
 const _primaryCyan = Color(0xFF00d4ff);
 const _surfaceDark = Color(0xFF1a1d24);
 const _errorRed = Color(0xFFff6b6b);
 const _textWhite = Color(0xFFffffff);
-const _textGray = Color(0xFF9ca3af);
 
 /// Displays live mistakes / score / time for Sudoku Classic.
 /// Consumes [sudokuClassicProvider] directly so that the timer ticking
@@ -54,7 +54,7 @@ class StatsPanel extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _StatItem(
+          GameStatItem(
             label: 'MISTAKES',
             value: '${stats.mistakes}/$maxMistakes',
             color: stats.mistakes >= maxMistakes ? _errorRed : _textWhite,
@@ -65,7 +65,7 @@ class StatsPanel extends ConsumerWidget {
             height: 32,
             color: Colors.white.withValues(alpha: 0.1),
           ),
-          _StatItem(
+          GameStatItem(
             label: 'SCORE',
             value: _formatScore(stats.score),
             color: _primaryCyan,
@@ -76,7 +76,7 @@ class StatsPanel extends ConsumerWidget {
             height: 32,
             color: Colors.white.withValues(alpha: 0.1),
           ),
-          _StatItem(
+          GameStatItem(
             label: 'TIME',
             value: stats.formattedTime,
             color: _textWhite,
@@ -92,56 +92,5 @@ class StatsPanel extends ConsumerWidget {
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]},',
         );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-  final bool hasGlow;
-
-  const _StatItem({
-    required this.label,
-    required this.value,
-    required this.color,
-    required this.hasGlow,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            color: _textGray,
-            letterSpacing: 1.2,
-            height: 1.0,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: color,
-            height: 1.0,
-            shadows: hasGlow
-                ? [
-                    Shadow(
-                      color: color.withValues(alpha: 0.5),
-                      blurRadius: 8,
-                    ),
-                  ]
-                : null,
-          ),
-        ),
-      ],
-    );
   }
 }

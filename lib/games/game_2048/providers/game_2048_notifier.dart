@@ -10,36 +10,69 @@ class Game2048State {
   final int score;
   final int bestScore;
   final bool gameOver;
-  final int currentObjectiveIndex;
 
-  static const List<int> objectives = [256, 512, 1024, 2048];
-  static const List<String> objectiveLabels = ['Easy', 'Medium', 'Hard', 'Expert'];
+  /// Index into [milestones] of the highest milestone reached this game.
+  /// -1 means no milestone has been reached yet.
+  final int highestMilestoneIndex;
+
+  /// Total moves made in the current game.
+  final int moveCount;
+
+  /// Combo bonus points earned on the last move (0 if no combo).
+  final int lastComboBonus;
+
+  static const List<int> milestones = [256, 512, 1024, 2048, 4096, 8192, 16384];
+  static const List<String> milestoneLabels = [
+    'Beginner', 'Easy', 'Medium', 'Hard', 'Expert', 'Master', 'Legend'
+  ];
 
   const Game2048State({
     required this.grid,
     this.score = 0,
     this.bestScore = 0,
     this.gameOver = false,
-    this.currentObjectiveIndex = 0,
+    this.highestMilestoneIndex = -1,
+    this.moveCount = 0,
+    this.lastComboBonus = 0,
   });
 
-  int get currentObjective => objectives[currentObjectiveIndex];
-  String get currentObjectiveLabel => objectiveLabels[currentObjectiveIndex];
+  /// The next milestone tile the player is working toward (null = beyond all milestones).
+  int? get nextMilestoneTile {
+    final next = highestMilestoneIndex + 1;
+    if (next >= milestones.length) return null;
+    return milestones[next];
+  }
+
+  /// Label for the current milestone reached, or '—' if none yet.
+  String get currentMilestoneLabel {
+    if (highestMilestoneIndex < 0) return '—';
+    return milestoneLabels[highestMilestoneIndex];
+  }
+
+  /// Tile value of the current milestone reached, or null if none yet.
+  int? get currentMilestoneTile {
+    if (highestMilestoneIndex < 0) return null;
+    return milestones[highestMilestoneIndex];
+  }
 
   Game2048State copyWith({
     List<List<int>>? grid,
     int? score,
     int? bestScore,
     bool? gameOver,
-    int? currentObjectiveIndex,
+    int? highestMilestoneIndex,
+    int? moveCount,
+    int? lastComboBonus,
   }) {
     return Game2048State(
       grid: grid ?? this.grid,
       score: score ?? this.score,
       bestScore: bestScore ?? this.bestScore,
       gameOver: gameOver ?? this.gameOver,
-      currentObjectiveIndex:
-          currentObjectiveIndex ?? this.currentObjectiveIndex,
+      highestMilestoneIndex:
+          highestMilestoneIndex ?? this.highestMilestoneIndex,
+      moveCount: moveCount ?? this.moveCount,
+      lastComboBonus: lastComboBonus ?? this.lastComboBonus,
     );
   }
 }
@@ -55,14 +88,22 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
   @override
   Game2048State build() {
     _achievementService = ref.read(achievementServiceProvider);
-    return _newGame(Game2048State(grid: List.generate(4, (_) => List.filled(4, 0))));
+    return _newGame(
+        Game2048State(grid: List.generate(4, (_) => List.filled(4, 0))));
   }
 
   Game2048State _newGame(Game2048State base) {
     var grid = List.generate(4, (_) => List.filled(4, 0));
     grid = _addTile(grid);
     grid = _addTile(grid);
-    return base.copyWith(grid: grid, score: 0, gameOver: false);
+    return base.copyWith(
+      grid: grid,
+      score: 0,
+      gameOver: false,
+      highestMilestoneIndex: -1,
+      moveCount: 0,
+      lastComboBonus: 0,
+    );
   }
 
   void initializeGame() {
@@ -87,47 +128,86 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
     if (state.gameOver) return false;
     var grid = state.grid.map((r) => List<int>.from(r)).toList();
     int scoreDelta = 0;
+    int mergeCount = 0;
     bool moved = false;
 
-    (grid, scoreDelta, moved) = switch (direction) {
+    (grid, scoreDelta, mergeCount, moved) = switch (direction) {
       'left'  => _moveLeft(grid),
       'right' => _moveRight(grid),
       'up'    => _moveUp(grid),
       'down'  => _moveDown(grid),
-      _       => (grid, 0, false),
+      _       => (grid, 0, 0, false),
     };
 
     if (!moved) return false;
 
     grid = _addTile(grid);
-    final newScore = state.score + scoreDelta;
+
+    // Combo bonus: each extra merge beyond the first adds 10% of base delta
+    final comboBonus = mergeCount > 1 ? (scoreDelta * (mergeCount - 1)) ~/ 10 : 0;
+    final totalDelta = scoreDelta + comboBonus;
+    final newScore = state.score + totalDelta;
+    final newBest = newScore > state.bestScore ? newScore : state.bestScore;
     final gameOver = !_canMove(grid);
+
+    // Auto-advance milestone based on highest tile on board
+    final newMilestoneIndex = _computeMilestoneIndex(grid, state.highestMilestoneIndex);
 
     state = state.copyWith(
       grid: grid,
       score: newScore,
-      bestScore: newScore > state.bestScore ? newScore : state.bestScore,
+      bestScore: newBest,
       gameOver: gameOver,
+      highestMilestoneIndex: newMilestoneIndex,
+      moveCount: state.moveCount + 1,
+      lastComboBonus: comboBonus,
     );
 
     if (gameOver) saveScore('2048', newScore);
     return true;
   }
 
+  /// Returns the highest milestone index that has been reached given the board.
+  int _computeMilestoneIndex(List<List<int>> grid, int currentIndex) {
+    final highest = _getHighestTile(grid);
+    int newIndex = currentIndex;
+    // Check upward from current (handles multiple milestones crossed in one move)
+    while (newIndex + 1 < Game2048State.milestones.length &&
+        highest >= Game2048State.milestones[newIndex + 1]) {
+      newIndex++;
+    }
+    // Also detect the very first milestone
+    if (newIndex < 0 && highest >= Game2048State.milestones[0]) {
+      newIndex = 0;
+    }
+    return newIndex;
+  }
+
   bool _canMove(List<List<int>> grid) {
     for (int i = 0; i < 4; i++) {
       for (int j = 0; j < 4; j++) {
         if (grid[i][j] == 0) return true;
-        if (j + 1 < 4 && grid[i][j] == grid[i][j + 1]) return true;
-        if (i + 1 < 4 && grid[i][j] == grid[i + 1][j]) return true;
       }
     }
     return false;
   }
 
-  (List<List<int>>, int, bool) _moveLeft(List<List<int>> grid) {
+  int _getHighestTile(List<List<int>> grid) {
+    int max = 0;
+    for (final row in grid) {
+      for (final val in row) {
+        if (val > max) max = val;
+      }
+    }
+    return max;
+  }
+
+  int getHighestTile() => _getHighestTile(state.grid);
+
+  (List<List<int>>, int, int, bool) _moveLeft(List<List<int>> grid) {
     bool moved = false;
     int score = 0;
+    int merges = 0;
     for (int i = 0; i < 4; i++) {
       final row = grid[i].where((c) => c != 0).toList();
       final newRow = <int>[];
@@ -137,6 +217,7 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
           final m = row[j] * 2;
           newRow.add(m);
           score += m;
+          merges++;
           j += 2;
         } else {
           newRow.add(row[j++]);
@@ -146,12 +227,13 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
       if (grid[i].toString() != newRow.toString()) moved = true;
       grid[i] = newRow;
     }
-    return (grid, score, moved);
+    return (grid, score, merges, moved);
   }
 
-  (List<List<int>>, int, bool) _moveRight(List<List<int>> grid) {
+  (List<List<int>>, int, int, bool) _moveRight(List<List<int>> grid) {
     bool moved = false;
     int score = 0;
+    int merges = 0;
     for (int i = 0; i < 4; i++) {
       final row = grid[i].where((c) => c != 0).toList().reversed.toList();
       final newRow = <int>[];
@@ -161,6 +243,7 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
           final m = row[j] * 2;
           newRow.add(m);
           score += m;
+          merges++;
           j += 2;
         } else {
           newRow.add(row[j++]);
@@ -171,12 +254,13 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
       if (grid[i].toString() != reversed.toString()) moved = true;
       grid[i] = reversed;
     }
-    return (grid, score, moved);
+    return (grid, score, merges, moved);
   }
 
-  (List<List<int>>, int, bool) _moveUp(List<List<int>> grid) {
+  (List<List<int>>, int, int, bool) _moveUp(List<List<int>> grid) {
     bool moved = false;
     int score = 0;
+    int merges = 0;
     for (int j = 0; j < 4; j++) {
       final col = [for (int i = 0; i < 4; i++) if (grid[i][j] != 0) grid[i][j]];
       final newCol = <int>[];
@@ -186,6 +270,7 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
           final m = col[i] * 2;
           newCol.add(m);
           score += m;
+          merges++;
           i += 2;
         } else {
           newCol.add(col[i++]);
@@ -197,12 +282,13 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
         grid[i][j] = newCol[i];
       }
     }
-    return (grid, score, moved);
+    return (grid, score, merges, moved);
   }
 
-  (List<List<int>>, int, bool) _moveDown(List<List<int>> grid) {
+  (List<List<int>>, int, int, bool) _moveDown(List<List<int>> grid) {
     bool moved = false;
     int score = 0;
+    int merges = 0;
     for (int j = 0; j < 4; j++) {
       final col = [for (int i = 3; i >= 0; i--) if (grid[i][j] != 0) grid[i][j]];
       final newCol = <int>[];
@@ -212,6 +298,7 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
           final m = col[i] * 2;
           newCol.add(m);
           score += m;
+          merges++;
           i += 2;
         } else {
           newCol.add(col[i++]);
@@ -223,38 +310,19 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
         grid[3 - i][j] = newCol[i];
       }
     }
-    return (grid, score, moved);
+    return (grid, score, merges, moved);
   }
-
-  int getHighestTile() {
-    int max = 0;
-    for (final row in state.grid) {
-      for (final val in row) {
-        if (val > max) max = val;
-      }
-    }
-    return max;
-  }
-
-  bool hasReachedObjective() =>
-      getHighestTile() >= state.currentObjective;
-
-  void nextObjective() {
-    if (state.currentObjectiveIndex < Game2048State.objectives.length - 1) {
-      state = state.copyWith(
-          currentObjectiveIndex: state.currentObjectiveIndex + 1);
-    }
-  }
-
-  void resetObjective() => state = state.copyWith(currentObjectiveIndex: 0);
 
   Future<void> recordGameCompletion() async {
     final tile = getHighestTile();
     String level = 'None';
-    if (tile >= 2048) { level = 'Expert (2048)'; }
-    else if (tile >= 1024) { level = 'Hard (1024)'; }
-    else if (tile >= 512) { level = 'Medium (512)'; }
-    else if (tile >= 256) { level = 'Easy (256)'; }
+    if (tile >= 16384) { level = 'Legend (16384)'; }
+    else if (tile >= 8192) { level = 'Master (8192)'; }
+    else if (tile >= 4096) { level = 'Expert (4096)'; }
+    else if (tile >= 2048) { level = 'Hard (2048)'; }
+    else if (tile >= 1024) { level = 'Medium (1024)'; }
+    else if (tile >= 512)  { level = 'Easy (512)'; }
+    else if (tile >= 256)  { level = 'Beginner (256)'; }
 
     await _achievementService.save2048Achievement(
       score: state.score,
