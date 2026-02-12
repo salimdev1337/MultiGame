@@ -1,31 +1,32 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import 'package:multigame/games/snake/index.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:multigame/games/snake/providers/snake_notifier.dart';
 
-class SnakeGamePage extends StatefulWidget {
+class SnakeGamePage extends ConsumerStatefulWidget {
   const SnakeGamePage({super.key});
 
   @override
-  State<SnakeGamePage> createState() => _SnakeGamePageState();
+  ConsumerState<SnakeGamePage> createState() => _SnakeGamePageState();
 }
 
-class _SnakeGamePageState extends State<SnakeGamePage> {
+class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
   @override
   void initState() {
     super.initState();
     // Start the game when the page is first loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = context.read<SnakeGameProvider>();
-      if (!provider.initialized) {
-        provider.startGame();
+      if (!ref.read(snakeProvider).initialized) {
+        ref.read(snakeProvider.notifier).startGame();
       }
     });
   }
 
   void _showGameOverDialog(int score, bool isWin) {
-    final provider = context.read<SnakeGameProvider>();
+    final notifier = ref.read(snakeProvider.notifier);
+    final highScore = ref.read(snakeProvider).highScore;
+    final gameMode = ref.read(snakeProvider).gameMode;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -201,7 +202,7 @@ class _SnakeGamePageState extends State<SnakeGamePage> {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        provider.highScore.toString(),
+                                        highScore.toString(),
                                         style: const TextStyle(
                                           fontSize: 32,
                                           fontWeight: FontWeight.bold,
@@ -251,7 +252,7 @@ class _SnakeGamePageState extends State<SnakeGamePage> {
                         child: ElevatedButton(
                           onPressed: () {
                             Navigator.pop(context);
-                            provider.startGame();
+                            notifier.startGame();
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFf52900),
@@ -300,9 +301,9 @@ class _SnakeGamePageState extends State<SnakeGamePage> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            provider.gameMode == GameMode.classic
+                            gameMode == GameMode.classic
                                 ? 'CLASSIC MODE'
-                                : provider.gameMode == GameMode.wrap
+                                : gameMode == GameMode.wrap
                                 ? 'WRAP MODE'
                                 : 'SPEED MODE',
                             style: TextStyle(
@@ -341,212 +342,210 @@ class _SnakeGamePageState extends State<SnakeGamePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<SnakeGameProvider>(
-      builder: (context, provider, child) {
-        // Check if game is over and show dialog
-        // Only show dialog if game was initialized and is no longer playing
-        if (provider.initialized && !provider.playing) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            // Check if it's a win (you can customize this condition)
-            final isWin = provider.score >= 100; // Win condition example
-            _showGameOverDialog(provider.score, isWin);
-          });
+    final state = ref.watch(snakeProvider);
+
+    // Check if game is over and show dialog
+    // Only show dialog if game was initialized and is no longer playing
+    if (state.initialized && !state.playing) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Check if it's a win (you can customize this condition)
+        final isWin = state.score >= 100; // Win condition example
+        _showGameOverDialog(state.score, isWin);
+      });
+    }
+
+    return KeyboardListener(
+      focusNode: FocusNode()..requestFocus(),
+      onKeyEvent: (event) {
+        if (event is KeyDownEvent) {
+          if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+            ref.read(snakeProvider.notifier).changeDirection(Direction.up);
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+            ref.read(snakeProvider.notifier).changeDirection(Direction.down);
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+            ref.read(snakeProvider.notifier).changeDirection(Direction.left);
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+            ref.read(snakeProvider.notifier).changeDirection(Direction.right);
+          }
         }
-
-        return KeyboardListener(
-          focusNode: FocusNode()..requestFocus(),
-          onKeyEvent: (event) {
-            if (event is KeyDownEvent) {
-              if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-                provider.changeDirection(Direction.up);
-              } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-                provider.changeDirection(Direction.down);
-              } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-                provider.changeDirection(Direction.left);
-              } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-                provider.changeDirection(Direction.right);
-              }
-            }
-          },
-          child: Scaffold(
-            backgroundColor: const Color(0xFF111317),
-            appBar: AppBar(
-              backgroundColor: const Color(0xFF111317),
-              title: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'NEON SNAKE',
-                    style: TextStyle(
-                      color: Color(0xFF55ff00),
-                      letterSpacing: 2,
-                    ),
-                  ),
-                  Text(
-                    'SCORE ${provider.score}',
-                    style: const TextStyle(color: Color(0xFF00C2FF)),
-                  ),
-                ],
-              ),
-              actions: [
-                PopupMenuButton<GameMode>(
-                  icon: const Icon(Icons.settings),
-                  onSelected: (m) {
-                    provider.setGameMode(m);
-                  },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(
-                      value: GameMode.classic,
-                      child: Text('Classic'),
-                    ),
-                    PopupMenuItem(
-                      value: GameMode.wrap,
-                      child: Text('Wrap Around'),
-                    ),
-                    PopupMenuItem(
-                      value: GameMode.speed,
-                      child: Text('Speed Mode'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            body: Column(
-              children: [
-                // 🎮 GAME AREA (FIXED HEIGHT)
-                Expanded(
-                  flex: 3,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 8,
-                    ),
-                    child: AspectRatio(
-                      aspectRatio: 1,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0b0c0f),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: const Color(
-                              0xFF55ff00,
-                            ).withAlpha((0.2 * 255).toInt()),
-                            width: 2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(
-                                0xFF55ff00,
-                              ).withAlpha((0.2 * 255).toInt()),
-                              blurRadius: 20,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: LayoutBuilder(
-                            builder: (_, constraints) {
-                              final cell =
-                                  constraints.maxWidth /
-                                  SnakeGameProvider.gridSize;
-                              return Stack(
-                                children: [
-                                  CustomPaint(
-                                    size: constraints.biggest,
-                                    painter: GridPainter(),
-                                  ),
-                                  ...provider.snake.map(
-                                    (p) => Positioned(
-                                      left: p.dx * cell,
-                                      top: p.dy * cell,
-                                      child: Container(
-                                        width: cell,
-                                        height: cell,
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF55ff00),
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    left: provider.food.dx * cell,
-                                    top: provider.food.dy * cell,
-                                    child: Container(
-                                      width: cell,
-                                      height: cell,
-                                      decoration: const BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Color(0xFF00C2FF),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                // ⬅⬆⬇➡ CONTROLS
-                Expanded(
-                  flex: 2,
-                  child: Center(
-                    child: SizedBox(
-                      width: 220,
-                      height: 220,
-                      child: Stack(
-                        children: [
-                          Positioned(
-                            top: 0,
-                            left: 80,
-                            child: _Arrow(
-                              Icons.keyboard_arrow_up,
-                              () => provider.changeDirection(Direction.up),
-                            ),
-                          ),
-                          Positioned(
-                            top: 80,
-                            left: 0,
-                            child: _Arrow(
-                              Icons.keyboard_arrow_left,
-                              () => provider.changeDirection(Direction.left),
-                            ),
-                          ),
-                          Positioned(
-                            top: 80,
-                            left: 80,
-                            child: _Arrow(
-                              Icons.keyboard_arrow_down,
-                              () => provider.changeDirection(Direction.down),
-                            ),
-                          ),
-                          Positioned(
-                            top: 80,
-                            left: 160,
-                            child: _Arrow(
-                              Icons.keyboard_arrow_right,
-                              () => provider.changeDirection(Direction.right),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
       },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF111317),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF111317),
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'NEON SNAKE',
+                style: TextStyle(
+                  color: Color(0xFF55ff00),
+                  letterSpacing: 2,
+                ),
+              ),
+              Text(
+                'SCORE ${state.score}',
+                style: const TextStyle(color: Color(0xFF00C2FF)),
+              ),
+            ],
+          ),
+          actions: [
+            PopupMenuButton<GameMode>(
+              icon: const Icon(Icons.settings),
+              onSelected: (m) {
+                ref.read(snakeProvider.notifier).setGameMode(m);
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: GameMode.classic,
+                  child: Text('Classic'),
+                ),
+                PopupMenuItem(
+                  value: GameMode.wrap,
+                  child: Text('Wrap Around'),
+                ),
+                PopupMenuItem(
+                  value: GameMode.speed,
+                  child: Text('Speed Mode'),
+                ),
+              ],
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            // 🎮 GAME AREA (FIXED HEIGHT)
+            Expanded(
+              flex: 3,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 8,
+                ),
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0b0c0f),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(
+                          0xFF55ff00,
+                        ).withAlpha((0.2 * 255).toInt()),
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(
+                            0xFF55ff00,
+                          ).withAlpha((0.2 * 255).toInt()),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: LayoutBuilder(
+                        builder: (_, constraints) {
+                          final cell =
+                              constraints.maxWidth /
+                              SnakeState.gridSize;
+                          return Stack(
+                            children: [
+                              CustomPaint(
+                                size: constraints.biggest,
+                                painter: GridPainter(),
+                              ),
+                              ...state.snake.map(
+                                (p) => Positioned(
+                                  left: p.dx * cell,
+                                  top: p.dy * cell,
+                                  child: Container(
+                                    width: cell,
+                                    height: cell,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF55ff00),
+                                      borderRadius: BorderRadius.circular(
+                                        4,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                left: state.food.dx * cell,
+                                top: state.food.dy * cell,
+                                child: Container(
+                                  width: cell,
+                                  height: cell,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Color(0xFF00C2FF),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // ⬅⬆⬇➡ CONTROLS
+            Expanded(
+              flex: 2,
+              child: Center(
+                child: SizedBox(
+                  width: 220,
+                  height: 220,
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        top: 0,
+                        left: 80,
+                        child: _Arrow(
+                          Icons.keyboard_arrow_up,
+                          () => ref.read(snakeProvider.notifier).changeDirection(Direction.up),
+                        ),
+                      ),
+                      Positioned(
+                        top: 80,
+                        left: 0,
+                        child: _Arrow(
+                          Icons.keyboard_arrow_left,
+                          () => ref.read(snakeProvider.notifier).changeDirection(Direction.left),
+                        ),
+                      ),
+                      Positioned(
+                        top: 80,
+                        left: 80,
+                        child: _Arrow(
+                          Icons.keyboard_arrow_down,
+                          () => ref.read(snakeProvider.notifier).changeDirection(Direction.down),
+                        ),
+                      ),
+                      Positioned(
+                        top: 80,
+                        left: 160,
+                        child: _Arrow(
+                          Icons.keyboard_arrow_right,
+                          () => ref.read(snakeProvider.notifier).changeDirection(Direction.right),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

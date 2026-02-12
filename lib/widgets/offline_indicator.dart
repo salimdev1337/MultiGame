@@ -45,10 +45,10 @@ class _OfflineIndicatorState extends State<OfflineIndicator> {
         });
       }
     } catch (e) {
-      // Assume online if we can't check
+      // Conservatively assume offline if connectivity check fails
       if (mounted) {
         setState(() {
-          _isOnline = true;
+          _isOnline = false;
         });
       }
     }

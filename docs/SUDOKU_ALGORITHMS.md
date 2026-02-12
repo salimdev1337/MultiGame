@@ -45,12 +45,12 @@ The generator uses randomization to create different puzzles each time, providin
 
 Each difficulty determines how many cells to remove from a complete board, affecting puzzle complexity.
 
-| Difficulty | Clues (Filled Cells) | Cells Removed | Description |
-|------------|---------------------|---------------|-------------|
-| Easy | 36-40 clues | 41-45 cells | Good for beginners, straightforward logic |
-| Medium | 32-35 clues | 46-49 cells | Requires basic Sudoku strategies |
-| Hard | 28-31 clues | 50-53 cells | Requires advanced techniques |
-| Expert | 24-27 clues | 54-57 cells | Very challenging, minimal clues |
+| Difficulty | Clues (Filled Cells)| Cells Removed| Description                               |
+|------------|---------------------|--------------|-------------------------------------------|
+| Easy       | 36-40 clues         | 41-45 cells  | Good for beginners, straightforward logic |
+| Medium     | 32-35 clues         | 46-49 cells  | Requires basic Sudoku strategies          |
+| Hard       | 28-31 clues         | 50-53 cells  | Requires advanced techniques              |
+| Expert     | 24-27 clues         | 54-57 cells  | Very challenging, minimal clues           |
 
 ### Complete Board Generation
 

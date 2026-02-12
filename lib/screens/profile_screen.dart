@@ -279,7 +279,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               context,
                               icon: Icons.privacy_tip_outlined,
                               label: 'Privacy Policy',
-                              url: 'https://salimdev1337.github.io/MultiGame/index.html',
+                              url: 'https://salimdev1337.github.io/MultiGame/privacy.html',
                             ),
                             const SizedBox(height: 8),
                             _buildLegalButton(

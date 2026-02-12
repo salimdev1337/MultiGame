@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:multigame/utils/input_validator.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Dialog to prompt user for nickname
 class NicknameDialog extends StatefulWidget {
@@ -337,8 +339,64 @@ class _NicknameDialogState extends State<NicknameDialog>
                   ],
                 ),
               ),
+
+              // Legal links footer (mobile only)
+              if (!kIsWeb)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _LegalLink(
+                        label: 'Privacy Policy',
+                        url: 'https://salimdev1337.github.io/MultiGame/privacy.html',
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(
+                          '·',
+                          style: TextStyle(color: Colors.white38, fontSize: 12),
+                        ),
+                      ),
+                      _LegalLink(
+                        label: 'Terms of Service',
+                        url: 'https://salimdev1337.github.io/MultiGame/terms.html',
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LegalLink extends StatelessWidget {
+  const _LegalLink({required this.label, required this.url});
+
+  final String label;
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        try {
+          final uri = Uri.parse(url);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          }
+        } catch (_) {}
+      },
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white38,
+          fontSize: 11,
+          decoration: TextDecoration.underline,
+          decorationColor: Colors.white38,
         ),
       ),
     );

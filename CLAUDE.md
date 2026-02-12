@@ -4,82 +4,43 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-MultiGame is a Flutter-based multi-platform gaming app featuring:
-- **Sudoku** (Classic, Rush, and 1v1 Online modes with difficulty levels)
-- Image Puzzle (sliding puzzle with Unsplash images)
-- 2048 Game
-- Snake Game
-- Infinite Runner (Flame engine)
-- Achievement system and leaderboards
-- Firebase backend for stats and authentication
+MultiGame is a Flutter multi-platform gaming app with:
+- **5 Games:** Sudoku (Classic/Rush/1v1 Online), 2048, Snake, Image Puzzle, Infinite Runner (Flame engine)
+- **Premium UI:** 13,950+ lines of polished design system (glassmorphic, animations, charts)
+- **Backend:** Firebase (auth, Firestore stats, leaderboards)
+- **Architecture:** Clean layered with DI (GetIt), Provider state management, Repository pattern
 
 ## Development Commands
 
-### Setup
+### Essential Commands
 ```bash
-# Install dependencies
+# Setup
 flutter pub get
+flutter run  # Uses fallback images without API key
+flutter run --dart-define=UNSPLASH_ACCESS_KEY=your_key
 
-# Run without API key (uses fallback images)
-flutter run
+# Testing
+flutter test                              # All tests
+flutter test test/game_2048_test.dart     # Specific test
+flutter test --coverage                    # With coverage
 
-# Run with Unsplash API key
-flutter run --dart-define=UNSPLASH_ACCESS_KEY=your_key_here
-```
+# Build
+flutter build apk --release               # Android APK
+flutter build appbundle --release         # Android bundle
+flutter build web --release               # Web
 
-### Testing
-```bash
-# Run all tests
-flutter test
-
-# Run specific test file
-flutter test test/game_2048_test.dart
-
-# Run with coverage
-flutter test --coverage
-genhtml coverage/lcov.info -o coverage/html
-```
-
-### Platform-Specific Builds
-```bash
-# Android
-flutter run -d android
-flutter build apk --release
-flutter build appbundle --release
-
-# iOS
-flutter run -d ios
-
-# Windows
-flutter run -d windows
-flutter build windows --release
-
-# Web
-flutter run -d chrome
-flutter build web --release
-```
-
-**⚠️ PRODUCTION BUILD WARNING:**
-- Current release builds use **debug signing keys** (see `android/app/build.gradle.kts:37`)
-- Package name is `com.example.multigame` (invalid for Play Store)
-- Must fix before Play Store submission - see [task.md](task.md) Phase 1
-
-### Linting
-```bash
-# Analyze code
+# Quality
 flutter analyze
-
-# Format code
 dart format lib/ test/
 ```
 
+**⚠️ CRITICAL:** DO NOT USE `withOpacity()` - use `withValues()` instead
 
-DO NOT USE withOpacity() use withValues()
+**⚠️ PRODUCTION WARNING:** Current builds use debug keys and `com.example.multigame` package name. See [task.md](task.md) before Play Store submission.
 
-## Architecture Overview
+## Architecture Essentials
 
-MultiGame follows a **clean, layered architecture**:
-
+### Layered Architecture
 ```
 Presentation (Screens/Widgets)
      ↓
@@ -90,593 +51,225 @@ Business Logic (Services)
 Data Access (Repositories)
 ```
 
-### Key Architectural Principles
+### Key Principles
+1. **Dependency Injection:** Services injected via GetIt, never instantiated directly
+2. **Separation of Concerns:** Game state providers separate from UI providers
+3. **Repository Pattern:** Abstract data access from business logic
+4. **Feature-First:** Games organized as self-contained modules
+5. **Testability:** All components mockable
 
-1. **Dependency Injection**: Services are injected via GetIt, not instantiated
-2. **Separation of Concerns**: UI state separate from game state
-3. **Repository Pattern**: Abstract data access from business logic
-4. **Feature-First Structure**: Games organized as self-contained modules
-5. **Testability**: All components mockable for unit tests
-
-### Directory Structure (Refactored)
-
+### Directory Structure (Simplified)
 ```
 lib/
-├── config/                        # Configuration
-│   ├── service_locator.dart       # GetIt DI setup
-│   ├── api_config.dart            # API key management
-│   └── firebase_options.dart      # Firebase (gitignored)
-│
-├── core/                          # Core interfaces
-│   ├── game_interface.dart        # Game registration interface
-│   └── game_registry.dart         # Game registry
-│
-├── games/                         # Feature-based organization
-│   ├── sudoku/                    # Sudoku game (3 modes: Classic, Rush, 1v1)
-│   │   ├── models/                # Game state models
-│   │   ├── logic/                 # Pure game logic (generator, solver, validator)
-│   │   ├── providers/             # State management
-│   │   ├── services/              # Persistence, stats, sound, haptics
-│   │   ├── screens/               # Mode selection, game screens
-│   │   └── widgets/               # Grid, cell, number pad, controls
-│   ├── puzzle/
-│   │   ├── models/
-│   │   ├── logic/
-│   │   ├── providers/
-│   │   └── services/
-│   ├── game_2048/
-│   ├── snake/
-│   └── infinite_runner/
-│
-├── repositories/                  # Data access layer
-│   ├── secure_storage_repository.dart
-│   ├── user_repository.dart
-│   └── stats_repository.dart
-│
-├── services/                      # Business logic
-│   ├── auth/
-│   ├── data/
-│   ├── game/
-│   └── storage/
-│
-└── utils/                         # Utilities
-    ├── input_validator.dart
-    ├── secure_logger.dart
-    └── storage_migrator.dart
+├── config/               # DI setup, API config, Firebase options
+├── core/                 # Game interface, registry
+├── design_system/        # DSColors, DSTypography, DSSpacing, DSShadows, DSAnimations, DSTheme
+├── widgets/
+│   ├── shared/          # Premium components (buttons, cards, toasts, empty states)
+│   └── profile/         # Stats visualizations, achievement gallery, history timeline
+├── games/               # Feature modules (sudoku, puzzle, 2048, snake, infinite_runner)
+│   └── [game]/
+│       ├── models/      # Data models
+│       ├── logic/       # Pure functions (testable)
+│       ├── providers/   # State management (game + UI providers)
+│       ├── services/    # Game-specific services
+│       └── widgets/     # UI components + animations
+├── repositories/        # Data access layer
+├── services/
+│   ├── auth/           # Authentication
+│   ├── data/           # Firebase stats, achievements
+│   ├── feedback/       # Haptics, sound
+│   └── storage/        # Persistence
+└── utils/              # Validators, logging, migrations
 ```
 
-**See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for complete details.**
+**Full details:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
-## Dependency Injection
+## Critical Patterns
 
-### GetIt Service Locator
+### 1. Dependency Injection (GetIt)
 
-All services are registered as singletons in `lib/config/service_locator.dart`:
-
-```dart
-import 'package:get_it/get_it.dart';
-
-final getIt = GetIt.instance;
-
-Future<void> setupServiceLocator() async {
-  // Repositories
-  getIt.registerLazySingleton<SecureStorageRepository>(
-    () => SecureStorageRepository(),
-  );
-
-  // Services with injected dependencies
-  getIt.registerLazySingleton<AuthService>(
-    () => AuthService(userRepository: getIt<UserRepository>()),
-  );
-
-  // ... more registrations
-}
-```
-
-Initialized in `main.dart` before `runApp()`:
-
-```dart
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  await setupServiceLocator(); // ← DI setup
-  runApp(const MyApp());
-}
-```
-
-### Using Services in Code
-
-**❌ DON'T instantiate services directly:**
+**❌ WRONG:**
 ```dart
 class MyProvider {
-  final service = FirebaseStatsService(); // WRONG
+  final service = FirebaseStatsService(); // NEVER DO THIS
 }
 ```
 
-**✅ DO inject via constructor:**
+**✅ CORRECT:**
 ```dart
 class MyProvider {
   MyProvider({required this.service});
   final FirebaseStatsService service;
 }
 
-// In provider registration:
+// Registration in main.dart:
 ChangeNotifierProvider(
-  create: (_) => MyProvider(
-    service: getIt<FirebaseStatsService>(),
-  ),
-);
+  create: (_) => MyProvider(service: getIt<FirebaseStatsService>()),
+)
 ```
 
-## State Management
+### 2. State Management (Provider)
 
-The app uses **Provider** for state management with **separation of game state and UI state**:
+**Separate game state from UI state:**
+- `GameProvider` - Business logic (score, moves, game state)
+- `GameUIProvider` - Presentation (loading, dialogs, animations)
 
-**Game State Providers** (business logic):
-- **SudokuProvider** - Classic mode: board state, moves, hints, validation
-- **SudokuRushProvider** - Rush mode: timer, score, difficulty progression
-- **SudokuOnlineProvider** - 1v1 mode: matchmaking, opponent sync, game state
-- **PuzzleGameProvider** - Puzzle grid, moves, timer, game logic
-- **Game2048Provider** - 2048 grid, score, tile operations
-- **SnakeGameProvider** - Snake position, direction, food, collisions
-
-**UI State Providers** (presentation):
-- **SudokuUIProvider** - Loading state, dialogs, animations for sudoku
-- **PuzzleUIProvider** - Loading state, dialogs, animations
-- **Game2048UIProvider** - UI state for 2048 game
-- **SnakeUIProvider** - UI state for snake game
-
-**Global Settings Providers**:
-- **SudokuSettingsProvider** - User preferences (sound, haptics, theme) - injected via GetIt
-
-**Global Providers**:
-- **UserAuthProvider** - User authentication and profile
-
-All providers are registered in [lib/main.dart](lib/main.dart) using `MultiProvider` with injected services.
-
-### Repository Pattern
-
-The **Repository Pattern** abstracts data persistence:
-
+**Use GameStatsMixin to avoid duplicate code:**
 ```dart
-// Abstract interface for testability
-abstract class UserRepository {
-  Future<String?> getUserId();
-  Future<void> saveUserId(String userId);
-  Future<void> clearUserData();
-}
-
-// Concrete implementation
-class UserRepositoryImpl implements UserRepository {
-  UserRepositoryImpl({required this.secureStorage});
-  final SecureStorageRepository secureStorage;
-
-  @override
-  Future<String?> getUserId() async {
-    return await secureStorage.read(key: 'user_id');
+class MyGameProvider with ChangeNotifier, GameStatsMixin {
+  Future<void> handleGameOver() async {
+    await saveScore(gameType: 'game_name', score: _score, statsService: _statsService);
   }
-  // ... other methods
 }
 ```
 
-Repositories registered in `service_locator.dart`, used by services.
+### 3. Security (CRITICAL)
 
-### Firebase Integration
-
-The app initializes Firebase in [lib/main.dart](lib/main.dart) with anonymous authentication by default. A persistent user ID is stored **securely** to maintain user identity across sessions.
-
-**Important:**
-- Firebase Auth is required for Firestore access
-- App signs in anonymously on startup if no user is authenticated
-- User data is encrypted using Flutter Secure Storage
-
-**Service Layer** ([lib/services/](lib/services/)):
-- **auth/** - AuthService for user authentication
-- **data/** - FirebaseStatsService, AchievementService (Firestore operations)
-- **game/** - UnsplashService (image fetching)
-- **storage/** - NicknameService (persistent storage)
-
-### Sudoku Game Architecture
-
-The Sudoku game features **three game modes** with complete state management and persistence:
-
-**Game Modes:**
-1. **Classic Mode** - Traditional sudoku with difficulty levels (Easy, Medium, Hard, Expert)
-2. **Rush Mode** - Time-limited challenges with progressive difficulty
-3. **1v1 Online** - Real-time multiplayer via Firebase (matchmaking + live gameplay)
-
-**Key Features:**
-- **Pure Logic Layer**: Generator, solver, and validator are pure functions (no dependencies)
-- **Auto-save**: Games automatically save progress using secure local storage
-- **Statistics Tracking**: Personal stats and global leaderboards via Firebase
-- **Sound & Haptics**: Configurable audio feedback and vibration (Phase 6 polish)
-- **Settings System**: Persistent user preferences for sound, haptics, and difficulty
-- **Online Multiplayer** (1v1 mode):
-  - Room code matchmaking (6-digit PIN codes)
-  - Real-time opponent sync with debounced Firestore writes (80-90% cost reduction)
-  - Hints system (3 per game, pre-solved board) with in-game UI
-  - Connection handling with automatic reconnection (60s grace period)
-  - Heartbeat monitoring (5-second intervals)
-  - Opponent stats tracking (mistakes, hints used, connection state)
-  - Live connection status indicators (color-coded dots for online/offline/reconnecting)
-  - Real-time opponent stat display in game UI
-
-**Architecture:**
-```
-lib/games/sudoku/
-├── models/           # Data models (cell, board, stats, match)
-├── logic/            # Pure functions (generator, solver, validator)
-├── services/         # Persistence, stats, matchmaking, sound, haptics
-├── providers/        # State management (Classic, Rush, Online, UI, Settings)
-├── screens/          # Mode selection, difficulty, game screens
-└── widgets/          # Reusable UI components (grid, cell, number pad)
-```
-
-**Providers:**
-- **SudokuProvider** - Classic mode game state
-- **SudokuRushProvider** - Rush mode with timer
-- **SudokuOnlineProvider** - 1v1 multiplayer state
-- **SudokuUIProvider** - UI state (loading, dialogs)
-- **SudokuSettingsProvider** - User preferences (injected via GetIt)
-
-**Services:**
-- **SudokuPersistenceService** - Save/load games from secure storage
-- **SudokuStatsService** - Track personal statistics
-- **MatchmakingService** - Firebase-based matchmaking with room codes, connection state tracking, and player stats sync
-- **SudokuSoundService** - Audio feedback (Phase 6)
-- **SudokuHapticService** - Vibration feedback (Phase 6)
-
-**Files:**
-- [lib/games/sudoku/sudoku_game_definition.dart](lib/games/sudoku/sudoku_game_definition.dart) - Game registry definition
-- [lib/games/sudoku/screens/mode_selection_screen.dart](lib/games/sudoku/screens/mode_selection_screen.dart) - Choose Classic/Rush/1v1
-- [lib/games/sudoku/logic/sudoku_generator.dart](lib/games/sudoku/logic/sudoku_generator.dart) - Puzzle generation algorithm
-- [lib/games/sudoku/logic/sudoku_solver.dart](lib/games/sudoku/logic/sudoku_solver.dart) - Backtracking solver
-- [lib/games/sudoku/logic/sudoku_validator.dart](lib/games/sudoku/logic/sudoku_validator.dart) - Rule validation
-
-**Testing:**
-- Comprehensive unit tests for generator, solver, validator
-- Model tests for board and cell logic
-- Provider tests with mocked services
-
-### Infinite Runner Architecture
-
-The Infinite Runner game uses **Flame engine** with an ECS-inspired architecture. See [docs/INFINITE_RUNNER_ARCHITECTURE.md](docs/INFINITE_RUNNER_ARCHITECTURE.md) for detailed diagrams.
-
-Key concepts:
-- **Object Pooling**: 60 pre-allocated obstacles (10 per type) to eliminate GC pauses
-- **Component-based**: Player, obstacles, background, ground are separate components
-- **Systems**: CollisionSystem, SpawnSystem, ObstaclePool handle game logic
-- **State machines**: Player (running/jumping/sliding/dead) and Game (idle/playing/paused/gameover)
-
-Files:
-- [lib/infinite_runner/infinite_runner_game.dart](lib/infinite_runner/infinite_runner_game.dart) - Main game loop
-- [lib/infinite_runner/components/player.dart](lib/infinite_runner/components/player.dart) - Player with animations
-- [lib/infinite_runner/components/obstacle.dart](lib/infinite_runner/components/obstacle.dart) - 6 obstacle types with sprites
-- [lib/infinite_runner/systems/obstacle_pool.dart](lib/infinite_runner/systems/obstacle_pool.dart) - Object pooling implementation
-- [lib/infinite_runner/systems/spawn_system.dart](lib/infinite_runner/systems/spawn_system.dart) - Obstacle spawning logic
-
-**Performance**: Target 60 FPS. No allocations in `update()` loop. All Vector2 objects are reused.
-
-### Navigation Structure
-
-Bottom navigation managed by [lib/screens/main_navigation.dart](lib/screens/main_navigation.dart):
-1. **Home** - Game carousel with available games:
-   - Sudoku (Classic, Rush, 1v1 Online)
-   - Infinite Runner
-   - Snake
-   - Image Puzzle
-   - 2048
-   - Memory Game (coming soon - locked)
-2. **Profile** - Stats and achievements
-3. **Leaderboard** - Firebase global leaderboard
-
-### Image Loading
-
-**UnsplashService** ([lib/services/unsplash_service.dart](lib/services/unsplash_service.dart)) fetches random images. Falls back to local assets if API key not configured.
-
-API key configuration: Pass via `--dart-define=UNSPLASH_ACCESS_KEY=key` (see [docs/API_CONFIGURATION.md](docs/API_CONFIGURATION.md))
-
-### Game Models
-
-- **GameModel** ([lib/models/game_model.dart](lib/models/game_model.dart)) - Defines available games
-- **AchievementModel** ([lib/models/achievement_model.dart](lib/models/achievement_model.dart)) - Achievement definitions
-- **PuzzlePiece** ([lib/models/puzzle_piece.dart](lib/models/puzzle_piece.dart)) - Puzzle tile data
-
-## Security Best Practices
-
-**CRITICAL:** Follow these security guidelines at all times:
-
-### Secure Storage
-
+**Secure Storage:**
 ```dart
 // ✅ DO: Use SecureStorageRepository for sensitive data
 final storage = getIt<SecureStorageRepository>();
 await storage.write(key: 'user_token', value: token);
 
 // ❌ DON'T: Use SharedPreferences for sensitive data
-await prefs.setString('user_token', token); // INSECURE
 ```
 
-### Input Validation
-
-```dart
-// ✅ DO: Validate all user inputs
-import 'package:puzzle/utils/input_validator.dart';
-
-final error = InputValidator.validateNickname(userInput);
-if (error != null) {
-  showError(error);
-  return;
-}
-```
-
-### Secure Logging
-
+**Secure Logging:**
 ```dart
 // ✅ DO: Use SecureLogger (auto-redacts secrets)
-import 'package:puzzle/utils/secure_logger.dart';
+SecureLogger.info('User logged in', data: {'token': token}); // token: [REDACTED]
 
-SecureLogger.info('User logged in', data: {'userId': id, 'token': token});
-// Output: ... userId: abc123 | token: [REDACTED]
-
-// ❌ DON'T: Use print or debugPrint directly
-print('Token: $token'); // INSECURE - may leak in logs
+// ❌ DON'T: Use print() - leaks in logs
 ```
 
-### API Key Management
-
+**API Keys:**
 ```dart
-// ✅ DO: Use build-time configuration
-flutter run --dart-define=UNSPLASH_ACCESS_KEY=key
-
-// Access in code:
+// ✅ DO: Build-time configuration
 const key = String.fromEnvironment('UNSPLASH_ACCESS_KEY');
 
-// ❌ DON'T: Hardcode keys in code
-const key = 'abc123...'; // NEVER DO THIS
+// ❌ DON'T: Hardcode keys
 ```
 
-### Firebase Security
+**See [docs/SECURITY.md](docs/SECURITY.md) for complete guide.**
 
-- **firebase_options.dart is gitignored** - never commit it
-- **Security rules deployed** - see [firestore.rules](firestore.rules)
-- **Anonymous auth required** - users must be authenticated
+## Design System (Phase 1-6 Complete)
 
-**See [docs/SECURITY.md](docs/SECURITY.md) for complete security documentation.**
+**Status:** 13,950+ lines of premium UI code across 6 phases
 
-## Key Patterns
+**Core System (`lib/design_system/`):**
+- **DSColors** - Brand, semantic, game-specific colors + gradients
+- **DSTypography** - Google Fonts (Poppins, Inter, Roboto Mono)
+- **DSSpacing** - 4px grid system
+- **DSShadows** - Elevation + colored glows
+- **DSAnimations** - Durations, curves, configs
+- **DSTheme** - Master theme builder
 
-### Provider Pattern (Game State + UI State)
+**Premium Components:**
+- **Phase 1-3:** Buttons, cards, skeletons, game carousel, floating nav, game animations
+- **Phase 4:** Profile headers, stat cards, charts, heat maps, achievement gallery
+- **Phase 5:** Leaderboard podium, crown animations, rank cards, time filters
+- **Phase 6:** Toast notifications, empty states, loading overlays, haptic/sound services
 
-When adding new game features:
-
-**1. Create Game State Provider (business logic):**
+**Usage:**
 ```dart
-class YourGameProvider with ChangeNotifier, GameStatsMixin {
-  YourGameProvider({required this.statsService});
-  final FirebaseStatsService statsService;
+import 'package:multigame/design_system/design_system.dart';
 
-  // Game state only
-  int _score = 0;
-  bool _isGameOver = false;
-
-  void makeMove() {
-    _score++;
-    notifyListeners();
-  }
-}
-```
-
-**2. Create UI State Provider (presentation):**
-```dart
-class YourGameUIProvider with ChangeNotifier {
-  bool _isLoading = false;
-
-  void setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
-  }
-}
-```
-
-**3. Register both providers:**
-```dart
-MultiProvider(
-  providers: [
-    ChangeNotifierProvider(
-      create: (_) => YourGameProvider(
-        statsService: getIt<FirebaseStatsService>(),
-      ),
-    ),
-    ChangeNotifierProvider(create: (_) => YourGameUIProvider()),
-  ],
-  // ...
+// Use tokens
+Container(
+  padding: DSSpacing.paddingMD,
+  decoration: BoxDecoration(
+    color: DSColors.surface,
+    borderRadius: DSSpacing.borderRadiusLG,
+    boxShadow: DSShadows.shadowMd,
+  ),
+  child: Text('Content', style: DSTypography.titleLarge),
 )
+
+// Premium components
+DSButton.gradient(
+  text: 'Start Game',
+  gradient: DSColors.gradientPrimary,
+  onPressed: () => startGame(),
+)
+
+// Phase 6 feedback
+final haptics = getIt<HapticFeedbackService>();
+await haptics.success();
+
+context.showSuccessToast('Level completed!');
+
+DSEmptyState.noData(actionLabel: 'Retry', onAction: () => retry())
 ```
 
-**4. Use in UI:**
+**Full phase details:** [docs/UI_UX_REDESIGN_PLAN.md](docs/UI_UX_REDESIGN_PLAN.md)
+
+## Game-Specific Architectures
+
+### Sudoku (3 Modes)
+- **Classic:** Traditional with difficulty levels
+- **Rush:** Time-limited progressive difficulty
+- **1v1 Online:** Real-time multiplayer via Firebase (room codes, hints, connection tracking)
+
+**Architecture:** Pure logic layer (generator, solver, validator) + providers (Classic, Rush, Online, UI, Settings) + services (persistence, stats, matchmaking, sound, haptics)
+
+### Infinite Runner (Flame Engine)
+- **Object Pooling:** 60 pre-allocated obstacles (eliminates GC pauses)
+- **ECS-inspired:** Component-based with systems (CollisionSystem, SpawnSystem, ObstaclePool)
+- **Performance:** 60 FPS target, no allocations in update() loop, Vector2 reuse
+
+**Details:** [docs/INFINITE_RUNNER_ARCHITECTURE.md](docs/INFINITE_RUNNER_ARCHITECTURE.md)
+
+## Testing Strategy
+
+- **Unit tests:** Pure functions, models, services
+- **Provider tests:** Mock injected services via interfaces
+- **Widget tests:** UI components with mock providers
+- **Integration tests:** End-to-end flows
+
+**Mock services for testing:**
 ```dart
-// Watch game state
-final score = context.watch<YourGameProvider>().score;
+class MockFirebaseStatsService extends Mock implements FirebaseStatsService {}
 
-// Watch UI state
-final isLoading = context.watch<YourGameUIProvider>().isLoading;
-```
+test('should save score', () async {
+  final mockService = MockFirebaseStatsService();
+  when(mockService.saveUserStats(...)).thenAnswer((_) async => {});
 
-### GameStatsMixin (DRY Principle)
+  final provider = MyProvider(statsService: mockService);
+  await provider.handleGameOver();
 
-Use the `GameStatsMixin` to avoid duplicate score-saving code:
-
-```dart
-class YourGameProvider with ChangeNotifier, GameStatsMixin {
-  // Mixin provides:
-  // - setUserInfo(String userId, String displayName)
-  // - saveScore({required String gameType, required int score})
-
-  Future<void> handleGameOver() async {
-    await saveScore(
-      gameType: 'your_game',  // 'puzzle', '2048', 'snake', 'infinite_runner'
-      score: _score,
-      statsService: _statsService,
-    );
-  }
-}
-```
-
-**Benefits:** Eliminates ~250 lines of duplicate code across providers.
-
-### Saving Game Stats
-
-All games save stats via `FirebaseStatsService` (use mixin method):
-```dart
-// Via GameStatsMixin (preferred):
-await saveScore(
-  gameType: 'game_name',
-  score: score,
-  statsService: statsService,
-);
-
-// Or directly:
-await statsService.saveUserStats(
-  userId: userId,
-  displayName: displayName,
-  gameType: 'game_name',
-  score: score,
-);
-```
-
-### Achievement System
-
-Record completions via `AchievementService` (injected via DI):
-```dart
-final newAchievements = await achievementService.recordGameCompletion(
-  gridSize: gridSize,
-  moves: moves,
-  seconds: seconds,
-);
-
-// Display new achievements to user
-if (newAchievements.isNotEmpty) {
-  // Show achievement dialog
-}
+  verify(mockService.saveUserStats(...)).called(1);
+});
 ```
 
 ## Adding New Games
 
-**Quick Reference** - See [docs/ADDING_GAMES.md](docs/ADDING_GAMES.md) for complete guide.
-
-### Structure
-
-```
-lib/games/your_game/
-├── models/              # Game data models
-├── logic/               # Pure game logic (testable)
-├── services/            # Game-specific services
-├── providers/           # State management
-│   ├── your_game_provider.dart      # Game state
-│   └── your_game_ui_provider.dart   # UI state
-└── index.dart          # Barrel file
-```
-
-### Steps
-
-1. Create game directory structure
-2. Implement game logic (pure functions, no dependencies)
-3. Create models for game state
-4. Create providers (game + UI)
-5. Inject services via constructor
-6. Register providers in `main.dart`
-7. Create game screen
-8. Register game in `GameRegistry`
-9. Add tests
-10. Update documentation
-
-**Example:** See [lib/games/sudoku/](lib/games/sudoku/) for a complete implementation with multiple game modes, persistence, and online multiplayer.
+**Quick Steps:**
+1. Create directory structure: `lib/games/your_game/{models,logic,providers,services}`
+2. Implement pure logic (no dependencies)
+3. Create game + UI providers with injected services
+4. Register providers in `main.dart`
+5. Register in `GameRegistry`
+6. Add tests
 
 **Full guide:** [docs/ADDING_GAMES.md](docs/ADDING_GAMES.md)
 
-## Testing Strategy
-
-- **Unit tests**: Models, services, game logic (pure functions)
-- **Provider tests**: Mock injected services using interfaces
-- **Widget tests**: UI components with mock providers
-- **Integration tests**: End-to-end flows (in `integration_test/`)
-
-### Testing with DI
-
-```dart
-// Mock services for testing
-class MockFirebaseStatsService extends Mock implements FirebaseStatsService {}
-
-void main() {
-  late YourGameProvider provider;
-  late MockFirebaseStatsService mockService;
-
-  setUp(() {
-    mockService = MockFirebaseStatsService();
-    provider = YourGameProvider(statsService: mockService);
-  });
-
-  test('should save score on game over', () async {
-    // Arrange
-    when(mockService.saveUserStats(...)).thenAnswer((_) async => {});
-
-    // Act
-    await provider.handleGameOver();
-
-    // Assert
-    verify(mockService.saveUserStats(...)).called(1);
-  });
-}
-```
-
-Mock network images in tests using `network_image_mock` package.
-
-## CI/CD
-
-GitHub Actions workflows in [.github/workflows/](.github/workflows/):
-- **ci.yml** - Runs tests on every push
-- **build.yml** - Builds Android APK, Windows, and Web
-- **deploy-web.yml** - Deploys to GitHub Pages
-- **release.yml** - Creates releases with downloadable builds
-
-See [docs/CI_CD_SETUP_COMPLETE.md](docs/CI_CD_SETUP_COMPLETE.md) for setup details.
-
-## Asset Management
-
-Assets in [assets/images/](assets/images/):
-- Player sprites for infinite runner
-- Obstacle sprites (barrier, crate, cone, spikes, walls)
-- Background and ground assets
-
-Declared in [pubspec.yaml](pubspec.yaml) under `flutter.assets`.
-
-## Firebase Configuration
-
-Firebase options in `lib/config/firebase_options.dart` (generated via FlutterFire CLI).
-
-For manual setup, see [docs/FIREBASE_SETUP_GUIDE.md](docs/FIREBASE_SETUP_GUIDE.md).
-
 ## Code Quality Guidelines
 
-### Naming Conventions
+### Naming
+- **Files:** `snake_case.dart`
+- **Classes:** `PascalCase`
+- **Variables/Functions:** `camelCase`
 
-- **Files**: `snake_case.dart`
-- **Classes**: `PascalCase`
-- **Variables/Functions**: `camelCase`
-- **Constants**: `camelCase` or `SCREAMING_SNAKE_CASE` for compile-time constants
-
-### Code Organization
-
-1. **Imports** in order: dart, flutter, packages, relative
-2. **One class per file** (except small helper classes)
-3. **Barrel files** for clean imports: `index.dart` in each module
-4. **Documentation comments** on public APIs
+### Organization
+1. Imports order: dart, flutter, packages, relative
+2. One class per file (except small helpers)
+3. Barrel files (`index.dart`) for clean imports
+4. Documentation on public APIs
 
 ### Error Handling
-
 ```dart
-// ✅ DO: Handle errors gracefully
+// ✅ DO: Handle gracefully
 try {
   await service.operation();
 } catch (e, stackTrace) {
@@ -684,70 +277,48 @@ try {
   // Show user-friendly message
 }
 
-// ❌ DON'T: Swallow errors silently
-try {
-  await service.operation();
-} catch (e) {
-  // Empty catch - BAD
-}
+// ❌ DON'T: Swallow silently
 ```
 
 ### Performance
-
-1. **Avoid allocations in game loops** (60 FPS requirement)
-2. **Use object pooling** for frequently created objects
-3. **Profile with DevTools** before optimizing
-4. **Lazy-load services** via GetIt
+- Avoid allocations in game loops (60 FPS requirement)
+- Use object pooling for frequently created objects
+- Profile with DevTools before optimizing
+- Lazy-load services via GetIt
 
 ## Production Readiness
 
-**Current Status:** ⚠️ NOT READY FOR PLAY STORE SUBMISSION
-**Assessment Date:** 2026-02-05
-**Overall Score:** 6.5/10
+**Status:** ⚠️ NOT READY FOR PLAY STORE (Updated 2026-02-09)
+**Overall Score:** 7.5/10
 
-### Critical Blockers (Must Fix Before Submission)
-1. **Invalid package name** (`com.example.multigame`) - Play Store will reject
-2. **Debug signing keys** in production build - Cannot submit
-3. **Missing privacy policy** - Required by Play Store
+**Critical Blockers (Must Fix):**
+1. Invalid package name (`com.example.multigame`)
+2. Debug signing keys in production
+3. Missing privacy policy
 
-### High Priority Issues
-1. Exposed Firebase API keys (already in git history)
-2. Debug print statements in production code
-3. Silent error handling (no user notifications)
-4. Incomplete Firestore security rules
-
-### Production Readiness Checklist
-See **[task.md](task.md)** for comprehensive production readiness plan with:
-- ✅ Phase 1: Critical Blockers (package name, signing, privacy policy)
-- ⚠️ Phase 2: High Priority Fixes (security, error handling, logging)
-- 🔧 Phase 3: Quality & Testing (coverage, device testing, crashlytics)
-- 🎨 Phase 4: Store Preparation (assets, listing, beta testing)
-- 🚀 Phase 5: CI/CD & Automation (optional)
-
-**IMPORTANT:** Before submitting to Play Store, complete at minimum Phase 1 + Phase 2 (estimated 3-5 days).
-
-### Strengths
+**Strengths:**
 - ⭐ World-class architecture (9/10)
-- ⭐ Competitive feature set - 5 games with online multiplayer (9/10)
-- ⭐ Above-average code quality with comprehensive docs (7.5/10)
-- ⭐ Good security foundation (SecureLogger, SecureStorage, Firebase rules) (7/10)
+- ⭐ Premium UI/UX - 13,950+ lines, 30+ animations (9.5/10)
+- ⭐ Complete feedback systems (9.5/10)
+- ⭐ Rich data visualization (9/10)
+- ⭐ Good security foundation (7/10)
 
-### Weaknesses
+**Weaknesses:**
 - 🔴 Incomplete release configuration (3/10)
-- 🔴 Missing legal compliance (privacy policy, ToS) (2/10)
+- 🔴 Missing legal compliance (2/10)
 - 🟠 Error handling needs improvement (5/10)
-- 🟠 Testing adequate but not comprehensive (6/10)
 
-### Next Steps
-1. **Immediate:** Fix package name to unique reverse-domain format
-2. **Urgent:** Generate production keystore and configure signing
-3. **Required:** Create and publish privacy policy
-4. **High Priority:** Rotate Firebase keys, replace debugPrint, add error notifications
-5. **Recommended:** Complete testing, add crashlytics, prepare store assets
+**Action Required:** Complete Phase 1-2 in [task.md](task.md) before Play Store submission (3-5 days).
 
-**Full Details:** See [task.md](task.md) for detailed implementation guide with commands, code examples, and checklists.
+## CI/CD
 
----
+GitHub Actions workflows:
+- **ci.yml** - Tests on every push
+- **build.yml** - Builds Android/Windows/Web
+- **deploy-web.yml** - GitHub Pages deployment
+- **release.yml** - Release builds with downloads
+
+**Details:** [docs/CI_CD_SETUP_COMPLETE.md](docs/CI_CD_SETUP_COMPLETE.md)
 
 ## Additional Documentation
 
@@ -755,19 +326,20 @@ See **[task.md](task.md)** for comprehensive production readiness plan with:
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - Complete architecture guide
 - [docs/ADDING_GAMES.md](docs/ADDING_GAMES.md) - Game integration guide
 - [docs/SECURITY.md](docs/SECURITY.md) - Security best practices
+- [docs/UI_UX_REDESIGN_PLAN.md](docs/UI_UX_REDESIGN_PLAN.md) - 8-phase UI/UX master plan
+- [docs/PHASE_3_IMPLEMENTATION_ANALYSIS.md](docs/PHASE_3_IMPLEMENTATION_ANALYSIS.md) - Game polish
+- [docs/PHASE_4_IMPLEMENTATION_ANALYSIS.md](docs/PHASE_4_IMPLEMENTATION_ANALYSIS.md) - Profile & stats
+- [docs/PHASE_5_IMPLEMENTATION_REPORT.md](docs/PHASE_5_IMPLEMENTATION_REPORT.md) - Leaderboard
+- [docs/PHASE_6_IMPLEMENTATION_REPORT.md](docs/PHASE_6_IMPLEMENTATION_REPORT.md) - Micro-interactions
 
 ### Setup & Configuration
 - [docs/API_CONFIGURATION.md](docs/API_CONFIGURATION.md) - Unsplash API setup
 - [docs/FIREBASE_SETUP_GUIDE.md](docs/FIREBASE_SETUP_GUIDE.md) - Firebase configuration
-- [docs/CI_CD_SETUP_COMPLETE.md](docs/CI_CD_SETUP_COMPLETE.md) - GitHub Actions
 
 ### Production & Release
-- **[task.md](task.md)** - Production readiness tasks and deployment guide
+- [task.md](task.md) - Production readiness tasks and deployment guide
 - [firestore.rules](firestore.rules) - Firebase security rules
 
 ### Technical Deep Dives
-- [docs/INFINITE_RUNNER_ARCHITECTURE.md](docs/INFINITE_RUNNER_ARCHITECTURE.md) - Flame engine architecture
+- [docs/INFINITE_RUNNER_ARCHITECTURE.md](docs/INFINITE_RUNNER_ARCHITECTURE.md) - Flame engine
 - [docs/SECURITY_IMPROVEMENTS.md](docs/SECURITY_IMPROVEMENTS.md) - Security changelog
-
-
-      IMPORTANT: this context may or may not be relevant to your tasks. You should not respond to this context unless it is highly relevant to your task.

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:multigame/core/game_interface.dart';
-import 'package:multigame/screens/infinite_runner_page.dart';
+import 'package:multigame/games/infinite_runner/screens/infinite_runner_screen.dart';
 
 class InfiniteRunnerDefinition extends BaseGameDefinition {
   @override

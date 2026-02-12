@@ -1,16 +1,3 @@
-# =============================================================================
-# CI WORKFLOW - Continuous Integration
-# =============================================================================
-# PURPOSE: This workflow runs automatically on every push and pull request
-# to ensure code quality and catch bugs early.
-#
-# WHAT YOU'LL LEARN:
-# - How to trigger workflows automatically
-# - Running tests in the cloud
-# - Checking code quality
-# - Caching dependencies for faster builds
-# =============================================================================
-
 name: CI - Test & Analyze
 
 # TRIGGER: When does this workflow run?
@@ -30,7 +17,7 @@ jobs:
     
     steps:
       # STEP 1: Get the code from your repository
-      - name: 📥 Checkout code
+      - name:  Checkout code
         uses: actions/checkout@v4
         
       # STEP 2: Install Java (required for Android builds)
@@ -41,7 +28,7 @@ jobs:
           java-version: '17'
           
       # STEP 3: Install Flutter
-      - name: 🐦 Setup Flutter
+      - name:  Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.7'  # Use latest stable version
@@ -49,52 +36,48 @@ jobs:
           cache: true  # Cache Flutter SDK to speed up future runs
           
       # STEP 4: Display Flutter version (for debugging)
-      - name: 📋 Flutter doctor
+      - name:  Flutter doctor
         run: flutter doctor -v
 
       # STEP 5: Setup Firebase config from repository secrets
-      - name: 🔧 Setup Firebase config
+      - name:  Setup Firebase config
         run: echo "${{ secrets.FIREBASE_OPTIONS_DART }}" > lib/config/firebase_options.dart
 
       # STEP 6: Get all dependencies from pubspec.yaml
-      - name: 📦 Get dependencies
+      - name:  Get dependencies
         run: flutter pub get
 
       # STEP 7: Check code formatting
-      # This ensures all code follows Flutter style guidelines
-      - name: 🎨 Check formatting
+      - name:  Check formatting
         run: dart format --set-exit-if-changed .
         continue-on-error: true  # Don't fail if formatting is off, just warn
 
       # STEP 8: Analyze code for issues
-      # Catches potential bugs, bad practices, unused code
-      - name: 🔍 Analyze code
+      - name:  Analyze code
         run: flutter analyze
         env:
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
 
       # STEP 9: Run all unit tests
-      # This is where your puzzle logic tests run
-      - name: 🧪 Run tests
+      - name:  Run tests
         run: flutter test --coverage
 
       # STEP 10: Upload code coverage report
-      # Shows which parts of your code are tested
-      - name: 📊 Upload coverage to Codecov
+      - name:  Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           files: ./coverage/lcov.info
           fail_ci_if_error: false  # Don't fail if coverage upload fails
 
       # STEP 11: Generate coverage report (optional)
-      - name: 📈 Coverage Report
+      - name:  Coverage Report
         if: always()  # Run even if previous steps failed
         run: |
           if [ -f coverage/lcov.info ]; then
-            echo "✅ Code coverage generated"
+            echo "Code coverage generated"
             echo "View detailed report in Codecov"
           else
-            echo "⚠️ No coverage data found"
+            echo " No coverage data found"
           fi
 
   # Job 2: Check for dependency vulnerabilities
@@ -103,20 +86,20 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: 📥 Checkout code
+      - name:  Checkout code
         uses: actions/checkout@v4
         
-      - name: 🐦 Setup Flutter
+      - name:  Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.7'
           channel: 'stable'
           cache: true
           
-      - name: 📦 Get dependencies
+      - name:  Get dependencies
         run: flutter pub get
         
       # Check for outdated or vulnerable packages
-      - name: 🔒 Check pub outdated
+      - name:  Check pub outdated
         run: flutter pub outdated
         continue-on-error: true  # Just informational

@@ -150,6 +150,44 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Friend subcollection under users
+    match /users/{userId}/friends/{friendId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Friend requests
+    match /friend_requests/{requestId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.from == request.auth.uid ||
+         resource.data.to == request.auth.uid);
+      allow create: if isAuthenticated() &&
+        request.resource.data.from == request.auth.uid &&
+        request.resource.data.keys().hasAll(['from', 'fromDisplayName', 'to', 'status']);
+      allow update: if isAuthenticated() &&
+        (resource.data.from == request.auth.uid ||
+         resource.data.to == request.auth.uid);
+      allow delete: if isAuthenticated() &&
+        resource.data.from == request.auth.uid;
+    }
+
+    // Head-to-head challenges
+    match /challenges/{challengeId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.challenger == request.auth.uid ||
+         resource.data.challenged == request.auth.uid);
+      allow create: if isAuthenticated() &&
+        request.resource.data.challenger == request.auth.uid &&
+        request.resource.data.keys().hasAll([
+          'challenger', 'challenged', 'gameType', 'status', 'createdAt', 'expiresAt'
+        ]);
+      allow update: if isAuthenticated() &&
+        (resource.data.challenger == request.auth.uid ||
+         resource.data.challenged == request.auth.uid) &&
+        // Cannot change participants
+        request.resource.data.challenger == resource.data.challenger &&
+        request.resource.data.challenged == resource.data.challenged;
+    }
+
     // Deny all other collections by default
     match /{document=**} {
       allow read, write: if false;

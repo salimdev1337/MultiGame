@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:multigame/core/game_interface.dart';
-import 'package:multigame/screens/game_2048_page.dart';
+import 'package:multigame/games/game_2048/screens/game_2048_screen.dart';
 
 class Game2048Definition extends BaseGameDefinition {
   @override

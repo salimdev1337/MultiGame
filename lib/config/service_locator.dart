@@ -15,6 +15,13 @@ import 'package:multigame/games/sudoku/services/matchmaking_service.dart';
 import 'package:multigame/games/sudoku/services/sudoku_sound_service.dart';
 import 'package:multigame/games/sudoku/services/sudoku_haptic_service.dart';
 import 'package:multigame/games/sudoku/providers/sudoku_settings_provider.dart';
+import 'package:multigame/services/feedback/haptic_feedback_service.dart';
+import 'package:multigame/services/feedback/sound_service.dart';
+import 'package:multigame/services/onboarding/onboarding_service.dart';
+import 'package:multigame/services/accessibility/accessibility_service.dart';
+import 'package:multigame/services/themes/theme_service.dart';
+import 'package:multigame/services/performance/image_cache_service.dart';
+import 'package:multigame/services/performance/battery_saver_service.dart';
 
 /// Global service locator instance
 final getIt = GetIt.instance;
@@ -116,6 +123,53 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<SudokuHapticService>(
     () => SudokuHapticService(
       settings: getIt<SudokuSettingsProvider>(),
+    ),
+  );
+
+  // ========== App-Wide Feedback Services (Phase 6) ==========
+  // These provide haptic and sound feedback across the entire app
+
+  getIt.registerLazySingleton<HapticFeedbackService>(
+    () => HapticFeedbackService(),
+  );
+
+  getIt.registerLazySingleton<SoundService>(
+    () => SoundService(),
+  );
+
+  // ========== Onboarding Service (Phase 7) ==========
+  // Tracks onboarding completion and tutorial states
+
+  getIt.registerLazySingleton<OnboardingService>(
+    () => OnboardingService(),
+  );
+
+  // ========== Accessibility Service (Phase 8) ==========
+  // Persists and retrieves accessibility settings
+
+  getIt.registerLazySingleton<AccessibilityService>(
+    () => AccessibilityService(
+      storage: getIt<SecureStorageRepository>(),
+    ),
+  );
+
+  // ========== Theme Service (Phase 8) ==========
+
+  getIt.registerLazySingleton<ThemeService>(
+    () => ThemeService(
+      storage: getIt<SecureStorageRepository>(),
+    ),
+  );
+
+  // ========== Performance Services (Phase 8) ==========
+
+  getIt.registerLazySingleton<ImageCacheService>(
+    () => ImageCacheService(),
+  );
+
+  getIt.registerLazySingleton<BatterySaverService>(
+    () => BatterySaverService(
+      storage: getIt<SecureStorageRepository>(),
     ),
   );
 
