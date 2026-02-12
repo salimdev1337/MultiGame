@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:multigame/providers/user_auth_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:multigame/providers/user_auth_notifier.dart';
 import 'package:multigame/services/data/firebase_stats_service.dart';
 
 class LeaderboardScreen extends StatefulWidget {
@@ -144,18 +144,33 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   }
 }
 
-class LeaderboardTab extends StatelessWidget {
+class LeaderboardTab extends ConsumerStatefulWidget {
   final String gameType;
 
   const LeaderboardTab({super.key, required this.gameType});
 
   @override
+  ConsumerState<LeaderboardTab> createState() => _LeaderboardTabState();
+}
+
+class _LeaderboardTabState extends ConsumerState<LeaderboardTab> {
+  late final FirebaseStatsService _statsService;
+  int _refreshKey = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _statsService = FirebaseStatsService();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<UserAuthProvider>();
-    final statsService = FirebaseStatsService();
+    final authProvider = ref.watch(userAuthProvider);
+    final statsService = _statsService;
 
     return StreamBuilder<List<LeaderboardEntry>>(
-      stream: statsService.leaderboardStream(gameType: gameType, limit: 100),
+      key: ValueKey(_refreshKey),
+      stream: statsService.leaderboardStream(gameType: widget.gameType, limit: 100),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(
@@ -180,9 +195,7 @@ class LeaderboardTab extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: () {
-                    (context as Element).markNeedsBuild();
-                  },
+                  onPressed: () => setState(() => _refreshKey++),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF00F0FF),
                     foregroundColor: Colors.black,

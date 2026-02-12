@@ -2,6 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:multigame/config/app_router.dart';
 import 'package:multigame/games/snake/providers/snake_notifier.dart';
 
 class SnakeGamePage extends ConsumerStatefulWidget {
@@ -12,25 +14,23 @@ class SnakeGamePage extends ConsumerStatefulWidget {
 }
 
 class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
+  bool _gameOverDialogShowing = false;
+
   @override
   void initState() {
     super.initState();
-    // Start the game when the page is first loaded
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!ref.read(snakeProvider).initialized) {
-        ref.read(snakeProvider.notifier).startGame();
-      }
-    });
   }
 
   void _showGameOverDialog(int score, bool isWin) {
+    if (_gameOverDialogShowing) return;
+    _gameOverDialogShowing = true;
     final notifier = ref.read(snakeProvider.notifier);
     final highScore = ref.read(snakeProvider).highScore;
     final gameMode = ref.read(snakeProvider).gameMode;
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => BackdropFilter(
+      builder: (dialogContext) => BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Dialog(
           backgroundColor: Colors.transparent,
@@ -251,8 +251,8 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
                         height: 56,
                         child: ElevatedButton(
                           onPressed: () {
-                            Navigator.pop(context);
-                            notifier.startGame();
+                            notifier.startGame(); // start first so state is playing=true before pop
+                            Navigator.of(dialogContext).pop(); // use dialog's own context
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFf52900),
@@ -265,12 +265,12 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: Row(
+                          child: const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(Icons.replay, size: 24),
-                              const SizedBox(width: 8),
-                              const Text(
+                              SizedBox(width: 8),
+                              Text(
                                 'Try Again',
                                 style: TextStyle(
                                   fontSize: 17,
@@ -283,7 +283,42 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      // Main Menu Button
+                      // Home Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: OutlinedButton(
+                          onPressed: () {
+                            ref.read(snakeProvider.notifier).reset();
+                            Navigator.of(dialogContext).pop();
+                            context.go(AppRoutes.home);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white70,
+                            side: BorderSide(
+                              color: Colors.white.withAlpha((0.2 * 255).toInt()),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.home_outlined, size: 20),
+                              SizedBox(width: 8),
+                              Text(
+                                'Home',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 16),
                       // Footer
                       Row(
@@ -337,6 +372,95 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
           ),
         ),
       ),
+    ).then((_) {
+      if (mounted) setState(() => _gameOverDialogShowing = false);
+    });
+  }
+
+  Widget _buildStartScreen() {
+    return Scaffold(
+      backgroundColor: const Color(0xFF111317),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF111317),
+        title: const Text(
+          'NEON SNAKE',
+          style: TextStyle(color: Color(0xFF55ff00), letterSpacing: 2),
+        ),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Snake icon
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF55ff00).withAlpha((0.1 * 255).toInt()),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF55ff00).withAlpha((0.3 * 255).toInt()),
+                    blurRadius: 24,
+                    spreadRadius: 4,
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.videogame_asset_rounded,
+                size: 40,
+                color: Color(0xFF55ff00),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'NEON SNAKE',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 6,
+                color: Color(0xFF55ff00),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Eat. Grow. Survive.',
+              style: TextStyle(
+                fontSize: 14,
+                letterSpacing: 2,
+                color: Colors.white.withAlpha((0.4 * 255).toInt()),
+              ),
+            ),
+            const SizedBox(height: 48),
+            SizedBox(
+              width: 200,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: () =>
+                    ref.read(snakeProvider.notifier).startGame(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF55ff00),
+                  foregroundColor: const Color(0xFF111317),
+                  elevation: 0,
+                  shadowColor:
+                      const Color(0xFF55ff00).withAlpha((0.4 * 255).toInt()),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: const Text(
+                  'START GAME',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -344,14 +468,19 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
   Widget build(BuildContext context) {
     final state = ref.watch(snakeProvider);
 
-    // Check if game is over and show dialog
-    // Only show dialog if game was initialized and is no longer playing
-    if (state.initialized && !state.playing) {
+    // Show game over dialog when the active game ends
+    if (state.initialized && !state.playing && !_gameOverDialogShowing) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        // Check if it's a win (you can customize this condition)
-        final isWin = state.score >= 100; // Win condition example
-        _showGameOverDialog(state.score, isWin);
+        if (mounted) {
+          final isWin = state.score >= 100;
+          _showGameOverDialog(state.score, isWin);
+        }
       });
+    }
+
+    // Show start screen when game has not been started yet / was reset
+    if (!state.initialized) {
+      return _buildStartScreen();
     }
 
     return KeyboardListener(

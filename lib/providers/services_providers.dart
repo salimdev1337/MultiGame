@@ -23,6 +23,7 @@ import 'package:multigame/services/accessibility/accessibility_service.dart';
 import 'package:multigame/providers/accessibility_provider.dart';
 import 'package:multigame/services/themes/theme_service.dart';
 import 'package:multigame/providers/theme_provider.dart';
+import 'package:multigame/games/sudoku/providers/sudoku_online_provider.dart';
 
 final authServiceProvider =
     Provider<AuthService>((_) => getIt<AuthService>());
@@ -75,4 +76,13 @@ final themeServiceProvider =
 final themeProvider = ChangeNotifierProvider<ThemeProvider>((ref) {
   final service = ref.watch(themeServiceProvider);
   return ThemeProvider(service: service)..loadTheme();
+});
+
+/// Placeholder for the current online Sudoku session.
+/// Override with [ProviderScope] when starting a match so that
+/// [SudokuOnlineGameScreen] and [SudokuOnlineResultScreen] can read it.
+final sudokuOnlineProvider =
+    ChangeNotifierProvider<SudokuOnlineProvider>((ref) {
+  throw UnimplementedError(
+      'sudokuOnlineProvider must be overridden before navigating to the online game');
 });

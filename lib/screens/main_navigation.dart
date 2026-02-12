@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:multigame/models/game_model.dart';
-import 'package:multigame/providers/user_auth_provider.dart';
+import 'package:multigame/providers/user_auth_notifier.dart';
 import 'package:multigame/utils/secure_logger.dart';
-import 'package:multigame/games/puzzle/index.dart';
-import 'package:multigame/games/game_2048/index.dart';
-import 'package:multigame/games/snake/index.dart';
-import 'package:multigame/games/sudoku/index.dart';
 import 'package:multigame/services/storage/nickname_service.dart';
 import 'package:multigame/widgets/nickname_dialog.dart';
 import 'package:multigame/screens/home_page_premium.dart';
@@ -17,17 +13,18 @@ import 'package:multigame/games/snake/screens/snake_game_screen.dart';
 import 'package:multigame/games/infinite_runner/screens/infinite_runner_screen.dart';
 import 'package:multigame/screens/leaderboard_screen_premium.dart';
 import 'package:multigame/widgets/shared/floating_nav_bar.dart';
+import 'package:multigame/games/sudoku/index.dart';
 
-class MainNavigation extends StatefulWidget {
+class MainNavigation extends ConsumerStatefulWidget {
   const MainNavigation({super.key});
 
   static final GlobalKey navigatorKey = GlobalKey();
 
   @override
-  State<MainNavigation> createState() => _MainNavigationState();
+  ConsumerState<MainNavigation> createState() => _MainNavigationState();
 }
 
-class _MainNavigationState extends State<MainNavigation> {
+class _MainNavigationState extends ConsumerState<MainNavigation> {
   int _currentIndex = 0;
   GameModel? _selectedGame;
   final NicknameService _nicknameService = NicknameService();
@@ -36,17 +33,14 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   void initState() {
     super.initState();
-    // Initialize user info in game providers after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeUser();
     });
   }
 
   Future<void> _initializeUser() async {
-    // Load saved nickname
     _userNickname = await _nicknameService.getNickname();
 
-    // If no nickname, prompt user
     if (_userNickname == null && mounted) {
       _userNickname = await showNicknameDialog(context, isFirstTime: true);
       if (_userNickname != null) {
@@ -54,43 +48,18 @@ class _MainNavigationState extends State<MainNavigation> {
       }
     }
 
-    // Update game providers with user info
-    _updateGameProvidersUserInfo();
+    _logUserReady();
   }
 
-  void _updateGameProvidersUserInfo() {
-    try {
-      final authProvider = context.read<UserAuthProvider>();
-      if (authProvider.userId != null) {
-        // Use nickname instead of displayName
-        final displayName = _userNickname ?? authProvider.displayName;
-
-        context.read<Game2048Provider>().setUserInfo(
-          authProvider.userId,
-          displayName,
-        );
-        context.read<SnakeGameProvider>().setUserInfo(
-          authProvider.userId,
-          displayName,
-        );
-        context.read<PuzzleGameNotifier>().setUserInfo(
-          authProvider.userId,
-          displayName,
-        );
-        context.read<SudokuProvider>().setUserInfo(
-          authProvider.userId,
-          displayName,
-        );
-        SecureLogger.user('User info updated', userId: authProvider.userId);
-      } else {
-        SecureLogger.log('Waiting for user auth...', tag: 'MainNav');
-        // Retry after a delay
-        Future.delayed(const Duration(seconds: 1), () {
-          if (mounted) _updateGameProvidersUserInfo();
-        });
-      }
-    } catch (e) {
-      SecureLogger.log('Providers not ready: $e', tag: 'MainNav');
+  void _logUserReady() {
+    final auth = ref.read(userAuthProvider);
+    if (auth.userId != null) {
+      SecureLogger.user('User ready', userId: auth.userId);
+    } else {
+      SecureLogger.log('Waiting for user auth…', tag: 'MainNav');
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) _logUserReady();
+      });
     }
   }
 
@@ -192,7 +161,6 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    // Hide bottom navigation bar when playing infinite runner
     final hideBottomNav =
         _currentIndex == 1 && _selectedGame?.id == 'infinite_runner';
 

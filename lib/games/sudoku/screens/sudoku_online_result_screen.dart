@@ -1,8 +1,8 @@
 // Online result screen - see docs/SUDOKU_ARCHITECTURE.md
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/sudoku_online_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:multigame/providers/services_providers.dart';
 
 const _backgroundDark = Color(0xFF0f1115);
 const _surfaceDark = Color(0xFF1a1d24);
@@ -10,20 +10,19 @@ const _accentGreen = Color(0xFF4ade80);
 const _accentRed = Color(0xFFef4444);
 const _accentBlue = Color(0xFF3b82f6);
 
-class SudokuOnlineResultScreen extends StatelessWidget {
+class SudokuOnlineResultScreen extends ConsumerWidget {
   const SudokuOnlineResultScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provider = ref.watch(sudokuOnlineProvider);
+    final isWinner = provider.isWinner;
+    final opponentName = provider.opponentName ?? 'Opponent';
+
     return Scaffold(
       backgroundColor: _backgroundDark,
       body: SafeArea(
-        child: Consumer<SudokuOnlineProvider>(
-          builder: (context, provider, child) {
-            final isWinner = provider.isWinner;
-            final opponentName = provider.opponentName ?? 'Opponent';
-
-            return Center(
+        child: Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Column(
@@ -165,8 +164,6 @@ class SudokuOnlineResultScreen extends StatelessWidget {
                   ],
                 ),
               ),
-            );
-          },
         ),
       ),
     );

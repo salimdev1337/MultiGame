@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:multigame/providers/user_auth_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:multigame/providers/user_auth_notifier.dart';
 import 'package:multigame/services/data/firebase_stats_service.dart';
 import 'package:multigame/services/data/rank_history_service.dart';
 import 'package:multigame/design_system/design_system.dart';
@@ -167,18 +167,26 @@ class _LeaderboardScreenPremiumState extends State<LeaderboardScreenPremium>
   }
 }
 
-class LeaderboardTab extends StatefulWidget {
+class LeaderboardTab extends ConsumerStatefulWidget {
   final String gameType;
 
   const LeaderboardTab({super.key, required this.gameType});
 
   @override
-  State<LeaderboardTab> createState() => _LeaderboardTabState();
+  ConsumerState<LeaderboardTab> createState() => _LeaderboardTabState();
 }
 
-class _LeaderboardTabState extends State<LeaderboardTab> {
+class _LeaderboardTabState extends ConsumerState<LeaderboardTab> {
+  late final FirebaseStatsService _statsService;
   final RankHistoryService _rankHistoryService = RankHistoryService();
   int? _previousRank;
+  int _refreshKey = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _statsService = FirebaseStatsService();
+  }
 
   /// Track rank changes and load previous rank
   Future<void> _trackRankChange({
@@ -275,11 +283,11 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<UserAuthProvider>();
-    final statsService = FirebaseStatsService();
+    final authProvider = ref.watch(userAuthProvider);
 
     return StreamBuilder<List<LeaderboardEntry>>(
-      stream: statsService.leaderboardStream(gameType: widget.gameType, limit: 100),
+      key: ValueKey(_refreshKey),
+      stream: _statsService.leaderboardStream(gameType: widget.gameType, limit: 100),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(
@@ -317,9 +325,7 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
                 ),
                 SizedBox(height: DSSpacing.md),
                 ElevatedButton(
-                  onPressed: () {
-                    (context as Element).markNeedsBuild();
-                  },
+                  onPressed: () => setState(() => _refreshKey++),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: DSColors.primary,
                     foregroundColor: Colors.black,
@@ -384,9 +390,8 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
           children: [
             CustomRefreshIndicator(
               onRefresh: () async {
-                // Trigger rebuild to refresh data
-                (context as Element).markNeedsBuild();
-                await Future.delayed(const Duration(seconds: 1));
+                setState(() => _refreshKey++);
+                await Future.delayed(const Duration(milliseconds: 500));
               },
               child: CustomScrollView(
                 slivers: [

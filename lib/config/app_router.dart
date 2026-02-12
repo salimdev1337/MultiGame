@@ -178,6 +178,15 @@ class _SplashScreen extends ConsumerWidget {
 
     final appAsync = ref.watch(appInitProvider);
 
+    // Fallback: if the provider was already done when this widget first
+    // built (e.g., very fast init on returning users), the listener above
+    // never fires. Navigate immediately via postFrameCallback.
+    if (!appAsync.isLoading && !appAsync.hasError) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) context.go(AppRoutes.splash);
+      });
+    }
+
     if (appAsync.hasError) {
       return Scaffold(
         body: Center(

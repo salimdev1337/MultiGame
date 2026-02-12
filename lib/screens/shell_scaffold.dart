@@ -19,9 +19,10 @@ class ShellScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Hide bottom nav when playing infinite runner (branch 1, game = infinite_runner)
-    final location = GoRouterState.of(context).uri.toString();
-    final hideBottomNav = location.contains('infinite_runner');
+    // Hide bottom nav during any game session (any route under /play/<game>)
+    final uri = GoRouterState.of(context).uri;
+    final segments = uri.pathSegments; // e.g. ['play', '2048'] or ['play', 'sudoku', 'classic']
+    final hideBottomNav = segments.length >= 2 && segments.first == 'play';
 
     return Scaffold(
       body: navigationShell,

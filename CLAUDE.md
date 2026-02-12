@@ -285,6 +285,47 @@ try {
 - Use object pooling for frequently created objects
 - Profile with DevTools before optimizing
 - Lazy-load services via GetIt
+- **CRITICAL — Isolate high-frequency widgets:** Any widget that updates frequently (timers, counters, live scores) MUST be its own `ConsumerWidget` using `ref.watch(provider.select(...))`. Never let a timer-driven state field (e.g. `elapsedSeconds`, `remainingSeconds`) cause a full screen rebuild — that rebuilds every child including expensive grids/lists.
+
+  **❌ WRONG — timer causes 81-cell grid to rebuild every second:**
+  ```dart
+  class GameScreen extends ConsumerWidget {
+    Widget build(context, ref) {
+      final state = ref.watch(gameProvider); // elapsedSeconds changes every second!
+      return Column(children: [
+        Text(state.formattedTime),  // tiny widget
+        HeavyGrid(board: state.board), // 81 cells rebuilt every second!
+      ]);
+    }
+  }
+  ```
+
+  **✅ CORRECT — timer widget is isolated, grid only rebuilds on actual game events:**
+  ```dart
+  // Isolated timer widget
+  class GameTimerDisplay extends ConsumerWidget {
+    Widget build(context, ref) {
+      final time = ref.watch(gameProvider.select((s) => s.formattedTime));
+      return Text(time);
+    }
+  }
+
+  // Screen selects only layout-relevant fields (NO elapsedSeconds)
+  class GameScreen extends ConsumerWidget {
+    Widget build(context, ref) {
+      final state = ref.watch(gameProvider.select((s) => (
+        selectedRow: s.selectedRow,
+        revision: s.revision,
+        // ... other fields that affect layout
+        // intentionally excludes elapsedSeconds
+      )));
+      return Column(children: [
+        const GameTimerDisplay(), // rebuilds every second in isolation
+        HeavyGrid(board: ...),    // only rebuilds on real game events
+      ]);
+    }
+  }
+  ```
 
 ## Production Readiness
 

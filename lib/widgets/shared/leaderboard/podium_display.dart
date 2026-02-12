@@ -34,74 +34,83 @@ class PodiumDisplay extends StatelessWidget {
     final first = entries[0];
     final third = entries.length > 2 ? entries[2] : null;
 
-    return Container(
-      height: 280,
-      padding: DSSpacing.paddingLG,
-      child: Stack(
-        children: [
-          // Background gradient
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    DSColors.primary.withValues(alpha: 0.05),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // Podium items
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Scale podium base heights proportionally to available width
+        final scale = (constraints.maxWidth / 360).clamp(0.75, 1.3);
+        final base1 = (160 * scale).roundToDouble();
+        final base2 = (120 * scale).roundToDouble();
+        final base3 = (100 * scale).roundToDouble();
+
+        return Padding(
+          padding: DSSpacing.paddingLG,
+          child: Stack(
             children: [
-              // 2nd place (left)
-              if (second != null)
-                Expanded(
-                  child: _PodiumItem(
-                    entry: second,
-                    rank: 2,
-                    height: 140,
-                    isCurrentUser: second.userId == currentUserId,
-                    onTap: onPlayerTap,
+              // Background gradient
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        DSColors.primary.withValues(alpha: 0.05),
+                        Colors.transparent,
+                      ],
+                    ),
                   ),
-                )
-              else
-                const Expanded(child: SizedBox()),
-              SizedBox(width: DSSpacing.md),
-              // 1st place (center, tallest)
-              Expanded(
-                child: _PodiumItem(
-                  entry: first,
-                  rank: 1,
-                  height: 180,
-                  isCurrentUser: first?.userId == currentUserId,
-                  showCrown: true,
-                  onTap: onPlayerTap,
                 ),
               ),
-              SizedBox(width: DSSpacing.md),
-              // 3rd place (right)
-              if (third != null)
-                Expanded(
-                  child: _PodiumItem(
-                    entry: third,
-                    rank: 3,
-                    height: 120,
-                    isCurrentUser: third.userId == currentUserId,
-                    onTap: onPlayerTap,
+              // Podium items — aligned at bottom so bases touch the floor
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // 2nd place (left)
+                  if (second != null)
+                    Expanded(
+                      child: _PodiumItem(
+                        entry: second,
+                        rank: 2,
+                        baseHeight: base2,
+                        isCurrentUser: second.userId == currentUserId,
+                        onTap: onPlayerTap,
+                      ),
+                    )
+                  else
+                    const Expanded(child: SizedBox()),
+                  SizedBox(width: DSSpacing.md),
+                  // 1st place (center, tallest)
+                  Expanded(
+                    child: _PodiumItem(
+                      entry: first,
+                      rank: 1,
+                      baseHeight: base1,
+                      isCurrentUser: first?.userId == currentUserId,
+                      showCrown: true,
+                      onTap: onPlayerTap,
+                    ),
                   ),
-                )
-              else
-                const Expanded(child: SizedBox()),
+                  SizedBox(width: DSSpacing.md),
+                  // 3rd place (right)
+                  if (third != null)
+                    Expanded(
+                      child: _PodiumItem(
+                        entry: third,
+                        rank: 3,
+                        baseHeight: base3,
+                        isCurrentUser: third.userId == currentUserId,
+                        onTap: onPlayerTap,
+                      ),
+                    )
+                  else
+                    const Expanded(child: SizedBox()),
+                ],
+              ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -109,7 +118,7 @@ class PodiumDisplay extends StatelessWidget {
 class _PodiumItem extends StatefulWidget {
   final LeaderboardEntry? entry;
   final int rank;
-  final double height;
+  final double baseHeight;
   final bool isCurrentUser;
   final bool showCrown;
   final VoidCallback? onTap;
@@ -117,7 +126,7 @@ class _PodiumItem extends StatefulWidget {
   const _PodiumItem({
     required this.entry,
     required this.rank,
-    required this.height,
+    required this.baseHeight,
     this.isCurrentUser = false,
     this.showCrown = false,
     this.onTap,
@@ -235,25 +244,28 @@ class _PodiumItemState extends State<_PodiumItem>
                   // Trophy icon with shimmer
                   ShimmerTrophyIcon(
                     rank: widget.rank,
-                    size: widget.rank == 1 ? 48 : 40,
+                    size: widget.rank == 1 ? 44 : 36,
                   ),
                   SizedBox(height: DSSpacing.xs),
                   // Player name
-                  Text(
-                    widget.entry!.displayName,
-                    style: DSTypography.labelLarge.copyWith(
-                      color: DSColors.textPrimary,
-                      fontWeight: FontWeight.bold,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      widget.entry!.displayName,
+                      style: DSTypography.labelMedium.copyWith(
+                        color: DSColors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
                   ),
                   SizedBox(height: DSSpacing.xxs),
                   // Score
                   Text(
                     widget.entry!.highScore.toString(),
-                    style: DSTypography.headlineSmall.copyWith(
+                    style: DSTypography.titleMedium.copyWith(
                       color: _getPodiumColor(),
                       fontWeight: FontWeight.bold,
                       shadows: [
@@ -264,10 +276,10 @@ class _PodiumItemState extends State<_PodiumItem>
                       ],
                     ),
                   ),
-                  SizedBox(height: DSSpacing.md),
+                  SizedBox(height: DSSpacing.xs),
                   // Podium base
                   Container(
-                    height: widget.height,
+                    height: widget.baseHeight,
                     decoration: BoxDecoration(
                       gradient: _getPodiumGradient(),
                       borderRadius: const BorderRadius.vertical(
@@ -299,7 +311,7 @@ class _PodiumItemState extends State<_PodiumItem>
                         style: DSTypography.displayLarge.copyWith(
                           color: Colors.black,
                           fontWeight: FontWeight.w900,
-                          fontSize: widget.rank == 1 ? 64 : 48,
+                          fontSize: widget.rank == 1 ? 52 : 40,
                           shadows: [
                             Shadow(
                               color: Colors.white.withValues(alpha: 0.5),

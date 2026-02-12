@@ -1,9 +1,8 @@
 // Settings screen - see docs/SUDOKU_ARCHITECTURE.md
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:multigame/utils/error_notifier_mixin.dart';
-import '../providers/sudoku_settings_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:multigame/games/sudoku/providers/sudoku_settings_notifier.dart';
 
 const _backgroundDark = Color(0xFF0f1115);
 const _surfaceDark = Color(0xFF1a1d24);
@@ -12,36 +11,88 @@ const _primaryCyan = Color(0xFF00d4ff);
 const _textWhite = Color(0xFFffffff);
 const _textGray = Color(0xFF94a3b8);
 
-class SudokuSettingsScreen extends StatefulWidget {
+class SudokuSettingsScreen extends ConsumerWidget {
   const SudokuSettingsScreen({super.key});
 
-  @override
-  State<SudokuSettingsScreen> createState() => _SudokuSettingsScreenState();
-}
+  void _showResetConfirmation(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _surfaceDark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: _primaryCyan.withValues(alpha: 0.2 * 255),
+            width: 1,
+          ),
+        ),
+        title: const Text(
+          'Reset Settings',
+          style: TextStyle(
+            color: _textWhite,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: const Text(
+          'Are you sure you want to reset all settings to their default values?',
+          style: TextStyle(
+            color: _textGray,
+            fontSize: 15,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: _textGray)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await ref.read(sudokuSettingsProvider.notifier).resetToDefaults();
+              if (ctx.mounted) {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  SnackBar(
+                    content: const Text('Settings reset to defaults'),
+                    backgroundColor: _primaryCyan,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primaryCyan,
+              foregroundColor: _backgroundDark,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Reset',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
 
-class _SudokuSettingsScreenState extends State<SudokuSettingsScreen>
-    with ErrorNotifierMixin {
   @override
-  void initState() {
-    super.initState();
-    // Listen for errors from settings provider
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _checkForErrors();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settingsAsync = ref.watch(sudokuSettingsProvider);
+
+    // Show error snackbar reactively
+    ref.listen(sudokuSettingsProvider, (_, next) {
+      final error = next.valueOrNull?.lastError;
+      if (error != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Colors.red),
+        );
+        ref.read(sudokuSettingsProvider.notifier).clearError();
       }
     });
-  }
 
-  void _checkForErrors() {
-    final settings = context.read<SudokuSettingsProvider>();
-    if (settings.lastError != null) {
-      showErrorSnackBar(settings.lastError!);
-      settings.clearError();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _backgroundDark,
       appBar: AppBar(
@@ -60,64 +111,51 @@ class _SudokuSettingsScreenState extends State<SudokuSettingsScreen>
           ),
         ),
       ),
-      body: Consumer<SudokuSettingsProvider>(
-        builder: (context, settings, child) {
-          if (!settings.isInitialized) {
-            return const Center(
-              child: CircularProgressIndicator(color: _primaryCyan),
-            );
-          }
-
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _buildSectionHeader('Audio & Haptics'),
-              const SizedBox(height: 8),
-              _buildSettingCard(
-                icon: Icons.volume_up,
-                title: 'Sound Effects',
-                subtitle: 'Play sounds for game actions',
-                value: settings.soundEnabled,
-                onChanged: (value) async {
-                  final success = await settings.toggleSound();
-                  if (mounted && !success) {
-                    _checkForErrors();
-                  }
-                },
-              ),
-              const SizedBox(height: 12),
-              _buildSettingCard(
-                icon: Icons.vibration,
-                title: 'Haptic Feedback',
-                subtitle: 'Vibration for touch interactions',
-                value: settings.hapticsEnabled,
-                onChanged: (value) async {
-                  final success = await settings.toggleHaptics();
-                  if (mounted && !success) {
-                    _checkForErrors();
-                  }
-                },
-              ),
-              const SizedBox(height: 24),
-              _buildSectionHeader('Gameplay'),
-              const SizedBox(height: 8),
-              _buildSettingCard(
-                icon: Icons.error_outline,
-                title: 'Error Highlighting',
-                subtitle: 'Highlight conflicting numbers in red',
-                value: settings.errorHighlightingEnabled,
-                onChanged: (value) async {
-                  final success = await settings.toggleErrorHighlighting();
-                  if (mounted && !success) {
-                    _checkForErrors();
-                  }
-                },
-              ),
-              const SizedBox(height: 32),
-              _buildResetButton(context, settings),
-            ],
-          );
-        },
+      body: settingsAsync.when(
+        loading: () =>
+            const Center(child: CircularProgressIndicator(color: _primaryCyan)),
+        error: (e, _) => Center(
+          child: Text('Error: $e',
+              style: const TextStyle(color: Colors.red)),
+        ),
+        data: (settings) => ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _buildSectionHeader('Audio & Haptics'),
+            const SizedBox(height: 8),
+            _buildSettingCard(
+              icon: Icons.volume_up,
+              title: 'Sound Effects',
+              subtitle: 'Play sounds for game actions',
+              value: settings.soundEnabled,
+              onChanged: (_) =>
+                  ref.read(sudokuSettingsProvider.notifier).toggleSound(),
+            ),
+            const SizedBox(height: 12),
+            _buildSettingCard(
+              icon: Icons.vibration,
+              title: 'Haptic Feedback',
+              subtitle: 'Vibration for touch interactions',
+              value: settings.hapticsEnabled,
+              onChanged: (_) =>
+                  ref.read(sudokuSettingsProvider.notifier).toggleHaptics(),
+            ),
+            const SizedBox(height: 24),
+            _buildSectionHeader('Gameplay'),
+            const SizedBox(height: 8),
+            _buildSettingCard(
+              icon: Icons.error_outline,
+              title: 'Error Highlighting',
+              subtitle: 'Highlight conflicting numbers in red',
+              value: settings.errorHighlightingEnabled,
+              onChanged: (_) => ref
+                  .read(sudokuSettingsProvider.notifier)
+                  .toggleErrorHighlighting(),
+            ),
+            const SizedBox(height: 32),
+            _buildResetButton(context, ref),
+          ],
+        ),
       ),
     );
   }
@@ -154,21 +192,15 @@ class _SudokuSettingsScreenState extends State<SudokuSettingsScreen>
         ),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 8,
-        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: _primaryCyan.withValues(alpha: 0.1 * 255),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(
-            icon,
-            color: _primaryCyan,
-            size: 24,
-          ),
+          child: Icon(icon, color: _primaryCyan, size: 24),
         ),
         title: Text(
           title,
@@ -178,32 +210,20 @@ class _SudokuSettingsScreenState extends State<SudokuSettingsScreen>
             fontWeight: FontWeight.w600,
           ),
         ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Text(
-            subtitle,
-            style: const TextStyle(
-              color: _textGray,
-              fontSize: 13,
-            ),
-          ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(color: _textGray, fontSize: 13),
         ),
         trailing: Switch(
           value: value,
           onChanged: onChanged,
           activeThumbColor: _primaryCyan,
-          activeTrackColor: _primaryCyan.withValues(alpha: 0.3 * 255),
-          inactiveThumbColor: _textGray,
-          inactiveTrackColor: _surfaceDark,
         ),
       ),
     );
   }
 
-  Widget _buildResetButton(
-    BuildContext context,
-    SudokuSettingsProvider settings,
-  ) {
+  Widget _buildResetButton(BuildContext context, WidgetRef ref) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -218,17 +238,13 @@ class _SudokuSettingsScreenState extends State<SudokuSettingsScreen>
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: () => _showResetConfirmation(context, settings),
+          onTap: () => _showResetConfirmation(context, ref),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.restore,
-                  color: _primaryCyan,
-                  size: 20,
-                ),
+                Icon(Icons.restore, color: _primaryCyan, size: 20),
                 const SizedBox(width: 8),
                 const Text(
                   'Reset to Defaults',
@@ -242,82 +258,6 @@ class _SudokuSettingsScreenState extends State<SudokuSettingsScreen>
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  void _showResetConfirmation(
-    BuildContext context,
-    SudokuSettingsProvider settings,
-  ) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: _surfaceDark,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: _primaryCyan.withValues(alpha: 0.2 * 255),
-            width: 1,
-          ),
-        ),
-        title: const Text(
-          'Reset Settings',
-          style: TextStyle(
-            color: _textWhite,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        content: const Text(
-          'Are you sure you want to reset all settings to their default values?',
-          style: TextStyle(
-            color: _textGray,
-            fontSize: 15,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: _textGray),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final success = await settings.resetToDefaults();
-              if (context.mounted) {
-                Navigator.pop(context);
-                if (success) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Settings reset to defaults'),
-                      backgroundColor: _primaryCyan,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  );
-                } else {
-                  _checkForErrors();
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _primaryCyan,
-              foregroundColor: _backgroundDark,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text(
-              'Reset',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
       ),
     );
   }

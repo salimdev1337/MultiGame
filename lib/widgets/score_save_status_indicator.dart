@@ -1,41 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:multigame/providers/mixins/game_stats_mixin.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// A widget that displays the current score save status with retry information
+/// A widget that displays the current score-save status for a game notifier.
 ///
-/// This widget watches a provider that uses [GameStatsMixin] and displays:
-/// - "Saving score..." when a save is in progress
-/// - "Saving score... (Retrying X/3)" when retrying after failure
-/// - An error message if all retries fail
+/// Pass a [selectStatus] callback to project the relevant fields from any
+/// Riverpod provider state:
 ///
-/// Usage:
 /// ```dart
-/// ScoreSaveStatusIndicator<YourGameProvider>()
+/// ScoreSaveStatusIndicator(
+///   selectStatus: (ref) {
+///     final s = ref.watch(game2048Provider);
+///     return (isSaving: s.isSavingScore, retry: s.retryAttempt, error: s.lastError);
+///   },
+/// )
 /// ```
-class ScoreSaveStatusIndicator<T extends ChangeNotifier> extends StatelessWidget {
-  const ScoreSaveStatusIndicator({super.key});
+typedef ScoreSaveStatus = ({bool isSaving, int retry, String? error});
+
+class ScoreSaveStatusIndicator extends ConsumerWidget {
+  final ScoreSaveStatus Function(WidgetRef ref) selectStatus;
+
+  const ScoreSaveStatusIndicator({super.key, required this.selectStatus});
 
   @override
-  Widget build(BuildContext context) {
-    // This is a bit of a workaround since we can't directly access the mixin
-    // We need to cast the provider to access GameStatsMixin properties
-    final provider = context.watch<T>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final status = selectStatus(ref);
 
-    // Try to get the mixin properties through dynamic access
-    // This works because the provider has the mixin applied
-    final isSaving = _getProperty<bool>(provider, 'isSavingScore') ?? false;
-    final retryAttempt = _getProperty<int>(provider, 'retryAttempt') ?? 0;
-    final lastError = _getProperty<String?>(provider, 'lastError');
-
-    if (!isSaving && lastError == null) {
+    if (!status.isSaving && status.error == null) {
       return const SizedBox.shrink();
     }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: lastError != null
+        color: status.error != null
             ? Colors.red.withValues(alpha: 0.1)
             : Colors.blue.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
@@ -43,7 +40,7 @@ class ScoreSaveStatusIndicator<T extends ChangeNotifier> extends StatelessWidget
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (isSaving) ...[
+          if (status.isSaving) ...[
             const SizedBox(
               width: 16,
               height: 16,
@@ -51,17 +48,17 @@ class ScoreSaveStatusIndicator<T extends ChangeNotifier> extends StatelessWidget
             ),
             const SizedBox(width: 8),
             Text(
-              retryAttempt > 0
-                  ? 'Saving score... (Retrying $retryAttempt/3)'
-                  : 'Saving score...',
+              status.retry > 0
+                  ? 'Saving score… (Retrying ${status.retry}/3)'
+                  : 'Saving score…',
               style: const TextStyle(fontSize: 14),
             ),
-          ] else if (lastError != null) ...[
+          ] else if (status.error != null) ...[
             const Icon(Icons.error_outline, size: 16, color: Colors.red),
             const SizedBox(width: 8),
             Flexible(
               child: Text(
-                lastError,
+                status.error!,
                 style: const TextStyle(fontSize: 14, color: Colors.red),
               ),
             ),
@@ -69,26 +66,5 @@ class ScoreSaveStatusIndicator<T extends ChangeNotifier> extends StatelessWidget
         ],
       ),
     );
-  }
-
-  /// Helper method to safely get a property from the provider
-  /// Returns null if the property doesn't exist
-  R? _getProperty<R>(dynamic object, String propertyName) {
-    try {
-      // Use reflection-like approach to get property value
-      // This works because the mixin adds these as public getters
-      switch (propertyName) {
-        case 'isSavingScore':
-          return (object as dynamic).isSavingScore as R?;
-        case 'retryAttempt':
-          return (object as dynamic).retryAttempt as R?;
-        case 'lastError':
-          return (object as dynamic).lastError as R?;
-        default:
-          return null;
-      }
-    } catch (e) {
-      return null;
-    }
   }
 }

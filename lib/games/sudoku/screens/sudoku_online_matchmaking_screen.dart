@@ -2,12 +2,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:multigame/games/sudoku/logic/sudoku_generator.dart';
 import 'package:multigame/games/sudoku/providers/sudoku_online_provider.dart';
 import 'package:multigame/config/service_locator.dart';
 import 'package:multigame/services/auth/auth_service.dart';
 import 'package:multigame/games/sudoku/services/matchmaking_service.dart';
+import 'package:multigame/providers/services_providers.dart';
 import 'sudoku_online_game_screen.dart';
 import 'package:multigame/games/sudoku/widgets/sudoku_difficulty_card.dart';
 
@@ -65,8 +66,10 @@ class _SudokuOnlineMatchmakingScreenState
 
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => ChangeNotifierProvider.value(
-            value: provider,
+          builder: (_) => ProviderScope(
+            overrides: [
+              sudokuOnlineProvider.overrideWith((ref) => provider),
+            ],
             child: const SudokuOnlineGameScreen(),
           ),
         ),
@@ -111,8 +114,10 @@ class _SudokuOnlineMatchmakingScreenState
 
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => ChangeNotifierProvider.value(
-            value: provider,
+          builder: (_) => ProviderScope(
+            overrides: [
+              sudokuOnlineProvider.overrideWith((ref) => provider),
+            ],
             child: const SudokuOnlineGameScreen(),
           ),
         ),

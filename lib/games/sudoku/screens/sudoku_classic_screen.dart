@@ -80,7 +80,22 @@ class _SudokuClassicScreenState extends ConsumerState<SudokuClassicScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(sudokuClassicProvider);
+    // Select only the fields that affect the grid / layout — intentionally
+    // excludes elapsedSeconds so the 81-cell grid doesn't rebuild every second.
+    // StatsPanel (ConsumerWidget) watches time/score/mistakes independently.
+    final state = ref.watch(
+      sudokuClassicProvider.select(
+        (s) => (
+          hasBoard: s.hasBoard,
+          isVictory: s.isVictory,
+          selectedRow: s.selectedRow,
+          selectedCol: s.selectedCol,
+          notesMode: s.notesMode,
+          hintsRemaining: s.hintsRemaining,
+          revision: s.revision,
+        ),
+      ),
+    );
     final uiState = ref.watch(sudokuUIProvider);
     final notifier = ref.read(sudokuClassicProvider.notifier);
 
@@ -100,7 +115,7 @@ class _SudokuClassicScreenState extends ConsumerState<SudokuClassicScreen> {
 
               if (state.isVictory && !uiState.showVictoryDialog) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _showVictorySheet(state);
+                  _showVictorySheet();
                 });
               }
 
@@ -137,11 +152,7 @@ class _SudokuClassicScreenState extends ConsumerState<SudokuClassicScreen> {
                   return Column(
                     children: [
                       _buildHeader(context),
-                      StatsPanel(
-                        mistakes: state.mistakes,
-                        score: state.score,
-                        formattedTime: state.formattedTime,
-                      ),
+                      const StatsPanel(),
                       const SizedBox(height: 8),
                       Expanded(
                         child: Center(
@@ -246,7 +257,8 @@ class _SudokuClassicScreenState extends ConsumerState<SudokuClassicScreen> {
     );
   }
 
-  void _showVictorySheet(SudokuClassicState state) {
+  void _showVictorySheet() {
+    final state = ref.read(sudokuClassicProvider);
     ref.read(sudokuUIProvider.notifier).setShowVictoryDialog(true);
     final notifier = ref.read(sudokuClassicProvider.notifier);
 

@@ -97,7 +97,11 @@ class LeaderboardEntry {
   });
 
   factory LeaderboardEntry.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    final raw = doc.data();
+    if (raw == null || raw is! Map<String, dynamic>) {
+      throw StateError('Unexpected Firestore document format for ${doc.id}');
+    }
+    final data = raw;
     return LeaderboardEntry(
       userId: data['userId'] ?? doc.id,
       displayName: data['displayName'] ?? 'Anonymous',
@@ -371,6 +375,10 @@ class FirebaseStatsRepository implements StatsRepository {
         .orderBy('highScore', descending: true)
         .limit(limit)
         .snapshots()
+        .handleError((error) {
+          SecureLogger.error('Leaderboard stream error', error: error, tag: 'StatsRepository');
+          throw error;
+        })
         .map(
           (snapshot) => snapshot.docs
               .map((doc) => LeaderboardEntry.fromFirestore(doc))

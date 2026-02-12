@@ -1,7 +1,8 @@
 // Online game screen - see docs/SUDOKU_ARCHITECTURE.md
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:multigame/providers/services_providers.dart';
 import '../providers/sudoku_online_provider.dart';
 import '../models/connection_state.dart' as sudoku;
 import '../widgets/sudoku_grid.dart';
@@ -14,36 +15,36 @@ const _surfaceDark = Color(0xFF1a1d24);
 const _accentBlue = Color(0xFF3b82f6);
 const _accentGreen = Color(0xFF4ade80);
 
-class SudokuOnlineGameScreen extends StatefulWidget {
+class SudokuOnlineGameScreen extends ConsumerStatefulWidget {
   const SudokuOnlineGameScreen({super.key});
 
   @override
-  State<SudokuOnlineGameScreen> createState() => _SudokuOnlineGameScreenState();
+  ConsumerState<SudokuOnlineGameScreen> createState() =>
+      _SudokuOnlineGameScreenState();
 }
 
-class _SudokuOnlineGameScreenState extends State<SudokuOnlineGameScreen> {
+class _SudokuOnlineGameScreenState
+    extends ConsumerState<SudokuOnlineGameScreen> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _listenForCompletion();
+      ref.read(sudokuOnlineProvider).addListener(_checkCompletion);
     });
   }
 
-  void _listenForCompletion() {
-    final provider = context.read<SudokuOnlineProvider>();
-    provider.addListener(_checkCompletion);
-  }
-
   void _checkCompletion() {
-    final provider = context.read<SudokuOnlineProvider>();
+    final provider = ref.read(sudokuOnlineProvider);
     if (provider.isCompleted && mounted) {
       provider.removeListener(_checkCompletion);
 
+      // The current ProviderScope already has the override — navigate inside it
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => ChangeNotifierProvider.value(
-            value: provider,
+          builder: (_) => ProviderScope(
+            overrides: [
+              sudokuOnlineProvider.overrideWith((ref) => provider),
+            ],
             child: const SudokuOnlineResultScreen(),
           ),
         ),
@@ -53,65 +54,65 @@ class _SudokuOnlineGameScreenState extends State<SudokuOnlineGameScreen> {
 
   @override
   void dispose() {
-    final provider = context.read<SudokuOnlineProvider>();
-    provider.removeListener(_checkCompletion);
+    ref.read(sudokuOnlineProvider).removeListener(_checkCompletion);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final provider = ref.watch(sudokuOnlineProvider);
+
     return Scaffold(
       backgroundColor: _backgroundDark,
       body: SafeArea(
-        child: Consumer<SudokuOnlineProvider>(
-          builder: (context, provider, child) {
-            if (provider.board == null) {
-              return _buildWaitingUI(provider);
-            }
-
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                return Column(
-                  children: [
-                    _buildHeader(context, provider),
-                    _buildOpponentBar(provider),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: Center(
-                        child: SudokuGrid(
-                          board: provider.board!,
-                          selectedRow: provider.selectedRow,
-                          selectedCol: provider.selectedCol,
-                          onCellTap: provider.selectCell,
+        child: provider.board == null
+            ? _buildWaitingUI(provider)
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                  return Column(
+                    children: [
+                      _buildHeader(context, provider),
+                      _buildOpponentBar(provider),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: Center(
+                          child: SudokuGrid(
+                            board: provider.board!,
+                            selectedRow: provider.selectedRow,
+                            selectedCol: provider.selectedCol,
+                            onCellTap: provider.selectCell,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    ControlButtons(
-                      notesMode: provider.notesMode,
-                      canUndo: provider.canUndo,
-                      canErase: provider.selectedRow != null && provider.selectedCol != null,
-                      hintsRemaining: provider.hintsRemaining,
-                      onUndo: provider.canUndo ? () => provider.undo() : () {},
-                      onErase: provider.selectedRow != null && provider.selectedCol != null
-                          ? () => provider.clearCell()
-                          : () {},
-                      onToggleNotes: provider.toggleNotesMode,
-                      onHint: provider.canUseHint ? () => _useHint(context, provider) : () {},
-                    ),
-                    const SizedBox(height: 8),
-                    NumberPad(
-                      board: provider.board!,
-                      onNumberTap: (number) => provider.placeNumber(number),
-                      useCompactMode: constraints.maxHeight < 700,
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                );
-              },
-            );
-          },
-        ),
+                      const SizedBox(height: 8),
+                      ControlButtons(
+                        notesMode: provider.notesMode,
+                        canUndo: provider.canUndo,
+                        canErase: provider.selectedRow != null &&
+                            provider.selectedCol != null,
+                        hintsRemaining: provider.hintsRemaining,
+                        onUndo:
+                            provider.canUndo ? () => provider.undo() : () {},
+                        onErase: provider.selectedRow != null &&
+                                provider.selectedCol != null
+                            ? () => provider.clearCell()
+                            : () {},
+                        onToggleNotes: provider.toggleNotesMode,
+                        onHint: provider.canUseHint
+                            ? () => _useHint(context, provider)
+                            : () {},
+                      ),
+                      const SizedBox(height: 8),
+                      NumberPad(
+                        board: provider.board!,
+                        onNumberTap: (number) => provider.placeNumber(number),
+                        useCompactMode: constraints.maxHeight < 700,
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  );
+                },
+              ),
       ),
     );
   }

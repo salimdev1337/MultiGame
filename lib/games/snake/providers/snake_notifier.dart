@@ -186,6 +186,12 @@ class SnakeNotifier extends GameStatsNotifier<SnakeState> {
     );
   }
 
+  void reset() {
+    _timer?.cancel();
+    _timer = null;
+    state = const SnakeState();
+  }
+
   void _gameOver() {
     _timer?.cancel();
     final newHigh = state.score > state.highScore ? state.score : state.highScore;

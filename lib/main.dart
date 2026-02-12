@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:go_router/go_router.dart';
 import 'config/service_locator.dart';
 import 'config/app_router.dart';
 import 'package:multigame/providers/app_init_provider.dart';
@@ -58,11 +59,27 @@ Future<void> _initializeAppServices() async {
   }
 }
 
-class MyApp extends ConsumerWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  // Router is created once and kept stable — recreating it on every
+  // rebuild resets navigation state and breaks the splash → home flow
+  // for returning users (ref.listen in _SplashScreen never fires).
+  late final GoRouter _router;
+
+  @override
+  void initState() {
+    super.initState();
+    _router = buildAppRouter(ref);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Once Firebase initialises, wire up Crashlytics for Flutter errors.
     ref.listen(appInitProvider, (_, next) {
       next.whenData((_) {
@@ -71,13 +88,11 @@ class MyApp extends ConsumerWidget {
       });
     });
 
-    final router = buildAppRouter(ref);
-
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'MultiGame',
       theme: DSTheme.buildDarkTheme(),
-      routerConfig: router,
+      routerConfig: _router,
     );
   }
 }

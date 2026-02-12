@@ -10,16 +10,17 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     });
 
-    testWidgets('renders bottom navigation bar with 3 tabs', (tester) async {
+    testWidgets('renders bottom navigation bar with nav icons', (tester) async {
       await tester.pumpWidget(const MaterialApp(home: MainNavigation()));
       // Pump multiple times to drain flutter_animate 0-duration timers created on each rebuild
       for (int i = 0; i < 5; i++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
 
-      expect(find.text('Home'), findsOneWidget);
-      expect(find.text('Game'), findsOneWidget);
-      expect(find.text('Profile'), findsOneWidget);
+      // Labels removed from nav bar — verify icons are present instead
+      expect(find.byIcon(Icons.home_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.games_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.person_outline_rounded), findsOneWidget);
     });
 
     testWidgets('shows HomePagePremium by default', (tester) async {
@@ -49,10 +50,8 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
       }
 
-      // Home tab text should be visible (active tab is highlighted via FloatingNavBar)
-      expect(find.text('Home'), findsOneWidget);
-      expect(find.text('Game'), findsOneWidget);
-      expect(find.text('Profile'), findsOneWidget);
+      // Active tab highlighted via gradient indicator; labels removed — check icons exist
+      expect(find.byIcon(Icons.home_rounded), findsOneWidget);
     });
 
     testWidgets('shows top indicator on selected tab', (tester) async {

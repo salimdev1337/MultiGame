@@ -99,7 +99,24 @@ class _SudokuRushScreenState extends ConsumerState<SudokuRushScreen>
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(sudokuRushProvider);
+    // Select only layout-relevant fields — excludes remainingSeconds so the
+    // 81-cell grid doesn't rebuild every second. _RushStatsPanel (ConsumerWidget)
+    // watches the timer fields independently.
+    final state = ref.watch(
+      sudokuRushProvider.select(
+        (s) => (
+          hasBoard: s.hasBoard,
+          isVictory: s.isVictory,
+          isDefeat: s.isDefeat,
+          selectedRow: s.selectedRow,
+          selectedCol: s.selectedCol,
+          notesMode: s.notesMode,
+          hintsRemaining: s.hintsRemaining,
+          revision: s.revision,
+          showPenalty: s.showPenalty,
+        ),
+      ),
+    );
     final uiState = ref.watch(sudokuUIProvider);
     final notifier = ref.read(sudokuRushProvider.notifier);
 
@@ -132,13 +149,13 @@ class _SudokuRushScreenState extends ConsumerState<SudokuRushScreen>
 
               if (state.isVictory && !uiState.showVictoryDialog) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _showVictorySheet(state);
+                  _showVictorySheet();
                 });
               }
 
               if (state.isDefeat && !uiState.showVictoryDialog) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _showDefeatSheet(state);
+                  _showDefeatSheet();
                 });
               }
 
@@ -177,7 +194,7 @@ class _SudokuRushScreenState extends ConsumerState<SudokuRushScreen>
                       Column(
                         children: [
                           _buildHeader(context),
-                          _buildRushStatsPanel(state),
+                          _RushStatsPanel(timerPulseScale: _timerPulseScale),
                           const SizedBox(height: 8),
                           Expanded(
                             child: Center(
@@ -278,80 +295,6 @@ class _SudokuRushScreenState extends ConsumerState<SudokuRushScreen>
     );
   }
 
-  Widget _buildRushStatsPanel(SudokuRushState state) {
-    Color timerColor;
-    if (state.remainingSeconds > 120) {
-      timerColor = _primaryCyan;
-    } else if (state.remainingSeconds > 30) {
-      timerColor = _warningOrange;
-    } else {
-      timerColor = _dangerRed;
-    }
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _surfaceDark.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          // Pulsing timer
-          ScaleTransition(
-            scale: _timerPulseScale,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.timer, color: timerColor, size: 24),
-                const SizedBox(width: 8),
-                Text(
-                  state.formattedTime,
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w700,
-                    color: timerColor,
-                    shadows: state.remainingSeconds <= 30
-                        ? [Shadow(color: timerColor.withValues(alpha: 0.5), blurRadius: 12)]
-                        : null,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _StatItem(
-                icon: Icons.close,
-                value: '${state.mistakes}',
-                label: 'Errors',
-                color: _dangerRed,
-              ),
-              _StatItem(
-                icon: Icons.remove_circle_outline,
-                value: '${state.penaltiesApplied}',
-                label: 'Penalties',
-                color: _warningOrange,
-              ),
-              _StatItem(
-                icon: Icons.emoji_events,
-                value: '${state.score}',
-                label: 'Score',
-                color: _primaryCyan,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildPenaltyOverlay() {
     return Positioned.fill(
       child: IgnorePointer(
@@ -416,7 +359,8 @@ class _SudokuRushScreenState extends ConsumerState<SudokuRushScreen>
     );
   }
 
-  void _showVictorySheet(SudokuRushState state) {
+  void _showVictorySheet() {
+    final state = ref.read(sudokuRushProvider);
     ref.read(sudokuUIProvider.notifier).setShowVictoryDialog(true);
     _timerPulseController.stop();
     final notifier = ref.read(sudokuRushProvider.notifier);
@@ -456,7 +400,8 @@ class _SudokuRushScreenState extends ConsumerState<SudokuRushScreen>
     );
   }
 
-  void _showDefeatSheet(SudokuRushState state) {
+  void _showDefeatSheet() {
+    final state = ref.read(sudokuRushProvider);
     ref.read(sudokuUIProvider.notifier).setShowVictoryDialog(true);
     _timerPulseController.stop();
     final notifier = ref.read(sudokuRushProvider.notifier);
@@ -819,6 +764,102 @@ class _ResultSheetState extends State<_ResultSheet>
             const SizedBox(height: 8),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─── Rush stats panel ─────────────────────────────────────────────────────────
+// Isolated ConsumerWidget so the countdown every second only rebuilds this
+// small panel, not the 81-cell grid above it.
+
+class _RushStatsPanel extends ConsumerWidget {
+  final Animation<double> timerPulseScale;
+
+  const _RushStatsPanel({required this.timerPulseScale});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stats = ref.watch(
+      sudokuRushProvider.select(
+        (s) => (
+          remainingSeconds: s.remainingSeconds,
+          formattedTime: s.formattedTime,
+          mistakes: s.mistakes,
+          penaltiesApplied: s.penaltiesApplied,
+          score: s.score,
+        ),
+      ),
+    );
+
+    Color timerColor;
+    if (stats.remainingSeconds > 120) {
+      timerColor = _primaryCyan;
+    } else if (stats.remainingSeconds > 30) {
+      timerColor = _warningOrange;
+    } else {
+      timerColor = _dangerRed;
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _surfaceDark.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          ScaleTransition(
+            scale: timerPulseScale,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.timer, color: timerColor, size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  stats.formattedTime,
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w700,
+                    color: timerColor,
+                    shadows: stats.remainingSeconds <= 30
+                        ? [Shadow(color: timerColor.withValues(alpha: 0.5), blurRadius: 12)]
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _StatItem(
+                icon: Icons.close,
+                value: '${stats.mistakes}',
+                label: 'Errors',
+                color: _dangerRed,
+              ),
+              _StatItem(
+                icon: Icons.remove_circle_outline,
+                value: '${stats.penaltiesApplied}',
+                label: 'Penalties',
+                color: _warningOrange,
+              ),
+              _StatItem(
+                icon: Icons.emoji_events,
+                value: '${stats.score}',
+                label: 'Score',
+                color: _primaryCyan,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

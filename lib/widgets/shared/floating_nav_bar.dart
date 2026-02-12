@@ -103,17 +103,18 @@ class _FloatingNavBarState extends State<FloatingNavBar>
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
             decoration: BoxDecoration(
+              color: DSColors.surface, // Solid fallback for devices without BackdropFilter
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  DSColors.surface.withValues(alpha: 0.8),
-                  DSColors.surfaceElevated.withValues(alpha: 0.6),
+                  DSColors.surface.withValues(alpha: 0.95),
+                  DSColors.surfaceElevated.withValues(alpha: 0.9),
                 ],
               ),
               borderRadius: DSSpacing.borderRadiusXL,
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: Colors.white.withValues(alpha: 0.15),
                 width: 1.5,
               ),
             ),
@@ -227,13 +228,15 @@ class _FloatingNavBarState extends State<FloatingNavBar>
                       size: 28,
                       color: isActive
                           ? Colors.white
-                          : DSColors.textTertiary,
+                          : Colors.white.withValues(alpha: 0.7),
                     ),
                   ).animate(
                     target: isActive ? 1 : 0,
                   ).scale(
                     duration: DSAnimations.normal,
                     curve: DSAnimations.elasticOut,
+                    begin: const Offset(1.0, 1.0),
+                    end: const Offset(1.2, 1.2),
                   ),
 
                   // Badge indicator
@@ -277,21 +280,6 @@ class _FloatingNavBarState extends State<FloatingNavBar>
                 ],
               ),
 
-              DSSpacing.gapVerticalXXS,
-
-              // Label
-              AnimatedDefaultTextStyle(
-                duration: DSAnimations.fast,
-                curve: DSAnimations.easeOutCubic,
-                style: DSTypography.labelSmall.copyWith(
-                  fontSize: 11,
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                  color: isActive
-                      ? Colors.white
-                      : DSColors.textTertiary,
-                ),
-                child: Text(item.label),
-              ),
             ],
           ),
         ),
