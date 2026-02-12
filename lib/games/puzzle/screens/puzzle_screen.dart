@@ -37,12 +37,15 @@ class _PuzzlePageState extends ConsumerState<PuzzlePage>
       final uiNotifier = ref.read(puzzleUIProvider.notifier);
 
       uiNotifier.setLoading(true);
-      gameNotifier.initializeGame().then((_) {
-        uiNotifier.setLoading(false);
-        if (mounted) _showImagePreviewAnimation();
-      }).catchError((e) {
-        uiNotifier.setLoading(false);
-      });
+      gameNotifier
+          .initializeGame()
+          .then((_) {
+            uiNotifier.setLoading(false);
+            if (mounted) _showImagePreviewAnimation();
+          })
+          .catchError((e) {
+            uiNotifier.setLoading(false);
+          });
     });
   }
 
@@ -126,8 +129,7 @@ class _PuzzlePageState extends ConsumerState<PuzzlePage>
                                 PuzzleStatsSection(
                                   hintButtonKey: _hintButtonKey,
                                   onHintTap: () {
-                                    final game =
-                                        ref.read(puzzleProvider).game;
+                                    final game = ref.read(puzzleProvider).game;
                                     if (game == null) return;
                                     final imageUrl = game.pieces
                                         .firstWhere((p) => p.imageUrl != null)
@@ -149,8 +151,11 @@ class _PuzzlePageState extends ConsumerState<PuzzlePage>
                                         .read(puzzleProvider.notifier)
                                         .resetGame()
                                         .then((_) {
-                                      if (mounted) _showImagePreviewAnimation();
-                                    }).catchError((_) {});
+                                          if (mounted) {
+                                            _showImagePreviewAnimation();
+                                          }
+                                        })
+                                        .catchError((_) {});
                                   },
                                   onPlayAgain: () {
                                     ref
@@ -160,15 +165,18 @@ class _PuzzlePageState extends ConsumerState<PuzzlePage>
                                         .read(puzzleProvider.notifier)
                                         .newImageGame()
                                         .then((_) {
-                                      ref
-                                          .read(puzzleUIProvider.notifier)
-                                          .setNewImageLoading(false);
-                                      if (mounted) _showImagePreviewAnimation();
-                                    }).catchError((_) {
-                                      ref
-                                          .read(puzzleUIProvider.notifier)
-                                          .setNewImageLoading(false);
-                                    });
+                                          ref
+                                              .read(puzzleUIProvider.notifier)
+                                              .setNewImageLoading(false);
+                                          if (mounted) {
+                                            _showImagePreviewAnimation();
+                                          }
+                                        })
+                                        .catchError((_) {
+                                          ref
+                                              .read(puzzleUIProvider.notifier)
+                                              .setNewImageLoading(false);
+                                        });
                                   },
                                 ),
                                 const SizedBox(height: 24),
