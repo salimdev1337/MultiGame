@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
@@ -110,6 +112,17 @@ class InfiniteRunnerGame extends FlameGame
   int _frameCount = 0;
   int get fps => _fps;
 
+  // HUD tick — incremented every 50 ms so Flutter HUD widgets rebuild efficiently
+  final gameTick = ValueNotifier<int>(0);
+  double _hudTickTimer = 0.0;
+
+  // Event streams for transient HUD notifications
+  final _abilityToastCtrl = StreamController<AbilityType>.broadcast();
+  Stream<AbilityType> get abilityToastStream => _abilityToastCtrl.stream;
+
+  final _slowedByCtrl = StreamController<String>.broadcast();
+  Stream<String> get slowedByStream => _slowedByCtrl.stream;
+
   // Game speed
   final double _baseScrollSpeed = 250.0;
   double _currentScrollSpeed = 250.0;
@@ -208,6 +221,13 @@ class InfiniteRunnerGame extends FlameGame
       _fps = _frameCount;
       _frameCount = 0;
       _fpsTimer = 0.0;
+    }
+
+    // Notify Flutter HUD widgets every 50 ms (20 fps is plenty for score/timer)
+    _hudTickTimer += dt;
+    if (_hudTickTimer >= 0.05) {
+      _hudTickTimer = 0.0;
+      gameTick.value++;
     }
 
     switch (_gameState) {
@@ -331,6 +351,8 @@ class InfiniteRunnerGame extends FlameGame
       final collected = _collisionSystem.checkPickups(_player, _abilityPickups);
       if (collected != null) {
         _player.heldAbility = collected.type;
+        _abilityToastCtrl.add(collected.type);
+        HapticFeedback.mediumImpact();
       }
 
       // Remove collected or off-screen pickups
@@ -385,6 +407,7 @@ class InfiniteRunnerGame extends FlameGame
           break;
         case GameState.playing:
           _player.jump();
+          HapticFeedback.lightImpact();
           break;
         case GameState.countdown:
         case GameState.paused:
@@ -420,6 +443,7 @@ class InfiniteRunnerGame extends FlameGame
           }
         } else if (_gameState == GameState.playing) {
           _player.jump();
+          HapticFeedback.lightImpact();
         }
         return KeyEventResult.handled;
       }
@@ -492,6 +516,7 @@ class InfiniteRunnerGame extends FlameGame
       final nowMs = DateTime.now().millisecondsSinceEpoch;
       _finishTimeSeconds = ((nowMs - _raceStartMs) / 1000).floor();
       _gameState = GameState.finished;
+      HapticFeedback.vibrate();
 
       // Notify network (multiplayer) or show local finish immediately (solo race)
       if (raceClient != null) {
@@ -517,6 +542,8 @@ class InfiniteRunnerGame extends FlameGame
       // Race mode: slow the player down, allow further collisions
       _player.applySpeedEffect(factor: 0.6, duration: 2.0);
       _collisionSystem.reset();
+      _slowedByCtrl.add('Hit! Running slower for 2s');
+      HapticFeedback.heavyImpact();
     } else {
       // Solo mode: game over
       _gameState = GameState.gameOver;
@@ -527,6 +554,7 @@ class InfiniteRunnerGame extends FlameGame
       }
       overlays.remove('hud');
       overlays.add('gameOver');
+      HapticFeedback.vibrate();
     }
   }
 
@@ -663,6 +691,10 @@ class InfiniteRunnerGame extends FlameGame
           );
           if (_distanceTraveled > opponent.distance) {
             _player.applySpeedEffect(factor: 0.7, duration: 4.0);
+            final name =
+                opponent.displayName.isNotEmpty ? opponent.displayName : 'Opponent';
+            _slowedByCtrl.add('Slowed by $name!');
+            HapticFeedback.mediumImpact();
           }
         }
 
@@ -751,6 +783,11 @@ class InfiniteRunnerGame extends FlameGame
     // Disconnect from race network
     raceClient?.stopPositionBroadcast();
     raceClient?.disconnect();
+
+    // Close HUD notification channels
+    _abilityToastCtrl.close();
+    _slowedByCtrl.close();
+    gameTick.dispose();
 
     super.onRemove();
   }

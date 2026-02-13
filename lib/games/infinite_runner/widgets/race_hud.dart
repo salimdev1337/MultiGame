@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../abilities/ability_type.dart';
 import '../infinite_runner_game.dart';
@@ -20,17 +22,44 @@ class RaceHud extends StatefulWidget {
 }
 
 class _RaceHudState extends State<RaceHud> {
+  // Transient notification state
+  AbilityType? _toastAbility;
+  String? _slowedByText;
+  Timer? _toastTimer;
+  Timer? _slowedTimer;
+  final List<StreamSubscription<dynamic>> _subs = [];
+
   @override
   void initState() {
     super.initState();
-    _tick();
+
+    _subs.add(widget.game.abilityToastStream.listen((type) {
+      if (!mounted) return;
+      setState(() => _toastAbility = type);
+      _toastTimer?.cancel();
+      _toastTimer = Timer(const Duration(seconds: 2), () {
+        if (mounted) setState(() => _toastAbility = null);
+      });
+    }));
+
+    _subs.add(widget.game.slowedByStream.listen((text) {
+      if (!mounted) return;
+      setState(() => _slowedByText = text);
+      _slowedTimer?.cancel();
+      _slowedTimer = Timer(const Duration(seconds: 3), () {
+        if (mounted) setState(() => _slowedByText = null);
+      });
+    }));
   }
 
-  void _tick() {
-    if (mounted) {
-      setState(() {});
-      Future.delayed(const Duration(milliseconds: 50), _tick);
+  @override
+  void dispose() {
+    for (final s in _subs) {
+      s.cancel();
     }
+    _toastTimer?.cancel();
+    _slowedTimer?.cancel();
+    super.dispose();
   }
 
   String _formatMs(double ms) {
@@ -42,6 +71,26 @@ class _RaceHudState extends State<RaceHud> {
 
   @override
   Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        // Main HUD content — rebuilds on gameTick (every 50 ms)
+        ValueListenableBuilder<int>(
+          valueListenable: widget.game.gameTick,
+          builder: (context, _, _) => _buildHud(context),
+        ),
+
+        // Ability pickup toast (appears for 2 s)
+        if (_toastAbility != null)
+          _AbilityToast(ability: _toastAbility!),
+
+        // Slowed-by banner (appears for 3 s)
+        if (_slowedByText != null)
+          _SlowedBanner(text: _slowedByText!),
+      ],
+    );
+  }
+
+  Widget _buildHud(BuildContext context) {
     final progress =
         (widget.game.distanceTraveled / InfiniteRunnerGame.trackLength).clamp(
           0.0,
@@ -362,6 +411,115 @@ class _AbilityButton extends StatelessWidget {
                   color: Colors.white38,
                   size: 28,
                 ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Ability pickup toast ──────────────────────────────────────────────────────
+
+class _AbilityToast extends StatelessWidget {
+  const _AbilityToast({required this.ability});
+
+  final AbilityType ability;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Color(ability.colorValue);
+    return Positioned(
+      bottom: 110,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.5),
+                blurRadius: 14,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(ability.emoji, style: const TextStyle(fontSize: 20)),
+              const SizedBox(width: 8),
+              Text(
+                ability.label,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                'PICKED UP',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.white70,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Slowed-by banner ──────────────────────────────────────────────────────────
+
+class _SlowedBanner extends StatelessWidget {
+  const _SlowedBanner({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: 80,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.red.shade800.withValues(alpha: 0.88),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.redAccent.withValues(alpha: 0.6)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.red.withValues(alpha: 0.35),
+                blurRadius: 12,
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.speed, color: Colors.white70, size: 16),
+              const SizedBox(width: 8),
+              Text(
+                text,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

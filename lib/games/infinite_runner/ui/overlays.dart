@@ -80,9 +80,26 @@ class IdleOverlay extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  _buildInstruction('^', 'Tap to JUMP'),
+                  _buildInstruction(
+                    const _BouncingIcon(
+                      icon: Icons.keyboard_arrow_up_rounded,
+                      direction: -1,
+                    ),
+                    'Swipe UP to jump',
+                  ),
                   const SizedBox(height: 12),
-                  _buildInstruction('!', 'Avoid obstacles!'),
+                  _buildInstruction(
+                    const _BouncingIcon(
+                      icon: Icons.keyboard_arrow_down_rounded,
+                      direction: 1,
+                    ),
+                    'Swipe DOWN to slide',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildInstruction(
+                    const _PulsingWarning(),
+                    'Avoid obstacles!',
+                  ),
                 ],
               ),
             ),
@@ -146,11 +163,11 @@ class IdleOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildInstruction(String emoji, String text) {
+  Widget _buildInstruction(Widget icon, String text) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(emoji, style: const TextStyle(fontSize: 24)),
+        icon,
         const SizedBox(width: 12),
         Text(text, style: const TextStyle(fontSize: 16, color: Colors.white)),
       ],
@@ -158,75 +175,156 @@ class IdleOverlay extends StatelessWidget {
   }
 }
 
+// ── Animated gesture indicator widgets ────────────────────────────────────────
+
+/// Arrow icon that bounces vertically (direction: -1 = up, 1 = down).
+class _BouncingIcon extends StatefulWidget {
+  const _BouncingIcon({required this.icon, required this.direction});
+  final IconData icon;
+  final double direction; // -1 = up, 1 = down
+
+  @override
+  State<_BouncingIcon> createState() => _BouncingIconState();
+}
+
+class _BouncingIconState extends State<_BouncingIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _offset;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    )..repeat(reverse: true);
+    _offset = Tween<double>(begin: 0, end: 6).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _offset,
+      builder: (context, _) => Transform.translate(
+        offset: Offset(0, _offset.value * widget.direction),
+        child: Icon(
+          widget.icon,
+          size: 26,
+          color: const Color(0xFF00d4ff),
+        ),
+      ),
+    );
+  }
+}
+
+/// Warning icon that pulses in opacity.
+class _PulsingWarning extends StatefulWidget {
+  const _PulsingWarning();
+
+  @override
+  State<_PulsingWarning> createState() => _PulsingWarningState();
+}
+
+class _PulsingWarningState extends State<_PulsingWarning>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _opacity = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _opacity,
+      builder: (context, _) => Icon(
+        Icons.warning_amber_rounded,
+        size: 26,
+        color: Colors.amber.withValues(alpha: _opacity.value),
+      ),
+    );
+  }
+}
+
 /// HUD showing score during gameplay
-class GameHud extends StatefulWidget {
+class GameHud extends StatelessWidget {
   const GameHud({super.key, required this.game});
 
   final InfiniteRunnerGame game;
 
   @override
-  State<GameHud> createState() => _GameHudState();
-}
-
-class _GameHudState extends State<GameHud> {
-  @override
-  void initState() {
-    super.initState();
-    // Rebuild UI periodically to update score
-    Future.delayed(const Duration(milliseconds: 100), _updateScore);
-  }
-
-  void _updateScore() {
-    if (mounted) {
-      setState(() {});
-      Future.delayed(const Duration(milliseconds: 100), _updateScore);
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return ValueListenableBuilder<int>(
+      valueListenable: game.gameTick,
+      builder: (context, _, _) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               children: [
-                // Pause button
-                IconButton(
-                  onPressed: () => widget.game.pauseGame(),
-                  icon: const Icon(Icons.pause, color: Colors.white, size: 32),
-                ),
-                // Score
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: const Color(0xFF00d4ff).withValues(alpha: 0.5),
-                      width: 2,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Pause button
+                    IconButton(
+                      onPressed: () => game.pauseGame(),
+                      icon: const Icon(Icons.pause, color: Colors.white, size: 32),
                     ),
-                  ),
-                  child: Text(
-                    '${widget.game.score}',
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF00d4ff),
+                    // Score
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: const Color(0xFF00d4ff).withValues(alpha: 0.5),
+                          width: 2,
+                        ),
+                      ),
+                      child: Text(
+                        '${game.score}',
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF00d4ff),
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 48), // Balance layout
+                  ],
                 ),
-                const SizedBox(width: 48), // Balance layout
               ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
