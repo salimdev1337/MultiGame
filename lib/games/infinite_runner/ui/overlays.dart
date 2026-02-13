@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:multigame/config/app_router.dart';
 import '../infinite_runner_game.dart';
+import '../screens/race_lobby_screen.dart';
 
 /// Overlay shown when game is loading
 class LoadingOverlay extends StatelessWidget {
@@ -86,6 +87,7 @@ class IdleOverlay extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 40),
+            // Solo run
             ElevatedButton(
               onPressed: () {
                 game.overlays.remove('idle');
@@ -102,13 +104,41 @@ class IdleOverlay extends StatelessWidget {
                 ),
               ),
               child: const Text(
-                'TAP TO START',
+                'SOLO RUN',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
+            ),
+            const SizedBox(height: 12),
+            // Race mode row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _RaceButton(
+                  label: 'HOST RACE',
+                  icon: Icons.wifi_tethering,
+                  color: const Color(0xFFffd700),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const RaceLobbyScreen(isHost: true),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                _RaceButton(
+                  label: 'JOIN RACE',
+                  icon: Icons.group,
+                  color: const Color(0xFF7c4dff),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const RaceLobbyScreen(isHost: false),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -452,6 +482,53 @@ class GameOverOverlay extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Small race-mode button ────────────────────────────────────────────────────
+
+class _RaceButton extends StatelessWidget {
+  const _RaceButton({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.7), width: 1.5),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ],
         ),
       ),
     );

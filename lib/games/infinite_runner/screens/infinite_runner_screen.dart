@@ -2,17 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flame/game.dart';
 import 'package:multigame/games/infinite_runner/infinite_runner_game.dart';
+import 'package:multigame/games/infinite_runner/multiplayer/race_client.dart';
+import 'package:multigame/games/infinite_runner/multiplayer/race_room.dart';
 import 'package:multigame/games/infinite_runner/state/game_mode.dart';
 import 'package:multigame/games/infinite_runner/ui/overlays.dart';
 import 'package:multigame/games/infinite_runner/ui/race_overlays.dart';
 import 'package:multigame/games/infinite_runner/widgets/race_hud.dart';
 
-/// Page that hosts the Infinite Runner game
+/// Page that hosts the Infinite Runner game.
 /// Pass [mode] to enable race mode (default: solo).
+/// For multiplayer races, also pass [raceClient] and [raceRoom].
 class InfiniteRunnerPage extends StatefulWidget {
-  const InfiniteRunnerPage({super.key, this.mode = GameMode.solo});
+  const InfiniteRunnerPage({
+    super.key,
+    this.mode = GameMode.solo,
+    this.raceClient,
+    this.raceRoom,
+  });
 
   final GameMode mode;
+  final RaceClient? raceClient;
+  final RaceRoom? raceRoom;
 
   @override
   State<InfiniteRunnerPage> createState() => _InfiniteRunnerPageState();
@@ -24,7 +34,11 @@ class _InfiniteRunnerPageState extends State<InfiniteRunnerPage> {
   @override
   void initState() {
     super.initState();
-    _game = InfiniteRunnerGame(gameMode: widget.mode);
+    _game = InfiniteRunnerGame(
+      gameMode: widget.mode,
+      raceClient: widget.raceClient,
+      raceRoom: widget.raceRoom,
+    );
     // Set landscape orientation for better gameplay
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeRight,

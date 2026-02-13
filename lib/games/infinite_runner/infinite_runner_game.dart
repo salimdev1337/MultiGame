@@ -8,7 +8,11 @@ import 'abilities/ability_type.dart';
 import 'components/player.dart';
 import 'components/obstacle.dart';
 import 'components/ground.dart';
+import 'components/ghost_player.dart';
 import 'components/parallax_background.dart';
+import 'multiplayer/race_client.dart';
+import 'multiplayer/race_player_state.dart';
+import 'multiplayer/race_room.dart';
 import 'state/game_state.dart';
 import 'state/game_mode.dart';
 import 'systems/collision_system.dart';
@@ -19,10 +23,20 @@ import 'systems/obstacle_pool.dart';
 /// Optimized for 60 FPS with object pooling and clean architecture
 class InfiniteRunnerGame extends FlameGame
     with DragCallbacks, HasCollisionDetection, KeyboardEvents {
-  InfiniteRunnerGame({this.gameMode = GameMode.solo}) : super();
+  InfiniteRunnerGame({
+    this.gameMode = GameMode.solo,
+    this.raceClient,
+    this.raceRoom,
+  }) : super();
 
   /// Whether this is a solo run or a multiplayer race
   final GameMode gameMode;
+
+  /// Multiplayer client — non-null when racing with others over local WiFi
+  final RaceClient? raceClient;
+
+  /// Shared room state — non-null when racing with others
+  final RaceRoom? raceRoom;
 
   // Game state
   GameState _gameState = GameState.idle;
@@ -61,6 +75,16 @@ class InfiniteRunnerGame extends FlameGame
 
   // Active ability pickups on the track
   final List<AbilityPickup> _abilityPickups = [];
+
+  // Multiplayer: ghost opponents
+  final Map<int, GhostPlayer> _ghosts = {};
+  // Colours per player slot (0=host cyan, 1=gold, 2=purple, 3=orange)
+  static const List<Color> _playerColors = [
+    Color(0xFF00d4ff),
+    Color(0xFFffd700),
+    Color(0xFF7c4dff),
+    Color(0xFFff6b35),
+  ];
 
   // FPS tracking for debug
   int _fps = 0;
@@ -203,6 +227,16 @@ class InfiniteRunnerGame extends FlameGame
       }
       _distanceTraveled += effective * dt;
       _checkFinishLine();
+
+      // Update ghost positions from latest room state
+      if (raceRoom != null) {
+        for (final opponent in raceRoom!.opponents) {
+          final ghost = _ghosts[opponent.playerId];
+          if (ghost != null) {
+            ghost.distanceDelta = opponent.distance - _distanceTraveled;
+          }
+        }
+      }
     } else {
       // Solo mode: propagate base speed only while still increasing
       if (_currentScrollSpeed < maxScrollSpeed) {
@@ -428,12 +462,19 @@ class InfiniteRunnerGame extends FlameGame
   /// Check if player has reached the finish line (race mode only)
   void _checkFinishLine() {
     if (_distanceTraveled >= trackLength) {
-      _finishTimeSeconds =
-          ((DateTime.now().millisecondsSinceEpoch - _raceStartMs) / 1000)
-              .floor();
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
+      _finishTimeSeconds = ((nowMs - _raceStartMs) / 1000).floor();
       _gameState = GameState.finished;
-      overlays.remove('raceHud');
-      overlays.add('raceFinish');
+
+      // Notify network (multiplayer) or show local finish immediately (solo race)
+      if (raceClient != null) {
+        raceClient!.stopPositionBroadcast();
+        raceClient!.sendFinish(nowMs - _raceStartMs);
+        // Don't show finish overlay yet — wait for results from host
+      } else {
+        overlays.remove('raceHud');
+        overlays.add('raceFinish');
+      }
     }
   }
 
@@ -474,11 +515,17 @@ class InfiniteRunnerGame extends FlameGame
       case AbilityType.shield:
         _player.activateShield();
       case AbilityType.slowField:
-        // Phase 2: applies to self as demo; Phase 3 will target opponents ahead
-        _player.applySpeedEffect(factor: 0.7, duration: 4.0);
+        // Broadcast so opponents ahead apply the slow to themselves
+        // (In solo / Phase 2: no client, so apply locally as before)
+        if (raceClient == null) {
+          _player.applySpeedEffect(factor: 0.7, duration: 4.0);
+        }
       case AbilityType.obstacleRain:
         _spawnObstacleRain();
     }
+
+    // Broadcast to other players in multiplayer
+    raceClient?.sendAbilityUsed(ability.name);
   }
 
   /// Force-spawn 3 obstacles ahead of the current position (obstacleRain ability)
@@ -517,6 +564,10 @@ class InfiniteRunnerGame extends FlameGame
       remove(pickup);
     }
     _abilityPickups.clear();
+    for (final ghost in _ghosts.values) {
+      remove(ghost);
+    }
+    _ghosts.clear();
     _gameState = GameState.countdown;
     overlays.remove('idle');
     overlays.add('countdown');
@@ -528,6 +579,86 @@ class InfiniteRunnerGame extends FlameGame
     _gameState = GameState.playing;
     overlays.remove('countdown');
     overlays.add('raceHud');
+
+    // Multiplayer: wire client events and create ghost components
+    if (raceClient != null && raceRoom != null) {
+      raceClient!.onEvent = _handleNetworkEvent;
+      raceClient!.onHostLeft = _handleHostLeft;
+
+      // Create a ghost for every opponent already in the room
+      for (final opponent in raceRoom!.opponents) {
+        _addGhost(opponent);
+      }
+
+      // Start broadcasting our position every 100ms
+      raceClient!.startPositionBroadcast(() => _distanceTraveled);
+    }
+  }
+
+  void _addGhost(RacePlayerState opponent) {
+    if (_ghosts.containsKey(opponent.playerId)) return;
+    final color = _playerColors[opponent.playerId.clamp(0, _playerColors.length - 1)];
+    final ghost = GhostPlayer(
+      playerId: opponent.playerId,
+      displayName: opponent.displayName,
+      playerColor: color,
+      groundY: groundY,
+    );
+    _ghosts[opponent.playerId] = ghost;
+    add(ghost);
+  }
+
+  void _handleNetworkEvent(RaceClientEvent event) {
+    switch (event.type) {
+      case RaceClientEventType.playerListUpdated:
+        // A new opponent joined mid-lobby — add a ghost for them
+        if (raceRoom != null) {
+          for (final opponent in raceRoom!.opponents) {
+            _addGhost(opponent);
+          }
+        }
+
+      case RaceClientEventType.positionsUpdated:
+        // Ghost positions are refreshed in _updatePlaying() from raceRoom
+        break;
+
+      case RaceClientEventType.opponentUsedAbility:
+        // Phase 3: if someone activates slowField and we're ahead of them,
+        // apply the slow penalty to ourselves
+        if (event.abilityId == 'slowField' && raceRoom != null) {
+          final opponent = raceRoom!.players.firstWhere(
+            (p) => p.playerId == event.opponentId,
+            orElse: () => RacePlayerState(
+              playerId: event.opponentId ?? -1,
+              displayName: '',
+            ),
+          );
+          if (_distanceTraveled > opponent.distance) {
+            _player.applySpeedEffect(factor: 0.7, duration: 4.0);
+          }
+        }
+
+      case RaceClientEventType.resultsReceived:
+        // Show finish overlay if not already shown
+        if (_gameState != GameState.finished) {
+          _gameState = GameState.finished;
+          overlays.remove('raceHud');
+          overlays.add('raceFinish');
+        }
+
+      case RaceClientEventType.playerDisconnected:
+        // Mark ghost as disconnected (faded out handled via isConnected)
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  void _handleHostLeft() {
+    _gameState = GameState.finished;
+    overlays.remove('raceHud');
+    overlays.add('raceFinish');
   }
 
   /// Restart a race after finishing
@@ -588,6 +719,10 @@ class InfiniteRunnerGame extends FlameGame
     // Clear object pool
     _obstaclePool.clear();
 
+    // Disconnect from race network
+    raceClient?.stopPositionBroadcast();
+    raceClient?.disconnect();
+
     super.onRemove();
   }
 
@@ -616,6 +751,11 @@ class InfiniteRunnerGame extends FlameGame
     // Update player position to always be on the ground
     final newGroundY = groundY;
     _player.updateGroundY(newGroundY);
+
+    // Update ghost ground Y
+    for (final ghost in _ghosts.values) {
+      ghost.updateGroundY(newGroundY);
+    }
 
     // Update spawn system with new dimensions
     _spawnSystem.updateDimensions(size.x, groundY);
