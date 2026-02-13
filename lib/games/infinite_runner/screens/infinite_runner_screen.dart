@@ -65,6 +65,7 @@ class _InfiniteRunnerPageState extends State<InfiniteRunnerPage> {
               'countdown': (context, game) => CountdownOverlay(game: game),
               'raceHud': (context, game) => RaceHud(game: game),
               'raceFinish': (context, game) => RaceFinishOverlay(game: game),
+              'raceHostLeft': (context, game) => HostLeftOverlay(game: game),
             },
             initialActiveOverlays: const ['loading'],
           ),

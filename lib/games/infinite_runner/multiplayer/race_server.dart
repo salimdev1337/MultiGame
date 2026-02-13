@@ -25,7 +25,9 @@ class RaceServer {
   final List<RacePlayerState> _players = [];
   int _nextGuestId = 1;
   bool _raceStarted = false;
+  bool _resultsPublished = false;
   final List<Map<String, dynamic>> _finishOrder = [];
+  Timer? _timeoutTimer;
 
   /// Callback invoked on the host when a meaningful state change occurs
   /// (player joined/ready, race started, finish results ready).
@@ -55,6 +57,8 @@ class RaceServer {
 
   /// Stop the server and close all connections
   Future<void> stop() async {
+    _timeoutTimer?.cancel();
+    _timeoutTimer = null;
     for (final ch in _connections.values) {
       ch.sink.close();
     }
@@ -75,6 +79,8 @@ class RaceServer {
     _raceStarted = true;
     _broadcast(RaceMessage.start().toJson());
     onEvent?.call(const RaceServerEvent(RaceServerEventType.raceStarted));
+    // 3-minute hard cap: furthest player wins if time runs out
+    _timeoutTimer = Timer(const Duration(minutes: 3), _handleTimeout);
   }
 
   /// Relay a pos update from the host
@@ -207,8 +213,28 @@ class RaceServer {
     }
   }
 
+  void _handleTimeout() {
+    if (_resultsPublished) return;
+    // Assign synthetic finish times to players who haven't crossed the line yet
+    final finished = Set<int>.from(_finishOrder.map((r) => r['playerId'] as int));
+    final unfinished = _players
+        .where((p) => p.isConnected && !finished.contains(p.playerId))
+        .toList()
+      ..sort((a, b) => b.distance.compareTo(a.distance));
+    for (final p in unfinished) {
+      // Time > 180 s, ranked by how far they got (closer to finish = smaller penalty)
+      const trackLength = 10000.0; // mirrors InfiniteRunnerGame.trackLength
+      final syntheticMs = 180000 + ((trackLength - p.distance) * 10).round();
+      _finishOrder.add({'playerId': p.playerId, 'timeMs': syntheticMs});
+    }
+    _broadcastResults();
+  }
+
   void _broadcastResults() {
-    final rankings = _finishOrder
+    if (_resultsPublished) return;
+    _resultsPublished = true;
+    _timeoutTimer?.cancel();
+    final rankings = List<Map<String, dynamic>>.from(_finishOrder)
       ..sort((a, b) => (a['timeMs'] as int).compareTo(b['timeMs'] as int));
     _broadcast(RaceMessage.results(rankings: rankings).toJson());
     onEvent?.call(RaceServerEvent(

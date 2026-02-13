@@ -61,11 +61,28 @@ class InfiniteRunnerGame extends FlameGame
 
   // Race mode fields
   static const double trackLength = 10000.0;
+  static const double raceLimitMs = 180000.0; // 3-minute cap
   double _distanceTraveled = 0.0;
   double get distanceTraveled => _distanceTraveled;
+  double _raceElapsedMs = 0.0;
   int _finishTimeSeconds = 0;
   int get finishTimeSeconds => _finishTimeSeconds;
   int _raceStartMs = 0;
+
+  /// Properly-sorted race results: finished players by finish time,
+  /// then unfinished players by distance (furthest first).
+  List<RacePlayerState> get raceLeaderboard {
+    if (raceRoom == null) return [];
+    return List<RacePlayerState>.from(raceRoom!.players)
+      ..sort((a, b) {
+        if (a.isFinished && b.isFinished) {
+          return a.finishTimeMs.compareTo(b.finishTimeMs);
+        }
+        if (a.isFinished) return -1;
+        if (b.isFinished) return 1;
+        return b.distance.compareTo(a.distance);
+      });
+  }
   // Last effective speed propagated to components (avoids redundant calls)
   double _lastPropagatedSpeed = 0.0;
   bool get isPlayerSlowed => _player.speedMultiplier < 1.0;
@@ -226,7 +243,16 @@ class InfiniteRunnerGame extends FlameGame
         _lastPropagatedSpeed = effective;
       }
       _distanceTraveled += effective * dt;
+      _raceElapsedMs += dt * 1000;
       _checkFinishLine();
+      // Solo race timeout — server handles multiplayer timeout via its own timer
+      if (raceClient == null && _raceElapsedMs >= raceLimitMs) {
+        _finishTimeSeconds = 180;
+        _gameState = GameState.finished;
+        overlays.remove('raceHud');
+        overlays.add('raceFinish');
+        return;
+      }
 
       // Update ghost positions from latest room state
       if (raceRoom != null) {
@@ -549,6 +575,7 @@ class InfiniteRunnerGame extends FlameGame
   /// Begin countdown then race (race mode entry point)
   void startRace() {
     _distanceTraveled = 0.0;
+    _raceElapsedMs = 0.0;
     _lastPropagatedSpeed = 0.0;
     _score = 0.0;
     _currentScrollSpeed = _baseScrollSpeed;
@@ -656,9 +683,10 @@ class InfiniteRunnerGame extends FlameGame
   }
 
   void _handleHostLeft() {
+    raceClient?.stopPositionBroadcast();
     _gameState = GameState.finished;
     overlays.remove('raceHud');
-    overlays.add('raceFinish');
+    overlays.add('raceHostLeft');
   }
 
   /// Restart a race after finishing
