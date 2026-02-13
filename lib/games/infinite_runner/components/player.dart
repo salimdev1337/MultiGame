@@ -16,6 +16,9 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
        _standingHeight = size.y,
        super(position: position, size: size, anchor: Anchor.bottomCenter);
 
+  // Asset constants
+  static const String _kWalk1Asset = 'alienBlue_walk1.png';
+
   // Physics constants (primitives only - no allocations)
   static const double gravity = 1200.0;
   static const double jumpVelocity = -650.0;
@@ -95,7 +98,7 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
   Future<SpriteAnimation> _loadRunAnimation() async {
     return SpriteAnimation.spriteList(
       [
-        await Sprite.load('alienBlue_walk1.png'),
+        await Sprite.load(_kWalk1Asset),
         await Sprite.load('alienBlue_walk2.png'),
       ],
       stepTime: 0.15,
@@ -115,7 +118,7 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
   /// Load slide animation (reuse walk1 for now, scaled)
   Future<SpriteAnimation> _loadSlideAnimation() async {
     return SpriteAnimation.spriteList(
-      [await Sprite.load('alienBlue_walk1.png')],
+      [await Sprite.load(_kWalk1Asset)],
       stepTime: 1.0,
       loop: false,
     );
@@ -124,7 +127,7 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
   /// Load dead animation (walk1 but static)
   Future<SpriteAnimation> _loadDeadAnimation() async {
     return SpriteAnimation.spriteList(
-      [await Sprite.load('alienBlue_walk1.png')],
+      [await Sprite.load(_kWalk1Asset)],
       stepTime: 1.0,
       loop: false,
     );
@@ -142,6 +145,17 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
   /// Activate shield — negates the next obstacle hit
   void activateShield() => hasShield = true;
 
+  /// Ticks the speed effect timer and resets when expired.
+  void _tickSpeedEffect(double dt) {
+    if (speedMultiplier == 1.0) return;
+    _speedEffectTimer += dt;
+    if (_speedEffectTimer >= _speedEffectDuration) {
+      speedMultiplier = 1.0;
+      _speedEffectTimer = 0.0;
+      _speedEffectDuration = 0.0;
+    }
+  }
+
   /// ✅ OPTIMIZED update() - ZERO allocations in hot path
   /// - No Vector2 creation
   /// - No object instantiation
@@ -150,15 +164,7 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
   void update(double dt) {
     super.update(dt);
 
-    // Tick speed effect timer (handles both slow and boost) and restore when done
-    if (speedMultiplier != 1.0) {
-      _speedEffectTimer += dt;
-      if (_speedEffectTimer >= _speedEffectDuration) {
-        speedMultiplier = 1.0;
-        _speedEffectTimer = 0.0;
-        _speedEffectDuration = 0.0;
-      }
-    }
+    _tickSpeedEffect(dt);
 
     // Update slide timer
     if (_isSliding) {

@@ -35,6 +35,79 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
     super.dispose();
   }
 
+  KeyEventResult _handleKeyEvent(KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    switch (event.logicalKey) {
+      case LogicalKeyboardKey.arrowLeft:  _move('left');  break;
+      case LogicalKeyboardKey.arrowRight: _move('right'); break;
+      case LogicalKeyboardKey.arrowUp:    _move('up');    break;
+      case LogicalKeyboardKey.arrowDown:  _move('down');  break;
+    }
+    return KeyEventResult.handled;
+  }
+
+  void _onHorizontalDrag(DragEndDetails details) {
+    if (details.primaryVelocity! > 0) {
+      _move('right');
+    } else if (details.primaryVelocity! < 0) {
+      _move('left');
+    }
+  }
+
+  void _onVerticalDrag(DragEndDetails details) {
+    if (details.primaryVelocity! > 0) {
+      _move('down');
+    } else if (details.primaryVelocity! < 0) {
+      _move('up');
+    }
+  }
+
+  int _tileFontSize(int value) {
+    if (value >= 4096) return 16;
+    if (value >= 1024) return 20;
+    if (value >= 128)  return 24;
+    return 28;
+  }
+
+  Widget _buildTile(int value) {
+    final tileColor = _getTileColor(value);
+    final hasGlow = value >= 8 && value != 0;
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) => Transform.scale(
+        scale: value != 0 ? 1.0 - (_animationController.value * 0.1) : 1.0,
+        child: child,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: tileColor,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: hasGlow
+              ? [
+                  BoxShadow(
+                    color: tileColor.withValues(alpha: (0.4 * 255)),
+                    blurRadius: value >= 512 ? 20 : 12,
+                    spreadRadius: value >= 512 ? 2 : 0,
+                  ),
+                ]
+              : null,
+        ),
+        child: Center(
+          child: value != 0
+              ? Text(
+                  '$value',
+                  style: TextStyle(
+                    fontSize: _tileFontSize(value).toDouble(),
+                    fontWeight: FontWeight.w800,
+                    color: _getTextColor(value),
+                  ),
+                )
+              : null,
+        ),
+      ),
+    );
+  }
+
   void _move(String direction) {
     final prevState = ref.read(game2048Provider);
     final moved = ref.read(game2048Provider.notifier).move(direction);
@@ -348,39 +421,13 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
 
     return Focus(
       autofocus: true,
-      onKeyEvent: (node, event) {
-        if (event is KeyDownEvent) {
-          if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-            _move('left');
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-            _move('right');
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-            _move('up');
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-            _move('down');
-          }
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
+      onKeyEvent: (node, event) => _handleKeyEvent(event),
       child: Scaffold(
         backgroundColor: const Color(0xFF101318),
         body: SafeArea(
           child: GestureDetector(
-            onHorizontalDragEnd: (details) {
-              if (details.primaryVelocity! > 0) {
-                _move('right');
-              } else if (details.primaryVelocity! < 0) {
-                _move('left');
-              }
-            },
-            onVerticalDragEnd: (details) {
-              if (details.primaryVelocity! > 0) {
-                _move('down');
-              } else if (details.primaryVelocity! < 0) {
-                _move('up');
-              }
-            },
+            onHorizontalDragEnd: _onHorizontalDrag,
+            onVerticalDragEnd: _onVerticalDrag,
             child: Column(
               children: [
                 // Header
@@ -588,58 +635,8 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                               ),
                           itemCount: 16,
                           itemBuilder: (context, index) {
-                            int row = index ~/ 4;
-                            int col = index % 4;
-                            int value = state.grid[row][col];
-
-                            return AnimatedBuilder(
-                              animation: _animationController,
-                              builder: (context, child) {
-                                return Transform.scale(
-                                  scale: value != 0
-                                      ? 1.0 -
-                                            (_animationController.value * 0.1)
-                                      : 1.0,
-                                  child: child,
-                                );
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: _getTileColor(value),
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: value >= 8 && value != 0
-                                      ? [
-                                          BoxShadow(
-                                            color: _getTileColor(value)
-                                                .withValues(alpha: (0.4 * 255)),
-                                            blurRadius:
-                                                value >= 512 ? 20 : 12,
-                                            spreadRadius:
-                                                value >= 512 ? 2 : 0,
-                                          ),
-                                        ]
-                                      : null,
-                                ),
-                                child: Center(
-                                  child: value != 0
-                                      ? Text(
-                                          '$value',
-                                          style: TextStyle(
-                                            fontSize: value >= 4096
-                                                ? 16
-                                                : value >= 1024
-                                                ? 20
-                                                : value >= 128
-                                                ? 24
-                                                : 28,
-                                            fontWeight: FontWeight.w800,
-                                            color: _getTextColor(value),
-                                          ),
-                                        )
-                                      : null,
-                                ),
-                              ),
-                            );
+                            final value = state.grid[index ~/ 4][index % 4];
+                            return _buildTile(value);
                           },
                         ),
                       ),

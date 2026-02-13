@@ -48,7 +48,7 @@ enum ObstacleType {
   /// Get a random obstacle type
   static ObstacleType random() {
     final random = math.Random();
-    final values = ObstacleType.values;
+    const values = ObstacleType.values;
     return values[random.nextInt(values.length)];
   }
 }

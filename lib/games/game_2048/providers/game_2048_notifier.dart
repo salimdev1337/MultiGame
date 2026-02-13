@@ -257,26 +257,36 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
     return (grid, score, merges, moved);
   }
 
+  /// Merges a compacted (no-zero) line and returns the new line, score delta, and merge count.
+  (List<int>, int, int) _mergeLine(List<int> line) {
+    final result = <int>[];
+    int score = 0;
+    int merges = 0;
+    int i = 0;
+    while (i < line.length) {
+      if (i + 1 < line.length && line[i] == line[i + 1]) {
+        final m = line[i] * 2;
+        result.add(m);
+        score += m;
+        merges++;
+        i += 2;
+      } else {
+        result.add(line[i++]);
+      }
+    }
+    while (result.length < 4) { result.add(0); }
+    return (result, score, merges);
+  }
+
   (List<List<int>>, int, int, bool) _moveUp(List<List<int>> grid) {
     bool moved = false;
     int score = 0;
     int merges = 0;
     for (int j = 0; j < 4; j++) {
       final col = [for (int i = 0; i < 4; i++) if (grid[i][j] != 0) grid[i][j]];
-      final newCol = <int>[];
-      int i = 0;
-      while (i < col.length) {
-        if (i + 1 < col.length && col[i] == col[i + 1]) {
-          final m = col[i] * 2;
-          newCol.add(m);
-          score += m;
-          merges++;
-          i += 2;
-        } else {
-          newCol.add(col[i++]);
-        }
-      }
-      while (newCol.length < 4) { newCol.add(0); }
+      final (newCol, colScore, colMerges) = _mergeLine(col);
+      score += colScore;
+      merges += colMerges;
       for (int i = 0; i < 4; i++) {
         if (grid[i][j] != newCol[i]) moved = true;
         grid[i][j] = newCol[i];
@@ -291,20 +301,9 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
     int merges = 0;
     for (int j = 0; j < 4; j++) {
       final col = [for (int i = 3; i >= 0; i--) if (grid[i][j] != 0) grid[i][j]];
-      final newCol = <int>[];
-      int i = 0;
-      while (i < col.length) {
-        if (i + 1 < col.length && col[i] == col[i + 1]) {
-          final m = col[i] * 2;
-          newCol.add(m);
-          score += m;
-          merges++;
-          i += 2;
-        } else {
-          newCol.add(col[i++]);
-        }
-      }
-      while (newCol.length < 4) { newCol.add(0); }
+      final (newCol, colScore, colMerges) = _mergeLine(col);
+      score += colScore;
+      merges += colMerges;
       for (int i = 0; i < 4; i++) {
         if (grid[3 - i][j] != newCol[i]) moved = true;
         grid[3 - i][j] = newCol[i];

@@ -123,6 +123,25 @@ class Game2048Provider extends ChangeNotifier with GameStatsMixin {
     return false;
   }
 
+  /// Merges a compacted (no-zero) line and returns the new padded line and score delta.
+  (List<int>, int) _mergeLine(List<int> line) {
+    final result = <int>[];
+    int score = 0;
+    int i = 0;
+    while (i < line.length) {
+      if (i + 1 < line.length && line[i] == line[i + 1]) {
+        final m = line[i] * 2;
+        result.add(m);
+        score += m;
+        i += 2;
+      } else {
+        result.add(line[i++]);
+      }
+    }
+    while (result.length < 4) { result.add(0); }
+    return (result, score);
+  }
+
   /// Move tiles left
   bool _moveLeft() {
     bool moved = false;
@@ -196,36 +215,12 @@ class Game2048Provider extends ChangeNotifier with GameStatsMixin {
   bool _moveUp() {
     bool moved = false;
     for (int j = 0; j < 4; j++) {
-      List<int> column = [];
+      final col = [for (int i = 0; i < 4; i++) if (_grid[i][j] != 0) _grid[i][j]];
+      final (newCol, scoreDelta) = _mergeLine(col);
+      _score += scoreDelta;
       for (int i = 0; i < 4; i++) {
-        if (_grid[i][j] != 0) {
-          column.add(_grid[i][j]);
-        }
-      }
-
-      List<int> newColumn = [];
-      int i = 0;
-      while (i < column.length) {
-        if (i + 1 < column.length && column[i] == column[i + 1]) {
-          int merged = column[i] * 2;
-          newColumn.add(merged);
-          _score += merged;
-          i += 2;
-        } else {
-          newColumn.add(column[i]);
-          i++;
-        }
-      }
-
-      while (newColumn.length < 4) {
-        newColumn.add(0);
-      }
-
-      for (int i = 0; i < 4; i++) {
-        if (_grid[i][j] != newColumn[i]) {
-          moved = true;
-        }
-        _grid[i][j] = newColumn[i];
+        if (_grid[i][j] != newCol[i]) moved = true;
+        _grid[i][j] = newCol[i];
       }
     }
     return moved;
@@ -235,36 +230,12 @@ class Game2048Provider extends ChangeNotifier with GameStatsMixin {
   bool _moveDown() {
     bool moved = false;
     for (int j = 0; j < 4; j++) {
-      List<int> column = [];
-      for (int i = 3; i >= 0; i--) {
-        if (_grid[i][j] != 0) {
-          column.add(_grid[i][j]);
-        }
-      }
-
-      List<int> newColumn = [];
-      int i = 0;
-      while (i < column.length) {
-        if (i + 1 < column.length && column[i] == column[i + 1]) {
-          int merged = column[i] * 2;
-          newColumn.add(merged);
-          _score += merged;
-          i += 2;
-        } else {
-          newColumn.add(column[i]);
-          i++;
-        }
-      }
-
-      while (newColumn.length < 4) {
-        newColumn.add(0);
-      }
-
+      final col = [for (int i = 3; i >= 0; i--) if (_grid[i][j] != 0) _grid[i][j]];
+      final (newCol, scoreDelta) = _mergeLine(col);
+      _score += scoreDelta;
       for (int i = 0; i < 4; i++) {
-        if (_grid[3 - i][j] != newColumn[i]) {
-          moved = true;
-        }
-        _grid[3 - i][j] = newColumn[i];
+        if (_grid[3 - i][j] != newCol[i]) moved = true;
+        _grid[3 - i][j] = newCol[i];
       }
     }
     return moved;
