@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:multigame/config/app_router.dart';
@@ -130,21 +131,23 @@ class IdleOverlay extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            // Race mode row
+            // Race mode row — HOST RACE only available on native (dart:io required)
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _RaceButton(
-                  label: 'HOST RACE',
-                  icon: Icons.wifi_tethering,
-                  color: const Color(0xFFffd700),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const RaceLobbyScreen(isHost: true),
+                if (!kIsWeb) ...[
+                  _RaceButton(
+                    label: 'HOST RACE',
+                    icon: Icons.wifi_tethering,
+                    color: const Color(0xFFffd700),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const RaceLobbyScreen(isHost: true),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
+                  const SizedBox(width: 12),
+                ],
                 _RaceButton(
                   label: 'JOIN RACE',
                   icon: Icons.group,
