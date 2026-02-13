@@ -112,6 +112,17 @@ class RaceClient {
     }
   }
 
+  void sendRematchVote() {
+    if (raceServer != null) {
+      // Host votes directly on the server (avoids round-trip)
+      raceServer!.voteRematch();
+    } else {
+      _send(
+        RaceMessage.rematchVote(playerId: room.localPlayerId).toJson(),
+      );
+    }
+  }
+
   // ── Incoming messages ─────────────────────────────────────────────────────
 
   void _handleMessage(dynamic rawData) {
@@ -208,6 +219,10 @@ class RaceClient {
           errorMessage: errorMsg,
         ));
 
+      case RaceMessageType.rematchStart:
+        room.phase = RoomPhase.countdown;
+        onEvent?.call(const RaceClientEvent(RaceClientEventType.rematchStarting));
+
       default:
         break;
     }
@@ -240,6 +255,7 @@ enum RaceClientEventType {
   resultsReceived,
   playerDisconnected,
   errorReceived,
+  rematchStarting,
 }
 
 class RaceClientEvent {

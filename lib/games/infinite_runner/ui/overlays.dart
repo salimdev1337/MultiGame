@@ -529,6 +529,22 @@ class GameOverOverlay extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.7),
                   ),
                 ),
+                SizedBox(height: spacing),
+                // Run stats row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _StatChip(
+                      icon: Icons.timer_outlined,
+                      label: _formatRunTime(game.runTimeSeconds),
+                    ),
+                    SizedBox(width: spacing),
+                    _StatChip(
+                      icon: Icons.directions_run,
+                      label: '${game.obstaclesDodged} dodged',
+                    ),
+                  ],
+                ),
                 SizedBox(height: spacing * 2),
                 // Restart button
                 SizedBox(
@@ -582,6 +598,44 @@ class GameOverOverlay extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+String _formatRunTime(int totalSeconds) {
+  final m = totalSeconds ~/ 60;
+  final s = totalSeconds % 60;
+  return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+}
+
+// ── Small stat chip ───────────────────────────────────────────────────────────
+
+class _StatChip extends StatelessWidget {
+  const _StatChip({required this.icon, required this.label});
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: const Color(0xFF00d4ff)),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: Colors.white70),
+          ),
+        ],
       ),
     );
   }

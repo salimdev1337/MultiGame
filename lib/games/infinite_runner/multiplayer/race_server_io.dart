@@ -28,6 +28,7 @@ class RaceServer {
   bool _resultsPublished = false;
   final List<Map<String, dynamic>> _finishOrder = [];
   Timer? _timeoutTimer;
+  final Set<int> _rematchVotes = {};
 
   /// Callback invoked on the host when a meaningful state change occurs
   /// (player joined/ready, race started, finish results ready).
@@ -185,6 +186,10 @@ class RaceServer {
             final timeMs = (msg.payload['timeMs'] as num?)?.toInt() ?? 0;
             _handleFinish(assignedId!, timeMs);
 
+          case RaceMessageType.rematchVote:
+            if (assignedId == null) return;
+            _handleRematchVote(assignedId!);
+
           default:
             break;
         }
@@ -241,6 +246,34 @@ class RaceServer {
       RaceServerEventType.resultsReady,
       rankings: rankings,
     ));
+  }
+
+  /// Host calls this when it wants to play again
+  void voteRematch() => _handleRematchVote(0);
+
+  void _handleRematchVote(int playerId) {
+    _rematchVotes.add(playerId);
+    final connected = _players.where((p) => p.isConnected).length;
+    if (_rematchVotes.length >= connected) {
+      _resetForRematch();
+      _broadcast(RaceMessage.rematchStart().toJson());
+      onEvent?.call(const RaceServerEvent(RaceServerEventType.rematchStarting));
+    }
+  }
+
+  void _resetForRematch() {
+    _resultsPublished = false;
+    _finishOrder.clear();
+    _rematchVotes.clear();
+    for (int i = 0; i < _players.length; i++) {
+      _players[i] = _players[i].copyWith(
+        isFinished: false,
+        finishTimeMs: 0,
+        distance: 0,
+      );
+    }
+    _timeoutTimer?.cancel();
+    _timeoutTimer = Timer(const Duration(minutes: 3), _handleTimeout);
   }
 
   void _handleDisconnect(int playerId) {
@@ -311,6 +344,7 @@ enum RaceServerEventType {
   raceStarted,
   playerDisconnected,
   resultsReady,
+  rematchStarting,
 }
 
 class RaceServerEvent {

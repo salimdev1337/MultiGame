@@ -61,6 +61,12 @@ class InfiniteRunnerGame extends FlameGame
   int get score => _score.floor();
   int get highScore => _highScore;
 
+  // Solo run stats (reset each game)
+  int _obstaclesDodged = 0;
+  int get obstaclesDodged => _obstaclesDodged;
+  double _soloElapsedSeconds = 0.0;
+  int get runTimeSeconds => _soloElapsedSeconds.floor();
+
   // Race mode fields
   static const double trackLength = 10000.0;
   static const double raceLimitMs = 180000.0; // 3-minute cap
@@ -70,7 +76,6 @@ class InfiniteRunnerGame extends FlameGame
   double get raceElapsedMs => _raceElapsedMs;
   int _finishTimeSeconds = 0;
   int get finishTimeSeconds => _finishTimeSeconds;
-  int _raceStartMs = 0;
 
   /// Properly-sorted race results: finished players by finish time,
   /// then unfinished players by distance (furthest first).
@@ -244,6 +249,9 @@ class InfiniteRunnerGame extends FlameGame
   }
 
   void _updatePlaying(double dt) {
+    // Track run time (solo mode only; race uses _raceElapsedMs)
+    if (gameMode == GameMode.solo) _soloElapsedSeconds += dt;
+
     // Update score (distance based)
     _score += _currentScrollSpeed * dt * 0.01;
 
@@ -314,6 +322,7 @@ class InfiniteRunnerGame extends FlameGame
       if (obstacle.isOffScreen) {
         remove(obstacle);
         _obstaclePool.release(obstacle); // Return to pool
+        if (gameMode == GameMode.solo) _obstaclesDodged++;
         return true;
       }
       return false;
@@ -462,6 +471,8 @@ class InfiniteRunnerGame extends FlameGame
   void startGame() {
     _gameState = GameState.playing;
     _score = 0.0;
+    _obstaclesDodged = 0;
+    _soloElapsedSeconds = 0.0;
     _currentScrollSpeed = _baseScrollSpeed;
     _player.reset();
     _collisionSystem.reset();
@@ -513,15 +524,14 @@ class InfiniteRunnerGame extends FlameGame
   /// Check if player has reached the finish line (race mode only)
   void _checkFinishLine() {
     if (_distanceTraveled >= trackLength) {
-      final nowMs = DateTime.now().millisecondsSinceEpoch;
-      _finishTimeSeconds = ((nowMs - _raceStartMs) / 1000).floor();
+      _finishTimeSeconds = _raceElapsedMs ~/ 1000;
       _gameState = GameState.finished;
       HapticFeedback.vibrate();
 
       // Notify network (multiplayer) or show local finish immediately (solo race)
       if (raceClient != null) {
         raceClient!.stopPositionBroadcast();
-        raceClient!.sendFinish(nowMs - _raceStartMs);
+        raceClient!.sendFinish(_raceElapsedMs.toInt());
         // Don't show finish overlay yet — wait for results from host
       } else {
         overlays.remove('raceHud');
@@ -631,7 +641,6 @@ class InfiniteRunnerGame extends FlameGame
 
   /// Called by CountdownOverlay when GO! animation completes
   void beginRacing() {
-    _raceStartMs = DateTime.now().millisecondsSinceEpoch;
     _gameState = GameState.playing;
     overlays.remove('countdown');
     overlays.add('raceHud');
@@ -709,6 +718,19 @@ class InfiniteRunnerGame extends FlameGame
       case RaceClientEventType.playerDisconnected:
         // Mark ghost as disconnected (faded out handled via isConnected)
         break;
+
+      case RaceClientEventType.rematchStarting:
+        // Reset room player distances/finish flags for the new race
+        if (raceRoom != null) {
+          for (final p in raceRoom!.players) {
+            raceRoom!.upsertPlayer(p.copyWith(
+              distance: 0,
+              isFinished: false,
+              finishTimeMs: 0,
+            ));
+          }
+        }
+        restartRace();
 
       default:
         break;

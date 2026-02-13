@@ -32,6 +32,8 @@ class RaceServer {
   void broadcastHostAbility(String abilityId) {}
 
   void recordHostFinish(int timeMs) {}
+
+  void voteRematch() {}
 }
 
 // ── Server events (mirrored from race_server_io.dart) ──────────────────────
@@ -42,6 +44,7 @@ enum RaceServerEventType {
   raceStarted,
   playerDisconnected,
   resultsReady,
+  rematchStarting,
 }
 
 class RaceServerEvent {

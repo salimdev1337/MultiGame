@@ -259,12 +259,25 @@ class _SoloFinish extends StatelessWidget {
 
 // ── Multiplayer podium ────────────────────────────────────────────────────────
 
-class _MultiplayerFinish extends StatelessWidget {
+class _MultiplayerFinish extends StatefulWidget {
   const _MultiplayerFinish({required this.game});
   final InfiniteRunnerGame game;
 
   @override
+  State<_MultiplayerFinish> createState() => _MultiplayerFinishState();
+}
+
+class _MultiplayerFinishState extends State<_MultiplayerFinish> {
+  bool _voted = false;
+
+  void _voteRematch() {
+    setState(() => _voted = true);
+    widget.game.raceClient?.sendRematchVote();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final game = widget.game;
     final rankings = game.raceLeaderboard;
     final localId = game.raceRoom!.localPlayerId;
     final localRank = rankings.indexWhere((p) => p.playerId == localId);
@@ -365,8 +378,7 @@ class _MultiplayerFinish extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                player.displayName +
-                                    (isLocal ? ' (you)' : ''),
+                                player.displayName + (isLocal ? ' (you)' : ''),
                                 style: TextStyle(
                                   color: isLocal ? color : Colors.white,
                                   fontWeight: FontWeight.w700,
@@ -422,28 +434,51 @@ class _MultiplayerFinish extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-                // Buttons
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => game.restartRace(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00d4ff),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                // Race Again / waiting indicator
+                if (_voted)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00d4ff)),
+                          ),
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          'Waiting for others...',
+                          style: TextStyle(color: Colors.white70, fontSize: 15),
+                        ),
+                      ],
                     ),
-                    child: const Text(
-                      'RACE AGAIN',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                  )
+                else
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _voteRematch,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00d4ff),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: const Text(
+                        'RACE AGAIN',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
-                ),
                 const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,

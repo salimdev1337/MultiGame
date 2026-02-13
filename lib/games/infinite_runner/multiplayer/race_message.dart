@@ -31,6 +31,12 @@ enum RaceMessageType {
 
   /// Host → Guest: error (e.g. room full)
   error,
+
+  /// Any → Host: player wants to play again after results
+  rematchVote,
+
+  /// Host → All: enough votes collected — everyone restarts the race
+  rematchStart,
 }
 
 /// Base class for all race messages.
@@ -128,6 +134,14 @@ class RaceMessage {
     playerId: 0,
     payload: {'message': message},
   );
+
+  /// Any → Host: vote to play again
+  factory RaceMessage.rematchVote({required int playerId}) =>
+      RaceMessage(type: RaceMessageType.rematchVote, playerId: playerId);
+
+  /// Host → All: everyone wants a rematch — restart now
+  factory RaceMessage.rematchStart() =>
+      RaceMessage(type: RaceMessageType.rematchStart, playerId: 0);
 
   // ── Serialisation ─────────────────────────────────────────────────────────
 

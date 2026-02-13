@@ -55,13 +55,17 @@ class GhostPlayer extends PositionComponent {
     final w = size.x;
     final h = size.y;
 
-    // Body — semi-transparent fill
-    final bodyPaint = Paint()
-      ..color = playerColor.withValues(alpha: 0.45);
+    // Body — higher opacity for better contrast
+    final bodyPaint = Paint()..color = playerColor.withValues(alpha: 0.65);
     final outlinePaint = Paint()
-      ..color = playerColor.withValues(alpha: 0.7)
+      ..color = playerColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
+      ..strokeWidth = 3;
+    // White inner highlight for additional contrast against dark backgrounds
+    final highlightPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.2)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
 
     // Draw a simple humanoid silhouette (rect body + circle head)
     final bodyRect = Rect.fromLTWH(w * 0.2, h * 0.3, w * 0.6, h * 0.65);
@@ -70,17 +74,26 @@ class GhostPlayer extends PositionComponent {
 
     canvas.drawRect(bodyRect, bodyPaint);
     canvas.drawRect(bodyRect, outlinePaint);
+    canvas.drawRect(bodyRect, highlightPaint);
     canvas.drawCircle(headCenter, headRadius, bodyPaint);
     canvas.drawCircle(headCenter, headRadius, outlinePaint);
+    canvas.drawCircle(headCenter, headRadius, highlightPaint);
 
-    // Initial letter above the ghost
+    // Name label above the ghost (truncated to 8 chars)
+    final label = displayName.length > 8
+        ? '${displayName.substring(0, 7)}…'
+        : (displayName.isNotEmpty ? displayName : '?');
     final tp = TextPainter(
       text: TextSpan(
-        text: displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
+        text: label,
         style: TextStyle(
-          fontSize: 13,
+          fontSize: 11,
           fontWeight: FontWeight.bold,
-          color: playerColor.withValues(alpha: 0.9),
+          color: playerColor,
+          shadows: const [
+            Shadow(color: Colors.black, blurRadius: 4),
+            Shadow(color: Colors.black, blurRadius: 8),
+          ],
         ),
       ),
       textDirection: TextDirection.ltr,
