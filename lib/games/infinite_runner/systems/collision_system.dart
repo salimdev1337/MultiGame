@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
+import '../abilities/ability_pickup.dart';
 import '../components/player.dart';
 import '../components/obstacle.dart';
 
@@ -82,6 +83,36 @@ class CollisionSystem {
     final bTop = b.position.y - b.size.y;
 
     return aLeft < bRight && aRight > bLeft && aTop < bBottom && aBottom > bTop;
+  }
+
+  /// Check if player has touched any ability pickup.
+  /// Marks the first touched pickup as collected and returns it (null if none).
+  AbilityPickup? checkPickups(Player player, List<AbilityPickup> pickups) {
+    for (final pickup in pickups) {
+      if (_collidesWithPickup(player, pickup)) {
+        pickup.markCollected();
+        return pickup;
+      }
+    }
+    return null;
+  }
+
+  /// AABB between player (bottomCenter) and pickup (bottomCenter)
+  bool _collidesWithPickup(Player player, AbilityPickup pickup) {
+    final playerLeft = player.position.x - player.size.x / 2;
+    final playerRight = player.position.x + player.size.x / 2;
+    final playerBottom = player.position.y;
+    final playerTop = playerBottom - player.size.y;
+
+    final pickupLeft = pickup.position.x - pickup.size.x / 2;
+    final pickupRight = pickup.position.x + pickup.size.x / 2;
+    final pickupBottom = pickup.position.y;
+    final pickupTop = pickupBottom - pickup.size.y;
+
+    return playerLeft < pickupRight &&
+        playerRight > pickupLeft &&
+        playerTop < pickupBottom &&
+        playerBottom > pickupTop;
   }
 
   /// Reset collision state for new game

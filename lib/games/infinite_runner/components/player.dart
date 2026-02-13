@@ -1,5 +1,6 @@
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import '../abilities/ability_type.dart';
 import '../state/player_state.dart';
 
 /// Player character in the infinite runner using Kenney sprites
@@ -29,11 +30,16 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
   double _slideTimer = 0.0;
   static const double slideDuration = 0.6;
 
-  // Slowdown state (race mode)
+  // Speed multiplier state (race mode) — <1 = slowed, >1 = boosted
   double speedMultiplier = 1.0;
-  double _slowdownTimer = 0.0;
-  double _slowdownDuration = 0.0;
+  double _speedEffectTimer = 0.0;
+  double _speedEffectDuration = 0.0;
   bool get isSlowed => speedMultiplier < 1.0;
+  bool get isBoosted => speedMultiplier > 1.0;
+
+  // Ability state (race mode)
+  AbilityType? heldAbility;
+  bool hasShield = false;
 
   // Dimensions (primitives - no Vector2 allocations)
   final double _standingWidth;
@@ -124,14 +130,17 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
     );
   }
 
-  /// Apply a temporary speed penalty (race mode)
-  /// [factor] — multiplier applied to scroll speed (e.g. 0.6 = 40% slower)
-  /// [duration] — seconds the penalty lasts
-  void applySlowdown({required double factor, required double duration}) {
+  /// Apply a temporary speed effect (race mode).
+  /// [factor] < 1.0 = penalty (e.g. 0.6 = 40% slower)
+  /// [factor] > 1.0 = boost  (e.g. 1.5 = 50% faster)
+  void applySpeedEffect({required double factor, required double duration}) {
     speedMultiplier = factor;
-    _slowdownTimer = 0.0;
-    _slowdownDuration = duration;
+    _speedEffectTimer = 0.0;
+    _speedEffectDuration = duration;
   }
+
+  /// Activate shield — negates the next obstacle hit
+  void activateShield() => hasShield = true;
 
   /// ✅ OPTIMIZED update() - ZERO allocations in hot path
   /// - No Vector2 creation
@@ -141,13 +150,13 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
   void update(double dt) {
     super.update(dt);
 
-    // Tick slowdown timer and restore speed when done
-    if (speedMultiplier < 1.0) {
-      _slowdownTimer += dt;
-      if (_slowdownTimer >= _slowdownDuration) {
+    // Tick speed effect timer (handles both slow and boost) and restore when done
+    if (speedMultiplier != 1.0) {
+      _speedEffectTimer += dt;
+      if (_speedEffectTimer >= _speedEffectDuration) {
         speedMultiplier = 1.0;
-        _slowdownTimer = 0.0;
-        _slowdownDuration = 0.0;
+        _speedEffectTimer = 0.0;
+        _speedEffectDuration = 0.0;
       }
     }
 
@@ -268,8 +277,10 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
     _isSliding = false;
     _slideTimer = 0.0;
     speedMultiplier = 1.0;
-    _slowdownTimer = 0.0;
-    _slowdownDuration = 0.0;
+    _speedEffectTimer = 0.0;
+    _speedEffectDuration = 0.0;
+    heldAbility = null;
+    hasShield = false;
     _updateHitboxSize(_standingWidth, _standingHeight);
     _setState(PlayerState.running);
   }

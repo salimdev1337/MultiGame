@@ -3,6 +3,8 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'abilities/ability_pickup.dart';
+import 'abilities/ability_type.dart';
 import 'components/player.dart';
 import 'components/obstacle.dart';
 import 'components/ground.dart';
@@ -53,6 +55,12 @@ class InfiniteRunnerGame extends FlameGame
   // Last effective speed propagated to components (avoids redundant calls)
   double _lastPropagatedSpeed = 0.0;
   bool get isPlayerSlowed => _player.speedMultiplier < 1.0;
+  bool get isPlayerBoosted => _player.speedMultiplier > 1.0;
+  bool get playerHasShield => _player.hasShield;
+  AbilityType? get playerHeldAbility => _player.heldAbility;
+
+  // Active ability pickups on the track
+  final List<AbilityPickup> _abilityPickups = [];
 
   // FPS tracking for debug
   int _fps = 0;
@@ -249,6 +257,30 @@ class InfiniteRunnerGame extends FlameGame
 
     // Check collisions
     _collisionSystem.checkCollisions(_player, _obstacles);
+
+    // Ability pickups (race mode only)
+    if (gameMode == GameMode.race) {
+      final newPickup = _spawnSystem.updatePickups(dt, _currentScrollSpeed);
+      if (newPickup != null) {
+        _abilityPickups.add(newPickup);
+        add(newPickup);
+      }
+
+      // Check collection
+      final collected = _collisionSystem.checkPickups(_player, _abilityPickups);
+      if (collected != null) {
+        _player.heldAbility = collected.type;
+      }
+
+      // Remove collected or off-screen pickups
+      _abilityPickups.removeWhere((p) {
+        if (p.isCollected || p.isOffScreen) {
+          remove(p);
+          return true;
+        }
+        return false;
+      });
+    }
   }
 
   /// Handle swipe start
@@ -408,8 +440,14 @@ class InfiniteRunnerGame extends FlameGame
   /// Handle collision
   void _handleCollision() {
     if (gameMode == GameMode.race) {
+      // Shield absorbs the hit
+      if (_player.hasShield) {
+        _player.hasShield = false;
+        _collisionSystem.reset();
+        return;
+      }
       // Race mode: slow the player down, allow further collisions
-      _player.applySlowdown(factor: 0.6, duration: 2.0);
+      _player.applySpeedEffect(factor: 0.6, duration: 2.0);
       _collisionSystem.reset();
     } else {
       // Solo mode: game over
@@ -421,6 +459,37 @@ class InfiniteRunnerGame extends FlameGame
       }
       overlays.remove('hud');
       overlays.add('gameOver');
+    }
+  }
+
+  /// Activate the player's currently held ability (race mode)
+  void activateAbility() {
+    final ability = _player.heldAbility;
+    if (ability == null || _gameState != GameState.playing) return;
+    _player.heldAbility = null;
+
+    switch (ability) {
+      case AbilityType.speedBoost:
+        _player.applySpeedEffect(factor: 1.5, duration: 5.0);
+      case AbilityType.shield:
+        _player.activateShield();
+      case AbilityType.slowField:
+        // Phase 2: applies to self as demo; Phase 3 will target opponents ahead
+        _player.applySpeedEffect(factor: 0.7, duration: 4.0);
+      case AbilityType.obstacleRain:
+        _spawnObstacleRain();
+    }
+  }
+
+  /// Force-spawn 3 obstacles ahead of the current position (obstacleRain ability)
+  void _spawnObstacleRain() {
+    final types = ObstacleType.values;
+    for (int i = 0; i < 3; i++) {
+      final type = types[i % types.length];
+      final spawnXPos = size.x + 120 + i * 180.0;
+      final obstacle = _obstaclePool.acquire(type, Vector2(spawnXPos, groundY));
+      _obstacles.add(obstacle);
+      add(obstacle);
     }
   }
 
@@ -444,6 +513,10 @@ class InfiniteRunnerGame extends FlameGame
       _obstaclePool.release(obstacle);
     }
     _obstacles.clear();
+    for (final pickup in _abilityPickups) {
+      remove(pickup);
+    }
+    _abilityPickups.clear();
     _gameState = GameState.countdown;
     overlays.remove('idle');
     overlays.add('countdown');
