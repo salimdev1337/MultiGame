@@ -29,6 +29,12 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
   double _slideTimer = 0.0;
   static const double slideDuration = 0.6;
 
+  // Slowdown state (race mode)
+  double speedMultiplier = 1.0;
+  double _slowdownTimer = 0.0;
+  double _slowdownDuration = 0.0;
+  bool get isSlowed => speedMultiplier < 1.0;
+
   // Dimensions (primitives - no Vector2 allocations)
   final double _standingWidth;
   final double _standingHeight;
@@ -118,6 +124,15 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
     );
   }
 
+  /// Apply a temporary speed penalty (race mode)
+  /// [factor] — multiplier applied to scroll speed (e.g. 0.6 = 40% slower)
+  /// [duration] — seconds the penalty lasts
+  void applySlowdown({required double factor, required double duration}) {
+    speedMultiplier = factor;
+    _slowdownTimer = 0.0;
+    _slowdownDuration = duration;
+  }
+
   /// ✅ OPTIMIZED update() - ZERO allocations in hot path
   /// - No Vector2 creation
   /// - No object instantiation
@@ -125,6 +140,16 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
   @override
   void update(double dt) {
     super.update(dt);
+
+    // Tick slowdown timer and restore speed when done
+    if (speedMultiplier < 1.0) {
+      _slowdownTimer += dt;
+      if (_slowdownTimer >= _slowdownDuration) {
+        speedMultiplier = 1.0;
+        _slowdownTimer = 0.0;
+        _slowdownDuration = 0.0;
+      }
+    }
 
     // Update slide timer
     if (_isSliding) {
@@ -242,6 +267,9 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
     _isOnGround = true;
     _isSliding = false;
     _slideTimer = 0.0;
+    speedMultiplier = 1.0;
+    _slowdownTimer = 0.0;
+    _slowdownDuration = 0.0;
     _updateHitboxSize(_standingWidth, _standingHeight);
     _setState(PlayerState.running);
   }

@@ -8,6 +8,7 @@ import 'components/obstacle.dart';
 import 'components/ground.dart';
 import 'components/parallax_background.dart';
 import 'state/game_state.dart';
+import 'state/game_mode.dart';
 import 'systems/collision_system.dart';
 import 'systems/spawn_system.dart';
 import 'systems/obstacle_pool.dart';
@@ -16,7 +17,10 @@ import 'systems/obstacle_pool.dart';
 /// Optimized for 60 FPS with object pooling and clean architecture
 class InfiniteRunnerGame extends FlameGame
     with DragCallbacks, HasCollisionDetection, KeyboardEvents {
-  InfiniteRunnerGame() : super();
+  InfiniteRunnerGame({this.gameMode = GameMode.solo}) : super();
+
+  /// Whether this is a solo run or a multiplayer race
+  final GameMode gameMode;
 
   // Game state
   GameState _gameState = GameState.idle;
@@ -38,6 +42,17 @@ class InfiniteRunnerGame extends FlameGame
   int _highScore = 0;
   int get score => _score.floor();
   int get highScore => _highScore;
+
+  // Race mode fields
+  static const double trackLength = 10000.0;
+  double _distanceTraveled = 0.0;
+  double get distanceTraveled => _distanceTraveled;
+  int _finishTimeSeconds = 0;
+  int get finishTimeSeconds => _finishTimeSeconds;
+  int _raceStartMs = 0;
+  // Last effective speed propagated to components (avoids redundant calls)
+  double _lastPropagatedSpeed = 0.0;
+  bool get isPlayerSlowed => _player.speedMultiplier < 1.0;
 
   // FPS tracking for debug
   int _fps = 0;
@@ -147,19 +162,13 @@ class InfiniteRunnerGame extends FlameGame
 
     switch (_gameState) {
       case GameState.idle:
-        // Waiting for player to start
+      case GameState.countdown:
+      case GameState.paused:
+      case GameState.gameOver:
+      case GameState.finished:
         break;
-
       case GameState.playing:
         _updatePlaying(dt);
-        break;
-
-      case GameState.paused:
-        // Game frozen
-        break;
-
-      case GameState.gameOver:
-        // Game ended
         break;
     }
   }
@@ -174,16 +183,29 @@ class InfiniteRunnerGame extends FlameGame
       if (_currentScrollSpeed > maxScrollSpeed) {
         _currentScrollSpeed = maxScrollSpeed;
       }
+    }
 
-      // Update all scrolling components (avoid frequent updates)
-      _background.updateSpeed(_currentScrollSpeed);
-      _obstaclePool.updateSpeed(_currentScrollSpeed);
-
-      for (final ground in _groundTiles) {
-        ground.updateSpeed(_currentScrollSpeed);
+    // In race mode, effective speed = base speed × player multiplier.
+    // Propagate whenever the effective speed changes (slowdown start/end or speed increase).
+    if (gameMode == GameMode.race) {
+      final effective = _currentScrollSpeed * _player.speedMultiplier;
+      if (effective != _lastPropagatedSpeed) {
+        _propagateSpeed(effective);
+        _lastPropagatedSpeed = effective;
       }
-      for (final obstacle in _obstacles) {
-        obstacle.updateSpeed(_currentScrollSpeed);
+      _distanceTraveled += effective * dt;
+      _checkFinishLine();
+    } else {
+      // Solo mode: propagate base speed only while still increasing
+      if (_currentScrollSpeed < maxScrollSpeed) {
+        _background.updateSpeed(_currentScrollSpeed);
+        _obstaclePool.updateSpeed(_currentScrollSpeed);
+        for (final ground in _groundTiles) {
+          ground.updateSpeed(_currentScrollSpeed);
+        }
+        for (final obstacle in _obstacles) {
+          obstacle.updateSpeed(_currentScrollSpeed);
+        }
       }
     }
 
@@ -262,14 +284,19 @@ class InfiniteRunnerGame extends FlameGame
     if (deltaY < 0) {
       switch (_gameState) {
         case GameState.idle:
-          startGame();
+          if (gameMode == GameMode.race) {
+            startRace();
+          } else {
+            startGame();
+          }
           break;
         case GameState.playing:
           _player.jump();
           break;
+        case GameState.countdown:
         case GameState.paused:
         case GameState.gameOver:
-          // Handled by overlay buttons
+        case GameState.finished:
           break;
       }
     }
@@ -293,7 +320,11 @@ class InfiniteRunnerGame extends FlameGame
       // Up arrow - jump
       if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
         if (_gameState == GameState.idle) {
-          startGame();
+          if (gameMode == GameMode.race) {
+            startRace();
+          } else {
+            startGame();
+          }
         } else if (_gameState == GameState.playing) {
           _player.jump();
         }
@@ -334,7 +365,8 @@ class InfiniteRunnerGame extends FlameGame
   void pauseGame() {
     if (_gameState == GameState.playing) {
       _gameState = GameState.paused;
-      overlays.remove('hud');
+      final hudKey = gameMode == GameMode.race ? 'raceHud' : 'hud';
+      overlays.remove(hudKey);
       overlays.add('paused');
     }
   }
@@ -343,30 +375,92 @@ class InfiniteRunnerGame extends FlameGame
   void resumeGame() {
     if (_gameState == GameState.paused) {
       _gameState = GameState.playing;
+      final hudKey = gameMode == GameMode.race ? 'raceHud' : 'hud';
       overlays.remove('paused');
-      overlays.add('hud');
+      overlays.add(hudKey);
+    }
+  }
+
+  /// Propagate a speed value to all scrolling components
+  void _propagateSpeed(double speed) {
+    _background.updateSpeed(speed);
+    _obstaclePool.updateSpeed(speed);
+    for (final ground in _groundTiles) {
+      ground.updateSpeed(speed);
+    }
+    for (final obstacle in _obstacles) {
+      obstacle.updateSpeed(speed);
+    }
+  }
+
+  /// Check if player has reached the finish line (race mode only)
+  void _checkFinishLine() {
+    if (_distanceTraveled >= trackLength) {
+      _finishTimeSeconds =
+          ((DateTime.now().millisecondsSinceEpoch - _raceStartMs) / 1000)
+              .floor();
+      _gameState = GameState.finished;
+      overlays.remove('raceHud');
+      overlays.add('raceFinish');
     }
   }
 
   /// Handle collision
   void _handleCollision() {
-    _gameState = GameState.gameOver;
-    _player.die(); // Set player to dead state
-
-    // Update high score
-    if (score > _highScore) {
-      _highScore = score;
-      _saveHighScore();
+    if (gameMode == GameMode.race) {
+      // Race mode: slow the player down, allow further collisions
+      _player.applySlowdown(factor: 0.6, duration: 2.0);
+      _collisionSystem.reset();
+    } else {
+      // Solo mode: game over
+      _gameState = GameState.gameOver;
+      _player.die();
+      if (score > _highScore) {
+        _highScore = score;
+        _saveHighScore();
+      }
+      overlays.remove('hud');
+      overlays.add('gameOver');
     }
-
-    overlays.remove('hud');
-    overlays.add('gameOver');
   }
 
-  /// Restart the game
+  /// Restart solo game
   void restart() {
     overlays.remove('gameOver');
     startGame();
+  }
+
+  /// Begin countdown then race (race mode entry point)
+  void startRace() {
+    _distanceTraveled = 0.0;
+    _lastPropagatedSpeed = 0.0;
+    _score = 0.0;
+    _currentScrollSpeed = _baseScrollSpeed;
+    _player.reset();
+    _collisionSystem.reset();
+    _spawnSystem.reset();
+    for (final obstacle in _obstacles) {
+      remove(obstacle);
+      _obstaclePool.release(obstacle);
+    }
+    _obstacles.clear();
+    _gameState = GameState.countdown;
+    overlays.remove('idle');
+    overlays.add('countdown');
+  }
+
+  /// Called by CountdownOverlay when GO! animation completes
+  void beginRacing() {
+    _raceStartMs = DateTime.now().millisecondsSinceEpoch;
+    _gameState = GameState.playing;
+    overlays.remove('countdown');
+    overlays.add('raceHud');
+  }
+
+  /// Restart a race after finishing
+  void restartRace() {
+    overlays.remove('raceFinish');
+    startRace();
   }
 
   /// Load high score from storage

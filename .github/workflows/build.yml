@@ -44,25 +44,14 @@ jobs:
       - name:  Build Android APK
         env:
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
-        run: flutter build apk --release --dart-define=UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY
-        
-      - name: 🔨 Build Android App Bundle (for Play Store)
-        env:
-          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
-        run: flutter build appbundle --release --dart-define=UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY
-        
+        run: flutter build apk --debug --dart-define=UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY
+
       # Upload the built APK so you can download it
       - name:  Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-          
-      - name:  Upload App Bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-appbundle
-          path: build/app/outputs/bundle/release/app-release.aab
+          path: build/app/outputs/flutter-apk/app-debug.apk
 
   # Job 2: Build Windows executable
   build-windows:
