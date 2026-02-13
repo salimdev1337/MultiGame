@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -42,7 +43,8 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
   String _codeInput = '';
   String _networkPrefix = '192.168.1.'; // fallback
   String _manualIp = ''; // manual IP fallback for guests
-  bool _showManualIp = false;
+  // On web, always show manual IP (room-code discovery doesn't work cross-subnet)
+  bool _showManualIp = kIsWeb;
   bool _isReady = false;
   bool _isConnecting = false;
   bool _isStarting = false;
@@ -54,12 +56,16 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
 
   static const _kDisplayNameKey = 'runner_race_display_name';
 
+  /// True only on native platforms where a WebSocket server can actually run.
+  /// Web browsers cannot host — they connect as guests only.
+  bool get _isEffectivelyHost => widget.isHost && !kIsWeb;
+
   @override
   void initState() {
     super.initState();
     _nameController.text = _displayName;
     _loadName();
-    if (widget.isHost) {
+    if (_isEffectivelyHost) {
       _initHost();
     }
   }
@@ -138,7 +144,9 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
 
   Future<void> _connectAsGuest() async {
     if (_codeInput.length != 6 && _manualIp.isEmpty) {
-      setState(() => _errorMsg = 'Enter the 6-digit room code');
+      setState(() => _errorMsg = kIsWeb
+          ? 'Enter the host\'s IP address (e.g. 192.168.1.42)'
+          : 'Enter the 6-digit room code');
       return;
     }
     setState(() {
@@ -177,7 +185,7 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
     setState(() {
       switch (event.type) {
         case RaceClientEventType.playerListUpdated:
-          if (event.assignedId != null && !widget.isHost) {
+          if (event.assignedId != null && !_isEffectivelyHost) {
             // Guest just got their ID assigned
             _room = RaceRoom(
               hostIp: _room!.hostIp,
@@ -238,12 +246,12 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
     _isReady = !_isReady;
     _client?.sendReady(_isReady);
     // Host updates its own state on the server side as well
-    if (widget.isHost) _server?.setHostReady(_isReady);
+    if (_isEffectivelyHost) _server?.setHostReady(_isReady);
     setState(() {});
   }
 
   void _startRace() {
-    if (!widget.isHost) return;
+    if (!_isEffectivelyHost) return;
     setState(() => _isStarting = true);
     _server?.broadcastStart();
     _launchRace();
@@ -271,7 +279,7 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
       appBar: AppBar(
         backgroundColor: _surface,
         title: Text(
-          widget.isHost ? 'Host a Race' : 'Join a Race',
+          _isEffectivelyHost ? 'Host a Race' : 'Join a Race',
           style: const TextStyle(
             color: _accentCyan,
             fontWeight: FontWeight.bold,
@@ -279,7 +287,7 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
         ),
         iconTheme: const IconThemeData(color: Colors.white70),
       ),
-      body: _isConnecting && !widget.isHost
+      body: _isConnecting && !_isEffectivelyHost
           ? const Center(
               child: CircularProgressIndicator(color: _accentCyan),
             )
@@ -298,8 +306,44 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Host-only: room code display
-                  if (widget.isHost) ...[
+                  // Web-only: "hosting not available" notice
+                  if (kIsWeb && widget.isHost) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Colors.amber.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.info_outline,
+                              color: Colors.amber, size: 18),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Hosting requires the native app.\n'
+                              'Enter the host\'s IP address below to join.',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.amber,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Host-only: room code display (native only)
+                  if (_isEffectivelyHost) ...[
                     _RoomCodeCard(
                       code: _isConnecting ? '...' : _roomCode,
                       ip: _hostIp,
@@ -307,40 +351,42 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
                     const SizedBox(height: 20),
                   ],
 
-                  // Guest-only: code entry
-                  if (!widget.isHost) ...[
+                  // Guest UI: code entry + manual IP
+                  if (!_isEffectivelyHost) ...[
                     _CodeEntryField(
                       controller: _codeController,
                       onChanged: (v) => _codeInput = v,
                       onSubmit: _connectAsGuest,
                     ),
                     const SizedBox(height: 8),
-                    // Manual IP fallback toggle
-                    GestureDetector(
-                      onTap: () => setState(() => _showManualIp = !_showManualIp),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _showManualIp
-                                ? Icons.keyboard_arrow_up
-                                : Icons.keyboard_arrow_down,
-                            color: Colors.white38,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _showManualIp
-                                ? 'Hide manual IP'
-                                : 'Different subnet? Enter IP manually',
-                            style: const TextStyle(
-                              fontSize: 12,
+                    // Manual IP fallback: always shown on web, toggle on native
+                    if (!kIsWeb)
+                      GestureDetector(
+                        onTap: () =>
+                            setState(() => _showManualIp = !_showManualIp),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _showManualIp
+                                  ? Icons.keyboard_arrow_up
+                                  : Icons.keyboard_arrow_down,
                               color: Colors.white38,
+                              size: 16,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Text(
+                              _showManualIp
+                                  ? 'Hide manual IP'
+                                  : 'Different subnet? Enter IP manually',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.white38,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
                     if (_showManualIp) ...[
                       const SizedBox(height: 8),
                       _ManualIpField(
@@ -428,8 +474,8 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
                       ),
                     ),
 
-                  // Host-only: Start button (enabled when all ready)
-                  if (widget.isHost && _room != null) ...[
+                  // Host-only: Start button (native only, enabled when all ready)
+                  if (_isEffectivelyHost && _room != null) ...[
                     const SizedBox(height: 12),
                     ElevatedButton(
                       onPressed: (_isStarting || (_room!.players.length < 2) || !_room!.allReady)
