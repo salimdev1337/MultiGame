@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 import '../abilities/ability_type.dart';
 import '../infinite_runner_game.dart';
 
+/// Data for a single opponent dot on the progress bar.
+class _OpponentDot {
+  const _OpponentDot({required this.progress, required this.color});
+  final double progress;
+  final Color color;
+}
+
 /// HUD shown during a race — progress bar, pause button, speed indicator, ability slot
 class RaceHud extends StatefulWidget {
   const RaceHud({super.key, required this.game});
@@ -26,6 +33,13 @@ class _RaceHudState extends State<RaceHud> {
     }
   }
 
+  String _formatMs(double ms) {
+    final totalSecs = (ms / 1000).floor().clamp(0, 999);
+    final m = totalSecs ~/ 60;
+    final s = totalSecs % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final progress =
@@ -36,6 +50,26 @@ class _RaceHudState extends State<RaceHud> {
     final isSlowed = widget.game.isPlayerSlowed;
     final isBoosted = widget.game.isPlayerBoosted;
     final hasShield = widget.game.playerHasShield;
+
+    final elapsedMs = widget.game.raceElapsedMs;
+    final remainingMs =
+        (InfiniteRunnerGame.raceLimitMs - elapsedMs).clamp(0.0, double.infinity);
+
+    // Opponent positions for the progress bar (non-local players)
+    final room = widget.game.raceRoom;
+    final localId = room?.localPlayerId;
+    final opponents = room?.players
+            .where((p) => p.playerId != localId)
+            .map(
+              (p) => _OpponentDot(
+                progress:
+                    (p.distance / InfiniteRunnerGame.trackLength).clamp(0.0, 1.0),
+                color: InfiniteRunnerGame.playerColors[
+                    p.playerId.clamp(0, InfiniteRunnerGame.playerColors.length - 1)],
+              ),
+            )
+            .toList() ??
+        [];
 
     return Stack(
       children: [
@@ -72,6 +106,7 @@ class _RaceHudState extends State<RaceHud> {
                         progress: progress,
                         isSlowed: isSlowed,
                         isBoosted: isBoosted,
+                        opponents: opponents,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -118,6 +153,39 @@ class _RaceHudState extends State<RaceHud> {
                         ),
                       ),
                     ],
+                  ],
+                ),
+                // Timer row: elapsed | remaining
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _formatMs(elapsedMs),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.white70,
+                        fontFeatures: [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                    const Text(
+                      ' / ',
+                      style: TextStyle(fontSize: 12, color: Colors.white38),
+                    ),
+                    Text(
+                      _formatMs(remainingMs),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: remainingMs < 30000
+                            ? Colors.redAccent
+                            : Colors.white54,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                    const Text(
+                      ' left',
+                      style: TextStyle(fontSize: 11, color: Colors.white38),
+                    ),
                   ],
                 ),
                 // Speed status banner
@@ -168,11 +236,13 @@ class _ProgressBar extends StatelessWidget {
     required this.progress,
     required this.isSlowed,
     required this.isBoosted,
+    this.opponents = const [],
   });
 
   final double progress;
   final bool isSlowed;
   final bool isBoosted;
+  final List<_OpponentDot> opponents;
 
   @override
   Widget build(BuildContext context) {
@@ -185,41 +255,61 @@ class _ProgressBar extends StatelessWidget {
       fillColors = [const Color(0xFF00d4ff), const Color(0xFF7c4dff)];
     }
 
-    return Container(
-      height: 18,
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: Colors.white24),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Stack(
-          children: [
-            // Fill
-            FractionallySizedBox(
-              widthFactor: progress,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: fillColors),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final barWidth = constraints.maxWidth;
+        return Container(
+          height: 18,
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(9),
+            border: Border.all(color: Colors.white24),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Stack(
+              children: [
+                // Fill (local player)
+                FractionallySizedBox(
+                  widthFactor: progress,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: fillColors),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            // Finish flag
-            Align(
-              alignment: Alignment.centerRight,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 3),
-                child: Icon(
-                  Icons.flag,
-                  size: 12,
-                  color: Colors.yellow.shade300,
+                // Opponent dots
+                for (final dot in opponents)
+                  Positioned(
+                    left: (dot.progress * barWidth - 5).clamp(0.0, barWidth - 10),
+                    top: 3,
+                    child: Container(
+                      width: 10,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: dot.color,
+                        borderRadius: BorderRadius.circular(3),
+                        border: Border.all(color: Colors.white, width: 1),
+                      ),
+                    ),
+                  ),
+                // Finish flag
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 3),
+                    child: Icon(
+                      Icons.flag,
+                      size: 12,
+                      color: Colors.yellow.shade300,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

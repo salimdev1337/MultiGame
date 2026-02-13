@@ -65,6 +65,7 @@ class InfiniteRunnerGame extends FlameGame
   double _distanceTraveled = 0.0;
   double get distanceTraveled => _distanceTraveled;
   double _raceElapsedMs = 0.0;
+  double get raceElapsedMs => _raceElapsedMs;
   int _finishTimeSeconds = 0;
   int get finishTimeSeconds => _finishTimeSeconds;
   int _raceStartMs = 0;
@@ -96,7 +97,7 @@ class InfiniteRunnerGame extends FlameGame
   // Multiplayer: ghost opponents
   final Map<int, GhostPlayer> _ghosts = {};
   // Colours per player slot (0=host cyan, 1=gold, 2=purple, 3=orange)
-  static const List<Color> _playerColors = [
+  static const List<Color> playerColors = [
     Color(0xFF00d4ff),
     Color(0xFFffd700),
     Color(0xFF7c4dff),
@@ -624,7 +625,7 @@ class InfiniteRunnerGame extends FlameGame
 
   void _addGhost(RacePlayerState opponent) {
     if (_ghosts.containsKey(opponent.playerId)) return;
-    final color = _playerColors[opponent.playerId.clamp(0, _playerColors.length - 1)];
+    final color = playerColors[opponent.playerId.clamp(0, playerColors.length - 1)];
     final ghost = GhostPlayer(
       playerId: opponent.playerId,
       displayName: opponent.displayName,

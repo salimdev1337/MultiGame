@@ -3,8 +3,8 @@ import 'package:multigame/games/infinite_runner/state/game_state.dart';
 
 void main() {
   group('GameState', () {
-    test('has exactly 4 values', () {
-      expect(GameState.values.length, 4);
+    test('has exactly 6 values', () {
+      expect(GameState.values.length, 6);
     });
 
     test('contains all expected states', () {
@@ -15,6 +15,8 @@ void main() {
           GameState.playing,
           GameState.paused,
           GameState.gameOver,
+          GameState.countdown,
+          GameState.finished,
         ]),
       );
     });
@@ -23,22 +25,20 @@ void main() {
       expect(GameState.values.first, GameState.idle);
     });
 
-    test('gameOver is the last state', () {
-      expect(GameState.values.last, GameState.gameOver);
-    });
-
     test('state equality works correctly', () {
       expect(GameState.idle == GameState.idle, isTrue);
       expect(GameState.playing == GameState.playing, isTrue);
       expect(GameState.paused == GameState.paused, isTrue);
       expect(GameState.gameOver == GameState.gameOver, isTrue);
+      expect(GameState.countdown == GameState.countdown, isTrue);
+      expect(GameState.finished == GameState.finished, isTrue);
     });
 
     test('different states are not equal', () {
       expect(GameState.idle == GameState.playing, isFalse);
       expect(GameState.playing == GameState.paused, isFalse);
       expect(GameState.paused == GameState.gameOver, isFalse);
-      expect(GameState.idle == GameState.gameOver, isFalse);
+      expect(GameState.countdown == GameState.finished, isFalse);
     });
 
     test('states have correct string names', () {
@@ -46,25 +46,32 @@ void main() {
       expect(GameState.playing.name, 'playing');
       expect(GameState.paused.name, 'paused');
       expect(GameState.gameOver.name, 'gameOver');
+      expect(GameState.countdown.name, 'countdown');
+      expect(GameState.finished.name, 'finished');
     });
 
-    test('states can be used in switch statements', () {
+    test('states can be used in switch statements without missing cases', () {
       String result = '';
       switch (GameState.playing) {
         case GameState.idle:
           result = 'idle';
-          break;
         case GameState.playing:
           result = 'playing';
-          break;
         case GameState.paused:
           result = 'paused';
-          break;
         case GameState.gameOver:
           result = 'gameOver';
-          break;
+        case GameState.countdown:
+          result = 'countdown';
+        case GameState.finished:
+          result = 'finished';
       }
       expect(result, 'playing');
+    });
+
+    test('race states are distinct from solo states', () {
+      expect(GameState.countdown == GameState.playing, isFalse);
+      expect(GameState.finished == GameState.gameOver, isFalse);
     });
   });
 }

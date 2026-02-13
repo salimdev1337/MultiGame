@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:multigame/config/app_router.dart';
 import 'package:network_info_plus/network_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../multiplayer/race_client.dart';
 import '../multiplayer/race_player_state.dart';
@@ -40,6 +41,8 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
   String _roomCode = '';
   String _codeInput = '';
   String _networkPrefix = '192.168.1.'; // fallback
+  String _manualIp = ''; // manual IP fallback for guests
+  bool _showManualIp = false;
   bool _isReady = false;
   bool _isConnecting = false;
   bool _isStarting = false;
@@ -47,14 +50,34 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
 
   final _codeController = TextEditingController();
   final _nameController = TextEditingController();
+  final _manualIpController = TextEditingController();
+
+  static const _kDisplayNameKey = 'runner_race_display_name';
 
   @override
   void initState() {
     super.initState();
     _nameController.text = _displayName;
+    _loadName();
     if (widget.isHost) {
       _initHost();
     }
+  }
+
+  Future<void> _loadName() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_kDisplayNameKey);
+    if (saved != null && saved.isNotEmpty && mounted) {
+      setState(() {
+        _displayName = saved;
+        _nameController.text = saved;
+      });
+    }
+  }
+
+  Future<void> _saveName(String name) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kDisplayNameKey, name);
   }
 
   @override
@@ -63,6 +86,7 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
     _server?.stop();
     _codeController.dispose();
     _nameController.dispose();
+    _manualIpController.dispose();
     super.dispose();
   }
 
@@ -113,7 +137,7 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
   // ── Guest flow ──────────────────────────────────────────────────────────────
 
   Future<void> _connectAsGuest() async {
-    if (_codeInput.length != 6) {
+    if (_codeInput.length != 6 && _manualIp.isEmpty) {
       setState(() => _errorMsg = 'Enter the 6-digit room code');
       return;
     }
@@ -122,7 +146,9 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
       _errorMsg = null;
     });
     try {
-      final ip = RaceRoom.roomCodeToIp(_codeInput, _networkPrefix);
+      final ip = _manualIp.isNotEmpty
+          ? _manualIp.trim()
+          : RaceRoom.roomCodeToIp(_codeInput, _networkPrefix);
       if (ip.isEmpty) throw Exception('Invalid code');
 
       _room = RaceRoom(hostIp: ip, localPlayerId: -1); // ID assigned on join
@@ -265,7 +291,10 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
                   // Name field
                   _NameField(
                     controller: _nameController,
-                    onChanged: (v) => _displayName = v.trim().isEmpty ? 'Player' : v.trim(),
+                    onChanged: (v) {
+                      _displayName = v.trim().isEmpty ? 'Player' : v.trim();
+                      _saveName(_displayName);
+                    },
                   ),
                   const SizedBox(height: 20),
 
@@ -285,6 +314,41 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
                       onChanged: (v) => _codeInput = v,
                       onSubmit: _connectAsGuest,
                     ),
+                    const SizedBox(height: 8),
+                    // Manual IP fallback toggle
+                    GestureDetector(
+                      onTap: () => setState(() => _showManualIp = !_showManualIp),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _showManualIp
+                                ? Icons.keyboard_arrow_up
+                                : Icons.keyboard_arrow_down,
+                            color: Colors.white38,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _showManualIp
+                                ? 'Hide manual IP'
+                                : 'Different subnet? Enter IP manually',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.white38,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_showManualIp) ...[
+                      const SizedBox(height: 8),
+                      _ManualIpField(
+                        controller: _manualIpController,
+                        onChanged: (v) => _manualIp = v.trim(),
+                        onSubmit: _connectAsGuest,
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     ElevatedButton(
                       onPressed: _isConnecting ? null : _connectAsGuest,
@@ -565,6 +629,60 @@ class _CodeEntryField extends StatelessWidget {
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 16,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ManualIpField extends StatelessWidget {
+  const _ManualIpField({
+    required this.controller,
+    required this.onChanged,
+    required this.onSubmit,
+  });
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'HOST IP ADDRESS',
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.white54,
+            letterSpacing: 2,
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          onChanged: onChanged,
+          onSubmitted: (_) => onSubmit(),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: '192.168.x.x',
+            hintStyle: const TextStyle(color: Colors.white38),
+            filled: true,
+            fillColor: const Color(0xFF2a2d36),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFF00d4ff)),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
             ),
           ),
         ),
