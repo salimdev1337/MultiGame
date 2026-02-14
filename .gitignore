@@ -6,6 +6,7 @@
 *.pyc
 *.swp
 .DS_Store
+.scannerwork/
 .atom/
 .build/
 .buildlog/

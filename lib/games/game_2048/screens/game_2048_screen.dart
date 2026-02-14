@@ -40,32 +40,34 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
     switch (event.logicalKey) {
       case LogicalKeyboardKey.arrowLeft:
         _move('left');
-        break;
       case LogicalKeyboardKey.arrowRight:
         _move('right');
-        break;
       case LogicalKeyboardKey.arrowUp:
         _move('up');
-        break;
       case LogicalKeyboardKey.arrowDown:
         _move('down');
-        break;
+      default:
+        return KeyEventResult.ignored;
     }
     return KeyEventResult.handled;
   }
 
   void _onHorizontalDrag(DragEndDetails details) {
-    if (details.primaryVelocity! > 0) {
+    final velocity = details.primaryVelocity;
+    if (velocity == null) return;
+    if (velocity > 0) {
       _move('right');
-    } else if (details.primaryVelocity! < 0) {
+    } else if (velocity < 0) {
       _move('left');
     }
   }
 
   void _onVerticalDrag(DragEndDetails details) {
-    if (details.primaryVelocity! > 0) {
+    final velocity = details.primaryVelocity;
+    if (velocity == null) return;
+    if (velocity > 0) {
       _move('down');
-    } else if (details.primaryVelocity! < 0) {
+    } else if (velocity < 0) {
       _move('up');
     }
   }
@@ -93,7 +95,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
           boxShadow: hasGlow
               ? [
                   BoxShadow(
-                    color: tileColor.withValues(alpha: (0.4 * 255)),
+                    color: tileColor.withValues(alpha: 0.4),
                     blurRadius: value >= 512 ? 20 : 12,
                     spreadRadius: value >= 512 ? 2 : 0,
                   ),
@@ -326,7 +328,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
           children: [
             Icon(
               Icons.settings,
-              color: const Color(0xFF19e6a2).withValues(alpha: (0.6 * 255)),
+              color: const Color(0xFF19e6a2).withValues(alpha: 0.6),
               size: 28,
             ),
             const SizedBox(width: 12),
@@ -348,7 +350,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF19e6a2).withValues(alpha: (0.1 * 255)),
+                  color: const Color(0xFF19e6a2).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
@@ -366,7 +368,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
               subtitle: Text(
                 'Start a new game',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: (0.6 * 255)),
+                  color: Colors.white.withValues(alpha: 0.6),
                   fontSize: 12,
                 ),
               ),
@@ -393,7 +395,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
   Color _getTileColor(int value) {
     switch (value) {
       case 0:
-        return const Color(0xFF101318).withValues(alpha: (0.4 * 255));
+        return const Color(0xFF101318).withValues(alpha: 0.4);
       case 2:
         return const Color(0xFF2d343f);
       case 4:
@@ -427,7 +429,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
 
   Color _getTextColor(int value) {
     if (value == 0) return Colors.transparent;
-    if (value <= 4) return Colors.white.withValues(alpha: (0.9 * 255));
+    if (value <= 4) return Colors.white.withValues(alpha: 0.9);
     return const Color(0xFF101318);
   }
 
@@ -495,7 +497,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                             color: const Color(0xFF1a1e26),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: Colors.grey.withValues(alpha: (0.2 * 255)),
+                              color: Colors.grey.withValues(alpha: 0.2),
                             ),
                           ),
                           child: Column(
@@ -504,9 +506,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                               Text(
                                 'LEVEL',
                                 style: TextStyle(
-                                  color: Colors.grey.withValues(
-                                    alpha: (0.7 * 255),
-                                  ),
+                                  color: Colors.grey.withValues(alpha: 0.7),
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 1.5,
@@ -562,7 +562,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                               BoxShadow(
                                 color: const Color(
                                   0xFF19e6a2,
-                                ).withValues(alpha: (0.2 * 255)),
+                                ).withValues(alpha: 0.2),
                                 blurRadius: 16,
                                 offset: const Offset(0, 4),
                               ),
@@ -576,7 +576,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                                 style: TextStyle(
                                   color: const Color(
                                     0xFF101318,
-                                  ).withValues(alpha: (0.6 * 255)),
+                                  ).withValues(alpha: 0.6),
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 1.5,
@@ -670,16 +670,14 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(
-                        0xFF21242b,
-                      ).withValues(alpha: 0.5 * 255),
+                      color: const Color(0xFF21242b).withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.05 * 255),
+                        color: Colors.white.withValues(alpha: 0.05),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.3 * 255),
+                          color: Colors.black.withValues(alpha: 0.3),
                           blurRadius: 20,
                           offset: const Offset(0, 2),
                         ),
