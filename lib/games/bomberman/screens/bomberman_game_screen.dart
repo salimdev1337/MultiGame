@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -166,15 +167,33 @@ class _BombermanGamePageState extends ConsumerState<BombermanGamePage>
                 ),
               ),
 
-              // Mobile D-pad + bomb button
-              _MobileControls(
-                onUp: () => ref.read(bombermanProvider.notifier).setInput(dy: -1),
-                onDown: () => ref.read(bombermanProvider.notifier).setInput(dy: 1),
-                onLeft: () => ref.read(bombermanProvider.notifier).setInput(dx: -1),
-                onRight: () => ref.read(bombermanProvider.notifier).setInput(dx: 1),
-                onRelease: () => ref.read(bombermanProvider.notifier).setInput(),
-                onBomb: () => ref.read(bombermanProvider.notifier).pressPlaceBomb(),
-              ),
+              // Controls — joystick on mobile/web, D-pad on desktop
+              if (kIsWeb ||
+                  defaultTargetPlatform == TargetPlatform.android ||
+                  defaultTargetPlatform == TargetPlatform.iOS)
+                _JoystickControls(
+                  onMove: (dx, dy) =>
+                      ref.read(bombermanProvider.notifier).setInput(dx: dx, dy: dy),
+                  onRelease: () =>
+                      ref.read(bombermanProvider.notifier).setInput(),
+                  onBomb: () =>
+                      ref.read(bombermanProvider.notifier).pressPlaceBomb(),
+                )
+              else
+                _MobileControls(
+                  onUp: () =>
+                      ref.read(bombermanProvider.notifier).setInput(dy: -1),
+                  onDown: () =>
+                      ref.read(bombermanProvider.notifier).setInput(dy: 1),
+                  onLeft: () =>
+                      ref.read(bombermanProvider.notifier).setInput(dx: -1),
+                  onRight: () =>
+                      ref.read(bombermanProvider.notifier).setInput(dx: 1),
+                  onRelease: () =>
+                      ref.read(bombermanProvider.notifier).setInput(),
+                  onBomb: () =>
+                      ref.read(bombermanProvider.notifier).pressPlaceBomb(),
+                ),
             ],
           ),
         ),
@@ -455,6 +474,171 @@ class _DifficultyButton extends StatelessWidget {
             ),
             Icon(Icons.arrow_forward_ios_rounded, color: color, size: 14),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Joystick controls (mobile + web) ────────────────────────────────────────
+
+const _kJoystickOuterR = 72.0;
+const _kJoystickInnerR = 28.0;
+
+class _JoystickControls extends StatelessWidget {
+  final void Function(double dx, double dy) onMove;
+  final VoidCallback onRelease;
+  final VoidCallback onBomb;
+
+  const _JoystickControls({
+    required this.onMove,
+    required this.onRelease,
+    required this.onBomb,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFF0d1018),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 28),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _Joystick(onMove: onMove, onRelease: onRelease),
+          _XBombButton(onBomb: onBomb),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Analog joystick ──────────────────────────────────────────────────────────
+
+class _Joystick extends StatefulWidget {
+  final void Function(double dx, double dy) onMove;
+  final VoidCallback onRelease;
+
+  const _Joystick({required this.onMove, required this.onRelease});
+
+  @override
+  State<_Joystick> createState() => _JoystickState();
+}
+
+class _JoystickState extends State<_Joystick> {
+  Offset _thumb = Offset.zero; // pixel offset from centre, clamped to outer radius
+
+  void _update(Offset localPos) {
+    const centre = Offset(_kJoystickOuterR, _kJoystickOuterR);
+    final delta = localPos - centre;
+    final dist = delta.distance;
+    final clamped =
+        dist <= _kJoystickOuterR ? delta : delta / dist * _kJoystickOuterR;
+    setState(() => _thumb = clamped);
+    widget.onMove(
+      _thumb.dx / _kJoystickOuterR,
+      _thumb.dy / _kJoystickOuterR,
+    );
+  }
+
+  void _release() {
+    setState(() => _thumb = Offset.zero);
+    widget.onRelease();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const size = _kJoystickOuterR * 2;
+    return GestureDetector(
+      onPanUpdate: (d) => _update(d.localPosition),
+      onPanEnd: (_) => _release(),
+      onPanCancel: _release,
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: CustomPaint(
+          painter: _JoystickPainter(thumb: _thumb),
+        ),
+      ),
+    );
+  }
+}
+
+class _JoystickPainter extends CustomPainter {
+  final Offset thumb;
+  const _JoystickPainter({required this.thumb});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final centre = size.center(Offset.zero);
+
+    // Outer ring background
+    canvas.drawCircle(
+      centre,
+      _kJoystickOuterR,
+      Paint()..color = Colors.white.withValues(alpha: 0.06),
+    );
+    // Outer ring border
+    canvas.drawCircle(
+      centre,
+      _kJoystickOuterR,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.18)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+
+    // Thumb fill
+    canvas.drawCircle(
+      centre + thumb,
+      _kJoystickInnerR,
+      Paint()..color = Colors.white.withValues(alpha: 0.22),
+    );
+    // Thumb border (cyan accent)
+    canvas.drawCircle(
+      centre + thumb,
+      _kJoystickInnerR,
+      Paint()
+        ..color = const Color(0xFF00d4ff).withValues(alpha: 0.7)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_JoystickPainter old) => old.thumb != thumb;
+}
+
+// ─── X bomb button ────────────────────────────────────────────────────────────
+
+class _XBombButton extends StatelessWidget {
+  final VoidCallback onBomb;
+  const _XBombButton({required this.onBomb});
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerDown: (_) => onBomb(),
+      child: Container(
+        width: 72,
+        height: 72,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: const Color(0xFFff4500).withValues(alpha: 0.15),
+          border: Border.all(
+            color: const Color(0xFFff4500).withValues(alpha: 0.55),
+            width: 2,
+          ),
+        ),
+        child: const Center(
+          child: Text(
+            'X',
+            style: TextStyle(
+              color: Color(0xFFff4500),
+              fontSize: 30,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
         ),
       ),
     );
