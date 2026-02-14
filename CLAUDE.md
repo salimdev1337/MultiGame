@@ -5,10 +5,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 MultiGame is a Flutter multi-platform gaming app with:
-- **5 Games:** Sudoku (Classic/Rush/1v1 Online), 2048, Snake, Image Puzzle, Infinite Runner (Flame engine)
+- **6 Games:** Sudoku (Classic/Rush/1v1 Online), 2048, Snake, Image Puzzle, Infinite Runner (Flame engine), Bomberman (solo vs bots + local WiFi multiplayer)
 - **Premium UI:** 13,950+ lines of polished design system (glassmorphic, animations, charts)
 - **Backend:** Firebase (auth, Firestore stats, leaderboards)
-- **Architecture:** Clean layered with DI (GetIt), Provider state management, Repository pattern
+- **Architecture:** Clean layered with DI (GetIt), Riverpod state management, Repository pattern
 
 ## Development Commands
 
@@ -83,7 +83,7 @@ lib/
 └── utils/              # Validators, logging, migrations
 ```
 
-**Full details:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+**Full details:** [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)
 
 ## Critical Patterns
 
@@ -151,7 +151,7 @@ const key = String.fromEnvironment('UNSPLASH_ACCESS_KEY');
 // ❌ DON'T: Hardcode keys
 ```
 
-**See [docs/SECURITY.md](docs/SECURITY.md) for complete guide.**
+**See [docs/architecture/SECURITY.md](docs/architecture/SECURITY.md) for complete guide.**
 
 ## Design System (Phase 1-6 Complete)
 
@@ -202,7 +202,7 @@ context.showSuccessToast('Level completed!');
 DSEmptyState.noData(actionLabel: 'Retry', onAction: () => retry())
 ```
 
-**Full phase details:** [docs/UI_UX_REDESIGN_PLAN.md](docs/UI_UX_REDESIGN_PLAN.md)
+**Full phase details:** [docs/ui-ux/UI_UX_REDESIGN_PLAN.md](docs/ui-ux/UI_UX_REDESIGN_PLAN.md)
 
 ## Game-Specific Architectures
 
@@ -218,7 +218,67 @@ DSEmptyState.noData(actionLabel: 'Retry', onAction: () => retry())
 - **ECS-inspired:** Component-based with systems (CollisionSystem, SpawnSystem, ObstaclePool)
 - **Performance:** 60 FPS target, no allocations in update() loop, Vector2 reuse
 
-**Details:** [docs/INFINITE_RUNNER_ARCHITECTURE.md](docs/INFINITE_RUNNER_ARCHITECTURE.md)
+**Details:** [docs/games/infinite-runner/INFINITE_RUNNER_ARCHITECTURE.md](docs/games/infinite-runner/INFINITE_RUNNER_ARCHITECTURE.md)
+
+### Bomberman (Solo + Local WiFi Multiplayer)
+- **Grid:** 15×13 (`kGridW`/`kGridH`), destructible blocks, powerups, chain explosions
+- **Provider:** `bombermanProvider` — `NotifierProvider.autoDispose<BombermanNotifier, BombGameState>`
+- **Routes:** `/play/bomberman` (game), `/play/bomberman/lobby` (multiplayer lobby)
+- **Solo:** Player vs 1–3 bots with Easy/Medium/Hard AI (`BotAI.decide`)
+- **Multiplayer:** Host-authoritative LAN model — host runs full game loop, broadcasts state to guests
+
+#### Multiplayer Architecture (Host-Authoritative Frame Sync)
+```
+HOST: BombermanNotifier (game loop) → BombServerIo (WebSocket server)
+        broadcasts frameSync (~60fps) + gridUpdate (on block destroy) to all guests
+
+GUEST: BombClient → receives frameSync → applyFrameSync() onto local state
+        setInput() / pressPlaceBomb() → sends move/placeBomb messages to host
+```
+
+**Notifier roles:**
+```dart
+// Start solo game (unchanged API)
+ref.read(bombermanProvider.notifier).startSolo(BotDifficulty.medium);
+
+// Host hands off server+client after lobby is ready
+ref.read(bombermanProvider.notifier).startMultiplayerHost(
+  server: server,   // BombServer — notifier takes ownership, calls stop() on dispose
+  client: client,   // BombClient self-connected to own server
+  players: [...],   // List<({int id, String name})> from room
+);
+
+// Guest after receiving start message
+ref.read(bombermanProvider.notifier).connectAsGuest(
+  client: client,
+  localPlayerId: myId,   // assigned by host via joined message
+);
+```
+
+**Input API (backward-compatible):**
+```dart
+// Solo or host — playerId defaults to 0
+notifier.setInput(dx: 1.0, dy: 0.0);           // player 0
+notifier.setInput(playerId: 2, dx: 0, dy: 1);  // player 2
+
+// Guest — playerId ignored, routes to host over network
+notifier.setInput(dx: 1.0, dy: 0.0);
+```
+
+**JSON serialization** — all models support `toJson()`/`fromJson()`:
+- `BombGameState.toFrameJson()` — frame slice (players/bombs/explosions, no grid)
+- `BombGameState.toFullJson()` / `fromFullJson()` — full state including grid
+- `BombGameState.applyFrameSync(json)` — guest-side patch, preserves local grid
+
+**Server platform:** `BombServerIo` (native only — shelf + shelf_web_socket). Web can join but not host (`BombServerStub` throws `UnsupportedError`). Import pattern:
+```dart
+import 'package:multigame/games/bomberman/multiplayer/bomb_server_stub.dart'
+    if (dart.library.io) 'package:multigame/games/bomberman/multiplayer/bomb_server_io.dart';
+```
+
+**Android:** `usesCleartextTraffic="true"` required for `ws://` on Android 9+.
+
+**Tests:** 58 unit tests in `test/games/bomberman/` — all pure logic + serialization, no Flutter context needed.
 
 ## Testing Strategy
 
@@ -252,7 +312,7 @@ test('should save score', () async {
 5. Register in `GameRegistry`
 6. Add tests
 
-**Full guide:** [docs/ADDING_GAMES.md](docs/ADDING_GAMES.md)
+**Full guide:** [docs/architecture/ADDING_GAMES.md](docs/architecture/ADDING_GAMES.md)
 
 ## Code Quality Guidelines
 
@@ -359,28 +419,34 @@ GitHub Actions workflows:
 - **deploy-web.yml** - GitHub Pages deployment
 - **release.yml** - Release builds with downloads
 
-**Details:** [docs/CI_CD_SETUP_COMPLETE.md](docs/CI_CD_SETUP_COMPLETE.md)
+**Details:** [docs/cicd/CI_CD_SETUP_COMPLETE.md](docs/cicd/CI_CD_SETUP_COMPLETE.md)
 
 ## Additional Documentation
 
+### Documentation Index
+- [docs/README.md](docs/README.md) - Full docs navigation index
+
 ### Architecture & Design
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - Complete architecture guide
-- [docs/ADDING_GAMES.md](docs/ADDING_GAMES.md) - Game integration guide
-- [docs/SECURITY.md](docs/SECURITY.md) - Security best practices
-- [docs/UI_UX_REDESIGN_PLAN.md](docs/UI_UX_REDESIGN_PLAN.md) - 8-phase UI/UX master plan
-- [docs/PHASE_3_IMPLEMENTATION_ANALYSIS.md](docs/PHASE_3_IMPLEMENTATION_ANALYSIS.md) - Game polish
-- [docs/PHASE_4_IMPLEMENTATION_ANALYSIS.md](docs/PHASE_4_IMPLEMENTATION_ANALYSIS.md) - Profile & stats
-- [docs/PHASE_5_IMPLEMENTATION_REPORT.md](docs/PHASE_5_IMPLEMENTATION_REPORT.md) - Leaderboard
-- [docs/PHASE_6_IMPLEMENTATION_REPORT.md](docs/PHASE_6_IMPLEMENTATION_REPORT.md) - Micro-interactions
+- [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) - Complete architecture guide
+- [docs/architecture/ADDING_GAMES.md](docs/architecture/ADDING_GAMES.md) - Game integration guide
+- [docs/architecture/SECURITY.md](docs/architecture/SECURITY.md) - Security best practices
+- [docs/architecture/SECURITY_IMPROVEMENTS.md](docs/architecture/SECURITY_IMPROVEMENTS.md) - Security changelog
+
+### UI/UX Design System
+- [docs/ui-ux/UI_UX_REDESIGN_PLAN.md](docs/ui-ux/UI_UX_REDESIGN_PLAN.md) - 8-phase UI/UX master plan
+- [docs/ui-ux/PHASE_3_IMPLEMENTATION_ANALYSIS.md](docs/ui-ux/PHASE_3_IMPLEMENTATION_ANALYSIS.md) - Game polish
+- [docs/ui-ux/PHASE_4_IMPLEMENTATION_ANALYSIS.md](docs/ui-ux/PHASE_4_IMPLEMENTATION_ANALYSIS.md) - Profile & stats
+- [docs/ui-ux/PHASE_5_IMPLEMENTATION_REPORT.md](docs/ui-ux/PHASE_5_IMPLEMENTATION_REPORT.md) - Leaderboard
+- [docs/ui-ux/PHASE_6_IMPLEMENTATION_REPORT.md](docs/ui-ux/PHASE_6_IMPLEMENTATION_REPORT.md) - Micro-interactions
 
 ### Setup & Configuration
-- [docs/API_CONFIGURATION.md](docs/API_CONFIGURATION.md) - Unsplash API setup
-- [docs/FIREBASE_SETUP_GUIDE.md](docs/FIREBASE_SETUP_GUIDE.md) - Firebase configuration
+- [docs/setup/API_CONFIGURATION.md](docs/setup/API_CONFIGURATION.md) - Unsplash API setup
+- [docs/setup/FIREBASE_SETUP_GUIDE.md](docs/setup/FIREBASE_SETUP_GUIDE.md) - Firebase configuration
+
+### Games
+- [docs/games/infinite-runner/INFINITE_RUNNER_ARCHITECTURE.md](docs/games/infinite-runner/INFINITE_RUNNER_ARCHITECTURE.md) - Flame engine architecture
+- [docs/games/sudoku/SUDOKU_ARCHITECTURE.md](docs/games/sudoku/SUDOKU_ARCHITECTURE.md) - Sudoku system architecture
 
 ### Production & Release
 - [task.md](task.md) - Production readiness tasks and deployment guide
 - [firestore.rules](firestore.rules) - Firebase security rules
-
-### Technical Deep Dives
-- [docs/INFINITE_RUNNER_ARCHITECTURE.md](docs/INFINITE_RUNNER_ARCHITECTURE.md) - Flame engine
-- [docs/SECURITY_IMPROVEMENTS.md](docs/SECURITY_IMPROVEMENTS.md) - Security changelog
