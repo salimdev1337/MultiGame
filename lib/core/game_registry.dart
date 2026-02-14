@@ -30,9 +30,7 @@ class GameRegistry {
 
   /// Get all registered games in registration order
   List<GameDefinition> getAllGames() {
-    return _registrationOrder
-        .map((id) => _games[id]!)
-        .toList();
+    return _registrationOrder.map((id) => _games[id]!).toList();
   }
 
   /// Get all available games
@@ -42,9 +40,7 @@ class GameRegistry {
 
   /// Get games by category
   List<GameDefinition> getGamesByCategory(String category) {
-    return getAllGames()
-        .where((game) => game.category == category)
-        .toList();
+    return getAllGames().where((game) => game.category == category).toList();
   }
 
   /// Check if a game is registered

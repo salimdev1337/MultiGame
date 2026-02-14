@@ -74,11 +74,7 @@ void main() {
     });
 
     test('clear removes value but keeps notes and fixed status', () {
-      final cell = SudokuCell(
-        value: 5,
-        isFixed: true,
-        notes: {1, 2, 3},
-      );
+      final cell = SudokuCell(value: 5, isFixed: true, notes: {1, 2, 3});
       final cleared = cell.clear();
 
       expect(cleared.value, isNull);

@@ -9,19 +9,22 @@ class SecureStorageRepository {
   final FlutterSecureStorage _storage;
 
   SecureStorageRepository({FlutterSecureStorage? storage})
-      : _storage = storage ??
-            const FlutterSecureStorage(
-              aOptions: AndroidOptions(
-                encryptedSharedPreferences: true,
-              ),
-            );
+    : _storage =
+          storage ??
+          const FlutterSecureStorage(
+            aOptions: AndroidOptions(encryptedSharedPreferences: true),
+          );
 
   /// Read a value from secure storage
   Future<String?> read(String key) async {
     try {
       return await _storage.read(key: key);
     } catch (e) {
-      SecureLogger.error('Failed to read from secure storage', error: e, tag: 'SecureStorage');
+      SecureLogger.error(
+        'Failed to read from secure storage',
+        error: e,
+        tag: 'SecureStorage',
+      );
       return null;
     }
   }
@@ -32,7 +35,11 @@ class SecureStorageRepository {
       await _storage.write(key: key, value: value);
       return true;
     } catch (e) {
-      SecureLogger.error('Failed to write to secure storage', error: e, tag: 'SecureStorage');
+      SecureLogger.error(
+        'Failed to write to secure storage',
+        error: e,
+        tag: 'SecureStorage',
+      );
       return false;
     }
   }
@@ -43,7 +50,11 @@ class SecureStorageRepository {
       await _storage.delete(key: key);
       return true;
     } catch (e) {
-      SecureLogger.error('Failed to delete from secure storage', error: e, tag: 'SecureStorage');
+      SecureLogger.error(
+        'Failed to delete from secure storage',
+        error: e,
+        tag: 'SecureStorage',
+      );
       return false;
     }
   }
@@ -54,7 +65,11 @@ class SecureStorageRepository {
       final value = await _storage.read(key: key);
       return value != null;
     } catch (e) {
-      SecureLogger.error('Failed to check key in secure storage', error: e, tag: 'SecureStorage');
+      SecureLogger.error(
+        'Failed to check key in secure storage',
+        error: e,
+        tag: 'SecureStorage',
+      );
       return false;
     }
   }
@@ -64,7 +79,11 @@ class SecureStorageRepository {
     try {
       return await _storage.readAll();
     } catch (e) {
-      SecureLogger.error('Failed to read all from secure storage', error: e, tag: 'SecureStorage');
+      SecureLogger.error(
+        'Failed to read all from secure storage',
+        error: e,
+        tag: 'SecureStorage',
+      );
       return {};
     }
   }
@@ -75,7 +94,11 @@ class SecureStorageRepository {
       await _storage.deleteAll();
       return true;
     } catch (e) {
-      SecureLogger.error('Failed to delete all from secure storage', error: e, tag: 'SecureStorage');
+      SecureLogger.error(
+        'Failed to delete all from secure storage',
+        error: e,
+        tag: 'SecureStorage',
+      );
       return false;
     }
   }

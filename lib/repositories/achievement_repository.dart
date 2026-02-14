@@ -139,7 +139,8 @@ class SharedPrefsAchievementRepository implements AchievementRepository {
 
   @override
   Future<Map<String, bool>> getAllAchievements(
-      List<String> achievementIds) async {
+    List<String> achievementIds,
+  ) async {
     final prefs = await _prefs;
     final achievements = <String, bool>{};
 

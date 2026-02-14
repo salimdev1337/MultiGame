@@ -38,10 +38,18 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
   KeyEventResult _handleKeyEvent(KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
     switch (event.logicalKey) {
-      case LogicalKeyboardKey.arrowLeft:  _move('left');  break;
-      case LogicalKeyboardKey.arrowRight: _move('right'); break;
-      case LogicalKeyboardKey.arrowUp:    _move('up');    break;
-      case LogicalKeyboardKey.arrowDown:  _move('down');  break;
+      case LogicalKeyboardKey.arrowLeft:
+        _move('left');
+        break;
+      case LogicalKeyboardKey.arrowRight:
+        _move('right');
+        break;
+      case LogicalKeyboardKey.arrowUp:
+        _move('up');
+        break;
+      case LogicalKeyboardKey.arrowDown:
+        _move('down');
+        break;
     }
     return KeyEventResult.handled;
   }
@@ -65,7 +73,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
   int _tileFontSize(int value) {
     if (value >= 4096) return 16;
     if (value >= 1024) return 20;
-    if (value >= 128)  return 24;
+    if (value >= 128) return 24;
     return 28;
   }
 
@@ -119,7 +127,8 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
 
       if (newState.gameOver) {
         _showGameOverDialog(newState);
-      } else if (newState.highestMilestoneIndex > prevState.highestMilestoneIndex) {
+      } else if (newState.highestMilestoneIndex >
+          prevState.highestMilestoneIndex) {
         _showMilestoneBanner(newState.highestMilestoneIndex);
       }
     }
@@ -192,7 +201,10 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
             // Milestone badge
             if (state.highestMilestoneIndex >= 0) ...[
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF19e6a2).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
@@ -236,7 +248,10 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
             if (isNewBest) ...[
               const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFf59e0b).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
@@ -247,7 +262,11 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.emoji_events, color: Color(0xFFf59e0b), size: 14),
+                    Icon(
+                      Icons.emoji_events,
+                      color: Color(0xFFf59e0b),
+                      size: 14,
+                    ),
                     SizedBox(width: 4),
                     Text(
                       'New Best Score!',
@@ -265,10 +284,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
             const SizedBox(height: 8),
             Text(
               'Highest tile: $highestTile',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 13,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontSize: 13),
             ),
           ],
         ),
@@ -488,7 +504,9 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                               Text(
                                 'LEVEL',
                                 style: TextStyle(
-                                  color: Colors.grey.withValues(alpha: (0.7 * 255)),
+                                  color: Colors.grey.withValues(
+                                    alpha: (0.7 * 255),
+                                  ),
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 1.5,
@@ -542,8 +560,9 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF19e6a2)
-                                    .withValues(alpha: (0.2 * 255)),
+                                color: const Color(
+                                  0xFF19e6a2,
+                                ).withValues(alpha: (0.2 * 255)),
                                 blurRadius: 16,
                                 offset: const Offset(0, 4),
                               ),
@@ -555,8 +574,9 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                               Text(
                                 'SCORE',
                                 style: TextStyle(
-                                  color: const Color(0xFF101318)
-                                      .withValues(alpha: (0.6 * 255)),
+                                  color: const Color(
+                                    0xFF101318,
+                                  ).withValues(alpha: (0.6 * 255)),
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 1.5,
@@ -599,8 +619,9 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                                 Text(
                                   'Best: ${state.bestScore}',
                                   style: TextStyle(
-                                    color: const Color(0xFF101318)
-                                        .withValues(alpha: 0.55),
+                                    color: const Color(
+                                      0xFF101318,
+                                    ).withValues(alpha: 0.55),
                                     fontSize: 11,
                                   ),
                                 ),
@@ -649,7 +670,9 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF21242b).withValues(alpha: 0.5 * 255),
+                      color: const Color(
+                        0xFF21242b,
+                      ).withValues(alpha: 0.5 * 255),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: Colors.white.withValues(alpha: 0.05 * 255),
@@ -667,8 +690,9 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                         Expanded(
                           child: _buildFooterButton(
                             label: 'RESET',
-                            onPressed: () =>
-                                ref.read(game2048Provider.notifier).initializeGame(),
+                            onPressed: () => ref
+                                .read(game2048Provider.notifier)
+                                .initializeGame(),
                             isPrimary: false,
                           ),
                         ),
@@ -677,9 +701,9 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                           flex: 2,
                           child: _buildFooterButton(
                             label: 'MAIN MENU',
-                            onPressed: () => Navigator.of(context).popUntil(
-                              (route) => route.isFirst,
-                            ),
+                            onPressed: () => Navigator.of(
+                              context,
+                            ).popUntil((route) => route.isFirst),
                             isPrimary: true,
                           ),
                         ),
@@ -768,8 +792,10 @@ class _MilestoneBannerState extends State<_MilestoneBanner>
       begin: const Offset(0, -1),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
-    _fade = Tween<double>(begin: 0, end: 1)
-        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+    _fade = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
 
     _ctrl.forward();
 
@@ -823,7 +849,11 @@ class _MilestoneBannerState extends State<_MilestoneBanner>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.celebration, color: Color(0xFF19e6a2), size: 22),
+                  const Icon(
+                    Icons.celebration,
+                    color: Color(0xFF19e6a2),
+                    size: 22,
+                  ),
                   const SizedBox(width: 10),
                   Text(
                     'Milestone! ',

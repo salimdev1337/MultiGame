@@ -35,24 +35,16 @@ class _AnimatedStatCardState extends State<AnimatedStatCard>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: DSAnimations.slow,
-      vsync: this,
-    );
+    _controller = AnimationController(duration: DSAnimations.slow, vsync: this);
 
     _slideAnimation = Tween<double>(begin: 50.0, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: DSAnimations.easeOutCubic,
-      ),
+      CurvedAnimation(parent: _controller, curve: DSAnimations.easeOutCubic),
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOut,
-      ),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     // Start animation with delay
     Future.delayed(widget.delay, () {
@@ -75,91 +67,80 @@ class _AnimatedStatCardState extends State<AnimatedStatCard>
       builder: (context, child) {
         return Transform.translate(
           offset: Offset(0, _slideAnimation.value),
-          child: Opacity(
-            opacity: _fadeAnimation.value,
-            child: child,
-          ),
+          child: Opacity(opacity: _fadeAnimation.value, child: child),
         );
       },
       child: Semantics(
-        label: '${widget.title}: ${widget.value}'
+        label:
+            '${widget.title}: ${widget.value}'
             '${widget.subtitle != null ? ", ${widget.subtitle}" : ""}',
         excludeSemantics: true,
         child: Container(
-        padding: EdgeInsets.all(DSSpacing.md),
-        decoration: BoxDecoration(
-          color: DSColors.surface,
-          borderRadius: BorderRadius.circular(DSSpacing.md),
-          border: Border.all(
-            color: color.withValues(alpha: 0.2),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Icon and improvement indicator
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: EdgeInsets.all(DSSpacing.sm),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(DSSpacing.sm),
-                  ),
-                  child: Icon(
-                    widget.icon,
-                    color: color,
-                    size: 24,
-                  ),
-                ),
-                if (widget.improvementPercent != null)
-                  _ImprovementIndicator(
-                    percent: widget.improvementPercent!,
-                  ),
-              ],
-            ),
-            SizedBox(height: DSSpacing.md),
-
-            // Title
-            Text(
-              widget.title,
-              style: DSTypography.labelMedium.copyWith(
-                color: DSColors.textSecondary,
-              ),
-            ),
-            SizedBox(height: DSSpacing.xs),
-
-            // Value
-            Text(
-              widget.value,
-              style: DSTypography.headlineLarge.copyWith(
-                color: DSColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            // Subtitle
-            if (widget.subtitle != null) ...[
-              SizedBox(height: DSSpacing.xxs),
-              Text(
-                widget.subtitle!,
-                style: DSTypography.labelSmall.copyWith(
-                  color: DSColors.textTertiary,
-                ),
+          padding: EdgeInsets.all(DSSpacing.md),
+          decoration: BoxDecoration(
+            color: DSColors.surface,
+            borderRadius: BorderRadius.circular(DSSpacing.md),
+            border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
             ],
-          ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Icon and improvement indicator
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(DSSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(DSSpacing.sm),
+                    ),
+                    child: Icon(widget.icon, color: color, size: 24),
+                  ),
+                  if (widget.improvementPercent != null)
+                    _ImprovementIndicator(percent: widget.improvementPercent!),
+                ],
+              ),
+              SizedBox(height: DSSpacing.md),
+
+              // Title
+              Text(
+                widget.title,
+                style: DSTypography.labelMedium.copyWith(
+                  color: DSColors.textSecondary,
+                ),
+              ),
+              SizedBox(height: DSSpacing.xs),
+
+              // Value
+              Text(
+                widget.value,
+                style: DSTypography.headlineLarge.copyWith(
+                  color: DSColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              // Subtitle
+              if (widget.subtitle != null) ...[
+                SizedBox(height: DSSpacing.xxs),
+                Text(
+                  widget.subtitle!,
+                  style: DSTypography.labelSmall.copyWith(
+                    color: DSColors.textTertiary,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -189,11 +170,7 @@ class _ImprovementIndicator extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 12,
-            color: color,
-          ),
+          Icon(icon, size: 12, color: color),
           SizedBox(width: 2),
           Text(
             '${percent.abs().toStringAsFixed(1)}%',
@@ -236,24 +213,16 @@ class _PersonalBestCardState extends State<PersonalBestCard>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: DSAnimations.slow,
-      vsync: this,
-    );
+    _controller = AnimationController(duration: DSAnimations.slow, vsync: this);
 
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: DSAnimations.elasticOut,
-      ),
+      CurvedAnimation(parent: _controller, curve: DSAnimations.elasticOut),
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOut,
-      ),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     Future.delayed(widget.delay, () {
       if (mounted) _controller.forward();
@@ -279,88 +248,83 @@ class _PersonalBestCardState extends State<PersonalBestCard>
       builder: (context, child) {
         return Transform.scale(
           scale: _scaleAnimation.value,
-          child: Opacity(
-            opacity: _fadeAnimation.value,
-            child: child,
-          ),
+          child: Opacity(opacity: _fadeAnimation.value, child: child),
         );
       },
       child: Semantics(
-        label: 'Personal best ${widget.gameType}: ${widget.bestScore}, set on ${widget.date}',
+        label:
+            'Personal best ${widget.gameType}: ${widget.bestScore}, set on ${widget.date}',
         excludeSemantics: true,
         child: Container(
-        padding: EdgeInsets.all(DSSpacing.md),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              color.withValues(alpha: 0.2),
-              color.withValues(alpha: 0.05),
+          padding: EdgeInsets.all(DSSpacing.md),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                color.withValues(alpha: 0.2),
+                color.withValues(alpha: 0.05),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(DSSpacing.md),
+            border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
+          ),
+          child: Row(
+            children: [
+              // Trophy icon
+              Container(
+                padding: EdgeInsets.all(DSSpacing.sm),
+                decoration: BoxDecoration(
+                  gradient: DSColors.gradientGold,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: DSColors.warning.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.emoji_events_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              SizedBox(width: DSSpacing.md),
+
+              // Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.gameType,
+                      style: DSTypography.labelMedium.copyWith(
+                        color: DSColors.textSecondary,
+                      ),
+                    ),
+                    SizedBox(height: DSSpacing.xxs),
+                    Text(
+                      widget.bestScore.toString(),
+                      style: DSTypography.headlineMedium.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: DSSpacing.xxs),
+                    Text(
+                      widget.date,
+                      style: DSTypography.labelSmall.copyWith(
+                        color: DSColors.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
-          borderRadius: BorderRadius.circular(DSSpacing.md),
-          border: Border.all(
-            color: color.withValues(alpha: 0.3),
-            width: 1,
-          ),
         ),
-        child: Row(
-          children: [
-            // Trophy icon
-            Container(
-              padding: EdgeInsets.all(DSSpacing.sm),
-              decoration: BoxDecoration(
-                gradient: DSColors.gradientGold,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: DSColors.warning.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-              child: Icon(
-                Icons.emoji_events_rounded,
-                color: Colors.white,
-                size: 24,
-              ),
-            ),
-            SizedBox(width: DSSpacing.md),
-
-            // Content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.gameType,
-                    style: DSTypography.labelMedium.copyWith(
-                      color: DSColors.textSecondary,
-                    ),
-                  ),
-                  SizedBox(height: DSSpacing.xxs),
-                  Text(
-                    widget.bestScore.toString(),
-                    style: DSTypography.headlineMedium.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: DSSpacing.xxs),
-                  Text(
-                    widget.date,
-                    style: DSTypography.labelSmall.copyWith(
-                      color: DSColors.textTertiary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
       ),
     );
   }
@@ -368,11 +332,7 @@ class _PersonalBestCardState extends State<PersonalBestCard>
 
 /// Stats grid container with staggered entrance animations
 class StatsGrid extends StatelessWidget {
-  const StatsGrid({
-    super.key,
-    required this.stats,
-    this.crossAxisCount = 2,
-  });
+  const StatsGrid({super.key, required this.stats, this.crossAxisCount = 2});
 
   final List<AnimatedStatCard> stats;
   final int crossAxisCount;

@@ -202,9 +202,10 @@ class _BouncingIconState extends State<_BouncingIcon>
       vsync: this,
       duration: const Duration(milliseconds: 700),
     )..repeat(reverse: true);
-    _offset = Tween<double>(begin: 0, end: 6).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
-    );
+    _offset = Tween<double>(
+      begin: 0,
+      end: 6,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
   }
 
   @override
@@ -219,11 +220,7 @@ class _BouncingIconState extends State<_BouncingIcon>
       animation: _offset,
       builder: (context, _) => Transform.translate(
         offset: Offset(0, _offset.value * widget.direction),
-        child: Icon(
-          widget.icon,
-          size: 26,
-          color: const Color(0xFF00d4ff),
-        ),
+        child: Icon(widget.icon, size: 26, color: const Color(0xFF00d4ff)),
       ),
     );
   }
@@ -249,9 +246,10 @@ class _PulsingWarningState extends State<_PulsingWarning>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     )..repeat(reverse: true);
-    _opacity = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
-    );
+    _opacity = Tween<double>(
+      begin: 0.5,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
   }
 
   @override
@@ -295,7 +293,11 @@ class GameHud extends StatelessWidget {
                     // Pause button
                     IconButton(
                       onPressed: () => game.pauseGame(),
-                      icon: const Icon(Icons.pause, color: Colors.white, size: 32),
+                      icon: const Icon(
+                        Icons.pause,
+                        color: Colors.white,
+                        size: 32,
+                      ),
                     ),
                     // Score
                     Container(

@@ -353,19 +353,28 @@ void main() {
         );
         await service.recordGameCompletion(game);
 
-        final bestScore = await service.getBestScore('classic', SudokuDifficulty.hard);
+        final bestScore = await service.getBestScore(
+          'classic',
+          SudokuDifficulty.hard,
+        );
 
         expect(bestScore, 1800);
       });
 
       test('should return null for mode without scores', () async {
-        final bestScore = await service.getBestScore('classic', SudokuDifficulty.easy);
+        final bestScore = await service.getBestScore(
+          'classic',
+          SudokuDifficulty.easy,
+        );
 
         expect(bestScore, null);
       });
 
       test('should return null for invalid mode', () async {
-        final bestScore = await service.getBestScore('invalid', SudokuDifficulty.easy);
+        final bestScore = await service.getBestScore(
+          'invalid',
+          SudokuDifficulty.easy,
+        );
 
         expect(bestScore, null);
       });
@@ -513,10 +522,7 @@ void main() {
 
     group('clearStats', () {
       test('should clear all stats data', () async {
-        final stats = SudokuStats(
-          totalGamesPlayed: 10,
-          totalGamesWon: 8,
-        );
+        final stats = SudokuStats(totalGamesPlayed: 10, totalGamesWon: 8);
         await service.saveStats(stats);
 
         final result = await service.clearStats();

@@ -44,12 +44,14 @@ class RaceServer {
       if (ip == null) return null;
 
       // Register host as player 0
-      _players.add(
-        RacePlayerState(playerId: 0, displayName: hostDisplayName),
-      );
+      _players.add(RacePlayerState(playerId: 0, displayName: hostDisplayName));
 
       final handler = webSocketHandler(_handleConnection);
-      _httpServer = await shelf_io.serve(handler, InternetAddress.anyIPv4, kRaceServerPort);
+      _httpServer = await shelf_io.serve(
+        handler,
+        InternetAddress.anyIPv4,
+        kRaceServerPort,
+      );
       return ip;
     } catch (_) {
       return null;
@@ -118,7 +120,9 @@ class RaceServer {
           case RaceMessageType.join:
             if (_raceStarted || _players.length >= RaceRoom.maxPlayers) {
               channel.sink.add(
-                RaceMessage.error(message: 'Room full or race already started').toJson(),
+                RaceMessage.error(
+                  message: 'Room full or race already started',
+                ).toJson(),
               );
               channel.sink.close();
               return;
@@ -146,17 +150,22 @@ class RaceServer {
               ).toJson(),
             );
 
-            onEvent?.call(RaceServerEvent(
-              RaceServerEventType.playerJoined,
-              players: List.from(_players),
-            ));
+            onEvent?.call(
+              RaceServerEvent(
+                RaceServerEventType.playerJoined,
+                players: List.from(_players),
+              ),
+            );
 
           case RaceMessageType.ready:
             if (assignedId == null) return;
             final isReady = msg.payload['isReady'] as bool? ?? false;
             _updatePlayer(assignedId!, (p) => p.copyWith(isReady: isReady));
             _broadcast(
-              RaceMessage.ready(playerId: assignedId!, isReady: isReady).toJson(),
+              RaceMessage.ready(
+                playerId: assignedId!,
+                isReady: isReady,
+              ).toJson(),
             );
             _maybeNotifyAllReady();
 
@@ -208,7 +217,10 @@ class RaceServer {
   }
 
   void _handleFinish(int playerId, int timeMs) {
-    _updatePlayer(playerId, (p) => p.copyWith(isFinished: true, finishTimeMs: timeMs));
+    _updatePlayer(
+      playerId,
+      (p) => p.copyWith(isFinished: true, finishTimeMs: timeMs),
+    );
     _finishOrder.add({'playerId': playerId, 'timeMs': timeMs});
     _broadcast(RaceMessage.finish(playerId: playerId, timeMs: timeMs).toJson());
 
@@ -221,11 +233,14 @@ class RaceServer {
   void _handleTimeout() {
     if (_resultsPublished) return;
     // Assign synthetic finish times to players who haven't crossed the line yet
-    final finished = Set<int>.from(_finishOrder.map((r) => r['playerId'] as int));
-    final unfinished = _players
-        .where((p) => p.isConnected && !finished.contains(p.playerId))
-        .toList()
-      ..sort((a, b) => b.distance.compareTo(a.distance));
+    final finished = Set<int>.from(
+      _finishOrder.map((r) => r['playerId'] as int),
+    );
+    final unfinished =
+        _players
+            .where((p) => p.isConnected && !finished.contains(p.playerId))
+            .toList()
+          ..sort((a, b) => b.distance.compareTo(a.distance));
     for (final p in unfinished) {
       // Time > 180 s, ranked by how far they got (closer to finish = smaller penalty)
       const trackLength = 10000.0; // mirrors InfiniteRunnerGame.trackLength
@@ -242,10 +257,9 @@ class RaceServer {
     final rankings = List<Map<String, dynamic>>.from(_finishOrder)
       ..sort((a, b) => (a['timeMs'] as int).compareTo(b['timeMs'] as int));
     _broadcast(RaceMessage.results(rankings: rankings).toJson());
-    onEvent?.call(RaceServerEvent(
-      RaceServerEventType.resultsReady,
-      rankings: rankings,
-    ));
+    onEvent?.call(
+      RaceServerEvent(RaceServerEventType.resultsReady, rankings: rankings),
+    );
   }
 
   /// Host calls this when it wants to play again
@@ -280,11 +294,13 @@ class RaceServer {
     _connections.remove(playerId);
     _updatePlayer(playerId, (p) => p.copyWith(isConnected: false));
     _broadcast(RaceMessage.disconnect(playerId: playerId).toJson());
-    onEvent?.call(RaceServerEvent(
-      RaceServerEventType.playerDisconnected,
-      players: List.from(_players),
-      disconnectedId: playerId,
-    ));
+    onEvent?.call(
+      RaceServerEvent(
+        RaceServerEventType.playerDisconnected,
+        players: List.from(_players),
+        disconnectedId: playerId,
+      ),
+    );
   }
 
   void _broadcast(String json) {

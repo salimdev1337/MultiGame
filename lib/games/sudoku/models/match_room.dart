@@ -171,8 +171,8 @@ class MatchRoom {
       timeoutSeconds: timeoutSeconds ?? this.timeoutSeconds,
       roomCode: roomCode ?? this.roomCode,
       lastActivityAt: lastActivityAt ?? this.lastActivityAt,
-      reconnectionGracePeriodSeconds: reconnectionGracePeriodSeconds ??
-          this.reconnectionGracePeriodSeconds,
+      reconnectionGracePeriodSeconds:
+          reconnectionGracePeriodSeconds ?? this.reconnectionGracePeriodSeconds,
     );
   }
 }

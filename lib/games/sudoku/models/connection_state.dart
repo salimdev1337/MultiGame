@@ -1,10 +1,6 @@
 // Connection state enum - see docs/SUDOKU_ARCHITECTURE.md
 
-enum ConnectionState {
-  online,
-  offline,
-  reconnecting,
-}
+enum ConnectionState { online, offline, reconnecting }
 
 extension ConnectionStateExtension on ConnectionState {
   String toJson() => name;

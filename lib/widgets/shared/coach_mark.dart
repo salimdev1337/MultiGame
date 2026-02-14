@@ -47,10 +47,7 @@ class _CoachMarkState extends State<CoachMark>
   }
 
   void _setupAnimations() {
-    _controller = AnimationController(
-      duration: DSAnimations.slow,
-      vsync: this,
-    );
+    _controller = AnimationController(duration: DSAnimations.slow, vsync: this);
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
@@ -66,12 +63,10 @@ class _CoachMarkState extends State<CoachMark>
       ),
     );
 
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
-    );
+    _pulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.05,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     // Repeat pulse animation
     _controller.addStatusListener((status) {
@@ -118,10 +113,7 @@ class _CoachMarkState extends State<CoachMark>
       children: [
         // Child widget with key
         RepaintBoundary(
-          child: Container(
-            key: _targetKey,
-            child: widget.child,
-          ),
+          child: Container(key: _targetKey, child: widget.child),
         ),
 
         // Overlay
@@ -148,9 +140,7 @@ class _CoachMarkState extends State<CoachMark>
             onTap: () {}, // Prevent taps
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.7),
-              ),
+              child: Container(color: Colors.black.withValues(alpha: 0.7)),
             ),
           ),
         ),
@@ -165,9 +155,7 @@ class _CoachMarkState extends State<CoachMark>
           bottom: widget.position == CoachMarkPosition.bottom
               ? DSSpacing.xl
               : null,
-          top: widget.position == CoachMarkPosition.top
-              ? DSSpacing.xl
-              : null,
+          top: widget.position == CoachMarkPosition.top ? DSSpacing.xl : null,
           child: ScaleTransition(
             scale: _scaleAnimation,
             child: _buildInfoCard(),
@@ -312,21 +300,20 @@ class _HighlightPainter extends CustomPainter {
   final GlobalKey targetKey;
   final double pulseScale;
 
-  _HighlightPainter({
-    required this.targetKey,
-    required this.pulseScale,
-  });
+  _HighlightPainter({required this.targetKey, required this.pulseScale});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final renderBox = targetKey.currentContext?.findRenderObject() as RenderBox?;
+    final renderBox =
+        targetKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
 
     final targetSize = renderBox.size;
     final targetPosition = renderBox.localToGlobal(Offset.zero);
 
     // Calculate circle properties
-    final radius = (targetSize.width > targetSize.height
+    final radius =
+        (targetSize.width > targetSize.height
             ? targetSize.width
             : targetSize.height) /
         2 *
@@ -360,7 +347,4 @@ class _HighlightPainter extends CustomPainter {
 }
 
 /// Position of coach mark info card
-enum CoachMarkPosition {
-  top,
-  bottom,
-}
+enum CoachMarkPosition { top, bottom }

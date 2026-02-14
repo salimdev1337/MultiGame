@@ -103,15 +103,13 @@ class FakeFirebaseStatsService implements FirebaseStatsService {
   Future<List<LeaderboardEntry>> getLeaderboard({
     required String gameType,
     int limit = 100,
-  }) async =>
-      [];
+  }) async => [];
 
   @override
   Future<int?> getUserRank({
     required String userId,
     required String gameType,
-  }) async =>
-      null;
+  }) async => null;
 
   @override
   Future<UserStats?> getUserStats(String userId) async => null;
@@ -120,8 +118,7 @@ class FakeFirebaseStatsService implements FirebaseStatsService {
   Stream<List<LeaderboardEntry>> leaderboardStream({
     required String gameType,
     int limit = 100,
-  }) =>
-      Stream.value([]);
+  }) => Stream.value([]);
 
   @override
   Stream<UserStats?> userStatsStream(String userId) => Stream.value(null);
@@ -626,7 +623,10 @@ void main() {
         // Assert
         expect(fakeStatsService.savedStats, isNotEmpty);
         expect(fakeStatsService.savedStats.first['gameType'], equals('puzzle'));
-        expect(fakeStatsService.savedStats.first['userId'], equals('test_user_123'));
+        expect(
+          fakeStatsService.savedStats.first['userId'],
+          equals('test_user_123'),
+        );
       });
 
       test('should calculate score correctly', () {
@@ -758,7 +758,10 @@ void main() {
 
         // Assert
         expect(result, isFalse);
-        expect(fakeStatsService.callCount, greaterThan(1)); // Should have retried
+        expect(
+          fakeStatsService.callCount,
+          greaterThan(1),
+        ); // Should have retried
         expect(provider.lastError, isNotNull);
         expect(provider.lastError, contains('Failed to save score'));
       });

@@ -11,10 +11,7 @@ class GhostPlayer extends PositionComponent {
     required this.playerColor,
     required double groundY,
   }) : _groundY = groundY,
-       super(
-         size: Vector2(36, 54),
-         anchor: Anchor.bottomCenter,
-       );
+       super(size: Vector2(36, 54), anchor: Anchor.bottomCenter);
 
   final int playerId;
   final String displayName;

@@ -19,12 +19,21 @@ void main() {
 
         // Assert
         expect(puzzle, isNotNull);
-        expect(SudokuValidator.isValidBoard(puzzle), isTrue,
-            reason: 'Generated puzzle should have no conflicts');
-        expect(puzzle.hasEmptyCells, isTrue,
-            reason: 'Puzzle should have empty cells to solve');
-        expect(puzzle.filledCount, greaterThan(0),
-            reason: 'Puzzle should have clues');
+        expect(
+          SudokuValidator.isValidBoard(puzzle),
+          isTrue,
+          reason: 'Generated puzzle should have no conflicts',
+        );
+        expect(
+          puzzle.hasEmptyCells,
+          isTrue,
+          reason: 'Puzzle should have empty cells to solve',
+        );
+        expect(
+          puzzle.filledCount,
+          greaterThan(0),
+          reason: 'Puzzle should have clues',
+        );
       });
 
       test('should generate valid medium puzzle', () {
@@ -65,18 +74,28 @@ void main() {
         final puzzle = generator.generate(SudokuDifficulty.medium);
 
         // Assert
-        expect(SudokuSolver.isSolvable(puzzle), isTrue,
-            reason: 'Generated puzzle must be solvable');
+        expect(
+          SudokuSolver.isSolvable(puzzle),
+          isTrue,
+          reason: 'Generated puzzle must be solvable',
+        );
       });
 
-      test('should generate puzzle with unique solution', () {
-        // Act
-        final puzzle = generator.generate(SudokuDifficulty.medium);
+      test(
+        'should generate puzzle with unique solution',
+        () {
+          // Act
+          final puzzle = generator.generate(SudokuDifficulty.medium);
 
-        // Assert
-        expect(SudokuSolver.hasUniqueSolution(puzzle), isTrue,
-            reason: 'Generated puzzle must have exactly one solution');
-      }, timeout: const Timeout(Duration(seconds: 10)));
+          // Assert
+          expect(
+            SudokuSolver.hasUniqueSolution(puzzle),
+            isTrue,
+            reason: 'Generated puzzle must have exactly one solution',
+          );
+        },
+        timeout: const Timeout(Duration(seconds: 10)),
+      );
 
       test('should mark filled cells as fixed', () {
         // Act
@@ -87,11 +106,17 @@ void main() {
           for (int col = 0; col < 9; col++) {
             final cell = puzzle.getCell(row, col);
             if (cell.hasValue) {
-              expect(cell.isFixed, isTrue,
-                  reason: 'All clue cells should be marked as fixed');
+              expect(
+                cell.isFixed,
+                isTrue,
+                reason: 'All clue cells should be marked as fixed',
+              );
             } else {
-              expect(cell.isFixed, isFalse,
-                  reason: 'Empty cells should not be fixed');
+              expect(
+                cell.isFixed,
+                isFalse,
+                reason: 'Empty cells should not be fixed',
+              );
             }
           }
         }
@@ -120,8 +145,11 @@ void main() {
           if (isDifferent) break;
         }
 
-        expect(isDifferent, isTrue,
-            reason: 'Generated puzzles should be different');
+        expect(
+          isDifferent,
+          isTrue,
+          reason: 'Generated puzzles should be different',
+        );
       });
     });
 
@@ -131,10 +159,16 @@ void main() {
         final puzzle = generator.generate(SudokuDifficulty.easy);
 
         // Assert
-        expect(puzzle.filledCount, greaterThanOrEqualTo(36),
-            reason: 'Easy puzzle should have at least 36 clues');
-        expect(puzzle.filledCount, lessThanOrEqualTo(40),
-            reason: 'Easy puzzle should have at most 40 clues');
+        expect(
+          puzzle.filledCount,
+          greaterThanOrEqualTo(36),
+          reason: 'Easy puzzle should have at least 36 clues',
+        );
+        expect(
+          puzzle.filledCount,
+          lessThanOrEqualTo(40),
+          reason: 'Easy puzzle should have at most 40 clues',
+        );
       });
 
       test('medium puzzle should have 32-35 clues', () {
@@ -142,10 +176,16 @@ void main() {
         final puzzle = generator.generate(SudokuDifficulty.medium);
 
         // Assert
-        expect(puzzle.filledCount, greaterThanOrEqualTo(32),
-            reason: 'Medium puzzle should have at least 32 clues');
-        expect(puzzle.filledCount, lessThanOrEqualTo(35),
-            reason: 'Medium puzzle should have at most 35 clues');
+        expect(
+          puzzle.filledCount,
+          greaterThanOrEqualTo(32),
+          reason: 'Medium puzzle should have at least 32 clues',
+        );
+        expect(
+          puzzle.filledCount,
+          lessThanOrEqualTo(35),
+          reason: 'Medium puzzle should have at most 35 clues',
+        );
       });
 
       test('hard puzzle should have 28-31 clues', () {
@@ -153,10 +193,16 @@ void main() {
         final puzzle = generator.generate(SudokuDifficulty.hard);
 
         // Assert
-        expect(puzzle.filledCount, greaterThanOrEqualTo(28),
-            reason: 'Hard puzzle should have at least 28 clues');
-        expect(puzzle.filledCount, lessThanOrEqualTo(31),
-            reason: 'Hard puzzle should have at most 31 clues');
+        expect(
+          puzzle.filledCount,
+          greaterThanOrEqualTo(28),
+          reason: 'Hard puzzle should have at least 28 clues',
+        );
+        expect(
+          puzzle.filledCount,
+          lessThanOrEqualTo(31),
+          reason: 'Hard puzzle should have at most 31 clues',
+        );
       });
 
       test('expert puzzle should have 24-27 clues', () {
@@ -164,10 +210,16 @@ void main() {
         final puzzle = generator.generate(SudokuDifficulty.expert);
 
         // Assert
-        expect(puzzle.filledCount, greaterThanOrEqualTo(24),
-            reason: 'Expert puzzle should have at least 24 clues');
-        expect(puzzle.filledCount, lessThanOrEqualTo(27),
-            reason: 'Expert puzzle should have at most 27 clues');
+        expect(
+          puzzle.filledCount,
+          greaterThanOrEqualTo(24),
+          reason: 'Expert puzzle should have at least 24 clues',
+        );
+        expect(
+          puzzle.filledCount,
+          lessThanOrEqualTo(27),
+          reason: 'Expert puzzle should have at most 27 clues',
+        );
       });
 
       test('easy puzzle should have more clues than expert', () {
@@ -176,8 +228,11 @@ void main() {
         final expertPuzzle = generator.generate(SudokuDifficulty.expert);
 
         // Assert
-        expect(easyPuzzle.filledCount, greaterThan(expertPuzzle.filledCount),
-            reason: 'Easy puzzles should have more clues than expert');
+        expect(
+          easyPuzzle.filledCount,
+          greaterThan(expertPuzzle.filledCount),
+          reason: 'Easy puzzles should have more clues than expert',
+        );
       });
     });
 
@@ -190,8 +245,11 @@ void main() {
         );
 
         // Assert
-        expect(puzzles.length, equals(3),
-            reason: 'Should generate requested number of puzzles');
+        expect(
+          puzzles.length,
+          equals(3),
+          reason: 'Should generate requested number of puzzles',
+        );
 
         // Verify all puzzles are valid
         for (final puzzle in puzzles) {
@@ -240,8 +298,11 @@ void main() {
           if (!isIdentical) break;
         }
 
-        expect(isIdentical, isTrue,
-            reason: 'Same seed should produce identical puzzles');
+        expect(
+          isIdentical,
+          isTrue,
+          reason: 'Same seed should produce identical puzzles',
+        );
       });
     });
 
@@ -264,18 +325,25 @@ void main() {
 
         // Assert
         final conflicts = SudokuValidator.getConflictPositions(puzzle);
-        expect(conflicts.isEmpty, isTrue,
-            reason: 'Solved puzzle should have no conflicts');
+        expect(
+          conflicts.isEmpty,
+          isTrue,
+          reason: 'Solved puzzle should have no conflicts',
+        );
       });
 
-      test('should not remove cells that create ambiguity', () {
-        // Act: Generate puzzle
-        final puzzle = generator.generate(SudokuDifficulty.medium);
+      test(
+        'should not remove cells that create ambiguity',
+        () {
+          // Act: Generate puzzle
+          final puzzle = generator.generate(SudokuDifficulty.medium);
 
-        // Assert: Puzzle must have unique solution
-        // (This is already tested, but emphasizing the quality check)
-        expect(SudokuSolver.hasUniqueSolution(puzzle), isTrue);
-      }, timeout: const Timeout(Duration(seconds: 10)));
+          // Assert: Puzzle must have unique solution
+          // (This is already tested, but emphasizing the quality check)
+          expect(SudokuSolver.hasUniqueSolution(puzzle), isTrue);
+        },
+        timeout: const Timeout(Duration(seconds: 10)),
+      );
     });
 
     group('edge cases', () {
@@ -297,10 +365,16 @@ void main() {
         // Act & Assert: Generate at each difficulty
         for (final difficulty in SudokuDifficulty.values) {
           final puzzle = generator.generate(difficulty);
-          expect(SudokuValidator.isValidBoard(puzzle), isTrue,
-              reason: '$difficulty puzzle should be valid');
-          expect(SudokuSolver.isSolvable(puzzle), isTrue,
-              reason: '$difficulty puzzle should be solvable');
+          expect(
+            SudokuValidator.isValidBoard(puzzle),
+            isTrue,
+            reason: '$difficulty puzzle should be valid',
+          );
+          expect(
+            SudokuSolver.isSolvable(puzzle),
+            isTrue,
+            reason: '$difficulty puzzle should be solvable',
+          );
         }
       });
     });

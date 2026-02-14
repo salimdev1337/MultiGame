@@ -29,20 +29,12 @@ class _SnakeSegmentAnimationState extends State<SnakeSegmentAnimation>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: widget.duration,
-      vsync: this,
-    );
+    _controller = AnimationController(duration: widget.duration, vsync: this);
 
     _offsetAnimation = Tween<Offset>(
       begin: widget.from,
       end: widget.to,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.linear,
-      ),
-    );
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.linear));
 
     _controller.forward();
   }
@@ -54,12 +46,7 @@ class _SnakeSegmentAnimationState extends State<SnakeSegmentAnimation>
       _offsetAnimation = Tween<Offset>(
         begin: widget.from,
         end: widget.to,
-      ).animate(
-        CurvedAnimation(
-          parent: _controller,
-          curve: Curves.linear,
-        ),
-      );
+      ).animate(CurvedAnimation(parent: _controller, curve: Curves.linear));
       _controller.forward(from: 0);
     }
   }
@@ -110,10 +97,7 @@ class _FoodCollectionBurstState extends State<FoodCollectionBurst>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: DSAnimations.slow,
-      vsync: this,
-    );
+    _controller = AnimationController(duration: DSAnimations.slow, vsync: this);
 
     if (widget.show) {
       _initializeParticles();
@@ -261,12 +245,10 @@ class _PowerUpGlowState extends State<PowerUpGlow>
       vsync: this,
     );
 
-    _pulseAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
-    );
+    _pulseAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.2,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     if (widget.active) {
       _controller.repeat(reverse: true);
@@ -300,8 +282,9 @@ class _PowerUpGlowState extends State<PowerUpGlow>
               ? BoxDecoration(
                   boxShadow: [
                     BoxShadow(
-                      color: (widget.color ?? DSColors.snakePrimary)
-                          .withValues(alpha: 0.6),
+                      color: (widget.color ?? DSColors.snakePrimary).withValues(
+                        alpha: 0.6,
+                      ),
                       blurRadius: 15 * _pulseAnimation.value,
                       spreadRadius: 5 * _pulseAnimation.value,
                     ),
@@ -347,24 +330,19 @@ class _DeathAnimationState extends State<DeathAnimation>
       vsync: this,
     );
 
-    _shakeAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 10.0), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: 10.0, end: -10.0), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: -10.0, end: 8.0), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: 8.0, end: -8.0), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: -8.0, end: 0.0), weight: 1),
-    ]).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.5),
-      ),
-    );
+    _shakeAnimation =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 0.0, end: 10.0), weight: 1),
+          TweenSequenceItem(tween: Tween(begin: 10.0, end: -10.0), weight: 1),
+          TweenSequenceItem(tween: Tween(begin: -10.0, end: 8.0), weight: 1),
+          TweenSequenceItem(tween: Tween(begin: 8.0, end: -8.0), weight: 1),
+          TweenSequenceItem(tween: Tween(begin: -8.0, end: 0.0), weight: 1),
+        ]).animate(
+          CurvedAnimation(parent: _controller, curve: const Interval(0.0, 0.5)),
+        );
 
     _fadeAnimation = Tween<double>(begin: 1.0, end: 0.3).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.5, 1.0),
-      ),
+      CurvedAnimation(parent: _controller, curve: const Interval(0.5, 1.0)),
     );
 
     _controller.addStatusListener((status) {
@@ -395,10 +373,7 @@ class _DeathAnimationState extends State<DeathAnimation>
       builder: (context, child) {
         return Transform.translate(
           offset: Offset(_shakeAnimation.value, 0),
-          child: Opacity(
-            opacity: _fadeAnimation.value,
-            child: child,
-          ),
+          child: Opacity(opacity: _fadeAnimation.value, child: child),
         );
       },
       child: widget.child,
@@ -408,10 +383,7 @@ class _DeathAnimationState extends State<DeathAnimation>
 
 /// Snake game background animation
 class SnakeBackgroundAnimation extends StatefulWidget {
-  const SnakeBackgroundAnimation({
-    super.key,
-    required this.child,
-  });
+  const SnakeBackgroundAnimation({super.key, required this.child});
 
   final Widget child;
 

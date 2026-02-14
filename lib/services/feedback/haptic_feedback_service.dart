@@ -60,10 +60,7 @@ class HapticFeedbackService {
   Future<void> setEnabled(bool enabled) async {
     _hapticsEnabled = enabled;
     try {
-      await _storage.write(
-        key: _storageKey,
-        value: enabled.toString(),
-      );
+      await _storage.write(key: _storageKey, value: enabled.toString());
     } catch (e) {
       SecureLogger.error(
         'Failed to save haptic preference',

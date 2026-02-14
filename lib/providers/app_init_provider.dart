@@ -42,12 +42,15 @@ final appInitProvider = FutureProvider<void>((ref) async {
   // Anonymous auth with a 8-second timeout
   if (FirebaseAuth.instance.currentUser == null) {
     try {
-      await FirebaseAuth.instance
-          .signInAnonymously()
-          .timeout(const Duration(seconds: 8));
+      await FirebaseAuth.instance.signInAnonymously().timeout(
+        const Duration(seconds: 8),
+      );
       SecureLogger.firebase('Signed in anonymously');
     } catch (e) {
-      SecureLogger.error('Anonymous auth failed — continuing as guest', error: e);
+      SecureLogger.error(
+        'Anonymous auth failed — continuing as guest',
+        error: e,
+      );
     }
   }
 

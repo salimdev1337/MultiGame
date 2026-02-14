@@ -27,7 +27,10 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
           style: DSTypography.titleLarge.copyWith(color: DSColors.textPrimary),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, color: DSColors.textPrimary),
+          icon: const Icon(
+            Icons.arrow_back_ios_rounded,
+            color: DSColors.textPrimary,
+          ),
           onPressed: () => Navigator.of(context).pop(),
           tooltip: 'Back',
         ),
@@ -122,12 +125,17 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
         ),
         content: Text(
           'All accessibility settings will be restored to their defaults.',
-          style: DSTypography.bodyMedium.copyWith(color: DSColors.textSecondary),
+          style: DSTypography.bodyMedium.copyWith(
+            color: DSColors.textSecondary,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('Cancel', style: TextStyle(color: DSColors.textSecondary)),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: DSColors.textSecondary),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -240,7 +248,9 @@ class _SettingsTile extends StatelessWidget {
           ),
           subtitle: Text(
             subtitle,
-            style: DSTypography.bodySmall.copyWith(color: DSColors.textSecondary),
+            style: DSTypography.bodySmall.copyWith(
+              color: DSColors.textSecondary,
+            ),
           ),
           activeThumbColor: DSColors.primary,
           activeTrackColor: DSColors.primary.withValues(alpha: 0.5),
@@ -288,8 +298,11 @@ class _FontScaleTile extends StatelessWidget {
                     color: DSColors.info.withValues(alpha: 0.15),
                     borderRadius: DSSpacing.borderRadiusSM,
                   ),
-                  child: Icon(Icons.text_fields_rounded,
-                      size: 22, color: DSColors.info),
+                  child: Icon(
+                    Icons.text_fields_rounded,
+                    size: 22,
+                    color: DSColors.info,
+                  ),
                 ),
                 DSSpacing.gapHorizontalSM,
                 Expanded(
@@ -413,14 +426,18 @@ class _ActionTile extends StatelessWidget {
                       ),
                       Text(
                         subtitle,
-                        style: DSTypography.bodySmall
-                            .copyWith(color: DSColors.textSecondary),
+                        style: DSTypography.bodySmall.copyWith(
+                          color: DSColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right_rounded,
-                    color: DSColors.textTertiary, size: 20),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: DSColors.textTertiary,
+                  size: 20,
+                ),
               ],
             ),
           ),

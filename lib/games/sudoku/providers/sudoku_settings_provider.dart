@@ -33,14 +33,17 @@ class SudokuSettingsProvider extends ChangeNotifier {
 
       _soundEnabled = prefs.getBool(_keySoundEnabled) ?? true;
       _hapticsEnabled = prefs.getBool(_keyHapticsEnabled) ?? true;
-      _errorHighlightingEnabled =
-          prefs.getBool(_keyErrorHighlighting) ?? true;
+      _errorHighlightingEnabled = prefs.getBool(_keyErrorHighlighting) ?? true;
 
       _isInitialized = true;
       notifyListeners();
       return true;
     } catch (e) {
-      SecureLogger.error('Failed to load Sudoku settings', error: e, tag: 'SudokuSettings');
+      SecureLogger.error(
+        'Failed to load Sudoku settings',
+        error: e,
+        tag: 'SudokuSettings',
+      );
       _isInitialized = false;
       return false;
     }
@@ -57,7 +60,11 @@ class SudokuSettingsProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      SecureLogger.error('Failed to save sound setting', error: e, tag: 'SudokuSettings');
+      SecureLogger.error(
+        'Failed to save sound setting',
+        error: e,
+        tag: 'SudokuSettings',
+      );
       _lastError = 'Failed to save sound setting';
       notifyListeners();
       return false;
@@ -75,7 +82,11 @@ class SudokuSettingsProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      SecureLogger.error('Failed to save haptics setting', error: e, tag: 'SudokuSettings');
+      SecureLogger.error(
+        'Failed to save haptics setting',
+        error: e,
+        tag: 'SudokuSettings',
+      );
       _lastError = 'Failed to save haptics setting';
       notifyListeners();
       return false;
@@ -93,7 +104,11 @@ class SudokuSettingsProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      SecureLogger.error('Failed to save error highlighting setting', error: e, tag: 'SudokuSettings');
+      SecureLogger.error(
+        'Failed to save error highlighting setting',
+        error: e,
+        tag: 'SudokuSettings',
+      );
       _lastError = 'Failed to save error highlighting setting';
       notifyListeners();
       return false;
@@ -136,7 +151,11 @@ class SudokuSettingsProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      SecureLogger.error('Failed to reset settings', error: e, tag: 'SudokuSettings');
+      SecureLogger.error(
+        'Failed to reset settings',
+        error: e,
+        tag: 'SudokuSettings',
+      );
       _lastError = 'Failed to reset settings';
       notifyListeners();
       return false;

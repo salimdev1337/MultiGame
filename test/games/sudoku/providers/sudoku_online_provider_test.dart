@@ -10,7 +10,8 @@ import 'package:multigame/games/sudoku/services/matchmaking_service.dart';
 
 // Manual fake implementations
 class FakeMatchmakingService implements MatchmakingService {
-  final StreamController<MatchRoom> _matchStreamController = StreamController.broadcast();
+  final StreamController<MatchRoom> _matchStreamController =
+      StreamController.broadcast();
   final Map<String, MatchRoom> _matches = {};
 
   @override
@@ -20,10 +21,10 @@ class FakeMatchmakingService implements MatchmakingService {
     required String difficulty,
   }) async {
     final matchId = 'test_match_${DateTime.now().millisecondsSinceEpoch}';
-    
+
     // Create basic puzzle data
     final puzzleData = List.generate(9, (_) => List.filled(9, 0));
-    
+
     final now = DateTime.now();
     final match = MatchRoom(
       matchId: matchId,
@@ -45,7 +46,7 @@ class FakeMatchmakingService implements MatchmakingService {
     );
 
     _matches[matchId] = match;
-    
+
     // Emit match
     Future.delayed(Duration.zero, () {
       if (!_matchStreamController.isClosed) {
@@ -350,7 +351,7 @@ void main() {
 
       test('resetBoard clears state', () async {
         provider.selectCell(2, 3);
-        
+
         await provider.resetBoard();
 
         expect(provider.mistakes, 0);

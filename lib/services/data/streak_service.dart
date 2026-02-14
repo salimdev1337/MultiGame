@@ -34,7 +34,11 @@ class StreakService {
       SecureLogger.log('Streak: First play');
     } else {
       final lastPlayDate = DateTime.parse(lastPlayDateStr);
-      final lastPlay = DateTime(lastPlayDate.year, lastPlayDate.month, lastPlayDate.day);
+      final lastPlay = DateTime(
+        lastPlayDate.year,
+        lastPlayDate.month,
+        lastPlayDate.day,
+      );
       final daysDifference = today.difference(lastPlay).inDays;
 
       if (daysDifference == 0) {
@@ -82,7 +86,11 @@ class StreakService {
     // Check if streak is still valid
     if (lastPlayDateStr != null) {
       final lastPlayDate = DateTime.parse(lastPlayDateStr);
-      final lastPlay = DateTime(lastPlayDate.year, lastPlayDate.month, lastPlayDate.day);
+      final lastPlay = DateTime(
+        lastPlayDate.year,
+        lastPlayDate.month,
+        lastPlayDate.day,
+      );
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
       final daysDifference = today.difference(lastPlay).inDays;
@@ -104,7 +112,9 @@ class StreakService {
       currentStreak: currentStreak,
       longestStreak: longestStreak,
       totalDaysPlayed: totalDaysPlayed,
-      lastPlayDate: lastPlayDateStr != null ? DateTime.parse(lastPlayDateStr) : null,
+      lastPlayDate: lastPlayDateStr != null
+          ? DateTime.parse(lastPlayDateStr)
+          : null,
     );
   }
 

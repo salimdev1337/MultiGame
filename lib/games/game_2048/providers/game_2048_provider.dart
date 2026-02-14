@@ -39,8 +39,8 @@ class Game2048Provider extends ChangeNotifier with GameStatsMixin {
   Game2048Provider({
     required AchievementService achievementService,
     required FirebaseStatsService statsService,
-  })  : _achievementService = achievementService,
-        _statsService = statsService {
+  }) : _achievementService = achievementService,
+       _statsService = statsService {
     initializeGame();
   }
 
@@ -138,7 +138,9 @@ class Game2048Provider extends ChangeNotifier with GameStatsMixin {
         result.add(line[i++]);
       }
     }
-    while (result.length < 4) { result.add(0); }
+    while (result.length < 4) {
+      result.add(0);
+    }
     return (result, score);
   }
 
@@ -215,7 +217,10 @@ class Game2048Provider extends ChangeNotifier with GameStatsMixin {
   bool _moveUp() {
     bool moved = false;
     for (int j = 0; j < 4; j++) {
-      final col = [for (int i = 0; i < 4; i++) if (_grid[i][j] != 0) _grid[i][j]];
+      final col = [
+        for (int i = 0; i < 4; i++)
+          if (_grid[i][j] != 0) _grid[i][j],
+      ];
       final (newCol, scoreDelta) = _mergeLine(col);
       _score += scoreDelta;
       for (int i = 0; i < 4; i++) {
@@ -230,7 +235,10 @@ class Game2048Provider extends ChangeNotifier with GameStatsMixin {
   bool _moveDown() {
     bool moved = false;
     for (int j = 0; j < 4; j++) {
-      final col = [for (int i = 3; i >= 0; i--) if (_grid[i][j] != 0) _grid[i][j]];
+      final col = [
+        for (int i = 3; i >= 0; i--)
+          if (_grid[i][j] != 0) _grid[i][j],
+      ];
       final (newCol, scoreDelta) = _mergeLine(col);
       _score += scoreDelta;
       for (int i = 0; i < 4; i++) {

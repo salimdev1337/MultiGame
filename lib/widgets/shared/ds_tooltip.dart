@@ -43,24 +43,17 @@ class _DSTooltipState extends State<DSTooltip>
   }
 
   void _setupAnimations() {
-    _controller = AnimationController(
-      duration: DSAnimations.fast,
-      vsync: this,
-    );
+    _controller = AnimationController(duration: DSAnimations.fast, vsync: this);
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOut,
-      ),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOutCubic,
-      ),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
   }
 
   @override
@@ -215,8 +208,9 @@ class _TooltipOverlay extends StatelessWidget {
         color: backgroundColor ?? DSColors.surfaceElevated,
         borderRadius: DSSpacing.borderRadiusMD,
         border: Border.all(
-          color: (backgroundColor ?? DSColors.surfaceElevated)
-              .withValues(alpha: 0.3),
+          color: (backgroundColor ?? DSColors.surfaceElevated).withValues(
+            alpha: 0.3,
+          ),
           width: 1,
         ),
         boxShadow: [
@@ -278,10 +272,7 @@ class _ArrowPainter extends CustomPainter {
   final Color color;
   final bool pointingUp;
 
-  _ArrowPainter({
-    required this.color,
-    required this.pointingUp,
-  });
+  _ArrowPainter({required this.color, required this.pointingUp});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -321,9 +312,4 @@ class _ArrowPainter extends CustomPainter {
 }
 
 /// Tooltip position relative to target widget
-enum DSTooltipPosition {
-  top,
-  bottom,
-  left,
-  right,
-}
+enum DSTooltipPosition { top, bottom, left, right }

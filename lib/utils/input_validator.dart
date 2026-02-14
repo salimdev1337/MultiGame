@@ -17,7 +17,9 @@ class InputValidator {
     }
 
     if (trimmed.length < 2 || trimmed.length > 20) {
-      return ValidationResult.error('Nickname must be between 2 and 20 characters');
+      return ValidationResult.error(
+        'Nickname must be between 2 and 20 characters',
+      );
     }
 
     // Only allow alphanumeric, spaces, hyphens, and underscores
@@ -30,12 +32,16 @@ class InputValidator {
 
     // No consecutive spaces
     if (trimmed.contains('  ')) {
-      return ValidationResult.error('Nickname cannot contain consecutive spaces');
+      return ValidationResult.error(
+        'Nickname cannot contain consecutive spaces',
+      );
     }
 
     // No leading or trailing spaces (should already be trimmed)
     if (trimmed != input) {
-      return ValidationResult.error('Nickname cannot have leading or trailing whitespace');
+      return ValidationResult.error(
+        'Nickname cannot have leading or trailing whitespace',
+      );
     }
 
     return ValidationResult.success(trimmed);
@@ -49,7 +55,10 @@ class InputValidator {
     String sanitized = input.trim();
 
     // Remove potential HTML/script tags AND their content
-    sanitized = sanitized.replaceAll(RegExp(r'<script[^>]*>.*?</script>', caseSensitive: false, dotAll: true), '');
+    sanitized = sanitized.replaceAll(
+      RegExp(r'<script[^>]*>.*?</script>', caseSensitive: false, dotAll: true),
+      '',
+    );
     sanitized = sanitized.replaceAll(RegExp(r'<[^>]*>'), '');
 
     // Replace multiple spaces with single space
@@ -64,11 +73,17 @@ class InputValidator {
   /// Validate score value
   ///
   /// Ensures score is within valid range for the game
-  static ValidationResult validateScore(int score, {int min = 0, int max = 100000}) {
+  static ValidationResult validateScore(
+    int score, {
+    int min = 0,
+    int max = 100000,
+  }) {
     if (score < min || score > max) {
       // Include "maximum" in the message when above max for custom ranges
       if (score > max && max != 100000) {
-        return ValidationResult.error('Score must be between $min and $max (maximum: $max)');
+        return ValidationResult.error(
+          'Score must be between $min and $max (maximum: $max)',
+        );
       }
       return ValidationResult.error('Score must be between $min and $max');
     }
@@ -83,7 +98,9 @@ class InputValidator {
     const validGameTypes = ['puzzle', '2048', 'snake', 'infinite_runner'];
 
     if (!validGameTypes.contains(gameType)) {
-      return ValidationResult.error('Invalid game type. Valid game types are: ${validGameTypes.join(", ")}');
+      return ValidationResult.error(
+        'Invalid game type. Valid game types are: ${validGameTypes.join(", ")}',
+      );
     }
 
     return ValidationResult.success(gameType);
@@ -107,11 +124,7 @@ class ValidationResult {
   final String? error;
   final dynamic value;
 
-  ValidationResult.success(this.value)
-      : isValid = true,
-        error = null;
+  ValidationResult.success(this.value) : isValid = true, error = null;
 
-  ValidationResult.error(this.error)
-      : isValid = false,
-        value = null;
+  ValidationResult.error(this.error) : isValid = false, value = null;
 }

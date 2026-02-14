@@ -391,7 +391,10 @@ class _GameCarouselState extends State<GameCarousel> {
       case 'Sudoku':
         instructions = [
           {'emoji': '🔢', 'text': 'Fill the grid with numbers 1-9'},
-          {'emoji': '✅', 'text': 'Each row, column, and box must have all digits'},
+          {
+            'emoji': '✅',
+            'text': 'Each row, column, and box must have all digits',
+          },
           {'emoji': '🎯', 'text': 'Choose Classic, Rush, or 1v1 mode'},
         ];
         break;

@@ -53,4 +53,5 @@ class SnakeUINotifier extends AutoDisposeNotifier<SnakeUIState> {
 
 final snakeUIProvider =
     NotifierProvider.autoDispose<SnakeUINotifier, SnakeUIState>(
-        SnakeUINotifier.new);
+      SnakeUINotifier.new,
+    );

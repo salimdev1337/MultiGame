@@ -33,20 +33,21 @@ class _TileMergeAnimationState extends State<TileMergeAnimation>
       vsync: this,
     );
 
-    _scaleAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.15), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: 1.15, end: 1.0), weight: 1),
-    ]).animate(CurvedAnimation(
-      parent: _controller,
-      curve: DSAnimations.tile2048Merge.curve,
-    ));
+    _scaleAnimation =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.15), weight: 1),
+          TweenSequenceItem(tween: Tween(begin: 1.15, end: 1.0), weight: 1),
+        ]).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: DSAnimations.tile2048Merge.curve,
+          ),
+        );
 
-    _rotationAnimation = Tween<double>(begin: 0.0, end: 0.05).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
-    );
+    _rotationAnimation = Tween<double>(
+      begin: 0.0,
+      end: 0.05,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
@@ -116,23 +117,15 @@ class _ScorePopupState extends State<ScorePopup>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: DSAnimations.slow,
-      vsync: this,
-    );
+    _controller = AnimationController(duration: DSAnimations.slow, vsync: this);
 
-    _slideAnimation = Tween<double>(begin: 0.0, end: -50.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOut,
-      ),
-    );
+    _slideAnimation = Tween<double>(
+      begin: 0.0,
+      end: -50.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     _fadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.5, 1.0),
-      ),
+      CurvedAnimation(parent: _controller, curve: const Interval(0.5, 1.0)),
     );
 
     if (widget.show) {
@@ -191,10 +184,7 @@ class _ScorePopupState extends State<ScorePopup>
 
 /// Background particles for high scores
 class HighScoreParticles extends StatefulWidget {
-  const HighScoreParticles({
-    super.key,
-    required this.show,
-  });
+  const HighScoreParticles({super.key, required this.show});
 
   final bool show;
 
@@ -323,11 +313,7 @@ class ParticlePainter extends CustomPainter {
 
 /// Gesture trail effect for swipes
 class SwipeTrailEffect extends StatefulWidget {
-  const SwipeTrailEffect({
-    super.key,
-    required this.child,
-    this.color,
-  });
+  const SwipeTrailEffect({super.key, required this.child, this.color});
 
   final Widget child;
   final Color? color;
@@ -344,10 +330,7 @@ class _SwipeTrailEffectState extends State<SwipeTrailEffect>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: DSAnimations.fast,
-      vsync: this,
-    );
+    _controller = AnimationController(duration: DSAnimations.fast, vsync: this);
 
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
@@ -368,10 +351,7 @@ class _SwipeTrailEffectState extends State<SwipeTrailEffect>
   void _handlePanUpdate(DragUpdateDetails details) {
     setState(() {
       _trailPoints.add(
-        TrailPoint(
-          position: details.localPosition,
-          timestamp: DateTime.now(),
-        ),
+        TrailPoint(position: details.localPosition, timestamp: DateTime.now()),
       );
 
       // Keep only recent points
@@ -456,11 +436,7 @@ class TrailPainter extends CustomPainter {
 
 /// Victory animation for reaching 2048
 class Game2048Victory extends StatefulWidget {
-  const Game2048Victory({
-    super.key,
-    required this.show,
-    this.onContinue,
-  });
+  const Game2048Victory({super.key, required this.show, this.onContinue});
 
   final bool show;
   final VoidCallback? onContinue;
@@ -484,17 +460,11 @@ class _Game2048VictoryState extends State<Game2048Victory>
     );
 
     _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: DSAnimations.elasticOut,
-      ),
+      CurvedAnimation(parent: _controller, curve: DSAnimations.elasticOut),
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.5),
-      ),
+      CurvedAnimation(parent: _controller, curve: const Interval(0.0, 0.5)),
     );
 
     if (widget.show) {
@@ -546,10 +516,7 @@ class _Game2048VictoryState extends State<Game2048Victory>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    '🎉',
-                    style: const TextStyle(fontSize: 64),
-                  ),
+                  Text('🎉', style: const TextStyle(fontSize: 64)),
                   SizedBox(height: DSSpacing.md),
                   Text(
                     'You Win!',

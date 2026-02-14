@@ -16,11 +16,7 @@ enum DSButtonVariant {
 }
 
 /// Button sizes
-enum DSButtonSize {
-  small,
-  medium,
-  large,
-}
+enum DSButtonSize { small, medium, large }
 
 /// Premium animated button widget
 class DSButton extends StatefulWidget {
@@ -130,10 +126,7 @@ class _DSButtonState extends State<DSButton>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: DSAnimations.fast,
-    );
+    _controller = AnimationController(vsync: this, duration: DSAnimations.fast);
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
       CurvedAnimation(parent: _controller, curve: DSAnimations.easeOutCubic),
     );
@@ -214,64 +207,66 @@ class _DSButtonState extends State<DSButton>
       button: true,
       enabled: !isDisabled,
       child: ScaleTransition(
-      scale: _scaleAnimation,
-      child: GestureDetector(
-        onTapDown: isDisabled ? null : _handleTapDown,
-        onTapUp: isDisabled ? null : _handleTapUp,
-        onTapCancel: _handleTapCancel,
-        onTap: widget.loading ? null : widget.onPressed,
-        child: AnimatedContainer(
-          duration: DSAnimations.fast,
-          width: widget.fullWidth ? double.infinity : null,
-          padding: _padding,
-          decoration: _buildDecoration(isDisabled),
-          child: Row(
-            mainAxisSize:
-                widget.fullWidth ? MainAxisSize.max : MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (widget.loading)
-                SizedBox(
-                  width: _iconSize,
-                  height: _iconSize,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      _getTextColor(isDisabled),
+        scale: _scaleAnimation,
+        child: GestureDetector(
+          onTapDown: isDisabled ? null : _handleTapDown,
+          onTapUp: isDisabled ? null : _handleTapUp,
+          onTapCancel: _handleTapCancel,
+          onTap: widget.loading ? null : widget.onPressed,
+          child: AnimatedContainer(
+            duration: DSAnimations.fast,
+            width: widget.fullWidth ? double.infinity : null,
+            padding: _padding,
+            decoration: _buildDecoration(isDisabled),
+            child: Row(
+              mainAxisSize: widget.fullWidth
+                  ? MainAxisSize.max
+                  : MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (widget.loading)
+                  SizedBox(
+                    width: _iconSize,
+                    height: _iconSize,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        _getTextColor(isDisabled),
+                      ),
                     ),
+                  )
+                else if (widget.icon != null && widget.iconLeading) ...[
+                  Icon(
+                    widget.icon,
+                    size: _iconSize,
+                    color: _getTextColor(isDisabled),
                   ),
-                )
-              else if (widget.icon != null && widget.iconLeading) ...[
-                Icon(
-                  widget.icon,
-                  size: _iconSize,
-                  color: _getTextColor(isDisabled),
+                  DSSpacing.gapHorizontalXS,
+                ],
+                Text(
+                  widget.text,
+                  style: TextStyle(
+                    fontSize: _fontSize,
+                    fontWeight: FontWeight.w600,
+                    color: _getTextColor(isDisabled),
+                    letterSpacing: 0.5,
+                  ),
                 ),
-                DSSpacing.gapHorizontalXS,
+                if (widget.icon != null &&
+                    !widget.iconLeading &&
+                    !widget.loading) ...[
+                  DSSpacing.gapHorizontalXS,
+                  Icon(
+                    widget.icon,
+                    size: _iconSize,
+                    color: _getTextColor(isDisabled),
+                  ),
+                ],
               ],
-              Text(
-                widget.text,
-                style: TextStyle(
-                  fontSize: _fontSize,
-                  fontWeight: FontWeight.w600,
-                  color: _getTextColor(isDisabled),
-                  letterSpacing: 0.5,
-                ),
-              ),
-              if (widget.icon != null && !widget.iconLeading && !widget.loading)
-                ...[
-                DSSpacing.gapHorizontalXS,
-                Icon(
-                  widget.icon,
-                  size: _iconSize,
-                  color: _getTextColor(isDisabled),
-                ),
-              ],
-            ],
+            ),
           ),
         ),
       ),
-    ),
     );
   }
 
@@ -313,9 +308,7 @@ class _DSButtonState extends State<DSButton>
               ? DSColors.withOpacity(DSColors.primary, 0.1)
               : Colors.transparent,
           border: Border.all(
-            color: isDisabled
-                ? DSColors.textTertiary
-                : DSColors.primary,
+            color: isDisabled ? DSColors.textTertiary : DSColors.primary,
             width: DSSpacing.borderMedium,
           ),
           borderRadius: DSSpacing.borderRadiusMD,

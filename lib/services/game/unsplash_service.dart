@@ -41,7 +41,9 @@ class UnsplashService {
 
     final apiKey = ApiConfig.unsplashAccessKey;
     if (apiKey == null || !ApiConfig.validateUnsplashKey(apiKey)) {
-      _logError('Unsplash API key is not configured or invalid. Using fallback image.');
+      _logError(
+        'Unsplash API key is not configured or invalid. Using fallback image.',
+      );
       return _getFallbackImage();
     }
 
@@ -53,8 +55,12 @@ class UnsplashService {
   }
 
   bool _isCacheValid() {
-    if (_cachedImageUrl == null || _cacheTime == null) return false;
-    return _cacheTime!.isAfter(DateTime.now().subtract(const Duration(hours: 1)));
+    if (_cachedImageUrl == null || _cacheTime == null) {
+      return false;
+    }
+    return _cacheTime!.isAfter(
+      DateTime.now().subtract(const Duration(hours: 1)),
+    );
   }
 
   Future<String?> _attemptFetch(int attempt) async {
@@ -66,18 +72,28 @@ class UnsplashService {
       final imageUrl = await _fetchImageFromApi();
       _cachedImageUrl = imageUrl;
       _cacheTime = DateTime.now();
-      SecureLogger.api(endpoint: '/photos/random', statusCode: 200, message: 'Successfully fetched image');
+      SecureLogger.api(
+        endpoint: '/photos/random',
+        statusCode: 200,
+        message: 'Successfully fetched image',
+      );
       return imageUrl;
     } on UnsplashNetworkException catch (e) {
       if (attempt < _maxRetries) {
-        _logError('Network error on attempt $attempt: ${e.message}. Retrying...');
+        _logError(
+          'Network error on attempt $attempt: ${e.message}. Retrying...',
+        );
         await Future.delayed(_retryDelay * attempt);
         return null;
       }
-      _logError('Failed to fetch image after $_maxRetries attempts: ${e.message}');
+      _logError(
+        'Failed to fetch image after $_maxRetries attempts: ${e.message}',
+      );
       return _getFallbackImage();
     } on UnsplashApiException catch (e) {
-      if (e.statusCode != null && e.statusCode! >= 500 && attempt < _maxRetries) {
+      if (e.statusCode != null &&
+          e.statusCode! >= 500 &&
+          attempt < _maxRetries) {
         _logError('API error on attempt $attempt: ${e.message}. Retrying...');
         await Future.delayed(_retryDelay * attempt);
         return null;
@@ -152,30 +168,49 @@ class UnsplashService {
     try {
       final data = json.decode(response.body) as Map<String, dynamic>;
       if (!data.containsKey('urls')) {
-        throw UnsplashApiException('Invalid API response: missing "urls" field', statusCode: 200);
+        throw UnsplashApiException(
+          'Invalid API response: missing "urls" field',
+          statusCode: 200,
+        );
       }
       final urls = data['urls'] as Map<String, dynamic>;
       if (!urls.containsKey('regular')) {
-        throw UnsplashApiException('Invalid API response: missing "urls.regular" field', statusCode: 200);
+        throw UnsplashApiException(
+          'Invalid API response: missing "urls.regular" field',
+          statusCode: 200,
+        );
       }
       final imageUrl = urls['regular'] as String;
       if (imageUrl.isEmpty) {
-        throw UnsplashApiException('Invalid API response: empty image URL', statusCode: 200);
+        throw UnsplashApiException(
+          'Invalid API response: empty image URL',
+          statusCode: 200,
+        );
       }
       return imageUrl;
     } on FormatException catch (e) {
-      throw UnsplashApiException('Failed to parse API response: ${e.message}', statusCode: 200, originalError: e);
+      throw UnsplashApiException(
+        'Failed to parse API response: ${e.message}',
+        statusCode: 200,
+        originalError: e,
+      );
     }
   }
 
   String _httpErrorMessage(int statusCode) {
     switch (statusCode) {
-      case 400: return 'Bad Request - Invalid API parameters';
-      case 401: return 'Unauthorized: Invalid or missing API key';
-      case 403: return 'Forbidden: API key does not have required permissions';
-      case 429: return 'Rate limit exceeded: Too many requests';
+      case 400:
+        return 'Bad Request - Invalid API parameters';
+      case 401:
+        return 'Unauthorized: Invalid or missing API key';
+      case 403:
+        return 'Forbidden: API key does not have required permissions';
+      case 429:
+        return 'Rate limit exceeded: Too many requests';
       default:
-        if (statusCode >= 500) return 'Server error: Unsplash API is temporarily unavailable';
+        if (statusCode >= 500) {
+          return 'Server error: Unsplash API is temporarily unavailable';
+        }
         return 'Unexpected API response: $statusCode';
     }
   }

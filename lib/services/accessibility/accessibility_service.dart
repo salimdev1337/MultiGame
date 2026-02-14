@@ -20,9 +20,8 @@ class AccessibilityService {
   static const double defaultFontScale = 1.0;
   static const bool defaultScreenReader = false;
 
-  AccessibilityService({
-    required SecureStorageRepository storage,
-  }) : _storage = storage;
+  AccessibilityService({required SecureStorageRepository storage})
+    : _storage = storage;
 
   // ==========================================
   // Reduced Motion

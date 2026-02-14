@@ -106,23 +106,20 @@ class RaceMessage {
   );
 
   /// Any → Host: crossed finish line
-  factory RaceMessage.finish({
-    required int playerId,
-    required int timeMs,
-  }) => RaceMessage(
-    type: RaceMessageType.finish,
-    playerId: playerId,
-    payload: {'timeMs': timeMs},
-  );
+  factory RaceMessage.finish({required int playerId, required int timeMs}) =>
+      RaceMessage(
+        type: RaceMessageType.finish,
+        playerId: playerId,
+        payload: {'timeMs': timeMs},
+      );
 
   /// Host → All: final results
-  factory RaceMessage.results({
-    required List<Map<String, dynamic>> rankings,
-  }) => RaceMessage(
-    type: RaceMessageType.results,
-    playerId: 0,
-    payload: {'rankings': rankings},
-  );
+  factory RaceMessage.results({required List<Map<String, dynamic>> rankings}) =>
+      RaceMessage(
+        type: RaceMessageType.results,
+        playerId: 0,
+        payload: {'rankings': rankings},
+      );
 
   /// Any → All: player disconnected
   factory RaceMessage.disconnect({required int playerId}) =>
@@ -145,11 +142,8 @@ class RaceMessage {
 
   // ── Serialisation ─────────────────────────────────────────────────────────
 
-  String toJson() => jsonEncode({
-    'type': type.name,
-    'playerId': playerId,
-    'payload': payload,
-  });
+  String toJson() =>
+      jsonEncode({'type': type.name, 'playerId': playerId, 'payload': payload});
 
   static RaceMessage fromJson(String raw) {
     final map = jsonDecode(raw) as Map<String, dynamic>;

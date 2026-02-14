@@ -77,10 +77,7 @@ class AbilityPickup extends PositionComponent {
 
     // Emoji label
     final tp = TextPainter(
-      text: TextSpan(
-        text: type.emoji,
-        style: const TextStyle(fontSize: 22),
-      ),
+      text: TextSpan(text: type.emoji, style: const TextStyle(fontSize: 22)),
       textDirection: TextDirection.ltr,
     )..layout();
     tp.paint(canvas, Offset(cx - tp.width / 2, cy - tp.height / 2));

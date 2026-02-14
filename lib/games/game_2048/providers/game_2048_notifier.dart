@@ -23,7 +23,13 @@ class Game2048State {
 
   static const List<int> milestones = [256, 512, 1024, 2048, 4096, 8192, 16384];
   static const List<String> milestoneLabels = [
-    'Beginner', 'Easy', 'Medium', 'Hard', 'Expert', 'Master', 'Legend'
+    'Beginner',
+    'Easy',
+    'Medium',
+    'Hard',
+    'Expert',
+    'Master',
+    'Legend',
   ];
 
   const Game2048State({
@@ -89,7 +95,8 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
   Game2048State build() {
     _achievementService = ref.read(achievementServiceProvider);
     return _newGame(
-        Game2048State(grid: List.generate(4, (_) => List.filled(4, 0))));
+      Game2048State(grid: List.generate(4, (_) => List.filled(4, 0))),
+    );
   }
 
   Game2048State _newGame(Game2048State base) {
@@ -132,11 +139,11 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
     bool moved = false;
 
     (grid, scoreDelta, mergeCount, moved) = switch (direction) {
-      'left'  => _moveLeft(grid),
+      'left' => _moveLeft(grid),
       'right' => _moveRight(grid),
-      'up'    => _moveUp(grid),
-      'down'  => _moveDown(grid),
-      _       => (grid, 0, 0, false),
+      'up' => _moveUp(grid),
+      'down' => _moveDown(grid),
+      _ => (grid, 0, 0, false),
     };
 
     if (!moved) return false;
@@ -144,14 +151,19 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
     grid = _addTile(grid);
 
     // Combo bonus: each extra merge beyond the first adds 10% of base delta
-    final comboBonus = mergeCount > 1 ? (scoreDelta * (mergeCount - 1)) ~/ 10 : 0;
+    final comboBonus = mergeCount > 1
+        ? (scoreDelta * (mergeCount - 1)) ~/ 10
+        : 0;
     final totalDelta = scoreDelta + comboBonus;
     final newScore = state.score + totalDelta;
     final newBest = newScore > state.bestScore ? newScore : state.bestScore;
     final gameOver = !_canMove(grid);
 
     // Auto-advance milestone based on highest tile on board
-    final newMilestoneIndex = _computeMilestoneIndex(grid, state.highestMilestoneIndex);
+    final newMilestoneIndex = _computeMilestoneIndex(
+      grid,
+      state.highestMilestoneIndex,
+    );
 
     state = state.copyWith(
       grid: grid,
@@ -223,7 +235,9 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
           newRow.add(row[j++]);
         }
       }
-      while (newRow.length < 4) { newRow.add(0); }
+      while (newRow.length < 4) {
+        newRow.add(0);
+      }
       if (grid[i].toString() != newRow.toString()) moved = true;
       grid[i] = newRow;
     }
@@ -249,7 +263,9 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
           newRow.add(row[j++]);
         }
       }
-      while (newRow.length < 4) { newRow.add(0); }
+      while (newRow.length < 4) {
+        newRow.add(0);
+      }
       final reversed = newRow.reversed.toList();
       if (grid[i].toString() != reversed.toString()) moved = true;
       grid[i] = reversed;
@@ -274,7 +290,9 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
         result.add(line[i++]);
       }
     }
-    while (result.length < 4) { result.add(0); }
+    while (result.length < 4) {
+      result.add(0);
+    }
     return (result, score, merges);
   }
 
@@ -283,7 +301,10 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
     int score = 0;
     int merges = 0;
     for (int j = 0; j < 4; j++) {
-      final col = [for (int i = 0; i < 4; i++) if (grid[i][j] != 0) grid[i][j]];
+      final col = [
+        for (int i = 0; i < 4; i++)
+          if (grid[i][j] != 0) grid[i][j],
+      ];
       final (newCol, colScore, colMerges) = _mergeLine(col);
       score += colScore;
       merges += colMerges;
@@ -300,7 +321,10 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
     int score = 0;
     int merges = 0;
     for (int j = 0; j < 4; j++) {
-      final col = [for (int i = 3; i >= 0; i--) if (grid[i][j] != 0) grid[i][j]];
+      final col = [
+        for (int i = 3; i >= 0; i--)
+          if (grid[i][j] != 0) grid[i][j],
+      ];
       final (newCol, colScore, colMerges) = _mergeLine(col);
       score += colScore;
       merges += colMerges;
@@ -315,13 +339,21 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
   Future<void> recordGameCompletion() async {
     final tile = getHighestTile();
     String level = 'None';
-    if (tile >= 16384) { level = 'Legend (16384)'; }
-    else if (tile >= 8192) { level = 'Master (8192)'; }
-    else if (tile >= 4096) { level = 'Expert (4096)'; }
-    else if (tile >= 2048) { level = 'Hard (2048)'; }
-    else if (tile >= 1024) { level = 'Medium (1024)'; }
-    else if (tile >= 512)  { level = 'Easy (512)'; }
-    else if (tile >= 256)  { level = 'Beginner (256)'; }
+    if (tile >= 16384) {
+      level = 'Legend (16384)';
+    } else if (tile >= 8192) {
+      level = 'Master (8192)';
+    } else if (tile >= 4096) {
+      level = 'Expert (4096)';
+    } else if (tile >= 2048) {
+      level = 'Hard (2048)';
+    } else if (tile >= 1024) {
+      level = 'Medium (1024)';
+    } else if (tile >= 512) {
+      level = 'Easy (512)';
+    } else if (tile >= 256) {
+      level = 'Beginner (256)';
+    }
 
     await _achievementService.save2048Achievement(
       score: state.score,
@@ -333,4 +365,5 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
 
 final game2048Provider =
     NotifierProvider.autoDispose<Game2048Notifier, Game2048State>(
-        Game2048Notifier.new);
+      Game2048Notifier.new,
+    );

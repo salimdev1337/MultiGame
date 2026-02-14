@@ -46,7 +46,7 @@ void main() {
     test('fromValues throws on invalid board size', () {
       expect(
         () => SudokuBoard.fromValues([
-          [1, 2, 3]
+          [1, 2, 3],
         ]),
         throwsArgumentError,
       );
@@ -168,7 +168,11 @@ void main() {
       // Test all 9 boxes
       for (int boxIndex = 0; boxIndex < 9; boxIndex++) {
         final box = board.getBoxByIndex(boxIndex);
-        expect(box.length, equals(9), reason: 'Box $boxIndex should have 9 cells');
+        expect(
+          box.length,
+          equals(9),
+          reason: 'Box $boxIndex should have 9 cells',
+        );
       }
 
       // Box 0 = top-left, Box 8 = bottom-right

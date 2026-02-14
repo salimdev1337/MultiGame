@@ -8,7 +8,10 @@ class ApiConfig {
     const envKey = String.fromEnvironment('UNSPLASH_ACCESS_KEY');
 
     // Secure logging - never log the actual key value
-    SecureLogger.config('UNSPLASH_ACCESS_KEY', envKey.isNotEmpty ? envKey : null);
+    SecureLogger.config(
+      'UNSPLASH_ACCESS_KEY',
+      envKey.isNotEmpty ? envKey : null,
+    );
 
     if (envKey.isNotEmpty) {
       return envKey;
@@ -29,7 +32,10 @@ class ApiConfig {
     // Unsplash keys are typically alphanumeric
     final validFormat = RegExp(r'^[a-zA-Z0-9_-]+$');
     if (!validFormat.hasMatch(key)) {
-      SecureLogger.log('Unsplash API key format looks invalid', tag: 'ApiConfig');
+      SecureLogger.log(
+        'Unsplash API key format looks invalid',
+        tag: 'ApiConfig',
+      );
       return false;
     }
 

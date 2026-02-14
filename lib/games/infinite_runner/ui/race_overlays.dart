@@ -124,8 +124,11 @@ class RaceFinishOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMultiplayer = game.raceRoom != null && game.raceRoom!.players.length > 1;
-    return isMultiplayer ? _MultiplayerFinish(game: game) : _SoloFinish(game: game);
+    final isMultiplayer =
+        game.raceRoom != null && game.raceRoom!.players.length > 1;
+    return isMultiplayer
+        ? _MultiplayerFinish(game: game)
+        : _SoloFinish(game: game);
   }
 }
 
@@ -164,7 +167,11 @@ class _SoloFinish extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.emoji_events, size: 60, color: Color(0xFFffd700)),
+              const Icon(
+                Icons.emoji_events,
+                size: 60,
+                color: Color(0xFFffd700),
+              ),
               const SizedBox(height: 10),
               const Text(
                 'FINISH!',
@@ -177,7 +184,10 @@ class _SoloFinish extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(12),
@@ -302,8 +312,11 @@ class _MultiplayerFinishState extends State<_MultiplayerFinish> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: (isWinner ? const Color(0xFFffd700) : const Color(0xFF00d4ff))
-                      .withValues(alpha: 0.12),
+                  color:
+                      (isWinner
+                              ? const Color(0xFFffd700)
+                              : const Color(0xFF00d4ff))
+                          .withValues(alpha: 0.12),
                   blurRadius: 40,
                   spreadRadius: 2,
                 ),
@@ -334,14 +347,20 @@ class _MultiplayerFinishState extends State<_MultiplayerFinish> {
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: isLocal
                           ? color.withValues(alpha: 0.15)
                           : Colors.black.withValues(alpha: 0.25),
                       borderRadius: BorderRadius.circular(12),
                       border: isLocal
-                          ? Border.all(color: color.withValues(alpha: 0.6), width: 1.5)
+                          ? Border.all(
+                              color: color.withValues(alpha: 0.6),
+                              width: 1.5,
+                            )
                           : null,
                     ),
                     child: Row(
@@ -446,7 +465,9 @@ class _MultiplayerFinishState extends State<_MultiplayerFinish> {
                           height: 16,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00d4ff)),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xFF00d4ff),
+                            ),
                           ),
                         ),
                         SizedBox(width: 10),
@@ -485,7 +506,10 @@ class _MultiplayerFinishState extends State<_MultiplayerFinish> {
                   child: OutlinedButton(
                     onPressed: () => context.go(AppRoutes.home),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFF00d4ff), width: 2),
+                      side: const BorderSide(
+                        color: Color(0xFF00d4ff),
+                        width: 2,
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -538,7 +562,11 @@ class HostLeftOverlay extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.wifi_off_rounded, size: 56, color: Colors.red.shade400),
+              Icon(
+                Icons.wifi_off_rounded,
+                size: 56,
+                color: Colors.red.shade400,
+              ),
               const SizedBox(height: 14),
               const Text(
                 'Host Disconnected',

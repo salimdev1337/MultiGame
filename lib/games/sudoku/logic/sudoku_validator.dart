@@ -47,12 +47,7 @@ class SudokuValidator {
     return conflicts;
   }
 
-  static bool canPlaceValue(
-    SudokuBoard board,
-    int row,
-    int col,
-    int value,
-  ) {
+  static bool canPlaceValue(SudokuBoard board, int row, int col, int value) {
     if (value < 1 || value > 9) return false;
     if (_hasValueInRow(board, row, col, value)) return false;
     if (_hasValueInColumn(board, row, col, value)) return false;
@@ -68,7 +63,12 @@ class SudokuValidator {
     return false;
   }
 
-  static bool _hasValueInColumn(SudokuBoard board, int row, int col, int value) {
+  static bool _hasValueInColumn(
+    SudokuBoard board,
+    int row,
+    int col,
+    int value,
+  ) {
     final colCells = board.getColumn(col);
     for (int r = 0; r < 9; r++) {
       if (r != row && colCells[r].value == value) return true;

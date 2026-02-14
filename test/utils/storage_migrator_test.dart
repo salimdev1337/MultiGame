@@ -9,34 +9,81 @@ class MockFlutterSecureStorage extends Fake implements FlutterSecureStorage {
   final Map<String, String> _storage = {};
 
   @override
-  Future<void> delete({required String key, IOSOptions? iOptions, AndroidOptions? aOptions, LinuxOptions? lOptions, WebOptions? webOptions, MacOsOptions? mOptions, WindowsOptions? wOptions}) async {
+  Future<void> delete({
+    required String key,
+    IOSOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    MacOsOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
     _storage.remove(key);
   }
 
   @override
-  Future<void> deleteAll({IOSOptions? iOptions, AndroidOptions? aOptions, LinuxOptions? lOptions, WebOptions? webOptions, MacOsOptions? mOptions, WindowsOptions? wOptions}) async {
+  Future<void> deleteAll({
+    IOSOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    MacOsOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
     _storage.clear();
   }
 
   @override
-  Future<String?> read({required String key, IOSOptions? iOptions, AndroidOptions? aOptions, LinuxOptions? lOptions, WebOptions? webOptions, MacOsOptions? mOptions, WindowsOptions? wOptions}) async {
+  Future<String?> read({
+    required String key,
+    IOSOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    MacOsOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
     return _storage[key];
   }
 
   @override
-  Future<Map<String, String>> readAll({IOSOptions? iOptions, AndroidOptions? aOptions, LinuxOptions? lOptions, WebOptions? webOptions, MacOsOptions? mOptions, WindowsOptions? wOptions}) async {
+  Future<Map<String, String>> readAll({
+    IOSOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    MacOsOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
     return Map.from(_storage);
   }
 
   @override
-  Future<void> write({required String key, required String? value, IOSOptions? iOptions, AndroidOptions? aOptions, LinuxOptions? lOptions, WebOptions? webOptions, MacOsOptions? mOptions, WindowsOptions? wOptions}) async {
+  Future<void> write({
+    required String key,
+    required String? value,
+    IOSOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    MacOsOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
     if (value != null) {
       _storage[key] = value;
     }
   }
 
   @override
-  Future<bool> containsKey({required String key, IOSOptions? iOptions, AndroidOptions? aOptions, LinuxOptions? lOptions, WebOptions? webOptions, MacOsOptions? mOptions, WindowsOptions? wOptions}) async {
+  Future<bool> containsKey({
+    required String key,
+    IOSOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    MacOsOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
     return _storage.containsKey(key);
   }
 }
@@ -73,10 +120,13 @@ void main() {
       expect(prefs.containsKey('test_key'), false);
     });
 
-    test('returns false when key does not exist in SharedPreferences', () async {
-      final result = await migrator.migrateKey('nonexistent_key');
-      expect(result, false);
-    });
+    test(
+      'returns false when key does not exist in SharedPreferences',
+      () async {
+        final result = await migrator.migrateKey('nonexistent_key');
+        expect(result, false);
+      },
+    );
 
     test('returns false when key has null value', () async {
       final prefs = await SharedPreferences.getInstance();
@@ -130,12 +180,18 @@ void main() {
 
     test('handles special characters in values', () async {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('special_key', 'Value with émojis 🔥 and symbols: @#\$%');
+      await prefs.setString(
+        'special_key',
+        'Value with émojis 🔥 and symbols: @#\$%',
+      );
 
       final result = await migrator.migrateKey('special_key');
 
       expect(result, true);
-      expect(await secureStorage.read('special_key'), 'Value with émojis 🔥 and symbols: @#\$%');
+      expect(
+        await secureStorage.read('special_key'),
+        'Value with émojis 🔥 and symbols: @#\$%',
+      );
     });
 
     test('handles empty string values', () async {
@@ -189,7 +245,11 @@ void main() {
       await prefs.setString('exists1', 'value1');
       await prefs.setString('exists2', 'value2');
 
-      final results = await migrator.migrateKeys(['exists1', 'nonexistent', 'exists2']);
+      final results = await migrator.migrateKeys([
+        'exists1',
+        'nonexistent',
+        'exists2',
+      ]);
 
       expect(results['exists1'], true);
       expect(results['nonexistent'], false);
@@ -303,21 +363,27 @@ void main() {
   });
 
   group('StorageMigrator - isMigrationComplete', () {
-    test('returns false when sensitive keys exist in SharedPreferences', () async {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_id', 'uid_123');
+    test(
+      'returns false when sensitive keys exist in SharedPreferences',
+      () async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_id', 'uid_123');
 
-      final result = await migrator.isMigrationComplete();
-      expect(result, false);
-    });
+        final result = await migrator.isMigrationComplete();
+        expect(result, false);
+      },
+    );
 
-    test('returns false when user_nickname exists in SharedPreferences', () async {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_nickname', 'Player1');
+    test(
+      'returns false when user_nickname exists in SharedPreferences',
+      () async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_nickname', 'Player1');
 
-      final result = await migrator.isMigrationComplete();
-      expect(result, false);
-    });
+        final result = await migrator.isMigrationComplete();
+        expect(result, false);
+      },
+    );
 
     test('returns false when both sensitive keys exist', () async {
       final prefs = await SharedPreferences.getInstance();
@@ -454,7 +520,10 @@ void main() {
 
       await migrator.migrateSensitiveData();
 
-      expect(await secureStorage.read('user_id'), 'uid-with-dashes_and_underscores');
+      expect(
+        await secureStorage.read('user_id'),
+        'uid-with-dashes_and_underscores',
+      );
       expect(await secureStorage.read('user_nickname'), 'Player-123_Pro');
       expect(await migrator.isMigrationComplete(), true);
     });

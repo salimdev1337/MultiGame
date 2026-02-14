@@ -64,11 +64,11 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     required SudokuStatsService sudokuStatsService,
     required SudokuSoundService soundService,
     required SudokuHapticService hapticService,
-  })  : _statsService = statsService,
-        _persistenceService = persistenceService,
-        _sudokuStatsService = sudokuStatsService,
-        _soundService = soundService,
-        _hapticService = hapticService {
+  }) : _statsService = statsService,
+       _persistenceService = persistenceService,
+       _sudokuStatsService = sudokuStatsService,
+       _soundService = soundService,
+       _hapticService = hapticService {
     _generator = SudokuGenerator();
   }
 
@@ -236,13 +236,15 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     final previousValue = cell.value;
     final previousNotes = Set<int>.from(cell.notes);
 
-    _actionHistory.add(SudokuAction.setValue(
-      row: _selectedRow!,
-      col: _selectedCol!,
-      value: number,
-      previousValue: previousValue,
-      previousNotes: previousNotes,
-    ));
+    _actionHistory.add(
+      SudokuAction.setValue(
+        row: _selectedRow!,
+        col: _selectedCol!,
+        value: number,
+        previousValue: previousValue,
+        previousNotes: previousNotes,
+      ),
+    );
 
     cell.value = number;
     cell.notes.clear();
@@ -286,7 +288,10 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
   }
 
   void _applyTimePenalty() {
-    _remainingSeconds = (_remainingSeconds - penaltySeconds).clamp(0, initialTimeSeconds);
+    _remainingSeconds = (_remainingSeconds - penaltySeconds).clamp(
+      0,
+      initialTimeSeconds,
+    );
     _penaltiesApplied++;
 
     _soundService.playError();
@@ -315,20 +320,24 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     final previousNotes = Set<int>.from(cell.notes);
 
     if (cell.notes.contains(number)) {
-      _actionHistory.add(SudokuAction.removeNote(
-        row: _selectedRow!,
-        col: _selectedCol!,
-        value: number,
-        previousNotes: previousNotes,
-      ));
+      _actionHistory.add(
+        SudokuAction.removeNote(
+          row: _selectedRow!,
+          col: _selectedCol!,
+          value: number,
+          previousNotes: previousNotes,
+        ),
+      );
       cell.notes.remove(number);
     } else {
-      _actionHistory.add(SudokuAction.addNote(
-        row: _selectedRow!,
-        col: _selectedCol!,
-        value: number,
-        previousNotes: previousNotes,
-      ));
+      _actionHistory.add(
+        SudokuAction.addNote(
+          row: _selectedRow!,
+          col: _selectedCol!,
+          value: number,
+          previousNotes: previousNotes,
+        ),
+      );
       cell.notes.add(number);
     }
 
@@ -349,12 +358,14 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
       return;
     }
 
-    _actionHistory.add(SudokuAction.clearValue(
-      row: _selectedRow!,
-      col: _selectedCol!,
-      previousValue: cell.value,
-      previousNotes: Set<int>.from(cell.notes),
-    ));
+    _actionHistory.add(
+      SudokuAction.clearValue(
+        row: _selectedRow!,
+        col: _selectedCol!,
+        previousValue: cell.value,
+        previousNotes: Set<int>.from(cell.notes),
+      ),
+    );
 
     cell.value = null;
     cell.notes.clear();
@@ -420,7 +431,10 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     final mistakePenalty = _mistakes * 100;
     final hintPenalty = _hintsUsed * 200;
 
-    final score = (baseScore + timeBonus - mistakePenalty - hintPenalty).clamp(0, 20000);
+    final score = (baseScore + timeBonus - mistakePenalty - hintPenalty).clamp(
+      0,
+      20000,
+    );
     return score;
   }
 
@@ -429,8 +443,7 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     saveScore('sudoku_rush', finalScore);
   }
 
-  Future<void> _recordAchievement() async {
-  }
+  Future<void> _recordAchievement() async {}
 
   void useHint() {
     if (_isGameOver ||
@@ -457,20 +470,24 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     final randomIndex = _generator.hashCode % emptyCells.length;
     final hintPosition = emptyCells[randomIndex];
 
-    final correctValue = _solvedBoard!.getCell(hintPosition.row, hintPosition.col).value;
+    final correctValue = _solvedBoard!
+        .getCell(hintPosition.row, hintPosition.col)
+        .value;
 
     if (correctValue == null) {
       return;
     }
 
     final cell = _currentBoard!.getCell(hintPosition.row, hintPosition.col);
-    _actionHistory.add(SudokuAction.setValue(
-      row: hintPosition.row,
-      col: hintPosition.col,
-      value: correctValue,
-      previousValue: cell.value,
-      previousNotes: Set<int>.from(cell.notes),
-    ));
+    _actionHistory.add(
+      SudokuAction.setValue(
+        row: hintPosition.row,
+        col: hintPosition.col,
+        value: correctValue,
+        previousValue: cell.value,
+        previousNotes: Set<int>.from(cell.notes),
+      ),
+    );
 
     cell.value = correctValue;
     cell.notes.clear();
@@ -581,7 +598,11 @@ class SudokuRushProvider extends ChangeNotifier with GameStatsMixin {
     await _sudokuStatsService.recordGameCompletion(completedGame);
 
     if (victory) {
-      await _persistenceService.saveBestScore('rush', _difficulty, _calculateScore());
+      await _persistenceService.saveBestScore(
+        'rush',
+        _difficulty,
+        _calculateScore(),
+      );
     }
   }
 

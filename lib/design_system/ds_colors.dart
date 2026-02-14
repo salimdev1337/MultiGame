@@ -124,10 +124,7 @@ class DSColors {
 
   /// Glassmorphic overlay gradient
   static const LinearGradient gradientGlass = LinearGradient(
-    colors: [
-      Color(0x33FFFFFF),
-      Color(0x1AFFFFFF),
-    ],
+    colors: [Color(0x33FFFFFF), Color(0x1AFFFFFF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

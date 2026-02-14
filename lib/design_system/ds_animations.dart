@@ -242,9 +242,7 @@ class DSAnimations {
     int maxDelay = 500,
   }) {
     final delay = baseDelay.inMilliseconds * index;
-    return Duration(
-      milliseconds: delay.clamp(0, maxDelay),
-    );
+    return Duration(milliseconds: delay.clamp(0, maxDelay));
   }
 
   /// Create animation controller with standard duration
@@ -252,10 +250,7 @@ class DSAnimations {
     TickerProvider vsync, {
     Duration duration = normal,
   }) {
-    return AnimationController(
-      vsync: vsync,
-      duration: duration,
-    );
+    return AnimationController(vsync: vsync, duration: duration);
   }
 
   /// Create tween animation
@@ -268,12 +263,7 @@ class DSAnimations {
     return Tween<double>(
       begin: begin,
       end: end,
-    ).animate(
-      CurvedAnimation(
-        parent: controller,
-        curve: curve,
-      ),
-    );
+    ).animate(CurvedAnimation(parent: controller, curve: curve));
   }
 
   /// Create color tween animation
@@ -286,12 +276,7 @@ class DSAnimations {
     return ColorTween(
       begin: begin,
       end: end,
-    ).animate(
-      CurvedAnimation(
-        parent: controller,
-        curve: curve,
-      ),
-    );
+    ).animate(CurvedAnimation(parent: controller, curve: curve));
   }
 
   /// Create slide transition offset
@@ -314,19 +299,11 @@ class AnimationConfig {
   final Duration duration;
   final Curve curve;
 
-  const AnimationConfig({
-    required this.duration,
-    required this.curve,
-  });
+  const AnimationConfig({required this.duration, required this.curve});
 }
 
 /// Slide direction enum
-enum SlideDirection {
-  up,
-  down,
-  left,
-  right,
-}
+enum SlideDirection { up, down, left, right }
 
 // ==========================================
 // Animation Helper Extensions
@@ -392,10 +369,7 @@ AnimationController createAccessibleController(
   TickerProvider vsync, {
   Duration duration = DSAnimations.normal,
 }) {
-  return AnimationController(
-    vsync: vsync,
-    duration: getDuration(duration),
-  );
+  return AnimationController(vsync: vsync, duration: getDuration(duration));
 }
 
 /// Create tween animation with reduced motion support
@@ -408,10 +382,5 @@ Animation<double> createAccessibleTween(
   return Tween<double>(
     begin: begin,
     end: end,
-  ).animate(
-    CurvedAnimation(
-      parent: controller,
-      curve: curve,
-    ),
-  );
+  ).animate(CurvedAnimation(parent: controller, curve: curve));
 }

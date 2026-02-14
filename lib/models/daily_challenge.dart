@@ -2,13 +2,7 @@
 library;
 
 /// Type of daily challenge.
-enum DailyChallengeType {
-  score,
-  speed,
-  streak,
-  perfect,
-  playCount,
-}
+enum DailyChallengeType { score, speed, streak, perfect, playCount }
 
 /// A single daily challenge that expires at midnight.
 class DailyChallenge {
@@ -41,10 +35,7 @@ class DailyChallenge {
   double get progressPercent =>
       targetValue > 0 ? (progress / targetValue).clamp(0.0, 1.0) : 0.0;
 
-  DailyChallenge copyWith({
-    bool? isCompleted,
-    int? progress,
-  }) {
+  DailyChallenge copyWith({bool? isCompleted, int? progress}) {
     return DailyChallenge(
       id: id,
       gameType: gameType,
@@ -60,17 +51,17 @@ class DailyChallenge {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'gameType': gameType,
-        'title': title,
-        'description': description,
-        'type': type.name,
-        'targetValue': targetValue,
-        'rewardXP': rewardXP,
-        'expiresAt': expiresAt.toIso8601String(),
-        'isCompleted': isCompleted,
-        'progress': progress,
-      };
+    'id': id,
+    'gameType': gameType,
+    'title': title,
+    'description': description,
+    'type': type.name,
+    'targetValue': targetValue,
+    'rewardXP': rewardXP,
+    'expiresAt': expiresAt.toIso8601String(),
+    'isCompleted': isCompleted,
+    'progress': progress,
+  };
 
   factory DailyChallenge.fromJson(Map<String, dynamic> json) {
     return DailyChallenge(

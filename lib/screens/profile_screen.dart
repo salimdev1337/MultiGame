@@ -279,14 +279,16 @@ class _ProfilePageState extends State<ProfilePage> {
                               context,
                               icon: Icons.privacy_tip_outlined,
                               label: 'Privacy Policy',
-                              url: 'https://salimdev1337.github.io/MultiGame/privacy.html',
+                              url:
+                                  'https://salimdev1337.github.io/MultiGame/privacy.html',
                             ),
                             const SizedBox(height: 8),
                             _buildLegalButton(
                               context,
                               icon: Icons.description_outlined,
                               label: 'Terms of Service',
-                              url: 'https://salimdev1337.github.io/MultiGame/terms.html',
+                              url:
+                                  'https://salimdev1337.github.io/MultiGame/terms.html',
                             ),
                           ],
                         ),
@@ -336,9 +338,9 @@ class _ProfilePageState extends State<ProfilePage> {
         } catch (e) {
           // Show error message
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Could not open $label')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Could not open $label')));
           }
         }
       },
@@ -348,17 +350,15 @@ class _ProfilePageState extends State<ProfilePage> {
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: (0.2 * 255)),
+            color: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: (0.2 * 255)),
             width: 1,
           ),
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              color: Theme.of(context).colorScheme.primary,
-              size: 20,
-            ),
+            Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
             const SizedBox(width: 12),
             Text(
               label,

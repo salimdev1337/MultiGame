@@ -16,10 +16,7 @@ const _textWhite = Color(0xFFffffff);
 class StatsPanel extends ConsumerWidget {
   final int maxMistakes;
 
-  const StatsPanel({
-    super.key,
-    this.maxMistakes = 3,
-  });
+  const StatsPanel({super.key, this.maxMistakes = 3});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -89,8 +86,8 @@ class StatsPanel extends ConsumerWidget {
 
   String _formatScore(int score) {
     return score.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]},',
-        );
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
   }
 }

@@ -17,7 +17,7 @@ class AccessibilityProvider extends ChangeNotifier {
   bool _isLoaded = false;
 
   AccessibilityProvider({required AccessibilityService service})
-      : _service = service;
+    : _service = service;
 
   // ==========================================
   // Getters
@@ -62,7 +62,8 @@ class AccessibilityProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> toggleReducedMotion() => setReducedMotion(!_reducedMotionEnabled);
+  Future<void> toggleReducedMotion() =>
+      setReducedMotion(!_reducedMotionEnabled);
 
   // ==========================================
   // High Contrast

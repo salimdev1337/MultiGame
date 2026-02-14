@@ -45,7 +45,10 @@ class RankHistoryService {
     }
 
     // Save updated history
-    await prefs.setString(key, json.encode(history.map((e) => e.toJson()).toList()));
+    await prefs.setString(
+      key,
+      json.encode(history.map((e) => e.toJson()).toList()),
+    );
   }
 
   /// Get the previous rank for a specific game type
@@ -61,8 +64,9 @@ class RankHistoryService {
     if (existingData == null) return null;
 
     final List<dynamic> decoded = json.decode(existingData);
-    final List<RankSnapshot> history =
-        decoded.map((e) => RankSnapshot.fromJson(e)).toList();
+    final List<RankSnapshot> history = decoded
+        .map((e) => RankSnapshot.fromJson(e))
+        .toList();
 
     // Need at least 2 snapshots to have a previous rank
     if (history.length < 2) return null;

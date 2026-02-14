@@ -26,8 +26,8 @@ mixin GameStatsMixin on ChangeNotifier {
   /// Delay multiplier for retries (use milliseconds in tests, seconds in production)
   /// Set to 1 for production (seconds), 1 for tests (milliseconds)
   @visibleForTesting
-  Duration Function(int exponentialFactor) retryDelayCalculator =
-      (factor) => Duration(seconds: factor);
+  Duration Function(int exponentialFactor) retryDelayCalculator = (factor) =>
+      Duration(seconds: factor);
 
   /// Get the current user ID
   String? get userId => _userId;
@@ -68,11 +68,17 @@ mixin GameStatsMixin on ChangeNotifier {
   /// On failure, it will retry up to 3 times with exponential backoff (1s, 2s, 4s).
   /// Returns true if save was successful, false otherwise.
   Future<bool> saveScore(String gameType, int score) async {
-    SecureLogger.log('Score save initiated: $gameType (score: $score)', tag: 'GameStats');
+    SecureLogger.log(
+      'Score save initiated: $gameType (score: $score)',
+      tag: 'GameStats',
+    );
 
     if (_userId == null || score <= 0) {
       final reason = _userId == null ? 'no userId' : 'zero score';
-      SecureLogger.log('Score save skipped for $gameType: $reason', tag: 'GameStats');
+      SecureLogger.log(
+        'Score save skipped for $gameType: $reason',
+        tag: 'GameStats',
+      );
       return false;
     }
 
@@ -98,7 +104,10 @@ mixin GameStatsMixin on ChangeNotifier {
           await Future.delayed(delay);
         }
 
-        SecureLogger.firebase('saveUserStats', details: 'gameType: $gameType, score: $score, attempt: $attempt');
+        SecureLogger.firebase(
+          'saveUserStats',
+          details: 'gameType: $gameType, score: $score, attempt: $attempt',
+        );
         await statsService.saveUserStats(
           userId: _userId!,
           displayName: _displayName,
@@ -107,22 +116,31 @@ mixin GameStatsMixin on ChangeNotifier {
         );
 
         // Success!
-        SecureLogger.firebase('saveUserStats - success', details: '$gameType (attempt: $attempt)');
+        SecureLogger.firebase(
+          'saveUserStats - success',
+          details: '$gameType (attempt: $attempt)',
+        );
 
         // Update streak on successful game completion
         try {
           await _streakService.updateStreak();
-          SecureLogger.log('Streak updated after game completion', tag: 'GameStats');
+          SecureLogger.log(
+            'Streak updated after game completion',
+            tag: 'GameStats',
+          );
         } catch (e) {
           // Don't fail the score save if streak update fails
-          SecureLogger.error('Failed to update streak', error: e, tag: 'GameStats');
+          SecureLogger.error(
+            'Failed to update streak',
+            error: e,
+            tag: 'GameStats',
+          );
         }
 
         _isSavingScore = false;
         _retryAttempt = 0;
         notifyListeners();
         return true;
-
       } catch (e) {
         final isLastAttempt = attempt == _maxRetries;
 
@@ -133,7 +151,8 @@ mixin GameStatsMixin on ChangeNotifier {
             error: e,
             tag: 'GameStats',
           );
-          _lastError = 'Failed to save score after ${_maxRetries + 1} attempts. Check your internet connection.';
+          _lastError =
+              'Failed to save score after ${_maxRetries + 1} attempts. Check your internet connection.';
           _isSavingScore = false;
           _retryAttempt = 0;
           notifyListeners();

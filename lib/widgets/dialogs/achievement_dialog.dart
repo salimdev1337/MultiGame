@@ -44,7 +44,9 @@ class AchievementDialog extends StatelessWidget {
   }
 
   Widget _buildAchievementCard(
-      BuildContext context, AchievementModel achievement) {
+    BuildContext context,
+    AchievementModel achievement,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -110,9 +112,7 @@ Future<void> showAchievementDialog(
   return showDialog(
     context: context,
     barrierDismissible: false,
-    builder: (context) => AchievementDialog(
-      achievements: achievements,
-      onClose: onClose,
-    ),
+    builder: (context) =>
+        AchievementDialog(achievements: achievements, onClose: onClose),
   );
 }

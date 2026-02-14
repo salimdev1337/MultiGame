@@ -20,12 +20,42 @@ class StreakMilestone {
   final bool isUnlocked;
 
   static const List<StreakMilestone> all = [
-    StreakMilestone(days: 3,  title: 'Warming Up',  reward: '+50 XP',   isUnlocked: false),
-    StreakMilestone(days: 7,  title: 'On Fire',      reward: '+100 XP',  isUnlocked: false),
-    StreakMilestone(days: 14, title: 'Unstoppable',  reward: '+200 XP',  isUnlocked: false),
-    StreakMilestone(days: 30, title: 'Legendary',    reward: '+500 XP',  isUnlocked: false),
-    StreakMilestone(days: 60, title: 'Myth',         reward: '+1000 XP', isUnlocked: false),
-    StreakMilestone(days: 90, title: 'God Mode',     reward: '+2000 XP', isUnlocked: false),
+    StreakMilestone(
+      days: 3,
+      title: 'Warming Up',
+      reward: '+50 XP',
+      isUnlocked: false,
+    ),
+    StreakMilestone(
+      days: 7,
+      title: 'On Fire',
+      reward: '+100 XP',
+      isUnlocked: false,
+    ),
+    StreakMilestone(
+      days: 14,
+      title: 'Unstoppable',
+      reward: '+200 XP',
+      isUnlocked: false,
+    ),
+    StreakMilestone(
+      days: 30,
+      title: 'Legendary',
+      reward: '+500 XP',
+      isUnlocked: false,
+    ),
+    StreakMilestone(
+      days: 60,
+      title: 'Myth',
+      reward: '+1000 XP',
+      isUnlocked: false,
+    ),
+    StreakMilestone(
+      days: 90,
+      title: 'God Mode',
+      reward: '+2000 XP',
+      isUnlocked: false,
+    ),
   ];
 }
 
@@ -57,19 +87,25 @@ class StreakProfile {
   );
 
   List<StreakMilestone> get milestones => StreakMilestone.all
-      .map((m) => StreakMilestone(
-            days: m.days,
-            title: m.title,
-            reward: m.reward,
-            isUnlocked: currentStreak >= m.days,
-          ))
+      .map(
+        (m) => StreakMilestone(
+          days: m.days,
+          title: m.title,
+          reward: m.reward,
+          isUnlocked: currentStreak >= m.days,
+        ),
+      )
       .toList();
 
   StreakMilestone? get nextMilestone {
     for (final m in StreakMilestone.all) {
       if (currentStreak < m.days) {
         return StreakMilestone(
-            days: m.days, title: m.title, reward: m.reward, isUnlocked: false);
+          days: m.days,
+          title: m.title,
+          reward: m.reward,
+          isUnlocked: false,
+        );
       }
     }
     return null;
@@ -81,24 +117,24 @@ class StreakProfile {
   }
 
   Map<String, dynamic> toJson() => {
-        'currentStreak': currentStreak,
-        'longestStreak': longestStreak,
-        'lastPlayDate': lastPlayDate?.toIso8601String(),
-        'streakDates': streakDates.map((d) => d.toIso8601String()).toList(),
-        'totalXP': totalXP,
-        'level': level,
-      };
+    'currentStreak': currentStreak,
+    'longestStreak': longestStreak,
+    'lastPlayDate': lastPlayDate?.toIso8601String(),
+    'streakDates': streakDates.map((d) => d.toIso8601String()).toList(),
+    'totalXP': totalXP,
+    'level': level,
+  };
 
   factory StreakProfile.fromJson(Map<String, dynamic> json) => StreakProfile(
-        currentStreak: (json['currentStreak'] as int?) ?? 0,
-        longestStreak: (json['longestStreak'] as int?) ?? 0,
-        lastPlayDate: json['lastPlayDate'] != null
-            ? DateTime.parse(json['lastPlayDate'] as String)
-            : null,
-        streakDates: (json['streakDates'] as List<dynamic>? ?? [])
-            .map((d) => DateTime.parse(d as String))
-            .toList(),
-        totalXP: (json['totalXP'] as int?) ?? 0,
-        level: (json['level'] as int?) ?? 1,
-      );
+    currentStreak: (json['currentStreak'] as int?) ?? 0,
+    longestStreak: (json['longestStreak'] as int?) ?? 0,
+    lastPlayDate: json['lastPlayDate'] != null
+        ? DateTime.parse(json['lastPlayDate'] as String)
+        : null,
+    streakDates: (json['streakDates'] as List<dynamic>? ?? [])
+        .map((d) => DateTime.parse(d as String))
+        .toList(),
+    totalXP: (json['totalXP'] as int?) ?? 0,
+    level: (json['level'] as int?) ?? 1,
+  );
 }

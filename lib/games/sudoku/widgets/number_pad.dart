@@ -108,60 +108,62 @@ class _NumberButtonState extends State<_NumberButton> {
 
     return Semantics(
       label: 'Number ${widget.number}, ${widget.remaining} remaining',
-      hint: widget.isDisabled ? 'All ${widget.number}s placed' : 'Double tap to enter',
+      hint: widget.isDisabled
+          ? 'All ${widget.number}s placed'
+          : 'Double tap to enter',
       button: true,
       enabled: !widget.isDisabled,
       child: GestureDetector(
-      onTapDown: widget.isDisabled ? null : (_) => _setPressed(true),
-      onTapUp: widget.isDisabled
-          ? null
-          : (_) {
-              _setPressed(false);
-              widget.onTap();
-            },
-      onTapCancel: widget.isDisabled ? null : () => _setPressed(false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 100),
-        transform: Matrix4.translationValues(0, _isPressed ? 2 : 0, 0),
-        decoration: BoxDecoration(
-          color: widget.isDisabled
-              ? _surfaceDark.withValues(alpha: 0.5 * 255)
-              : _surfaceDark,
-          borderRadius: BorderRadius.circular(borderRadius),
-          border: Border(
-            bottom: BorderSide(
-              color: _surfaceLighter,
-              width: _isPressed ? 0 : borderWidth,
+        onTapDown: widget.isDisabled ? null : (_) => _setPressed(true),
+        onTapUp: widget.isDisabled
+            ? null
+            : (_) {
+                _setPressed(false);
+                widget.onTap();
+              },
+        onTapCancel: widget.isDisabled ? null : () => _setPressed(false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 100),
+          transform: Matrix4.translationValues(0, _isPressed ? 2 : 0, 0),
+          decoration: BoxDecoration(
+            color: widget.isDisabled
+                ? _surfaceDark.withValues(alpha: 0.5 * 255)
+                : _surfaceDark,
+            borderRadius: BorderRadius.circular(borderRadius),
+            border: Border(
+              bottom: BorderSide(
+                color: _surfaceLighter,
+                width: _isPressed ? 0 : borderWidth,
+              ),
             ),
           ),
-        ),
-        child: Stack(
-          children: [
-            Center(
-              child: Text(
-                widget.number.toString(),
-                style: TextStyle(
-                  fontSize: fontSize,
-                  fontWeight: FontWeight.w500,
-                  color: textColor,
+          child: Stack(
+            children: [
+              Center(
+                child: Text(
+                  widget.number.toString(),
+                  style: TextStyle(
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.w500,
+                    color: textColor,
+                  ),
                 ),
               ),
-            ),
-            Positioned(
-              top: badgeTop,
-              right: badgeRight,
-              child: Text(
-                widget.remaining.toString(),
-                style: TextStyle(
-                  fontSize: badgeFontSize,
-                  fontWeight: FontWeight.w700,
-                  color: badgeColor,
+              Positioned(
+                top: badgeTop,
+                right: badgeRight,
+                child: Text(
+                  widget.remaining.toString(),
+                  style: TextStyle(
+                    fontSize: badgeFontSize,
+                    fontWeight: FontWeight.w700,
+                    color: badgeColor,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
     );
   }

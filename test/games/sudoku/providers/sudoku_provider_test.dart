@@ -41,7 +41,11 @@ class FakePersistenceService implements SudokuPersistenceService {
   Future<bool> hasSavedGame(String mode) async => _savedGame != null;
 
   @override
-  Future<bool> saveBestScore(String mode, SudokuDifficulty difficulty, int score) async {
+  Future<bool> saveBestScore(
+    String mode,
+    SudokuDifficulty difficulty,
+    int score,
+  ) async {
     _bestScores['${mode}_${difficulty.name}'] = score;
     return true;
   }
@@ -65,11 +69,19 @@ class FakeSudokuStatsService implements SudokuStatsService {
     return SudokuStats(
       totalGamesPlayed: _completedGames.length,
       totalGamesWon: _completedGames.where((g) => g.victory).length,
-      classicGamesPlayed: _completedGames.where((g) => g.mode == 'classic').length,
-      classicGamesWon: _completedGames.where((g) => g.mode == 'classic' && g.victory).length,
+      classicGamesPlayed: _completedGames
+          .where((g) => g.mode == 'classic')
+          .length,
+      classicGamesWon: _completedGames
+          .where((g) => g.mode == 'classic' && g.victory)
+          .length,
       rushGamesPlayed: _completedGames.where((g) => g.mode == 'rush').length,
-      rushGamesWon: _completedGames.where((g) => g.mode == 'rush' && g.victory).length,
-      rushGamesLost: _completedGames.where((g) => g.mode == 'rush' && !g.victory).length,
+      rushGamesWon: _completedGames
+          .where((g) => g.mode == 'rush' && g.victory)
+          .length,
+      rushGamesLost: _completedGames
+          .where((g) => g.mode == 'rush' && !g.victory)
+          .length,
       totalMistakes: _completedGames.fold(0, (sum, g) => sum + g.mistakes),
       totalHintsUsed: _completedGames.fold(0, (sum, g) => sum + g.hintsUsed),
       totalTimePlayed: _completedGames.fold(0, (sum, g) => sum + g.timeSeconds),
@@ -284,7 +296,7 @@ void main() {
 
       test('cannot select cell when game is over', () async {
         await provider.initializeGame(SudokuDifficulty.easy);
-        
+
         // Manually set game over
         provider.selectCell(0, 0);
         final row = provider.selectedRow;
@@ -345,7 +357,7 @@ void main() {
             final cell = provider.currentBoard!.getCell(row, col);
             if (cell.isEmpty && !cell.isFixed) {
               provider.selectCell(row, col);
-              
+
               // Add notes
               provider.toggleNotesMode();
               provider.placeNumber(1);
@@ -406,7 +418,7 @@ void main() {
             if (cell.isEmpty && !cell.isFixed) {
               provider.selectCell(row, col);
               provider.toggleNotesMode();
-              
+
               // Add note
               provider.placeNumber(5);
               expect(cell.notes, contains(5));
@@ -566,16 +578,26 @@ void main() {
           // Place two numbers
           provider.selectCell(emptyCells[0].row, emptyCells[0].col);
           provider.placeNumber(5);
-          
+
           provider.selectCell(emptyCells[1].row, emptyCells[1].col);
           provider.placeNumber(7);
 
           // Undo both
           provider.undo();
-          expect(provider.currentBoard!.getCell(emptyCells[1].row, emptyCells[1].col).value, isNull);
+          expect(
+            provider.currentBoard!
+                .getCell(emptyCells[1].row, emptyCells[1].col)
+                .value,
+            isNull,
+          );
 
           provider.undo();
-          expect(provider.currentBoard!.getCell(emptyCells[0].row, emptyCells[0].col).value, isNull);
+          expect(
+            provider.currentBoard!
+                .getCell(emptyCells[0].row, emptyCells[0].col)
+                .value,
+            isNull,
+          );
         }
       });
     });
@@ -609,7 +631,7 @@ void main() {
 
       test('score decreases with mistakes', () async {
         await provider.initializeGame(SudokuDifficulty.easy);
-        
+
         // This is hard to test without creating actual game conflicts
         // Just verify score is calculated
         expect(provider.score, isA<int>());
@@ -676,7 +698,7 @@ void main() {
       test('does not save when game is over', () async {
         // Manually set game over (can't easily trigger in test)
         await provider.saveGameState();
-        
+
         final savedGame = persistenceService._savedGame;
         expect(savedGame, isNotNull);
       });

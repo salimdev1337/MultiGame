@@ -81,16 +81,16 @@ class InfiniteRunnerGame extends FlameGame
   /// then unfinished players by distance (furthest first).
   List<RacePlayerState> get raceLeaderboard {
     if (raceRoom == null) return [];
-    return List<RacePlayerState>.from(raceRoom!.players)
-      ..sort((a, b) {
-        if (a.isFinished && b.isFinished) {
-          return a.finishTimeMs.compareTo(b.finishTimeMs);
-        }
-        if (a.isFinished) return -1;
-        if (b.isFinished) return 1;
-        return b.distance.compareTo(a.distance);
-      });
+    return List<RacePlayerState>.from(raceRoom!.players)..sort((a, b) {
+      if (a.isFinished && b.isFinished) {
+        return a.finishTimeMs.compareTo(b.finishTimeMs);
+      }
+      if (a.isFinished) return -1;
+      if (b.isFinished) return 1;
+      return b.distance.compareTo(a.distance);
+    });
   }
+
   // Last effective speed propagated to components (avoids redundant calls)
   double _lastPropagatedSpeed = 0.0;
   bool get isPlayerSlowed => _player.speedMultiplier < 1.0;
@@ -662,7 +662,8 @@ class InfiniteRunnerGame extends FlameGame
 
   void _addGhost(RacePlayerState opponent) {
     if (_ghosts.containsKey(opponent.playerId)) return;
-    final color = playerColors[opponent.playerId.clamp(0, playerColors.length - 1)];
+    final color =
+        playerColors[opponent.playerId.clamp(0, playerColors.length - 1)];
     final ghost = GhostPlayer(
       playerId: opponent.playerId,
       displayName: opponent.displayName,
@@ -700,8 +701,9 @@ class InfiniteRunnerGame extends FlameGame
           );
           if (_distanceTraveled > opponent.distance) {
             _player.applySpeedEffect(factor: 0.7, duration: 4.0);
-            final name =
-                opponent.displayName.isNotEmpty ? opponent.displayName : 'Opponent';
+            final name = opponent.displayName.isNotEmpty
+                ? opponent.displayName
+                : 'Opponent';
             _slowedByCtrl.add('Slowed by $name!');
             HapticFeedback.mediumImpact();
           }
@@ -723,11 +725,9 @@ class InfiniteRunnerGame extends FlameGame
         // Reset room player distances/finish flags for the new race
         if (raceRoom != null) {
           for (final p in raceRoom!.players) {
-            raceRoom!.upsertPlayer(p.copyWith(
-              distance: 0,
-              isFinished: false,
-              finishTimeMs: 0,
-            ));
+            raceRoom!.upsertPlayer(
+              p.copyWith(distance: 0, isFinished: false, finishTimeMs: 0),
+            );
           }
         }
         restartRace();

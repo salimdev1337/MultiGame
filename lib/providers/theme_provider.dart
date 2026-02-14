@@ -30,8 +30,8 @@ class ThemeProvider extends ChangeNotifier {
   AvatarPreset? get currentAvatar => _currentAvatarId == null
       ? null
       : AvatarPreset.defaults
-          .where((a) => a.id == _currentAvatarId)
-          .firstOrNull;
+            .where((a) => a.id == _currentAvatarId)
+            .firstOrNull;
 
   // ── Load ─────────────────────────────────────────────────────────────────
 

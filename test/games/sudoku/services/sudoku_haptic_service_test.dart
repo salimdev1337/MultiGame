@@ -47,18 +47,12 @@ void main() {
 
       test('should handle missing vibrator gracefully', () async {
         // Even if vibrator is not available, should complete
-        await expectLater(
-          service.initialize(),
-          completes,
-        );
+        await expectLater(service.initialize(), completes);
       });
 
       test('should handle initialization errors gracefully', () async {
         // Should complete without throwing
-        await expectLater(
-          service.initialize(),
-          completes,
-        );
+        await expectLater(service.initialize(), completes);
       });
     });
 
@@ -67,30 +61,21 @@ void main() {
         fakeSettings.setHapticsEnabled(true);
         await service.initialize();
 
-        await expectLater(
-          service.lightTap(),
-          completes,
-        );
+        await expectLater(service.lightTap(), completes);
       });
 
       test('should not vibrate when haptics disabled', () async {
         fakeSettings.setHapticsEnabled(false);
         await service.initialize();
 
-        await expectLater(
-          service.lightTap(),
-          completes,
-        );
+        await expectLater(service.lightTap(), completes);
       });
 
       test('should not vibrate when not initialized', () async {
         fakeSettings.setHapticsEnabled(true);
         // Don't initialize
 
-        await expectLater(
-          service.lightTap(),
-          completes,
-        );
+        await expectLater(service.lightTap(), completes);
       });
 
       test('should handle vibration errors gracefully', () async {
@@ -98,10 +83,7 @@ void main() {
         await service.initialize();
 
         // Should complete even if vibration fails
-        await expectLater(
-          service.lightTap(),
-          completes,
-        );
+        await expectLater(service.lightTap(), completes);
       });
     });
 
@@ -110,30 +92,21 @@ void main() {
         fakeSettings.setHapticsEnabled(true);
         await service.initialize();
 
-        await expectLater(
-          service.mediumTap(),
-          completes,
-        );
+        await expectLater(service.mediumTap(), completes);
       });
 
       test('should not vibrate when haptics disabled', () async {
         fakeSettings.setHapticsEnabled(false);
         await service.initialize();
 
-        await expectLater(
-          service.mediumTap(),
-          completes,
-        );
+        await expectLater(service.mediumTap(), completes);
       });
 
       test('should handle vibration errors gracefully', () async {
         fakeSettings.setHapticsEnabled(true);
         await service.initialize();
 
-        await expectLater(
-          service.mediumTap(),
-          completes,
-        );
+        await expectLater(service.mediumTap(), completes);
       });
     });
 
@@ -142,30 +115,21 @@ void main() {
         fakeSettings.setHapticsEnabled(true);
         await service.initialize();
 
-        await expectLater(
-          service.strongTap(),
-          completes,
-        );
+        await expectLater(service.strongTap(), completes);
       });
 
       test('should not vibrate when haptics disabled', () async {
         fakeSettings.setHapticsEnabled(false);
         await service.initialize();
 
-        await expectLater(
-          service.strongTap(),
-          completes,
-        );
+        await expectLater(service.strongTap(), completes);
       });
 
       test('should handle vibration errors gracefully', () async {
         fakeSettings.setHapticsEnabled(true);
         await service.initialize();
 
-        await expectLater(
-          service.strongTap(),
-          completes,
-        );
+        await expectLater(service.strongTap(), completes);
       });
     });
 
@@ -174,30 +138,21 @@ void main() {
         fakeSettings.setHapticsEnabled(true);
         await service.initialize();
 
-        await expectLater(
-          service.doubleTap(),
-          completes,
-        );
+        await expectLater(service.doubleTap(), completes);
       });
 
       test('should not vibrate when haptics disabled', () async {
         fakeSettings.setHapticsEnabled(false);
         await service.initialize();
 
-        await expectLater(
-          service.doubleTap(),
-          completes,
-        );
+        await expectLater(service.doubleTap(), completes);
       });
 
       test('should handle vibration errors gracefully', () async {
         fakeSettings.setHapticsEnabled(true);
         await service.initialize();
 
-        await expectLater(
-          service.doubleTap(),
-          completes,
-        );
+        await expectLater(service.doubleTap(), completes);
       });
     });
 
@@ -206,30 +161,21 @@ void main() {
         fakeSettings.setHapticsEnabled(true);
         await service.initialize();
 
-        await expectLater(
-          service.successPattern(),
-          completes,
-        );
+        await expectLater(service.successPattern(), completes);
       });
 
       test('should not vibrate when haptics disabled', () async {
         fakeSettings.setHapticsEnabled(false);
         await service.initialize();
 
-        await expectLater(
-          service.successPattern(),
-          completes,
-        );
+        await expectLater(service.successPattern(), completes);
       });
 
       test('should handle vibration errors gracefully', () async {
         fakeSettings.setHapticsEnabled(true);
         await service.initialize();
 
-        await expectLater(
-          service.successPattern(),
-          completes,
-        );
+        await expectLater(service.successPattern(), completes);
       });
     });
 
@@ -238,30 +184,21 @@ void main() {
         fakeSettings.setHapticsEnabled(true);
         await service.initialize();
 
-        await expectLater(
-          service.errorShake(),
-          completes,
-        );
+        await expectLater(service.errorShake(), completes);
       });
 
       test('should not vibrate when haptics disabled', () async {
         fakeSettings.setHapticsEnabled(false);
         await service.initialize();
 
-        await expectLater(
-          service.errorShake(),
-          completes,
-        );
+        await expectLater(service.errorShake(), completes);
       });
 
       test('should handle vibration errors gracefully', () async {
         fakeSettings.setHapticsEnabled(true);
         await service.initialize();
 
-        await expectLater(
-          service.errorShake(),
-          completes,
-        );
+        await expectLater(service.errorShake(), completes);
       });
     });
 
@@ -269,27 +206,18 @@ void main() {
       test('should cancel vibration without errors', () async {
         await service.initialize();
 
-        await expectLater(
-          service.cancel(),
-          completes,
-        );
+        await expectLater(service.cancel(), completes);
       });
 
       test('should cancel even if not initialized', () async {
         // Don't initialize
-        await expectLater(
-          service.cancel(),
-          completes,
-        );
+        await expectLater(service.cancel(), completes);
       });
 
       test('should handle cancel errors gracefully', () async {
         await service.initialize();
 
-        await expectLater(
-          service.cancel(),
-          completes,
-        );
+        await expectLater(service.cancel(), completes);
       });
     });
 

@@ -27,8 +27,10 @@ class ThemeSelectionScreen extends ConsumerWidget {
           style: DSTypography.titleLarge.copyWith(color: DSColors.textPrimary),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded,
-              color: DSColors.textPrimary),
+          icon: const Icon(
+            Icons.arrow_back_ios_rounded,
+            color: DSColors.textPrimary,
+          ),
           onPressed: () => Navigator.of(context).pop(),
           tooltip: 'Back',
         ),
@@ -148,7 +150,9 @@ class _ThemeGrid extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                             shadows: [
                               const Shadow(
-                                  color: Colors.black54, blurRadius: 4),
+                                color: Colors.black54,
+                                blurRadius: 4,
+                              ),
                             ],
                           ),
                         ),
@@ -165,8 +169,11 @@ class _ThemeGrid extends StatelessWidget {
                           color: Colors.white,
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.check_rounded,
-                            size: 14, color: Colors.black),
+                        child: Icon(
+                          Icons.check_rounded,
+                          size: 14,
+                          color: Colors.black,
+                        ),
                       ),
                     ),
                 ],
@@ -225,8 +232,7 @@ class _AvatarGrid extends StatelessWidget {
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color:
-                              avatar.backgroundColor.withValues(alpha: 0.5),
+                          color: avatar.backgroundColor.withValues(alpha: 0.5),
                           blurRadius: 10,
                           spreadRadius: 1,
                         ),
@@ -234,16 +240,24 @@ class _AvatarGrid extends StatelessWidget {
                     : null,
               ),
               child: avatar.isUnlocked
-                  ? Icon(avatar.icon,
-                      color: avatar.iconColor, size: DSSpacing.iconLarge)
+                  ? Icon(
+                      avatar.icon,
+                      color: avatar.iconColor,
+                      size: DSSpacing.iconLarge,
+                    )
                   : Stack(
                       alignment: Alignment.center,
                       children: [
-                        Icon(avatar.icon,
-                            color: DSColors.textTertiary,
-                            size: DSSpacing.iconLarge),
-                        Icon(Icons.lock_rounded,
-                            color: DSColors.textTertiary, size: 16),
+                        Icon(
+                          avatar.icon,
+                          color: DSColors.textTertiary,
+                          size: DSSpacing.iconLarge,
+                        ),
+                        Icon(
+                          Icons.lock_rounded,
+                          color: DSColors.textTertiary,
+                          size: 16,
+                        ),
                       ],
                     ),
             ),

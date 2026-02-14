@@ -59,14 +59,13 @@ class RacePlayerState {
     'isConnected': isConnected,
   };
 
-  factory RacePlayerState.fromMap(Map<String, dynamic> map) =>
-      RacePlayerState(
-        playerId: (map['playerId'] as num).toInt(),
-        displayName: map['displayName'] as String,
-        distance: (map['distance'] as num?)?.toDouble() ?? 0.0,
-        isReady: (map['isReady'] as bool?) ?? false,
-        isFinished: (map['isFinished'] as bool?) ?? false,
-        finishTimeMs: (map['finishTimeMs'] as num?)?.toInt() ?? 0,
-        isConnected: (map['isConnected'] as bool?) ?? true,
-      );
+  factory RacePlayerState.fromMap(Map<String, dynamic> map) => RacePlayerState(
+    playerId: (map['playerId'] as num).toInt(),
+    displayName: map['displayName'] as String,
+    distance: (map['distance'] as num?)?.toDouble() ?? 0.0,
+    isReady: (map['isReady'] as bool?) ?? false,
+    isFinished: (map['isFinished'] as bool?) ?? false,
+    finishTimeMs: (map['finishTimeMs'] as num?)?.toInt() ?? 0,
+    isConnected: (map['isConnected'] as bool?) ?? true,
+  );
 }

@@ -32,12 +32,16 @@ abstract class GameStatsNotifier<T> extends AutoDisposeNotifier<T> {
 
   Future<bool> saveScore(String gameType, int score) async {
     SecureLogger.log(
-        'Score save initiated: $gameType (score: $score)', tag: 'GameStats');
+      'Score save initiated: $gameType (score: $score)',
+      tag: 'GameStats',
+    );
 
     if (_userId == null || score <= 0) {
       final reason = _userId == null ? 'no userId' : 'zero score';
-      SecureLogger.log('Score save skipped for $gameType: $reason',
-          tag: 'GameStats');
+      SecureLogger.log(
+        'Score save skipped for $gameType: $reason',
+        tag: 'GameStats',
+      );
       return false;
     }
 
@@ -47,8 +51,9 @@ abstract class GameStatsNotifier<T> extends AutoDisposeNotifier<T> {
           final factor = 1 << (attempt - 1);
           await Future.delayed(retryDelay(factor));
           SecureLogger.log(
-              'Retrying score save (attempt $attempt/$_maxRetries)',
-              tag: 'GameStats');
+            'Retrying score save (attempt $attempt/$_maxRetries)',
+            tag: 'GameStats',
+          );
         }
 
         await statsService.saveUserStats(
@@ -61,18 +66,25 @@ abstract class GameStatsNotifier<T> extends AutoDisposeNotifier<T> {
         try {
           await _streakService.updateStreak();
         } catch (e) {
-          SecureLogger.error('Failed to update streak', error: e,
-              tag: 'GameStats');
+          SecureLogger.error(
+            'Failed to update streak',
+            error: e,
+            tag: 'GameStats',
+          );
         }
 
-        SecureLogger.firebase('saveUserStats - success',
-            details: '$gameType (attempt: $attempt)');
+        SecureLogger.firebase(
+          'saveUserStats - success',
+          details: '$gameType (attempt: $attempt)',
+        );
         return true;
       } catch (e) {
         if (attempt == _maxRetries) {
           SecureLogger.error(
-              'Failed to save $gameType score after ${_maxRetries + 1} attempts',
-              error: e, tag: 'GameStats');
+            'Failed to save $gameType score after ${_maxRetries + 1} attempts',
+            error: e,
+            tag: 'GameStats',
+          );
           return false;
         }
       }

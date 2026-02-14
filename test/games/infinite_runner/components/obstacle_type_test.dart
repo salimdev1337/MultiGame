@@ -142,10 +142,12 @@ void main() {
       });
 
       test('3 obstacles require jump and 1 requires slide', () {
-        final jumpCount =
-            ObstacleType.values.where((t) => t.requiresJump).length;
-        final slideCount =
-            ObstacleType.values.where((t) => t.requiresSlide).length;
+        final jumpCount = ObstacleType.values
+            .where((t) => t.requiresJump)
+            .length;
+        final slideCount = ObstacleType.values
+            .where((t) => t.requiresSlide)
+            .length;
         expect(jumpCount, 3);
         expect(slideCount, 1);
       });

@@ -58,8 +58,10 @@ class SudokuRushState {
   int get score {
     const base = 10000;
     final timeBonus = remainingSeconds * 10;
-    return (base + timeBonus - mistakes * 100 - hintsUsed * 200)
-        .clamp(0, 20000);
+    return (base + timeBonus - mistakes * 100 - hintsUsed * 200).clamp(
+      0,
+      20000,
+    );
   }
 
   String get formattedTime {
@@ -130,8 +132,11 @@ class SudokuRushNotifier extends GameStatsNotifier<SudokuRushState> {
   bool get canUndo => _actionHistory.isNotEmpty;
   bool get canErase {
     final s = state;
-    if (s.selectedRow == null || s.selectedCol == null ||
-        _currentBoard == null) { return false; }
+    if (s.selectedRow == null ||
+        s.selectedCol == null ||
+        _currentBoard == null) {
+      return false;
+    }
     return !_currentBoard!.getCell(s.selectedRow!, s.selectedCol!).isFixed;
   }
 
@@ -179,10 +184,16 @@ class SudokuRushNotifier extends GameStatsNotifier<SudokuRushState> {
 
   void placeNumber(int number) {
     final s = state;
-    if (s.isGameOver || s.selectedRow == null || s.selectedCol == null ||
-        _currentBoard == null) { return; }
+    if (s.isGameOver ||
+        s.selectedRow == null ||
+        s.selectedCol == null ||
+        _currentBoard == null) {
+      return;
+    }
     final cell = _currentBoard!.getCell(s.selectedRow!, s.selectedCol!);
-    if (cell.isFixed) { return; }
+    if (cell.isFixed) {
+      return;
+    }
     if (s.notesMode) {
       _toggleNote(number);
     } else {
@@ -193,11 +204,15 @@ class SudokuRushNotifier extends GameStatsNotifier<SudokuRushState> {
   void _placeValue(int number) {
     final s = state;
     final cell = _currentBoard!.getCell(s.selectedRow!, s.selectedCol!);
-    _actionHistory.add(SudokuAction.setValue(
-      row: s.selectedRow!, col: s.selectedCol!, value: number,
-      previousValue: cell.value,
-      previousNotes: Set<int>.from(cell.notes),
-    ));
+    _actionHistory.add(
+      SudokuAction.setValue(
+        row: s.selectedRow!,
+        col: s.selectedCol!,
+        value: number,
+        previousValue: cell.value,
+        previousNotes: Set<int>.from(cell.notes),
+      ),
+    );
     cell.value = number;
     cell.notes.clear();
 
@@ -205,21 +220,31 @@ class SudokuRushNotifier extends GameStatsNotifier<SudokuRushState> {
     if (!hadError) {
       _sound.playNumberEntry();
       _haptic.mediumTap();
-      if (_checkWin()) { _handleVictory(); return; }
+      if (_checkWin()) {
+        _handleVictory();
+        return;
+      }
     }
     state = state.copyWith(bumpRevision: true);
   }
 
   bool _validateAndApplyPenalty() {
-    if (!state.errorHighlightEnabled || _currentBoard == null) { return false; }
+    if (!state.errorHighlightEnabled || _currentBoard == null) {
+      return false;
+    }
     _currentBoard!.clearErrors();
     final conflicts = SudokuValidator.getConflictPositions(_currentBoard!);
-    if (conflicts.isEmpty) { return false; }
+    if (conflicts.isEmpty) {
+      return false;
+    }
     for (final p in conflicts) {
       _currentBoard!.getCell(p.row, p.col).isError = true;
     }
-    final newRemaining = (state.remainingSeconds - SudokuRushState.penaltySeconds)
-        .clamp(0, SudokuRushState.initialTimeSeconds);
+    final newRemaining =
+        (state.remainingSeconds - SudokuRushState.penaltySeconds).clamp(
+          0,
+          SudokuRushState.initialTimeSeconds,
+        );
     state = state.copyWith(
       mistakes: state.mistakes + conflicts.length,
       remainingSeconds: newRemaining,
@@ -232,24 +257,38 @@ class SudokuRushNotifier extends GameStatsNotifier<SudokuRushState> {
     Future.delayed(const Duration(milliseconds: 500), () {
       state = state.copyWith(showPenalty: false);
     });
-    if (newRemaining <= 0) { _handleDefeat(); }
+    if (newRemaining <= 0) {
+      _handleDefeat();
+    }
     return true;
   }
 
   void _toggleNote(int number) {
     final s = state;
     final cell = _currentBoard!.getCell(s.selectedRow!, s.selectedCol!);
-    if (cell.hasValue) { return; }
+    if (cell.hasValue) {
+      return;
+    }
     final prev = Set<int>.from(cell.notes);
     if (cell.notes.contains(number)) {
-      _actionHistory.add(SudokuAction.removeNote(
-          row: s.selectedRow!, col: s.selectedCol!,
-          value: number, previousNotes: prev));
+      _actionHistory.add(
+        SudokuAction.removeNote(
+          row: s.selectedRow!,
+          col: s.selectedCol!,
+          value: number,
+          previousNotes: prev,
+        ),
+      );
       cell.notes.remove(number);
     } else {
-      _actionHistory.add(SudokuAction.addNote(
-          row: s.selectedRow!, col: s.selectedCol!,
-          value: number, previousNotes: prev));
+      _actionHistory.add(
+        SudokuAction.addNote(
+          row: s.selectedRow!,
+          col: s.selectedCol!,
+          value: number,
+          previousNotes: prev,
+        ),
+      );
       cell.notes.add(number);
     }
     _sound.playNotesToggle();
@@ -259,15 +298,24 @@ class SudokuRushNotifier extends GameStatsNotifier<SudokuRushState> {
 
   void eraseCell() {
     final s = state;
-    if (s.isGameOver || s.selectedRow == null || s.selectedCol == null ||
-        _currentBoard == null) { return; }
+    if (s.isGameOver ||
+        s.selectedRow == null ||
+        s.selectedCol == null ||
+        _currentBoard == null) {
+      return;
+    }
     final cell = _currentBoard!.getCell(s.selectedRow!, s.selectedCol!);
-    if (cell.isFixed) { return; }
-    _actionHistory.add(SudokuAction.clearValue(
-      row: s.selectedRow!, col: s.selectedCol!,
-      previousValue: cell.value,
-      previousNotes: Set<int>.from(cell.notes),
-    ));
+    if (cell.isFixed) {
+      return;
+    }
+    _actionHistory.add(
+      SudokuAction.clearValue(
+        row: s.selectedRow!,
+        col: s.selectedCol!,
+        previousValue: cell.value,
+        previousNotes: Set<int>.from(cell.notes),
+      ),
+    );
     cell.value = null;
     cell.notes.clear();
     cell.isError = false;
@@ -288,33 +336,51 @@ class SudokuRushNotifier extends GameStatsNotifier<SudokuRushState> {
 
   void useHint() {
     final s = state;
-    if (s.isGameOver || s.hintsRemaining <= 0 ||
-        _currentBoard == null || _solvedBoard == null) { return; }
+    if (s.isGameOver ||
+        s.hintsRemaining <= 0 ||
+        _currentBoard == null ||
+        _solvedBoard == null) {
+      return;
+    }
     final empty = <Position>[];
     for (int r = 0; r < 9; r++) {
       for (int c = 0; c < 9; c++) {
         final cell = _currentBoard!.getCell(r, c);
-        if (cell.isEmpty && !cell.isFixed) { empty.add(Position(r, c)); }
+        if (cell.isEmpty && !cell.isFixed) {
+          empty.add(Position(r, c));
+        }
       }
     }
-    if (empty.isEmpty) { return; }
+    if (empty.isEmpty) {
+      return;
+    }
     final pos = empty[_generator.hashCode % empty.length];
     final val = _solvedBoard!.getCell(pos.row, pos.col).value;
-    if (val == null) { return; }
+    if (val == null) {
+      return;
+    }
     final cell = _currentBoard!.getCell(pos.row, pos.col);
-    _actionHistory.add(SudokuAction.setValue(
-      row: pos.row, col: pos.col, value: val,
-      previousValue: cell.value,
-      previousNotes: Set<int>.from(cell.notes),
-    ));
+    _actionHistory.add(
+      SudokuAction.setValue(
+        row: pos.row,
+        col: pos.col,
+        value: val,
+        previousValue: cell.value,
+        previousNotes: Set<int>.from(cell.notes),
+      ),
+    );
     cell.value = val;
     cell.notes.clear();
     cell.isError = false;
     _sound.playHint();
     _haptic.doubleTap();
-    if (_checkWin()) { _handleVictory(); return; }
+    if (_checkWin()) {
+      _handleVictory();
+      return;
+    }
     state = state.copyWith(
-      selectedRow: pos.row, selectedCol: pos.col,
+      selectedRow: pos.row,
+      selectedCol: pos.col,
       hintsUsed: s.hintsUsed + 1,
       hintsRemaining: s.hintsRemaining - 1,
       bumpRevision: true,
@@ -336,9 +402,13 @@ class SudokuRushNotifier extends GameStatsNotifier<SudokuRushState> {
           cell.notes.addAll(action.previousNotes!);
         }
       case SudokuActionType.addNote:
-        if (action.value != null) { cell.notes.remove(action.value!); }
+        if (action.value != null) {
+          cell.notes.remove(action.value!);
+        }
       case SudokuActionType.removeNote:
-        if (action.value != null) { cell.notes.add(action.value!); }
+        if (action.value != null) {
+          cell.notes.add(action.value!);
+        }
     }
     _sound.playUndo();
     _haptic.mediumTap();
@@ -348,21 +418,30 @@ class SudokuRushNotifier extends GameStatsNotifier<SudokuRushState> {
   void pauseTimer() => _timer?.cancel();
 
   void resumeTimer() {
-    if (!state.isGameOver) { _startTimer(); }
+    if (!state.isGameOver) {
+      _startTimer();
+    }
   }
 
   void _startTimer() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (state.isGameOver) { _timer?.cancel(); return; }
+      if (state.isGameOver) {
+        _timer?.cancel();
+        return;
+      }
       final next = state.remainingSeconds - 1;
       state = state.copyWith(remainingSeconds: next);
-      if (next <= 0) { _handleDefeat(); }
+      if (next <= 0) {
+        _handleDefeat();
+      }
     });
   }
 
   bool _checkWin() {
-    if (_currentBoard == null) { return false; }
+    if (_currentBoard == null) {
+      return false;
+    }
     return SudokuValidator.isSolved(_currentBoard!);
   }
 
@@ -371,7 +450,11 @@ class SudokuRushNotifier extends GameStatsNotifier<SudokuRushState> {
     _sound.playVictory();
     _haptic.successPattern();
     final score = state.score;
-    state = state.copyWith(isGameOver: true, isVictory: true, bumpRevision: true);
+    state = state.copyWith(
+      isGameOver: true,
+      isVictory: true,
+      bumpRevision: true,
+    );
     saveScore('sudoku_rush', score);
     _persistence.deleteSavedGame('rush');
   }
@@ -379,11 +462,16 @@ class SudokuRushNotifier extends GameStatsNotifier<SudokuRushState> {
   void _handleDefeat() {
     _timer?.cancel();
     state = state.copyWith(
-        isGameOver: true, isDefeat: true, remainingSeconds: 0, bumpRevision: true);
+      isGameOver: true,
+      isDefeat: true,
+      remainingSeconds: 0,
+      bumpRevision: true,
+    );
     _persistence.deleteSavedGame('rush');
   }
 }
 
 final sudokuRushProvider =
     NotifierProvider.autoDispose<SudokuRushNotifier, SudokuRushState>(
-        SudokuRushNotifier.new);
+      SudokuRushNotifier.new,
+    );

@@ -1,13 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Available theme presets for the app
-enum ThemePreset {
-  defaultTheme,
-  ocean,
-  sunset,
-  forest,
-  neon,
-}
+enum ThemePreset { defaultTheme, ocean, sunset, forest, neon }
 
 /// A complete colour theme preset with gradients and palette.
 class AppThemePreset {
@@ -109,12 +103,12 @@ class AppThemePreset {
   );
 
   static List<AppThemePreset> get allThemes => const [
-        defaultTheme,
-        ocean,
-        sunset,
-        forest,
-        neon,
-      ];
+    defaultTheme,
+    ocean,
+    sunset,
+    forest,
+    neon,
+  ];
 
   static AppThemePreset fromPreset(ThemePreset preset) =>
       allThemes.firstWhere((t) => t.preset == preset);

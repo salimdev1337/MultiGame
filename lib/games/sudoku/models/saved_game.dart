@@ -74,8 +74,12 @@ class SavedGame {
         (d) => d.name == json['difficulty'],
         orElse: () => SudokuDifficulty.medium,
       ),
-      currentBoard: SudokuBoard.fromJson(json['currentBoard'] as Map<String, dynamic>),
-      originalBoard: SudokuBoard.fromJson(json['originalBoard'] as Map<String, dynamic>),
+      currentBoard: SudokuBoard.fromJson(
+        json['currentBoard'] as Map<String, dynamic>,
+      ),
+      originalBoard: SudokuBoard.fromJson(
+        json['originalBoard'] as Map<String, dynamic>,
+      ),
       solvedBoard: json['solvedBoard'] != null
           ? SudokuBoard.fromJson(json['solvedBoard'] as Map<String, dynamic>)
           : null,
@@ -89,7 +93,10 @@ class SavedGame {
       selectedCol: json['selectedCol'] as int?,
       notesMode: json['notesMode'] as bool,
       actionHistory: (json['actionHistory'] as List<dynamic>)
-          .map((actionJson) => SudokuAction.fromJson(actionJson as Map<String, dynamic>))
+          .map(
+            (actionJson) =>
+                SudokuAction.fromJson(actionJson as Map<String, dynamic>),
+          )
           .toList(),
       savedAt: DateTime.parse(json['savedAt'] as String),
     );

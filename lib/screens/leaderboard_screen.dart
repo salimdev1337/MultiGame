@@ -170,8 +170,12 @@ class _LeaderboardTabState extends ConsumerState<LeaderboardTab> {
 
     return StreamBuilder<List<LeaderboardEntry>>(
       key: ValueKey(_refreshKey),
-      stream: statsService.leaderboardStream(gameType: widget.gameType, limit: 100),
-      builder: (context, snapshot) => _buildStreamContent(context, snapshot, authProvider),
+      stream: statsService.leaderboardStream(
+        gameType: widget.gameType,
+        limit: 100,
+      ),
+      builder: (context, snapshot) =>
+          _buildStreamContent(context, snapshot, authProvider),
     );
   }
 
@@ -180,217 +184,215 @@ class _LeaderboardTabState extends ConsumerState<LeaderboardTab> {
     AsyncSnapshot<List<LeaderboardEntry>> snapshot,
     UserAuthState authProvider,
   ) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: CircularProgressIndicator(color: const Color(0xFF00F0FF)),
-          );
-        }
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return Center(
+        child: CircularProgressIndicator(color: const Color(0xFF00F0FF)),
+      );
+    }
 
-        if (snapshot.hasError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 60,
-                  color: Colors.red.withValues(alpha: 0.7),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Error: ${snapshot.error}',
-                  style: const TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => setState(() => _refreshKey++),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00F0FF),
-                    foregroundColor: Colors.black,
-                  ),
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
-          );
-        }
-
-        final entries = snapshot.data ?? [];
-
-        if (entries.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.emoji_events_outlined,
-                  size: 80,
-                  color: Colors.grey.withValues(alpha: 0.3),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'No scores yet',
-                  style: TextStyle(
-                    fontSize: 20,
-                    color: Colors.grey,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Be the first to play!',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.withValues(alpha: 0.7),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        // Find current user's rank
-        final userRank = authProvider.userId != null
-            ? entries.indexWhere((e) => e.userId == authProvider.userId) + 1
-            : -1;
-
-        return Column(
+    if (snapshot.hasError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SizedBox(height: 24),
-            // User's rank card (neon style)
-            if (authProvider.isSignedIn && userRank > 0)
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                child: Stack(
-                  children: [
-                    // Neon border container
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        gradient: LinearGradient(
-                          colors: [
-                            const Color(0xFF00F0FF).withValues(alpha: 0.5),
-                            const Color(0xFF00F0FF).withValues(alpha: 0.2),
-                            const Color(0xFF00F0FF).withValues(alpha: 0.5),
-                          ],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(
-                              0xFF00F0FF,
-                            ).withValues(alpha: 0.3),
-                            blurRadius: 20,
-                            spreadRadius: 0,
-                          ),
-                        ],
+            Icon(
+              Icons.error_outline,
+              size: 60,
+              color: Colors.red.withValues(alpha: 0.7),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Error: ${snapshot.error}',
+              style: const TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => setState(() => _refreshKey++),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00F0FF),
+                foregroundColor: Colors.black,
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final entries = snapshot.data ?? [];
+
+    if (entries.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.emoji_events_outlined,
+              size: 80,
+              color: Colors.grey.withValues(alpha: 0.3),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No scores yet',
+              style: TextStyle(
+                fontSize: 20,
+                color: Colors.grey,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Be the first to play!',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Find current user's rank
+    final userRank = authProvider.userId != null
+        ? entries.indexWhere((e) => e.userId == authProvider.userId) + 1
+        : -1;
+
+    return Column(
+      children: [
+        const SizedBox(height: 24),
+        // User's rank card (neon style)
+        if (authProvider.isSignedIn && userRank > 0)
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            child: Stack(
+              children: [
+                // Neon border container
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF00F0FF).withValues(alpha: 0.5),
+                        const Color(0xFF00F0FF).withValues(alpha: 0.2),
+                        const Color(0xFF00F0FF).withValues(alpha: 0.5),
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00F0FF).withValues(alpha: 0.3),
+                        blurRadius: 20,
+                        spreadRadius: 0,
                       ),
-                      padding: const EdgeInsets.all(1),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0F0F12),
-                          borderRadius: BorderRadius.circular(15),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(1),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F0F12),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        _buildRankBadge(userRank, isUser: true),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'CURRENT RANK',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.withValues(alpha: 0.7),
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                authProvider.displayName,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
                         ),
-                        padding: const EdgeInsets.all(20),
-                        child: Row(
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            _buildRankBadge(userRank, isUser: true),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'CURRENT RANK',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.grey.withValues(alpha: 0.7),
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    authProvider.displayName,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
+                            Text(
+                              entries[userRank - 1].highScore.toString(),
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF00F0FF),
+                                shadows: [
+                                  Shadow(
+                                    color: const Color(
+                                      0xFF00F0FF,
+                                    ).withValues(alpha: 0.6),
+                                    blurRadius: 8,
                                   ),
                                 ],
                               ),
                             ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  entries[userRank - 1].highScore.toString(),
-                                  style: TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF00F0FF),
-                                    shadows: [
-                                      Shadow(
-                                        color: const Color(
-                                          0xFF00F0FF,
-                                        ).withValues(alpha: 0.6),
-                                        blurRadius: 8,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  'Top ${((userRank / entries.length) * 100).toStringAsFixed(0)}%',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: const Color(
-                                      0xFF00F0FF,
-                                    ).withValues(alpha: 0.8),
-                                  ),
-                                ),
-                              ],
+                            Text(
+                              'Top ${((userRank / entries.length) * 100).toStringAsFixed(0)}%',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(
+                                  0xFF00F0FF,
+                                ).withValues(alpha: 0.8),
+                              ),
                             ),
                           ],
                         ),
+                      ],
+                    ),
+                  ),
+                ),
+                // Inner glow
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: RadialGradient(
+                        center: Alignment.topLeft,
+                        radius: 2,
+                        colors: [
+                          const Color(0xFF00F0FF).withValues(alpha: 0.05),
+                          Colors.transparent,
+                        ],
                       ),
                     ),
-                    // Inner glow
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          gradient: RadialGradient(
-                            center: Alignment.topLeft,
-                            radius: 2,
-                            colors: [
-                              const Color(0xFF00F0FF).withValues(alpha: 0.05),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            const SizedBox(height: 32),
-            // Leaderboard list
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: entries.length,
-                itemBuilder: (context, index) => _buildEntryItem(
-                  entries[index],
-                  index + 1,
-                  authProvider.userId == entries[index].userId,
-                ),
-              ),
+              ],
             ),
-            const SizedBox(height: 16),
-          ],
-        );
+          ),
+        const SizedBox(height: 32),
+        // Leaderboard list
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            itemCount: entries.length,
+            itemBuilder: (context, index) => _buildEntryItem(
+              entries[index],
+              index + 1,
+              authProvider.userId == entries[index].userId,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
   }
 
   Widget _buildEntryItem(LeaderboardEntry entry, int rank, bool isCurrentUser) {
@@ -442,7 +444,9 @@ class _LeaderboardTabState extends ConsumerState<LeaderboardTab> {
                     fontWeight: FontWeight.bold,
                     color: rank <= 3
                         ? _getRankColor(rank)
-                        : (isCurrentUser ? const Color(0xFF00F0FF) : Colors.white),
+                        : (isCurrentUser
+                              ? const Color(0xFF00F0FF)
+                              : Colors.white),
                   ),
                 ),
                 if (entry.lastUpdated != null)

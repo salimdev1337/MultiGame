@@ -658,7 +658,10 @@ void main() {
 
       expect(fakeAchievementService.savedAchievements.length, 1);
       expect(fakeAchievementService.savedAchievements[0]['highestTile'], 256);
-      expect(fakeAchievementService.savedAchievements[0]['levelPassed'], 'Easy (256)');
+      expect(
+        fakeAchievementService.savedAchievements[0]['levelPassed'],
+        'Easy (256)',
+      );
     });
 
     test('should save achievement with correct level for 512', () async {
@@ -672,7 +675,10 @@ void main() {
 
       await provider.recordGameCompletion();
 
-      expect(fakeAchievementService.savedAchievements[0]['levelPassed'], 'Medium (512)');
+      expect(
+        fakeAchievementService.savedAchievements[0]['levelPassed'],
+        'Medium (512)',
+      );
     });
 
     test('should save achievement with correct level for 1024', () async {
@@ -686,7 +692,10 @@ void main() {
 
       await provider.recordGameCompletion();
 
-      expect(fakeAchievementService.savedAchievements[0]['levelPassed'], 'Hard (1024)');
+      expect(
+        fakeAchievementService.savedAchievements[0]['levelPassed'],
+        'Hard (1024)',
+      );
     });
 
     test('should save achievement with correct level for 2048', () async {
@@ -700,7 +709,10 @@ void main() {
 
       await provider.recordGameCompletion();
 
-      expect(fakeAchievementService.savedAchievements[0]['levelPassed'], 'Expert (2048)');
+      expect(
+        fakeAchievementService.savedAchievements[0]['levelPassed'],
+        'Expert (2048)',
+      );
     });
 
     test('should save achievement with None for tiles below 256', () async {
@@ -714,7 +726,10 @@ void main() {
 
       await provider.recordGameCompletion();
 
-      expect(fakeAchievementService.savedAchievements[0]['levelPassed'], 'None');
+      expect(
+        fakeAchievementService.savedAchievements[0]['levelPassed'],
+        'None',
+      );
     });
 
     test('should include current score in achievement', () async {
@@ -730,7 +745,10 @@ void main() {
 
       await provider.recordGameCompletion();
 
-      expect(fakeAchievementService.savedAchievements[0]['score'], greaterThan(0));
+      expect(
+        fakeAchievementService.savedAchievements[0]['score'],
+        greaterThan(0),
+      );
     });
   });
 

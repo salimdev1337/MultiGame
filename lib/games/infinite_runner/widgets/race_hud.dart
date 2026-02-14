@@ -33,23 +33,27 @@ class _RaceHudState extends State<RaceHud> {
   void initState() {
     super.initState();
 
-    _subs.add(widget.game.abilityToastStream.listen((type) {
-      if (!mounted) return;
-      setState(() => _toastAbility = type);
-      _toastTimer?.cancel();
-      _toastTimer = Timer(const Duration(seconds: 2), () {
-        if (mounted) setState(() => _toastAbility = null);
-      });
-    }));
+    _subs.add(
+      widget.game.abilityToastStream.listen((type) {
+        if (!mounted) return;
+        setState(() => _toastAbility = type);
+        _toastTimer?.cancel();
+        _toastTimer = Timer(const Duration(seconds: 2), () {
+          if (mounted) setState(() => _toastAbility = null);
+        });
+      }),
+    );
 
-    _subs.add(widget.game.slowedByStream.listen((text) {
-      if (!mounted) return;
-      setState(() => _slowedByText = text);
-      _slowedTimer?.cancel();
-      _slowedTimer = Timer(const Duration(seconds: 3), () {
-        if (mounted) setState(() => _slowedByText = null);
-      });
-    }));
+    _subs.add(
+      widget.game.slowedByStream.listen((text) {
+        if (!mounted) return;
+        setState(() => _slowedByText = text);
+        _slowedTimer?.cancel();
+        _slowedTimer = Timer(const Duration(seconds: 3), () {
+          if (mounted) setState(() => _slowedByText = null);
+        });
+      }),
+    );
   }
 
   @override
@@ -80,12 +84,10 @@ class _RaceHudState extends State<RaceHud> {
         ),
 
         // Ability pickup toast (appears for 2 s)
-        if (_toastAbility != null)
-          _AbilityToast(ability: _toastAbility!),
+        if (_toastAbility != null) _AbilityToast(ability: _toastAbility!),
 
         // Slowed-by banner (appears for 3 s)
-        if (_slowedByText != null)
-          _SlowedBanner(text: _slowedByText!),
+        if (_slowedByText != null) _SlowedBanner(text: _slowedByText!),
       ],
     );
   }
@@ -101,20 +103,28 @@ class _RaceHudState extends State<RaceHud> {
     final hasShield = widget.game.playerHasShield;
 
     final elapsedMs = widget.game.raceElapsedMs;
-    final remainingMs =
-        (InfiniteRunnerGame.raceLimitMs - elapsedMs).clamp(0.0, double.infinity);
+    final remainingMs = (InfiniteRunnerGame.raceLimitMs - elapsedMs).clamp(
+      0.0,
+      double.infinity,
+    );
 
     // Opponent positions for the progress bar (non-local players)
     final room = widget.game.raceRoom;
     final localId = room?.localPlayerId;
-    final opponents = room?.players
+    final opponents =
+        room?.players
             .where((p) => p.playerId != localId)
             .map(
               (p) => _OpponentDot(
-                progress:
-                    (p.distance / InfiniteRunnerGame.trackLength).clamp(0.0, 1.0),
-                color: InfiniteRunnerGame.playerColors[
-                    p.playerId.clamp(0, InfiniteRunnerGame.playerColors.length - 1)],
+                progress: (p.distance / InfiniteRunnerGame.trackLength).clamp(
+                  0.0,
+                  1.0,
+                ),
+                color:
+                    InfiniteRunnerGame.playerColors[p.playerId.clamp(
+                      0,
+                      InfiniteRunnerGame.playerColors.length - 1,
+                    )],
               ),
             )
             .toList() ??
@@ -192,14 +202,9 @@ class _RaceHudState extends State<RaceHud> {
                         decoration: BoxDecoration(
                           color: const Color(0xFF00d4ff).withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: const Color(0xFF00d4ff),
-                          ),
+                          border: Border.all(color: const Color(0xFF00d4ff)),
                         ),
-                        child: const Text(
-                          '🛡',
-                          style: TextStyle(fontSize: 14),
-                        ),
+                        child: const Text('🛡', style: TextStyle(fontSize: 14)),
                       ),
                     ],
                   ],
@@ -330,7 +335,10 @@ class _ProgressBar extends StatelessWidget {
                 // Opponent dots
                 for (final dot in opponents)
                   Positioned(
-                    left: (dot.progress * barWidth - 5).clamp(0.0, barWidth - 10),
+                    left: (dot.progress * barWidth - 5).clamp(
+                      0.0,
+                      barWidth - 10,
+                    ),
                     top: 3,
                     child: Container(
                       width: 10,
@@ -402,10 +410,7 @@ class _AbilityButton extends StatelessWidget {
         ),
         child: Center(
           child: hasAbility
-              ? Text(
-                  ability.emoji,
-                  style: const TextStyle(fontSize: 28),
-                )
+              ? Text(ability.emoji, style: const TextStyle(fontSize: 28))
               : const Icon(
                   Icons.bolt_outlined,
                   color: Colors.white38,

@@ -11,9 +11,8 @@ class SudokuStatsService {
 
   static const String _keyStats = 'sudoku_player_stats';
 
-  SudokuStatsService({
-    SecureStorageRepository? storage,
-  }) : _storage = storage ?? SecureStorageRepository();
+  SudokuStatsService({SecureStorageRepository? storage})
+    : _storage = storage ?? SecureStorageRepository();
 
   Future<SudokuStats> getStats() async {
     try {
@@ -53,12 +52,16 @@ class SudokuStatsService {
       int newClassicPlayed = currentStats.classicGamesPlayed;
       int newClassicWon = currentStats.classicGamesWon;
       int newClassicTime = currentStats.classicTotalTime;
-      Map<SudokuDifficulty, int> newClassicBestScores = Map.from(currentStats.classicBestScores);
+      Map<SudokuDifficulty, int> newClassicBestScores = Map.from(
+        currentStats.classicBestScores,
+      );
 
       int newRushPlayed = currentStats.rushGamesPlayed;
       int newRushWon = currentStats.rushGamesWon;
       int newRushLost = currentStats.rushGamesLost;
-      Map<SudokuDifficulty, int> newRushBestScores = Map.from(currentStats.rushBestScores);
+      Map<SudokuDifficulty, int> newRushBestScores = Map.from(
+        currentStats.rushBestScores,
+      );
 
       if (game.mode == 'classic') {
         newClassicPlayed++;
@@ -114,7 +117,11 @@ class SudokuStatsService {
 
       return updatedStats;
     } catch (e) {
-      SecureLogger.error('Failed to record game completion', error: e, tag: 'SudokuStats');
+      SecureLogger.error(
+        'Failed to record game completion',
+        error: e,
+        tag: 'SudokuStats',
+      );
       return await getStats();
     }
   }

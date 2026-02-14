@@ -5,10 +5,7 @@ import 'package:multigame/design_system/design_system.dart';
 class WelcomeSplashScreen extends StatefulWidget {
   final VoidCallback onComplete;
 
-  const WelcomeSplashScreen({
-    super.key,
-    required this.onComplete,
-  });
+  const WelcomeSplashScreen({super.key, required this.onComplete});
 
   @override
   State<WelcomeSplashScreen> createState() => _WelcomeSplashScreenState();
@@ -37,13 +34,17 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
     // Scale animation: starts small, grows, then slight bounce
     _scaleAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 0.5, end: 1.1)
-            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        tween: Tween<double>(
+          begin: 0.5,
+          end: 1.1,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
         weight: 60,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.1, end: 1.0)
-            .chain(CurveTween(curve: Curves.elasticOut)),
+        tween: Tween<double>(
+          begin: 1.1,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.elasticOut)),
         weight: 40,
       ),
     ]).animate(_controller);
@@ -81,9 +82,7 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: DSColors.gradientPrimary,
-        ),
+        decoration: BoxDecoration(gradient: DSColors.gradientPrimary),
         child: Center(
           child: AnimatedBuilder(
             animation: _controller,
@@ -98,8 +97,9 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: DSColors.primary
-                              .withValues(alpha: 0.3 * _glowAnimation.value),
+                          color: DSColors.primary.withValues(
+                            alpha: 0.3 * _glowAnimation.value,
+                          ),
                           blurRadius: 60 * _glowAnimation.value,
                           spreadRadius: 20 * _glowAnimation.value,
                         ),

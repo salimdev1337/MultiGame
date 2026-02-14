@@ -36,10 +36,7 @@ class SudokuSettingsScreen extends ConsumerWidget {
         ),
         content: const Text(
           'Are you sure you want to reset all settings to their default values?',
-          style: TextStyle(
-            color: _textGray,
-            fontSize: 15,
-          ),
+          style: TextStyle(color: _textGray, fontSize: 15),
         ),
         actions: [
           TextButton(
@@ -70,8 +67,10 @@ class SudokuSettingsScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Reset',
-                style: TextStyle(fontWeight: FontWeight.w600)),
+            child: const Text(
+              'Reset',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
@@ -115,8 +114,7 @@ class SudokuSettingsScreen extends ConsumerWidget {
         loading: () =>
             const Center(child: CircularProgressIndicator(color: _primaryCyan)),
         error: (e, _) => Center(
-          child: Text('Error: $e',
-              style: const TextStyle(color: Colors.red)),
+          child: Text('Error: $e', style: const TextStyle(color: Colors.red)),
         ),
         data: (settings) => ListView(
           padding: const EdgeInsets.all(16),
@@ -192,8 +190,7 @@ class SudokuSettingsScreen extends ConsumerWidget {
         ),
       ),
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(

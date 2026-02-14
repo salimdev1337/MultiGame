@@ -144,9 +144,11 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
 
   Future<void> _connectAsGuest() async {
     if (_codeInput.length != 6 && _manualIp.isEmpty) {
-      setState(() => _errorMsg = kIsWeb
-          ? 'Enter the host\'s IP address (e.g. 192.168.1.42)'
-          : 'Enter the 6-digit room code');
+      setState(
+        () => _errorMsg = kIsWeb
+            ? 'Enter the host\'s IP address (e.g. 192.168.1.42)'
+            : 'Enter the 6-digit room code',
+      );
       return;
     }
     setState(() {
@@ -160,11 +162,7 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
       if (ip.isEmpty) throw Exception('Invalid code');
 
       _room = RaceRoom(hostIp: ip, localPlayerId: -1); // ID assigned on join
-      _client = RaceClient(
-        hostIp: ip,
-        displayName: _displayName,
-        room: _room!,
-      );
+      _client = RaceClient(hostIp: ip, displayName: _displayName, room: _room!);
       await _client!.connect();
       _client!.onEvent = _handleClientEvent;
       _client!.onHostLeft = _handleHostLeft;
@@ -234,9 +232,9 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
 
   void _handleHostLeft() {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Host left the room')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Host left the room')));
     context.go(AppRoutes.home);
   }
 
@@ -288,9 +286,7 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
         iconTheme: const IconThemeData(color: Colors.white70),
       ),
       body: _isConnecting && !_isEffectivelyHost
-          ? const Center(
-              child: CircularProgressIndicator(color: _accentCyan),
-            )
+          ? const Center(child: CircularProgressIndicator(color: _accentCyan))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -322,8 +318,11 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.info_outline,
-                              color: Colors.amber, size: 18),
+                          Icon(
+                            Icons.info_outline,
+                            color: Colors.amber,
+                            size: 18,
+                          ),
                           SizedBox(width: 10),
                           Expanded(
                             child: Text(
@@ -478,7 +477,10 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
                   if (_isEffectivelyHost && _room != null) ...[
                     const SizedBox(height: 12),
                     ElevatedButton(
-                      onPressed: (_isStarting || (_room!.players.length < 2) || !_room!.allReady)
+                      onPressed:
+                          (_isStarting ||
+                              (_room!.players.length < 2) ||
+                              !_room!.allReady)
                           ? null
                           : _startRace,
                       style: ElevatedButton.styleFrom(
@@ -599,17 +601,14 @@ class _RoomCodeCard extends StatelessWidget {
                 icon: const Icon(Icons.copy, color: Colors.white54),
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: code));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Code copied!')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('Code copied!')));
                 },
               ),
             ],
           ),
-          Text(
-            ip,
-            style: const TextStyle(color: Colors.white38, fontSize: 12),
-          ),
+          Text(ip, style: const TextStyle(color: Colors.white38, fontSize: 12)),
         ],
       ),
     );

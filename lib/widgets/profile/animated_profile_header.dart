@@ -45,9 +45,10 @@ class _AnimatedProfileHeaderState extends State<AnimatedProfileHeader>
       duration: DSAnimations.normal,
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeOut),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeOut));
 
     // Scale animation for entrance
     _scaleController = AnimationController(
@@ -63,9 +64,10 @@ class _AnimatedProfileHeaderState extends State<AnimatedProfileHeader>
       duration: DSAnimations.slower,
       vsync: this,
     );
-    _xpAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _xpController, curve: Curves.easeInOut),
-    );
+    _xpAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _xpController, curve: Curves.easeInOut));
 
     // Start animations with stagger
     _fadeController.forward();
@@ -268,7 +270,10 @@ class __AnimatedAvatarWithLevelState extends State<_AnimatedAvatarWithLevel>
               ),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [widget.levelColor, widget.levelColor.withValues(alpha: 0.8)],
+                  colors: [
+                    widget.levelColor,
+                    widget.levelColor.withValues(alpha: 0.8),
+                  ],
                 ),
                 borderRadius: BorderRadius.circular(DSSpacing.sm),
                 boxShadow: [
@@ -383,11 +388,7 @@ class _RankBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.military_tech_rounded,
-            size: 16,
-            color: Colors.white,
-          ),
+          Icon(Icons.military_tech_rounded, size: 16, color: Colors.white),
           SizedBox(width: DSSpacing.xxs),
           Text(
             rank,
@@ -448,10 +449,7 @@ class _XPProgressBar extends StatelessWidget {
           decoration: BoxDecoration(
             color: DSColors.surface,
             borderRadius: BorderRadius.circular(DSSpacing.sm),
-            border: Border.all(
-              color: color.withValues(alpha: 0.2),
-              width: 1,
-            ),
+            border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(DSSpacing.sm),
@@ -516,13 +514,11 @@ class __EditProfileButtonState extends State<_EditProfileButton>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: DSAnimations.fast,
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _controller = AnimationController(duration: DSAnimations.fast, vsync: this);
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -561,11 +557,7 @@ class __EditProfileButtonState extends State<_EditProfileButton>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.edit_rounded,
-                  size: 18,
-                  color: DSColors.primary,
-                ),
+                Icon(Icons.edit_rounded, size: 18, color: DSColors.primary),
                 SizedBox(width: DSSpacing.xs),
                 Text(
                   'Edit Profile',

@@ -55,7 +55,8 @@ void showPuzzleHintDialog(BuildContext context, String imageUrl) {
                             height: 300,
                             child: Center(
                               child: CircularProgressIndicator(
-                                value: loadingProgress.expectedTotalBytes != null
+                                value:
+                                    loadingProgress.expectedTotalBytes != null
                                     ? loadingProgress.cumulativeBytesLoaded /
                                           loadingProgress.expectedTotalBytes!
                                     : null,
@@ -133,9 +134,7 @@ Future<void> showPuzzleWinDialog({
             ),
           ],
         ),
-        child: const Center(
-          child: Text('🏆', style: TextStyle(fontSize: 48)),
-        ),
+        child: const Center(child: Text('🏆', style: TextStyle(fontSize: 48))),
       ),
       subtitle: Text(
         'MASTERPIECE COMPLETE',
@@ -166,12 +165,15 @@ Future<void> showPuzzleWinDialog({
         onTap: () {
           Navigator.of(context).pop();
           uiNotifier.setNewImageLoading(true);
-          gameNotifier.newImageGame().then((_) {
-            uiNotifier.setNewImageLoading(false);
-            onShowPreview();
-          }).catchError((_) {
-            uiNotifier.setNewImageLoading(false);
-          });
+          gameNotifier
+              .newImageGame()
+              .then((_) {
+                uiNotifier.setNewImageLoading(false);
+                onShowPreview();
+              })
+              .catchError((_) {
+                uiNotifier.setNewImageLoading(false);
+              });
         },
       ),
       secondary: GameResultAction(
@@ -206,7 +208,9 @@ class _AchievementBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFffd700).withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFffd700).withValues(alpha: 0.3)),
+        border: Border.all(
+          color: const Color(0xFFffd700).withValues(alpha: 0.3),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -240,9 +244,7 @@ void showPuzzleGridSizeDialog(
     builder: (context) {
       return Dialog(
         backgroundColor: const Color(0xFF21242b),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
@@ -264,11 +266,26 @@ void showPuzzleGridSizeDialog(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       _buildGridSizeOption(
-                          context, ref, 3, currentSize, onSizeChanged),
+                        context,
+                        ref,
+                        3,
+                        currentSize,
+                        onSizeChanged,
+                      ),
                       _buildGridSizeOption(
-                          context, ref, 4, currentSize, onSizeChanged),
+                        context,
+                        ref,
+                        4,
+                        currentSize,
+                        onSizeChanged,
+                      ),
                       _buildGridSizeOption(
-                          context, ref, 5, currentSize, onSizeChanged),
+                        context,
+                        ref,
+                        5,
+                        currentSize,
+                        onSizeChanged,
+                      ),
                     ],
                   );
                 },
@@ -301,12 +318,16 @@ Widget _buildGridSizeOption(
     onTap: () {
       Navigator.pop(context);
       ref.read(puzzleUIProvider.notifier).setLoading(true);
-      ref.read(puzzleProvider.notifier).changeGridSize(size).then((_) {
-        ref.read(puzzleUIProvider.notifier).setLoading(false);
-        onSizeChanged();
-      }).catchError((_) {
-        ref.read(puzzleUIProvider.notifier).setLoading(false);
-      });
+      ref
+          .read(puzzleProvider.notifier)
+          .changeGridSize(size)
+          .then((_) {
+            ref.read(puzzleUIProvider.notifier).setLoading(false);
+            onSizeChanged();
+          })
+          .catchError((_) {
+            ref.read(puzzleUIProvider.notifier).setLoading(false);
+          });
     },
     child: Container(
       width: 70,

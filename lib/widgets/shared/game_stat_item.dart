@@ -44,12 +44,7 @@ class GameStatItem extends StatelessWidget {
             color: color,
             height: 1.0,
             shadows: hasGlow
-                ? [
-                    Shadow(
-                      color: color.withValues(alpha: 0.5),
-                      blurRadius: 8,
-                    ),
-                  ]
+                ? [Shadow(color: color.withValues(alpha: 0.5), blurRadius: 8)]
                 : null,
           ),
         ),

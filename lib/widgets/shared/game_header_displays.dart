@@ -8,8 +8,7 @@ class GameHeaderScoreCounter extends StatefulWidget {
   final int score;
 
   @override
-  State<GameHeaderScoreCounter> createState() =>
-      _GameHeaderScoreCounterState();
+  State<GameHeaderScoreCounter> createState() => _GameHeaderScoreCounterState();
 }
 
 class _GameHeaderScoreCounterState extends State<GameHeaderScoreCounter>
@@ -26,17 +25,20 @@ class _GameHeaderScoreCounterState extends State<GameHeaderScoreCounter>
       duration: DSAnimations.normal,
       vsync: this,
     );
-    _scoreAnimation = IntTween(begin: widget.score, end: widget.score)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _scoreAnimation = IntTween(
+      begin: widget.score,
+      end: widget.score,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
   }
 
   @override
   void didUpdateWidget(GameHeaderScoreCounter oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.score != widget.score) {
-      _scoreAnimation = IntTween(begin: _previousScore, end: widget.score)
-          .animate(
-              CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+      _scoreAnimation = IntTween(
+        begin: _previousScore,
+        end: widget.score,
+      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
       _controller.forward(from: 0.0);
       _previousScore = widget.score;
     }

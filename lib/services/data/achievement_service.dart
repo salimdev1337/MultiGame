@@ -7,9 +7,8 @@ import 'package:multigame/repositories/achievement_repository.dart';
 class AchievementService {
   final AchievementRepository _repository;
 
-  AchievementService({
-    AchievementRepository? repository,
-  }) : _repository = repository ?? SharedPrefsAchievementRepository();
+  AchievementService({AchievementRepository? repository})
+    : _repository = repository ?? SharedPrefsAchievementRepository();
 
   // ========== Puzzle Game Methods ==========
 
@@ -105,7 +104,9 @@ class AchievementService {
       'speed_demon',
     ];
 
-    final previousAchievements = await _repository.getAllAchievements(allAchievementIds);
+    final previousAchievements = await _repository.getAllAchievements(
+      allAchievementIds,
+    );
     for (final entry in previousAchievements.entries) {
       if (!achievements.containsKey(entry.key)) {
         achievements[entry.key] = entry.value;
@@ -130,32 +131,40 @@ class AchievementService {
     final totalCompleted = await getTotalCompleted();
 
     // Check each achievement
-    if (totalCompleted == 1 && !await _repository.isAchievementUnlocked('first_win')) {
+    if (totalCompleted == 1 &&
+        !await _repository.isAchievementUnlocked('first_win')) {
       await _repository.unlockAchievement('first_win');
       newAchievements.add('First Victory');
     }
 
-    if (totalCompleted == 5 && !await _repository.isAchievementUnlocked('puzzle_fan')) {
+    if (totalCompleted == 5 &&
+        !await _repository.isAchievementUnlocked('puzzle_fan')) {
       await _repository.unlockAchievement('puzzle_fan');
       newAchievements.add('Puzzle Fan');
     }
 
-    if (totalCompleted == 10 && !await _repository.isAchievementUnlocked('puzzle_master')) {
+    if (totalCompleted == 10 &&
+        !await _repository.isAchievementUnlocked('puzzle_master')) {
       await _repository.unlockAchievement('puzzle_master');
       newAchievements.add('Puzzle Master');
     }
 
-    if (gridSize == 3 && moves < 100 && !await _repository.isAchievementUnlocked('efficient_3x3')) {
+    if (gridSize == 3 &&
+        moves < 100 &&
+        !await _repository.isAchievementUnlocked('efficient_3x3')) {
       await _repository.unlockAchievement('efficient_3x3');
       newAchievements.add('3x3 Expert');
     }
 
-    if (gridSize == 4 && moves < 200 && !await _repository.isAchievementUnlocked('efficient_4x4')) {
+    if (gridSize == 4 &&
+        moves < 200 &&
+        !await _repository.isAchievementUnlocked('efficient_4x4')) {
       await _repository.unlockAchievement('efficient_4x4');
       newAchievements.add('4x4 Pro');
     }
 
-    if (seconds < 60 && !await _repository.isAchievementUnlocked('speed_demon')) {
+    if (seconds < 60 &&
+        !await _repository.isAchievementUnlocked('speed_demon')) {
       await _repository.unlockAchievement('speed_demon');
       newAchievements.add('Speed Demon');
     }
@@ -178,16 +187,20 @@ class AchievementService {
     );
 
     // Unlock 2048-specific achievements
-    if (highestTile >= 512 && !await _repository.isAchievementUnlocked('2048_beginner')) {
+    if (highestTile >= 512 &&
+        !await _repository.isAchievementUnlocked('2048_beginner')) {
       await _repository.unlockAchievement('2048_beginner');
     }
-    if (highestTile >= 1024 && !await _repository.isAchievementUnlocked('2048_intermediate')) {
+    if (highestTile >= 1024 &&
+        !await _repository.isAchievementUnlocked('2048_intermediate')) {
       await _repository.unlockAchievement('2048_intermediate');
     }
-    if (highestTile >= 2048 && !await _repository.isAchievementUnlocked('2048_advanced')) {
+    if (highestTile >= 2048 &&
+        !await _repository.isAchievementUnlocked('2048_advanced')) {
       await _repository.unlockAchievement('2048_advanced');
     }
-    if (highestTile >= 4096 && !await _repository.isAchievementUnlocked('2048_master')) {
+    if (highestTile >= 4096 &&
+        !await _repository.isAchievementUnlocked('2048_master')) {
       await _repository.unlockAchievement('2048_master');
     }
   }

@@ -24,10 +24,7 @@ void main() {
 
     group('Exception Classes', () {
       test('UnsplashApiException should format toString with status code', () {
-        final exception = UnsplashApiException(
-          'Test error',
-          statusCode: 401,
-        );
+        final exception = UnsplashApiException('Test error', statusCode: 401);
 
         expect(
           exception.toString(),
@@ -198,23 +195,26 @@ void main() {
         }
       });
 
-      test('fallback images are deterministic within same millisecond', () async {
-        // This test verifies fallback generation logic
-        if (ApiConfig.unsplashAccessKey == null) {
-          final urls = <String>[];
+      test(
+        'fallback images are deterministic within same millisecond',
+        () async {
+          // This test verifies fallback generation logic
+          if (ApiConfig.unsplashAccessKey == null) {
+            final urls = <String>[];
 
-          // Get multiple fallback URLs rapidly
-          for (int i = 0; i < 5; i++) {
-            service.clearCache();
-            urls.add(await service.getRandomImage());
-          }
+            // Get multiple fallback URLs rapidly
+            for (int i = 0; i < 5; i++) {
+              service.clearCache();
+              urls.add(await service.getRandomImage());
+            }
 
-          // All should be valid picsum URLs
-          for (final url in urls) {
-            expect(url, startsWith('https://picsum.photos/800/800'));
+            // All should be valid picsum URLs
+            for (final url in urls) {
+              expect(url, startsWith('https://picsum.photos/800/800'));
+            }
           }
-        }
-      });
+        },
+      );
 
       test('fallback images include random parameter', () async {
         if (ApiConfig.unsplashAccessKey == null) {
@@ -341,10 +341,7 @@ void main() {
         service.clearCache(); // Start fresh
 
         // Rapid fire calls
-        final futures = List.generate(
-          10,
-          (_) => service.getRandomImage(),
-        );
+        final futures = List.generate(10, (_) => service.getRandomImage());
 
         final urls = await Future.wait(futures);
 
@@ -468,8 +465,9 @@ void main() {
         service.clearCache();
 
         // Should complete within 15 seconds (includes retries)
-        final url = await service.getRandomImage()
-            .timeout(const Duration(seconds: 15));
+        final url = await service.getRandomImage().timeout(
+          const Duration(seconds: 15),
+        );
 
         expect(url, isNotEmpty);
       });

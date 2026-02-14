@@ -136,7 +136,11 @@ class DSAccessibility {
 
   /// Build semantic label for online status
   /// Example: "Player John is online" or "Player Jane was last seen 2 hours ago"
-  static String onlineStatusLabel(String playerName, bool isOnline, {String? lastSeen}) {
+  static String onlineStatusLabel(
+    String playerName,
+    bool isOnline, {
+    String? lastSeen,
+  }) {
     if (isOnline) {
       return '$playerName is online';
     } else if (lastSeen != null) {
@@ -164,7 +168,11 @@ class DSAccessibility {
 
   /// Check if color combination meets WCAG AA standards
   /// textSize: 'normal' (14-18pt) or 'large' (>=18pt or >=14pt bold)
-  static bool meetsWCAGAA(Color foreground, Color background, {bool isLargeText = false}) {
+  static bool meetsWCAGAA(
+    Color foreground,
+    Color background, {
+    bool isLargeText = false,
+  }) {
     final ratio = calculateContrastRatio(foreground, background);
     final minimumRatio = isLargeText ? minContrastLarge : minContrastNormal;
     return ratio >= minimumRatio;
@@ -191,7 +199,8 @@ class DSAccessibility {
   /// Apply font scale to text style
   static TextStyle applyFontScale(TextStyle style, double scale) {
     return style.copyWith(
-      fontSize: (style.fontSize ?? 14.0) * scale.clamp(minFontScale, maxFontScale),
+      fontSize:
+          (style.fontSize ?? 14.0) * scale.clamp(minFontScale, maxFontScale),
     );
   }
 
@@ -221,10 +230,7 @@ class DSAccessibility {
     BorderRadius? borderRadius,
   }) {
     return BoxDecoration(
-      border: Border.all(
-        color: color,
-        width: borderWidth,
-      ),
+      border: Border.all(color: color, width: borderWidth),
       borderRadius: borderRadius,
     );
   }
@@ -232,11 +238,7 @@ class DSAccessibility {
   /// Announce to screen reader (via Semantics with live region)
   static void announce(BuildContext context, String message) {
     // This will be picked up by screen readers
-    Semantics(
-      liveRegion: true,
-      label: message,
-      child: const SizedBox.shrink(),
-    );
+    Semantics(liveRegion: true, label: message, child: const SizedBox.shrink());
   }
 }
 
@@ -254,9 +256,9 @@ extension DoubleExtension on double {
     return this < 0
         ? -1 * ((-this).abs().pow(exponent))
         : this == 0
-            ? 0
-            : exponent == 0
-                ? 1
-                : this * pow(exponent - 1);
+        ? 0
+        : exponent == 0
+        ? 1
+        : this * pow(exponent - 1);
   }
 }

@@ -173,10 +173,7 @@ void main() {
         await soundService.initialize();
 
         // Simulate a success action with both feedback types
-        await Future.wait([
-          hapticService.success(),
-          soundService.success(),
-        ]);
+        await Future.wait([hapticService.success(), soundService.success()]);
 
         // Should complete without throwing
         expect(true, isTrue);

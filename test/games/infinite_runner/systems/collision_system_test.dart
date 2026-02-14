@@ -6,11 +6,7 @@ import 'package:multigame/games/infinite_runner/systems/collision_system.dart';
 
 /// Creates a Player for testing (without loading sprites)
 Player _makePlayer({double x = 100, double y = 600}) {
-  return Player(
-    position: Vector2(x, y),
-    size: Vector2(40, 60),
-    groundY: y,
-  );
+  return Player(position: Vector2(x, y), size: Vector2(40, 60), groundY: y);
 }
 
 /// Creates an Obstacle for testing (without loading sprites)
@@ -67,29 +63,34 @@ void main() {
         expect(collisionTriggered, isTrue);
       });
 
-      test('detects collision when obstacle is directly at player position', () {
-        final player = _makePlayer(x: 100, y: 600);
-        final obstacle = _makeObstacle(x: 80, y: 600); // Centered on player
+      test(
+        'detects collision when obstacle is directly at player position',
+        () {
+          final player = _makePlayer(x: 100, y: 600);
+          final obstacle = _makeObstacle(x: 80, y: 600); // Centered on player
 
-        collisionSystem.checkCollisions(player, [obstacle]);
+          collisionSystem.checkCollisions(player, [obstacle]);
 
-        expect(collisionTriggered, isTrue);
-      });
+          expect(collisionTriggered, isTrue);
+        },
+      );
 
-      test('detects collision when obstacle slightly overlaps player left side',
-          () {
-        // Player x range: 80-120
-        // Obstacle needs to reach past x=80
-        // obstacle at x=110, width=64 → x range: 110-174
-        // 80 < 174 (aLeft < bRight) ✓
-        // 120 > 110 (aRight > bLeft) ✓ → collision
-        final player = _makePlayer(x: 100, y: 600);
-        final obstacle = _makeObstacle(x: 110, y: 600);
+      test(
+        'detects collision when obstacle slightly overlaps player left side',
+        () {
+          // Player x range: 80-120
+          // Obstacle needs to reach past x=80
+          // obstacle at x=110, width=64 → x range: 110-174
+          // 80 < 174 (aLeft < bRight) ✓
+          // 120 > 110 (aRight > bLeft) ✓ → collision
+          final player = _makePlayer(x: 100, y: 600);
+          final obstacle = _makeObstacle(x: 110, y: 600);
 
-        collisionSystem.checkCollisions(player, [obstacle]);
+          collisionSystem.checkCollisions(player, [obstacle]);
 
-        expect(collisionTriggered, isTrue);
-      });
+          expect(collisionTriggered, isTrue);
+        },
+      );
     });
 
     group('no collision (non-overlapping)', () {

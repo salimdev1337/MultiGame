@@ -16,13 +16,14 @@ class SudokuPersistenceService {
   static const String _keyBestScoresClassic = 'sudoku_best_scores_classic';
   static const String _keyBestScoresRush = 'sudoku_best_scores_rush';
 
-  SudokuPersistenceService({
-    SecureStorageRepository? storage,
-  }) : _storage = storage ?? SecureStorageRepository();
+  SudokuPersistenceService({SecureStorageRepository? storage})
+    : _storage = storage ?? SecureStorageRepository();
 
   Future<bool> saveSavedGame(SavedGame game) async {
     try {
-      final key = game.mode == 'classic' ? _keyClassicSavedGame : _keyRushSavedGame;
+      final key = game.mode == 'classic'
+          ? _keyClassicSavedGame
+          : _keyRushSavedGame;
       final jsonString = game.toJsonString();
       final success = await _storage.write(key, jsonString);
 
@@ -32,7 +33,11 @@ class SudokuPersistenceService {
 
       return success;
     } catch (e) {
-      SecureLogger.error('Failed to save game', error: e, tag: 'SudokuPersistence');
+      SecureLogger.error(
+        'Failed to save game',
+        error: e,
+        tag: 'SudokuPersistence',
+      );
       return false;
     }
   }
@@ -48,7 +53,11 @@ class SudokuPersistenceService {
 
       return SavedGame.fromJsonString(jsonString);
     } catch (e) {
-      SecureLogger.error('Failed to load saved game', error: e, tag: 'SudokuPersistence');
+      SecureLogger.error(
+        'Failed to load saved game',
+        error: e,
+        tag: 'SudokuPersistence',
+      );
       return null;
     }
   }
@@ -58,7 +67,11 @@ class SudokuPersistenceService {
       final key = mode == 'classic' ? _keyClassicSavedGame : _keyRushSavedGame;
       return await _storage.delete(key);
     } catch (e) {
-      SecureLogger.error('Failed to delete saved game', error: e, tag: 'SudokuPersistence');
+      SecureLogger.error(
+        'Failed to delete saved game',
+        error: e,
+        tag: 'SudokuPersistence',
+      );
       return false;
     }
   }
@@ -68,7 +81,11 @@ class SudokuPersistenceService {
       final key = mode == 'classic' ? _keyClassicSavedGame : _keyRushSavedGame;
       return await _storage.containsKey(key);
     } catch (e) {
-      SecureLogger.error('Failed to check saved game', error: e, tag: 'SudokuPersistence');
+      SecureLogger.error(
+        'Failed to check saved game',
+        error: e,
+        tag: 'SudokuPersistence',
+      );
       return false;
     }
   }
@@ -88,12 +105,19 @@ class SudokuPersistenceService {
       final success = await _storage.write(_keyCompletedGames, jsonString);
 
       if (success) {
-        SecureLogger.log('Saved completed game to history', tag: 'SudokuPersistence');
+        SecureLogger.log(
+          'Saved completed game to history',
+          tag: 'SudokuPersistence',
+        );
       }
 
       return success;
     } catch (e) {
-      SecureLogger.error('Failed to save completed game', error: e, tag: 'SudokuPersistence');
+      SecureLogger.error(
+        'Failed to save completed game',
+        error: e,
+        tag: 'SudokuPersistence',
+      );
       return false;
     }
   }
@@ -111,7 +135,11 @@ class SudokuPersistenceService {
           .map((json) => CompletedGame.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      SecureLogger.error('Failed to load completed games', error: e, tag: 'SudokuPersistence');
+      SecureLogger.error(
+        'Failed to load completed games',
+        error: e,
+        tag: 'SudokuPersistence',
+      );
       return [];
     }
   }
@@ -132,12 +160,20 @@ class SudokuPersistenceService {
     try {
       return await _storage.delete(_keyCompletedGames);
     } catch (e) {
-      SecureLogger.error('Failed to clear completed games', error: e, tag: 'SudokuPersistence');
+      SecureLogger.error(
+        'Failed to clear completed games',
+        error: e,
+        tag: 'SudokuPersistence',
+      );
       return false;
     }
   }
 
-  Future<bool> saveBestScore(String mode, SudokuDifficulty difficulty, int score) async {
+  Future<bool> saveBestScore(
+    String mode,
+    SudokuDifficulty difficulty,
+    int score,
+  ) async {
     try {
       final scores = await getBestScores(mode);
 
@@ -148,20 +184,28 @@ class SudokuPersistenceService {
 
       scores[difficulty] = score;
 
-      final key = mode == 'classic' ? _keyBestScoresClassic : _keyBestScoresRush;
+      final key = mode == 'classic'
+          ? _keyBestScoresClassic
+          : _keyBestScoresRush;
       final jsonMap = scores.map((key, value) => MapEntry(key.name, value));
       final jsonString = jsonEncode(jsonMap);
 
       return await _storage.write(key, jsonString);
     } catch (e) {
-      SecureLogger.error('Failed to save best score', error: e, tag: 'SudokuPersistence');
+      SecureLogger.error(
+        'Failed to save best score',
+        error: e,
+        tag: 'SudokuPersistence',
+      );
       return false;
     }
   }
 
   Future<Map<SudokuDifficulty, int>> getBestScores(String mode) async {
     try {
-      final key = mode == 'classic' ? _keyBestScoresClassic : _keyBestScoresRush;
+      final key = mode == 'classic'
+          ? _keyBestScoresClassic
+          : _keyBestScoresRush;
       final jsonString = await _storage.read(key);
 
       if (jsonString == null) {
@@ -179,7 +223,11 @@ class SudokuPersistenceService {
         }),
       );
     } catch (e) {
-      SecureLogger.error('Failed to load best scores', error: e, tag: 'SudokuPersistence');
+      SecureLogger.error(
+        'Failed to load best scores',
+        error: e,
+        tag: 'SudokuPersistence',
+      );
       return {};
     }
   }
@@ -191,10 +239,16 @@ class SudokuPersistenceService {
 
   Future<bool> clearBestScores(String mode) async {
     try {
-      final key = mode == 'classic' ? _keyBestScoresClassic : _keyBestScoresRush;
+      final key = mode == 'classic'
+          ? _keyBestScoresClassic
+          : _keyBestScoresRush;
       return await _storage.delete(key);
     } catch (e) {
-      SecureLogger.error('Failed to clear best scores', error: e, tag: 'SudokuPersistence');
+      SecureLogger.error(
+        'Failed to clear best scores',
+        error: e,
+        tag: 'SudokuPersistence',
+      );
       return false;
     }
   }
@@ -210,7 +264,11 @@ class SudokuPersistenceService {
       SecureLogger.log('Cleared all Sudoku data', tag: 'SudokuPersistence');
       return true;
     } catch (e) {
-      SecureLogger.error('Failed to clear all data', error: e, tag: 'SudokuPersistence');
+      SecureLogger.error(
+        'Failed to clear all data',
+        error: e,
+        tag: 'SudokuPersistence',
+      );
       return false;
     }
   }

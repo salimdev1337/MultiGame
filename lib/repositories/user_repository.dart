@@ -42,9 +42,8 @@ class SecureUserRepository implements UserRepository {
 
   final SecureStorageRepository _secureStorage;
 
-  SecureUserRepository({
-    SecureStorageRepository? secureStorage,
-  }) : _secureStorage = secureStorage ?? SecureStorageRepository();
+  SecureUserRepository({SecureStorageRepository? secureStorage})
+    : _secureStorage = secureStorage ?? SecureStorageRepository();
 
   @override
   Future<String?> getUserId() async {

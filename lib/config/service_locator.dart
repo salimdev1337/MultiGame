@@ -41,15 +41,11 @@ Future<void> setupServiceLocator() async {
 
   // User repository for user profile data (uses SecureStorageRepository)
   getIt.registerLazySingleton<UserRepository>(
-    () => SecureUserRepository(
-      secureStorage: getIt<SecureStorageRepository>(),
-    ),
+    () => SecureUserRepository(secureStorage: getIt<SecureStorageRepository>()),
   );
 
   // Stats repository for Firebase statistics and leaderboards
-  getIt.registerLazySingleton<StatsRepository>(
-    () => FirebaseStatsRepository(),
-  );
+  getIt.registerLazySingleton<StatsRepository>(() => FirebaseStatsRepository());
 
   // Achievement repository for local achievements and stats
   getIt.registerLazySingleton<AchievementRepository>(
@@ -65,25 +61,17 @@ Future<void> setupServiceLocator() async {
   // ========== Register Services (Business Logic Layer) ==========
   // These use repositories for data persistence
 
-  getIt.registerLazySingleton<AuthService>(
-    () => AuthService(),
-  );
+  getIt.registerLazySingleton<AuthService>(() => AuthService());
 
   getIt.registerLazySingleton<FirebaseStatsService>(
-    () => FirebaseStatsService(
-      statsRepository: getIt<StatsRepository>(),
-    ),
+    () => FirebaseStatsService(statsRepository: getIt<StatsRepository>()),
   );
 
   getIt.registerLazySingleton<AchievementService>(
-    () => AchievementService(
-      repository: getIt<AchievementRepository>(),
-    ),
+    () => AchievementService(repository: getIt<AchievementRepository>()),
   );
 
-  getIt.registerLazySingleton<UnsplashService>(
-    () => UnsplashService(),
-  );
+  getIt.registerLazySingleton<UnsplashService>(() => UnsplashService());
 
   getIt.registerLazySingleton<NicknameService>(
     () => NicknameService(
@@ -94,20 +82,14 @@ Future<void> setupServiceLocator() async {
 
   // Sudoku game services
   getIt.registerLazySingleton<SudokuPersistenceService>(
-    () => SudokuPersistenceService(
-      storage: getIt<SecureStorageRepository>(),
-    ),
+    () => SudokuPersistenceService(storage: getIt<SecureStorageRepository>()),
   );
 
   getIt.registerLazySingleton<SudokuStatsService>(
-    () => SudokuStatsService(
-      storage: getIt<SecureStorageRepository>(),
-    ),
+    () => SudokuStatsService(storage: getIt<SecureStorageRepository>()),
   );
 
-  getIt.registerLazySingleton<MatchmakingService>(
-    () => MatchmakingService(),
-  );
+  getIt.registerLazySingleton<MatchmakingService>(() => MatchmakingService());
 
   // Sudoku settings and feedback services (Phase 6)
   getIt.registerLazySingleton<SudokuSettingsProvider>(
@@ -115,15 +97,11 @@ Future<void> setupServiceLocator() async {
   );
 
   getIt.registerLazySingleton<SudokuSoundService>(
-    () => SudokuSoundService(
-      settings: getIt<SudokuSettingsProvider>(),
-    ),
+    () => SudokuSoundService(settings: getIt<SudokuSettingsProvider>()),
   );
 
   getIt.registerLazySingleton<SudokuHapticService>(
-    () => SudokuHapticService(
-      settings: getIt<SudokuSettingsProvider>(),
-    ),
+    () => SudokuHapticService(settings: getIt<SudokuSettingsProvider>()),
   );
 
   // ========== App-Wide Feedback Services (Phase 6) ==========
@@ -133,44 +111,32 @@ Future<void> setupServiceLocator() async {
     () => HapticFeedbackService(),
   );
 
-  getIt.registerLazySingleton<SoundService>(
-    () => SoundService(),
-  );
+  getIt.registerLazySingleton<SoundService>(() => SoundService());
 
   // ========== Onboarding Service (Phase 7) ==========
   // Tracks onboarding completion and tutorial states
 
-  getIt.registerLazySingleton<OnboardingService>(
-    () => OnboardingService(),
-  );
+  getIt.registerLazySingleton<OnboardingService>(() => OnboardingService());
 
   // ========== Accessibility Service (Phase 8) ==========
   // Persists and retrieves accessibility settings
 
   getIt.registerLazySingleton<AccessibilityService>(
-    () => AccessibilityService(
-      storage: getIt<SecureStorageRepository>(),
-    ),
+    () => AccessibilityService(storage: getIt<SecureStorageRepository>()),
   );
 
   // ========== Theme Service (Phase 8) ==========
 
   getIt.registerLazySingleton<ThemeService>(
-    () => ThemeService(
-      storage: getIt<SecureStorageRepository>(),
-    ),
+    () => ThemeService(storage: getIt<SecureStorageRepository>()),
   );
 
   // ========== Performance Services (Phase 8) ==========
 
-  getIt.registerLazySingleton<ImageCacheService>(
-    () => ImageCacheService(),
-  );
+  getIt.registerLazySingleton<ImageCacheService>(() => ImageCacheService());
 
   getIt.registerLazySingleton<BatterySaverService>(
-    () => BatterySaverService(
-      storage: getIt<SecureStorageRepository>(),
-    ),
+    () => BatterySaverService(storage: getIt<SecureStorageRepository>()),
   );
 
   // Note: ImagePuzzleGenerator is NOT registered as a singleton because

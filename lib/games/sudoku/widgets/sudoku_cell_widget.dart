@@ -49,21 +49,25 @@ class _SudokuCellWidgetState extends State<SudokuCellWidget>
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
-      CurvedAnimation(parent: _scaleController, curve: Curves.easeOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.15,
+    ).animate(CurvedAnimation(parent: _scaleController, curve: Curves.easeOut));
 
     _shakeController = AnimationController(
       duration: const Duration(milliseconds: 380),
       vsync: this,
     );
-    _shakeAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: -6.0), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: -6.0, end: 6.0), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: 6.0, end: -4.0), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: -4.0, end: 4.0), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: 4.0, end: 0.0), weight: 1),
-    ]).animate(CurvedAnimation(parent: _shakeController, curve: Curves.easeInOut));
+    _shakeAnimation =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 0.0, end: -6.0), weight: 1),
+          TweenSequenceItem(tween: Tween(begin: -6.0, end: 6.0), weight: 2),
+          TweenSequenceItem(tween: Tween(begin: 6.0, end: -4.0), weight: 2),
+          TweenSequenceItem(tween: Tween(begin: -4.0, end: 4.0), weight: 2),
+          TweenSequenceItem(tween: Tween(begin: 4.0, end: 0.0), weight: 1),
+        ]).animate(
+          CurvedAnimation(parent: _shakeController, curve: Curves.easeInOut),
+        );
   }
 
   @override
@@ -133,21 +137,21 @@ class _SudokuCellWidgetState extends State<SudokuCellWidget>
                         ),
                       ]
                     : widget.cell.isError
-                        ? [
-                            BoxShadow(
-                              color: _errorRed.withValues(alpha: 0.35),
-                              blurRadius: 6,
-                              spreadRadius: 0,
-                            ),
-                          ]
-                        : null,
+                    ? [
+                        BoxShadow(
+                          color: _errorRed.withValues(alpha: 0.35),
+                          blurRadius: 6,
+                          spreadRadius: 0,
+                        ),
+                      ]
+                    : null,
               ),
               child: Center(
                 child: widget.cell.hasValue
                     ? _buildValueText()
                     : widget.cell.hasNotes
-                        ? _buildNotesGrid()
-                        : const SizedBox.shrink(),
+                    ? _buildNotesGrid()
+                    : const SizedBox.shrink(),
               ),
             ),
           ),
@@ -178,16 +182,10 @@ class _SudokuCellWidgetState extends State<SudokuCellWidget>
 
     return Border(
       right: isRightEdgeOfBox
-          ? BorderSide(
-              color: _primaryCyan.withValues(alpha: 0.6),
-              width: 2,
-            )
+          ? BorderSide(color: _primaryCyan.withValues(alpha: 0.6), width: 2)
           : BorderSide.none,
       bottom: isBottomEdgeOfBox
-          ? BorderSide(
-              color: _primaryCyan.withValues(alpha: 0.6),
-              width: 2,
-            )
+          ? BorderSide(color: _primaryCyan.withValues(alpha: 0.6), width: 2)
           : BorderSide.none,
     );
   }
@@ -202,7 +200,11 @@ class _SudokuCellWidgetState extends State<SudokuCellWidget>
       style: TextStyle(
         fontSize: 24,
         fontWeight: isGiven ? FontWeight.w700 : FontWeight.w500,
-        color: hasError ? _errorRed : isGiven ? _textWhite : _primaryCyan,
+        color: hasError
+            ? _errorRed
+            : isGiven
+            ? _textWhite
+            : _primaryCyan,
         shadows: !isGiven && !hasError
             ? [
                 Shadow(

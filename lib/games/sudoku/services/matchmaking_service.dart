@@ -17,7 +17,7 @@ class MatchmakingService {
   static const String _userNotInMatch = 'User not in match';
 
   MatchmakingService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   Future<String> createMatch({
     required String userId,
@@ -48,7 +48,9 @@ class MatchmakingService {
 
       await docRef.set(matchRoom.toJson());
 
-      SecureLogger.firebase('Match created: ${docRef.id} ($difficulty) - Code: $roomCode');
+      SecureLogger.firebase(
+        'Match created: ${docRef.id} ($difficulty) - Code: $roomCode',
+      );
 
       return docRef.id;
     } catch (e) {
@@ -81,7 +83,9 @@ class MatchmakingService {
       }
 
       final matchDoc = snapshot.docs.first;
-      final matchRoom = MatchRoom.fromJson(matchDoc.data() as Map<String, dynamic>);
+      final matchRoom = MatchRoom.fromJson(
+        matchDoc.data() as Map<String, dynamic>,
+      );
 
       if (matchRoom.player1?.userId == userId) {
         SecureLogger.log('Cannot join own match', tag: 'Matchmaking');
@@ -136,11 +140,11 @@ class MatchmakingService {
         .doc(matchId)
         .snapshots()
         .map((snapshot) {
-      if (!snapshot.exists) {
-        throw Exception(_matchNotFound);
-      }
-      return MatchRoom.fromJson(snapshot.data() as Map<String, dynamic>);
-    });
+          if (!snapshot.exists) {
+            throw Exception(_matchNotFound);
+          }
+          return MatchRoom.fromJson(snapshot.data() as Map<String, dynamic>);
+        });
   }
 
   Future<void> updatePlayerBoard({
@@ -157,7 +161,9 @@ class MatchmakingService {
         throw Exception(_matchNotFound);
       }
 
-      final matchRoom = MatchRoom.fromJson(snapshot.data() as Map<String, dynamic>);
+      final matchRoom = MatchRoom.fromJson(
+        snapshot.data() as Map<String, dynamic>,
+      );
       final isPlayer1 = matchRoom.player1?.userId == userId;
 
       if (!isPlayer1 && matchRoom.player2?.userId != userId) {
@@ -290,7 +296,9 @@ class MatchmakingService {
           'endedAt': DateTime.now().toIso8601String(),
         });
 
-        SecureLogger.firebase('Match timed out: $matchId (winner: ${winnerId ?? "tie"})');
+        SecureLogger.firebase(
+          'Match timed out: $matchId (winner: ${winnerId ?? "tie"})',
+        );
       }
     } catch (e) {
       SecureLogger.error('Failed to handle timeout', error: e);
@@ -338,7 +346,9 @@ class MatchmakingService {
         'lastActivityAt': DateTime.now().toIso8601String(),
       });
 
-      SecureLogger.firebase('Joined match via code: ${matchDoc.id} (code: $roomCode)');
+      SecureLogger.firebase(
+        'Joined match via code: ${matchDoc.id} (code: $roomCode)',
+      );
 
       return matchDoc.id;
     } catch (e) {

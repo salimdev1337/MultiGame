@@ -172,8 +172,10 @@ void main() {
       test('empties the pool', () {
         // Fill pool with released obstacles
         for (int i = 0; i < 3; i++) {
-          final obs =
-              pool.acquire(ObstacleType.barrier, Vector2(800.0 + i, 600));
+          final obs = pool.acquire(
+            ObstacleType.barrier,
+            Vector2(800.0 + i, 600),
+          );
           pool.release(obs);
         }
 

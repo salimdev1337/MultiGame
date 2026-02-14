@@ -34,8 +34,8 @@ class SudokuStats {
     this.totalHintsUsed = 0,
     this.totalMistakes = 0,
     this.lastPlayedAt,
-  })  : classicBestScores = classicBestScores ?? {},
-        rushBestScores = rushBestScores ?? {};
+  }) : classicBestScores = classicBestScores ?? {},
+       rushBestScores = rushBestScores ?? {};
 
   double get winRate {
     if (totalGamesPlayed == 0) return 0.0;
@@ -65,11 +65,15 @@ class SudokuStats {
       'classicGamesPlayed': classicGamesPlayed,
       'classicGamesWon': classicGamesWon,
       'classicTotalTime': classicTotalTime,
-      'classicBestScores': classicBestScores.map((key, value) => MapEntry(key.name, value)),
+      'classicBestScores': classicBestScores.map(
+        (key, value) => MapEntry(key.name, value),
+      ),
       'rushGamesPlayed': rushGamesPlayed,
       'rushGamesWon': rushGamesWon,
       'rushGamesLost': rushGamesLost,
-      'rushBestScores': rushBestScores.map((key, value) => MapEntry(key.name, value)),
+      'rushBestScores': rushBestScores.map(
+        (key, value) => MapEntry(key.name, value),
+      ),
       'totalHintsUsed': totalHintsUsed,
       'totalMistakes': totalMistakes,
       'lastPlayedAt': lastPlayedAt?.toIso8601String(),

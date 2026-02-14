@@ -18,10 +18,7 @@ const _primaryCyan = Color(0xFF00d4ff);
 class SudokuClassicScreen extends ConsumerStatefulWidget {
   final SudokuDifficulty difficulty;
 
-  const SudokuClassicScreen({
-    super.key,
-    required this.difficulty,
-  });
+  const SudokuClassicScreen({super.key, required this.difficulty});
 
   @override
   ConsumerState<SudokuClassicScreen> createState() =>
@@ -52,27 +49,49 @@ class _SudokuClassicScreenState extends ConsumerState<SudokuClassicScreen> {
         backgroundColor: _surfaceDark,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.1), width: 1),
+          side: BorderSide(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 1,
+          ),
         ),
         title: const Text(
           'Quit game?',
-          style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         content: Text(
           'Your progress will be lost.',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 15),
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.6),
+            fontSize: 15,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('RESUME', style: TextStyle(color: _primaryCyan, fontWeight: FontWeight.w700)),
+            child: Text(
+              'RESUME',
+              style: TextStyle(
+                color: _primaryCyan,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
               Navigator.pop(context);
             },
-            child: Text('QUIT', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontWeight: FontWeight.w600)),
+            child: Text(
+              'QUIT',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -177,20 +196,25 @@ class _SudokuClassicScreenState extends ConsumerState<SudokuClassicScreen> {
 
     final headerHeight = isVeryCompact ? 36.0 : 44.0;
     final statsHeight = isVeryCompact ? 60.0 : (isCompact ? 70.0 : 80.0);
-    final controlButtonsHeight = isVeryCompact ? 68.0 : (isCompact ? 78.0 : 90.0);
+    final controlButtonsHeight = isVeryCompact
+        ? 68.0
+        : (isCompact ? 78.0 : 90.0);
     final numberPadHeight = isVeryCompact ? 46.0 : (isCompact ? 52.0 : 60.0);
     final spacing = isVeryCompact ? 14.0 : (isCompact ? 22.0 : 32.0);
 
-    final remainingHeight = constraints.maxHeight -
-        headerHeight - statsHeight - controlButtonsHeight -
-        numberPadHeight - spacing;
+    final remainingHeight =
+        constraints.maxHeight -
+        headerHeight -
+        statsHeight -
+        controlButtonsHeight -
+        numberPadHeight -
+        spacing;
 
     final useCompactMode = isCompact;
     final maxWidth = constraints.maxWidth - 32;
     final minGrid = isVeryCompact ? 220.0 : 250.0;
-    final gridSize =
-        (maxWidth < remainingHeight ? maxWidth : remainingHeight)
-            .clamp(minGrid, 600.0);
+    final gridSize = (maxWidth < remainingHeight ? maxWidth : remainingHeight)
+        .clamp(minGrid, 600.0);
 
     return Column(
       children: [
@@ -209,7 +233,9 @@ class _SudokuClassicScreenState extends ConsumerState<SudokuClassicScreen> {
                   selectedRow: selectedRow,
                   selectedCol: selectedCol,
                   selectedCellValue: selectedRow != null && selectedCol != null
-                      ? notifier.currentBoard!.getCell(selectedRow, selectedCol).value
+                      ? notifier.currentBoard!
+                            .getCell(selectedRow, selectedCol)
+                            .value
                       : null,
                   onCellTap: notifier.selectCell,
                 ),
@@ -338,9 +364,9 @@ class _DifficultyBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (difficulty) {
-      SudokuDifficulty.easy   => ('EASY',   const Color(0xFF22c55e)),
+      SudokuDifficulty.easy => ('EASY', const Color(0xFF22c55e)),
       SudokuDifficulty.medium => ('MEDIUM', const Color(0xFFf59e0b)),
-      SudokuDifficulty.hard   => ('HARD',   const Color(0xFFef4444)),
+      SudokuDifficulty.hard => ('HARD', const Color(0xFFef4444)),
       SudokuDifficulty.expert => ('EXPERT', const Color(0xFF8b5cf6)),
     };
 

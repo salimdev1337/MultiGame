@@ -304,26 +304,29 @@ void main() {
         expect(notificationCount, equals(4));
       });
 
-      test('should not break when reset is called multiple times consecutively', () {
-        // Arrange
-        provider.setShowingObjectiveDialog(true);
-        provider.setShowingGameOverDialog(true);
-        provider.setAnimating(true);
+      test(
+        'should not break when reset is called multiple times consecutively',
+        () {
+          // Arrange
+          provider.setShowingObjectiveDialog(true);
+          provider.setShowingGameOverDialog(true);
+          provider.setAnimating(true);
 
-        var notificationCount = 0;
-        provider.addListener(() => notificationCount++);
+          var notificationCount = 0;
+          provider.addListener(() => notificationCount++);
 
-        // Act
-        provider.reset();
-        provider.reset();
-        provider.reset();
+          // Act
+          provider.reset();
+          provider.reset();
+          provider.reset();
 
-        // Assert
-        expect(provider.showingObjectiveDialog, isFalse);
-        expect(provider.showingGameOverDialog, isFalse);
-        expect(provider.isAnimating, isFalse);
-        expect(notificationCount, equals(3));
-      });
+          // Assert
+          expect(provider.showingObjectiveDialog, isFalse);
+          expect(provider.showingGameOverDialog, isFalse);
+          expect(provider.isAnimating, isFalse);
+          expect(notificationCount, equals(3));
+        },
+      );
     });
   });
 }

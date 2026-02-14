@@ -71,7 +71,10 @@ class RaceClient {
 
   void sendReady(bool isReady) {
     _send(
-      RaceMessage.ready(playerId: room.localPlayerId, isReady: isReady).toJson(),
+      RaceMessage.ready(
+        playerId: room.localPlayerId,
+        isReady: isReady,
+      ).toJson(),
     );
   }
 
@@ -117,9 +120,7 @@ class RaceClient {
       // Host votes directly on the server (avoids round-trip)
       raceServer!.voteRematch();
     } else {
-      _send(
-        RaceMessage.rematchVote(playerId: room.localPlayerId).toJson(),
-      );
+      _send(RaceMessage.rematchVote(playerId: room.localPlayerId).toJson());
     }
   }
 
@@ -131,29 +132,34 @@ class RaceClient {
     switch (msg.type) {
       case RaceMessageType.joined:
         final assignedId = (msg.payload['assignedId'] as num).toInt();
-        final playerMaps =
-            (msg.payload['players'] as List).cast<Map<String, dynamic>>();
+        final playerMaps = (msg.payload['players'] as List)
+            .cast<Map<String, dynamic>>();
         for (final map in playerMaps) {
           room.upsertPlayer(RacePlayerState.fromMap(map));
         }
-        onEvent?.call(RaceClientEvent(
-          RaceClientEventType.playerListUpdated,
-          assignedId: assignedId,
-          players: room.players,
-        ));
+        onEvent?.call(
+          RaceClientEvent(
+            RaceClientEventType.playerListUpdated,
+            assignedId: assignedId,
+            players: room.players,
+          ),
+        );
 
       case RaceMessageType.ready:
         final id = msg.playerId;
         final isReady = msg.payload['isReady'] as bool? ?? false;
         final existing = room.players.firstWhere(
           (p) => p.playerId == id,
-          orElse: () => RacePlayerState(playerId: id, displayName: 'Player $id'),
+          orElse: () =>
+              RacePlayerState(playerId: id, displayName: 'Player $id'),
         );
         room.upsertPlayer(existing.copyWith(isReady: isReady));
-        onEvent?.call(RaceClientEvent(
-          RaceClientEventType.playerListUpdated,
-          players: room.players,
-        ));
+        onEvent?.call(
+          RaceClientEvent(
+            RaceClientEventType.playerListUpdated,
+            players: room.players,
+          ),
+        );
 
       case RaceMessageType.start:
         room.phase = RoomPhase.countdown;
@@ -169,59 +175,74 @@ class RaceClient {
           ),
         );
         room.upsertPlayer(existing.copyWith(distance: dist));
-        onEvent?.call(const RaceClientEvent(RaceClientEventType.positionsUpdated));
+        onEvent?.call(
+          const RaceClientEvent(RaceClientEventType.positionsUpdated),
+        );
 
       case RaceMessageType.abilityUsed:
-        onEvent?.call(RaceClientEvent(
-          RaceClientEventType.opponentUsedAbility,
-          opponentId: msg.playerId,
-          abilityId: msg.payload['abilityId'] as String? ?? '',
-        ));
+        onEvent?.call(
+          RaceClientEvent(
+            RaceClientEventType.opponentUsedAbility,
+            opponentId: msg.playerId,
+            abilityId: msg.payload['abilityId'] as String? ?? '',
+          ),
+        );
 
       case RaceMessageType.finish:
         final id = msg.playerId;
         final timeMs = (msg.payload['timeMs'] as num?)?.toInt() ?? 0;
         final existing = room.players.firstWhere(
           (p) => p.playerId == id,
-          orElse: () => RacePlayerState(playerId: id, displayName: 'Player $id'),
+          orElse: () =>
+              RacePlayerState(playerId: id, displayName: 'Player $id'),
         );
-        room.upsertPlayer(existing.copyWith(isFinished: true, finishTimeMs: timeMs));
-        onEvent?.call(RaceClientEvent(
-          RaceClientEventType.playerFinished,
-          opponentId: id,
-        ));
+        room.upsertPlayer(
+          existing.copyWith(isFinished: true, finishTimeMs: timeMs),
+        );
+        onEvent?.call(
+          RaceClientEvent(RaceClientEventType.playerFinished, opponentId: id),
+        );
 
       case RaceMessageType.results:
-        final rankings =
-            (msg.payload['rankings'] as List).cast<Map<String, dynamic>>();
+        final rankings = (msg.payload['rankings'] as List)
+            .cast<Map<String, dynamic>>();
         room.phase = RoomPhase.finished;
-        onEvent?.call(RaceClientEvent(
-          RaceClientEventType.resultsReceived,
-          rankings: rankings,
-        ));
+        onEvent?.call(
+          RaceClientEvent(
+            RaceClientEventType.resultsReceived,
+            rankings: rankings,
+          ),
+        );
 
       case RaceMessageType.disconnect:
         final id = msg.playerId;
         final existing = room.players.firstWhere(
           (p) => p.playerId == id,
-          orElse: () => RacePlayerState(playerId: id, displayName: 'Player $id'),
+          orElse: () =>
+              RacePlayerState(playerId: id, displayName: 'Player $id'),
         );
         room.upsertPlayer(existing.copyWith(isConnected: false));
-        onEvent?.call(RaceClientEvent(
-          RaceClientEventType.playerDisconnected,
-          opponentId: id,
-        ));
+        onEvent?.call(
+          RaceClientEvent(
+            RaceClientEventType.playerDisconnected,
+            opponentId: id,
+          ),
+        );
 
       case RaceMessageType.error:
         final errorMsg = msg.payload['message'] as String? ?? 'Unknown error';
-        onEvent?.call(RaceClientEvent(
-          RaceClientEventType.errorReceived,
-          errorMessage: errorMsg,
-        ));
+        onEvent?.call(
+          RaceClientEvent(
+            RaceClientEventType.errorReceived,
+            errorMessage: errorMsg,
+          ),
+        );
 
       case RaceMessageType.rematchStart:
         room.phase = RoomPhase.countdown;
-        onEvent?.call(const RaceClientEvent(RaceClientEventType.rematchStarting));
+        onEvent?.call(
+          const RaceClientEvent(RaceClientEventType.rematchStarting),
+        );
 
       default:
         break;

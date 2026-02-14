@@ -9,10 +9,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 class OfflineIndicator extends StatefulWidget {
   final Widget child;
 
-  const OfflineIndicator({
-    super.key,
-    required this.child,
-  });
+  const OfflineIndicator({super.key, required this.child});
 
   @override
   State<OfflineIndicator> createState() => _OfflineIndicatorState();
@@ -41,7 +38,8 @@ class _OfflineIndicatorState extends State<OfflineIndicator> {
       final result = await Connectivity().checkConnectivity();
       if (mounted) {
         setState(() {
-          _isOnline = result.isNotEmpty && result.first != ConnectivityResult.none;
+          _isOnline =
+              result.isNotEmpty && result.first != ConnectivityResult.none;
         });
       }
     } catch (e) {
@@ -56,10 +54,13 @@ class _OfflineIndicatorState extends State<OfflineIndicator> {
 
   /// Listen to connectivity changes
   void _listenToConnectivityChanges() {
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
+      List<ConnectivityResult> results,
+    ) {
       if (mounted) {
         setState(() {
-          _isOnline = results.isNotEmpty && results.first != ConnectivityResult.none;
+          _isOnline =
+              results.isNotEmpty && results.first != ConnectivityResult.none;
         });
       }
     });

@@ -102,8 +102,7 @@ class PuzzleStatsSection extends ConsumerWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF21242b),
         borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: Colors.white.withValues(alpha: 0.05 * 255)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05 * 255)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.2 * 255),
@@ -156,8 +155,7 @@ class PuzzleFooterControls extends ConsumerWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF21242b).withValues(alpha: 0.5 * 255),
         borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: Colors.white.withValues(alpha: 0.05 * 255)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05 * 255)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.3 * 255),
@@ -208,8 +206,7 @@ class PuzzleFooterControls extends ConsumerWidget {
             borderRadius: BorderRadius.circular(16),
             border: Border(
               bottom: BorderSide(
-                color:
-                    isPrimary ? const Color(0xFF8B3000) : Colors.black,
+                color: isPrimary ? const Color(0xFF8B3000) : Colors.black,
                 width: 4,
               ),
             ),

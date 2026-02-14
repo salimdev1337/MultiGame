@@ -16,8 +16,8 @@ class UserAuthProvider extends ChangeNotifier {
   UserAuthProvider({
     required AuthService authService,
     required NicknameService nicknameService,
-  })  : _authService = authService,
-        _nicknameService = nicknameService {
+  }) : _authService = authService,
+       _nicknameService = nicknameService {
     _initializePersistentId();
     // Listen to auth state changes
     _authService.authStateChanges.listen((user) {

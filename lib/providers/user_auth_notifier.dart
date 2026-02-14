@@ -80,8 +80,7 @@ class UserAuthNotifier extends Notifier<UserAuthState> {
       state = state.copyWith(isLoading: false);
       return result != null;
     } catch (e) {
-      state = state.copyWith(
-          isLoading: false, error: 'Failed to sign in: $e');
+      state = state.copyWith(isLoading: false, error: 'Failed to sign in: $e');
       return false;
     }
   }
@@ -89,5 +88,6 @@ class UserAuthNotifier extends Notifier<UserAuthState> {
   void clearError() => state = state.copyWith(clearError: true);
 }
 
-final userAuthProvider =
-    NotifierProvider<UserAuthNotifier, UserAuthState>(UserAuthNotifier.new);
+final userAuthProvider = NotifierProvider<UserAuthNotifier, UserAuthState>(
+  UserAuthNotifier.new,
+);
