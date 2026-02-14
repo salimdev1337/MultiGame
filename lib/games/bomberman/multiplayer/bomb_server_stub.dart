@@ -10,8 +10,13 @@ class BombServerIo implements BombServer {
   // Exposed so the lobby screen can read room state (always empty on web).
   final BombRoom room = BombRoom();
 
-  // Callback (no-op on web).
-  void Function(BombMessage msg, int fromPlayerId)? onMessage;
+  // Callback (no-op on web — never fires since server can't start).
+  // ignore: unused_field
+  void Function(BombMessage msg, int fromPlayerId)? _onMessage;
+
+  @override
+  set onMessage(void Function(BombMessage msg, int fromPlayerId)? handler) =>
+      _onMessage = handler;
 
   @override
   Future<void> start(int port) async {

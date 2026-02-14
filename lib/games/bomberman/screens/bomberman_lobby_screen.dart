@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:multigame/config/app_router.dart';
 import 'package:multigame/games/bomberman/multiplayer/bomb_client.dart';
+import 'package:multigame/games/bomberman/multiplayer/bomb_message.dart';
 import 'package:multigame/games/bomberman/multiplayer/bomb_room.dart';
+import 'package:multigame/games/bomberman/providers/bomberman_notifier.dart';
 
 // Platform conditional import — web stub or native io version
 import 'package:multigame/games/bomberman/multiplayer/bomb_server_stub.dart'
@@ -37,6 +39,7 @@ class _BombermanLobbyPageState extends ConsumerState<BombermanLobbyPage>
 
   // Guest state
   BombClient? _client;
+  int _myPlayerId = 0;
   final _codeController = TextEditingController();
   final _nameController = TextEditingController(text: 'Player');
   bool _connecting = false;
@@ -96,10 +99,12 @@ class _BombermanLobbyPageState extends ConsumerState<BombermanLobbyPage>
     }
 
     server.onMessage = (msg, fromId) {
-      setState(() {
-        _hostPlayers.clear();
-        _hostPlayers.addAll(server.room.players);
-      });
+      if (mounted) {
+        setState(() {
+          _hostPlayers.clear();
+          _hostPlayers.addAll(server.room.players);
+        });
+      }
     };
 
     setState(() {
@@ -122,6 +127,48 @@ class _BombermanLobbyPageState extends ConsumerState<BombermanLobbyPage>
       _hosting = false;
       _hostPlayers.clear();
     });
+  }
+
+  Future<void> _startMultiplayerGame() async {
+    final server = _server;
+    if (server == null) return;
+
+    // Host also connects to its own server so it receives broadcasts
+    final room = BombRoom();
+    final hostName = _nameController.text.trim().isEmpty
+        ? 'Host'
+        : _nameController.text.trim();
+    final client = BombClient(
+      hostIp: '127.0.0.1',
+      displayName: hostName,
+      room: room,
+    );
+    final port = BombRoom.portFromCode(_hostCode);
+
+    try {
+      await client.connect(port);
+    } catch (_) {
+      // If self-connection fails it's non-fatal — proceed without it
+    }
+
+    // Broadcast start to all guests before transferring ownership
+    server.broadcast(BombMessage.start().encode());
+
+    final players = server.room.players
+        .map((p) => (id: p.id, name: p.displayName))
+        .toList();
+
+    ref.read(bombermanProvider.notifier).startMultiplayerHost(
+          server: server,
+          client: client,
+          players: players,
+        );
+
+    // Notifier now owns server and client — clear local references
+    _server = null;
+    _client = null;
+
+    if (mounted) context.go(AppRoutes.game('bomberman'));
   }
 
   // ─── Guest ─────────────────────────────────────────────────────────────────
@@ -160,11 +207,30 @@ class _BombermanLobbyPageState extends ConsumerState<BombermanLobbyPage>
     }
 
     client.onMessage = (msg) {
-      // Handle join confirmation, player list updates, etc.
+      switch (msg.type) {
+        case BombMessageType.joined:
+          final id = msg.payload['id'] as int? ?? 0;
+          if (mounted) setState(() => _myPlayerId = id);
+        case BombMessageType.start:
+          final c = _client;
+          if (c == null) return;
+          // Transfer ownership to notifier
+          _client = null;
+          ref.read(bombermanProvider.notifier).connectAsGuest(
+                client: c,
+                localPlayerId: _myPlayerId,
+              );
+          if (mounted) context.go(AppRoutes.game('bomberman'));
+        default:
+          break;
+      }
     };
     client.onDisconnected = () {
       if (mounted) {
-        setState(() => _connectError = 'Disconnected from host');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Host disconnected')),
+        );
+        context.go(AppRoutes.home);
       }
     };
 
@@ -308,7 +374,7 @@ class _BombermanLobbyPageState extends ConsumerState<BombermanLobbyPage>
                   child: _PrimaryButton(
                     label: 'Start Game',
                     onTap: _hostPlayers.length >= 2
-                        ? () => context.push('/play/bomberman')
+                        ? _startMultiplayerGame
                         : null,
                     color: const Color(0xFF00d4ff),
                   ),

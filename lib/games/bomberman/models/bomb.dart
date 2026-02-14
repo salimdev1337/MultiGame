@@ -44,6 +44,26 @@ class Bomb {
   double get fuseProgress =>
       1.0 - (fuseMs / totalFuseMs).clamp(0.0, 1.0);
 
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'x': x,
+        'y': y,
+        'ownerId': ownerId,
+        'range': range,
+        'fuseMs': fuseMs,
+        'totalFuseMs': totalFuseMs,
+      };
+
+  factory Bomb.fromJson(Map<String, dynamic> json) => Bomb(
+        id: json['id'] as int,
+        x: json['x'] as int,
+        y: json['y'] as int,
+        ownerId: json['ownerId'] as int,
+        range: json['range'] as int,
+        fuseMs: json['fuseMs'] as int,
+        totalFuseMs: json['totalFuseMs'] as int,
+      );
+
   @override
   bool operator ==(Object other) =>
       other is Bomb && other.id == id;

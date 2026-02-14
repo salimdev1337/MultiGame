@@ -17,6 +17,8 @@ enum BombMessageType {
   rematchVote,
   rematchStart,
   disconnect,
+  frameSync,   // host→all, every tick: players/bombs/explosions/powerups + meta
+  gridUpdate,  // host→all, when blocks are destroyed: list of {x, y, type}
 }
 
 class BombMessage {
@@ -107,4 +109,10 @@ class BombMessage {
 
   static BombMessage disconnect(int playerId) =>
       BombMessage(BombMessageType.disconnect, {'id': playerId});
+
+  static BombMessage frameSync(Map<String, dynamic> frameJson) =>
+      BombMessage(BombMessageType.frameSync, {'data': frameJson});
+
+  static BombMessage gridUpdate(List<Map<String, dynamic>> changedCells) =>
+      BombMessage(BombMessageType.gridUpdate, {'cells': changedCells});
 }

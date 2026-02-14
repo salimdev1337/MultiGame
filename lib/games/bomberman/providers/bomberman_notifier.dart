@@ -10,6 +10,9 @@ import 'package:multigame/games/bomberman/models/bomb_game_state.dart';
 import 'package:multigame/games/bomberman/models/bomb_player.dart';
 import 'package:multigame/games/bomberman/models/cell_type.dart';
 import 'package:multigame/games/bomberman/models/game_phase.dart';
+import 'package:multigame/games/bomberman/multiplayer/bomb_client.dart';
+import 'package:multigame/games/bomberman/multiplayer/bomb_message.dart';
+import 'package:multigame/games/bomberman/multiplayer/bomb_server.dart';
 import 'package:multigame/providers/mixins/game_stats_notifier.dart';
 import 'package:multigame/providers/services_providers.dart';
 import 'package:multigame/services/data/firebase_stats_service.dart';
@@ -25,6 +28,10 @@ class _InputState {
   double dy = 0;
   bool wantBomb = false;
 }
+
+// ─── Multiplayer role ─────────────────────────────────────────────────────────
+
+enum _MultiRole { solo, host, guest }
 
 // ─── Provider ────────────────────────────────────────────────────────────────
 
@@ -55,8 +62,17 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
   // Last bot decisions, refreshed every _botAiInterval ticks
   final _botDecisions = <int, ({double dx, double dy, bool placeBomb})>{};
 
-  final _input = _InputState();
+  final _inputs = <int, _InputState>{};
+  _InputState _inputFor(int id) => _inputs.putIfAbsent(id, _InputState.new);
   final _rng = Random();
+
+  // ─── Multiplayer ──────────────────────────────────────────────────────────
+  _MultiRole _role = _MultiRole.solo;
+  BombServer? _netServer;
+  BombClient? _netClient;
+  int _localPlayerId = 0;
+  bool _gridChangedThisTick = false;
+  final _changedCells = <Map<String, dynamic>>[];
 
   @override
   FirebaseStatsService get statsService =>
@@ -104,18 +120,152 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
     _startCountdown();
   }
 
-  void setInput({double dx = 0, double dy = 0}) {
-    _input.dx = dx;
-    _input.dy = dy;
+  void setInput({int playerId = 0, double dx = 0, double dy = 0}) {
+    if (_role == _MultiRole.guest) {
+      _netClient?.sendMove(_localPlayerId, dx, dy);
+      return;
+    }
+    _inputFor(playerId)
+      ..dx = dx
+      ..dy = dy;
   }
 
-  void pressPlaceBomb() {
-    _input.wantBomb = true;
+  void pressPlaceBomb({int playerId = 0}) {
+    if (_role == _MultiRole.guest) {
+      _netClient?.sendPlaceBomb(_localPlayerId);
+      return;
+    }
+    _inputFor(playerId).wantBomb = true;
   }
 
   void reset() {
     _dispose();
     state = _emptyState();
+  }
+
+  // ─── Multiplayer API ───────────────────────────────────────────────────────
+
+  /// Called by the host lobby after the game starts.
+  /// The notifier takes ownership of [server] and [client] — both are disposed
+  /// when [_dispose] is called.
+  void startMultiplayerHost({
+    required BombServer server,
+    required BombClient client,
+    required List<({int id, String name})> players,
+  }) {
+    _dispose();
+    _role = _MultiRole.host;
+    _netServer = server;
+    _netClient = client;
+
+    // Route guest input messages to this notifier
+    server.onMessage = (msg, fromId) => _handleNetMessage(msg);
+    client.onMessage = _handleNetMessage;
+
+    final grid = MapGenerator.generate(seed: _rng.nextInt(9999));
+    final spawnPoints = [
+      (x: 1.5, y: 1.5),
+      (x: kGridW - 1.5, y: 1.5),
+      (x: 1.5, y: kGridH - 1.5),
+      (x: kGridW - 1.5, y: kGridH - 1.5),
+    ];
+
+    final bombPlayers = players.mapIndexed((i, p) {
+      final sp = spawnPoints[i % spawnPoints.length];
+      return BombPlayer(
+        id: p.id,
+        x: sp.x,
+        y: sp.y,
+        displayName: p.name,
+        isBot: false,
+      );
+    }).toList();
+
+    state = BombGameState(
+      grid: grid,
+      players: bombPlayers,
+      roundWins: List.filled(bombPlayers.length, 0),
+      phase: GamePhase.countdown,
+      countdown: _countdownSec,
+    );
+    _startCountdown();
+  }
+
+  /// Called by the guest lobby after receiving the `start` message.
+  /// The notifier takes ownership of [client] and updates state via frame syncs.
+  void connectAsGuest({
+    required BombClient client,
+    required int localPlayerId,
+  }) {
+    _dispose();
+    _role = _MultiRole.guest;
+    _netClient = client;
+    _localPlayerId = localPlayerId;
+    client.onMessage = _handleNetMessage;
+  }
+
+  // ─── Net message handler ───────────────────────────────────────────────────
+
+  void _handleNetMessage(BombMessage msg) {
+    switch (msg.type) {
+      case BombMessageType.move:
+        if (_role == _MultiRole.host) {
+          final id = msg.payload['id'] as int? ?? 0;
+          final dx = (msg.payload['dx'] as num?)?.toDouble() ?? 0;
+          final dy = (msg.payload['dy'] as num?)?.toDouble() ?? 0;
+          setInput(playerId: id, dx: dx, dy: dy);
+        }
+      case BombMessageType.placeBomb:
+        if (_role == _MultiRole.host) {
+          final id = msg.payload['id'] as int? ?? 0;
+          pressPlaceBomb(playerId: id);
+        }
+      case BombMessageType.frameSync:
+        if (_role == _MultiRole.guest) {
+          final data = msg.payload['data'] as Map<String, dynamic>?;
+          if (data != null) state = state.applyFrameSync(data);
+        }
+      case BombMessageType.gridUpdate:
+        if (_role == _MultiRole.guest) {
+          final cells = (msg.payload['cells'] as List?)
+              ?.cast<Map<String, dynamic>>();
+          if (cells != null) state = _applyGridCells(state, cells);
+        }
+      default:
+        break;
+    }
+  }
+
+  // ─── Broadcast helper ─────────────────────────────────────────────────────
+
+  void _broadcastIfHost() {
+    if (_role != _MultiRole.host) return;
+    _netServer?.broadcast(
+      BombMessage.frameSync(state.toFrameJson()).encode(),
+    );
+    if (_gridChangedThisTick && _changedCells.isNotEmpty) {
+      _netServer?.broadcast(
+        BombMessage.gridUpdate(List.from(_changedCells)).encode(),
+      );
+      _gridChangedThisTick = false;
+      _changedCells.clear();
+    }
+  }
+
+  // ─── Grid cell patch ──────────────────────────────────────────────────────
+
+  BombGameState _applyGridCells(
+    BombGameState s,
+    List<Map<String, dynamic>> cells,
+  ) {
+    final grid = s.grid.map((row) => List<CellType>.from(row)).toList();
+    for (final cell in cells) {
+      final x = cell['x'] as int;
+      final y = cell['y'] as int;
+      final type = CellType.values[cell['type'] as int];
+      grid[y][x] = type;
+    }
+    return s.copyWith(grid: grid);
   }
 
   // ─── Countdown ─────────────────────────────────────────────────────────────
@@ -168,6 +318,7 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
     if (state.phase != GamePhase.playing) return;
 
     _tickCount++;
+    _gridChangedThisTick = false;
     final dtMs = (dt * 1000).round();
 
     var s = state;
@@ -175,29 +326,31 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
     // 1. Bot AI — run every tick so bots respond smoothly to cell-by-cell movement
     s = _runBots(s, dt);
 
-    // 2. Move human player
-    s = _movePlayer(s, 0, _input.dx, _input.dy, dt);
-
-    // 3. Place bomb?
-    if (_input.wantBomb) {
-      _input.wantBomb = false;
-      s = _tryPlaceBomb(s, 0);
+    // 2. Move all human (non-bot) players using their individual input states
+    for (int i = 0; i < s.players.length; i++) {
+      if (s.players[i].isBot) continue;
+      final inp = _inputFor(i);
+      s = _movePlayer(s, i, inp.dx, inp.dy, dt);
+      if (inp.wantBomb) {
+        inp.wantBomb = false;
+        s = _tryPlaceBomb(s, i);
+      }
     }
 
-    // 4. Countdown bombs
+    // 3. Countdown bombs
     s = _tickBombs(s, dtMs);
 
-    // 5. Fade explosions
+    // 4. Fade explosions
     s = _tickExplosions(s, dtMs);
 
-    // 6. Collect powerups
+    // 5. Collect powerups
     final collected = BombLogic.collectPowerups(
       players: s.players,
       powerups: s.powerups,
     );
     s = s.copyWith(players: collected.players, powerups: collected.powerups);
 
-    // 7. Round time — accumulate real elapsed seconds; decrement once per second
+    // 6. Round time — accumulate real elapsed seconds; decrement once per second
     _roundTimeAccum += dt;
     if (_roundTimeAccum >= 1.0) {
       _roundTimeAccum -= 1.0;
@@ -205,13 +358,14 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
       if (newTime <= 0) {
         s = s.copyWith(roundTimeSeconds: 0);
         state = s;
+        _broadcastIfHost();
         _handleRoundTimeout();
         return;
       }
       s = s.copyWith(roundTimeSeconds: newTime);
     }
 
-    // 8. Win condition — last LIVING (non-ghost) player standing
+    // 7. Win condition — last LIVING (non-ghost) player standing
     final living = s.players.where((p) => p.isAlive && !p.isGhost).toList();
     if (living.length <= 1) {
       state = s;
@@ -220,6 +374,7 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
     }
 
     state = s;
+    _broadcastIfHost();
   }
 
   // ─── Movement ──────────────────────────────────────────────────────────────
@@ -401,6 +556,7 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
 
     while (toProcess.isNotEmpty) {
       final bomb = toProcess.removeAt(0);
+      final beforeGrid = cur.grid;
       final result = BombLogic.explode(
         bomb: bomb,
         grid: cur.grid,
@@ -416,6 +572,21 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
         players: result.players,
         powerups: result.powerups,
       );
+      // Track which cells changed for gridUpdate broadcast (host only)
+      if (_role == _MultiRole.host && !identical(beforeGrid, result.grid)) {
+        _gridChangedThisTick = true;
+        for (int row = 0; row < kGridH; row++) {
+          for (int col = 0; col < kGridW; col++) {
+            if (beforeGrid[row][col] != result.grid[row][col]) {
+              _changedCells.add({
+                'x': col,
+                'y': row,
+                'type': result.grid[row][col].index,
+              });
+            }
+          }
+        }
+      }
       toProcess.addAll(result.chainBombs);
     }
 
@@ -502,6 +673,8 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
         if (state.phase == GamePhase.roundOver) _nextRound();
       });
     }
+    // Broadcast final state so guests see phase change immediately
+    _broadcastIfHost();
   }
 
   void _handleRoundTimeout() {
@@ -562,6 +735,15 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
     _countdownTimer?.cancel();
     _countdownTimer = null;
     _tickCount = 0;
+    _inputs.clear();
+    _changedCells.clear();
+    _gridChangedThisTick = false;
+    _netServer?.stop();
+    _netClient?.disconnect();
+    _netServer = null;
+    _netClient = null;
+    _role = _MultiRole.solo;
+    _localPlayerId = 0;
   }
 
   static BombGameState _emptyState() {

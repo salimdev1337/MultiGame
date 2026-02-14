@@ -4,3 +4,8 @@ enum PowerupType {
   speed,        // movement speed boost
   shield,       // absorbs one explosion hit
 }
+
+extension PowerupTypeJson on PowerupType {
+  int toJson() => index;
+  static PowerupType fromJson(int i) => PowerupType.values[i];
+}

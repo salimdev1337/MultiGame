@@ -23,4 +23,18 @@ class ExplosionTile {
         remainingMs: remainingMs ?? this.remainingMs,
         totalMs: totalMs,
       );
+
+  Map<String, dynamic> toJson() => {
+        'x': x,
+        'y': y,
+        'remainingMs': remainingMs,
+        'totalMs': totalMs,
+      };
+
+  factory ExplosionTile.fromJson(Map<String, dynamic> json) => ExplosionTile(
+        x: json['x'] as int,
+        y: json['y'] as int,
+        remainingMs: json['remainingMs'] as int,
+        totalMs: json['totalMs'] as int,
+      );
 }

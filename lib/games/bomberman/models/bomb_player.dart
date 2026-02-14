@@ -95,6 +95,46 @@ class BombPlayer {
     );
   }
 
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'x': x,
+        'y': y,
+        'lives': lives,
+        'maxBombs': maxBombs,
+        'activeBombs': activeBombs,
+        'range': range,
+        'speed': speed,
+        'isAlive': isAlive,
+        'isGhost': isGhost,
+        'hasShield': hasShield,
+        'isBot': isBot,
+        'powerups': powerups.map((p) => p.toJson()).toList(),
+        'displayName': displayName,
+        'targetX': targetX,
+        'targetY': targetY,
+      };
+
+  factory BombPlayer.fromJson(Map<String, dynamic> json) => BombPlayer(
+        id: json['id'] as int,
+        x: (json['x'] as num).toDouble(),
+        y: (json['y'] as num).toDouble(),
+        lives: json['lives'] as int,
+        maxBombs: json['maxBombs'] as int,
+        activeBombs: json['activeBombs'] as int,
+        range: json['range'] as int,
+        speed: (json['speed'] as num).toDouble(),
+        isAlive: json['isAlive'] as bool,
+        isGhost: json['isGhost'] as bool,
+        hasShield: json['hasShield'] as bool,
+        isBot: json['isBot'] as bool,
+        powerups: (json['powerups'] as List)
+            .map((p) => PowerupTypeJson.fromJson(p as int))
+            .toList(),
+        displayName: json['displayName'] as String,
+        targetX: (json['targetX'] as num).toDouble(),
+        targetY: (json['targetY'] as num).toDouble(),
+      );
+
   @override
   bool operator ==(Object other) =>
       other is BombPlayer && other.id == id;

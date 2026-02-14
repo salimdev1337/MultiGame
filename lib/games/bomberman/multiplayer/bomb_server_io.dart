@@ -29,7 +29,11 @@ class BombServerIo implements BombServer {
   int _nextGuestId = 1;
 
   /// Called when a new client joins, sends input, or disconnects.
-  void Function(BombMessage msg, int fromPlayerId)? onMessage;
+  void Function(BombMessage msg, int fromPlayerId)? _onMessage;
+
+  @override
+  set onMessage(void Function(BombMessage msg, int fromPlayerId)? handler) =>
+      _onMessage = handler;
 
   // ─── BombServer interface ─────────────────────────────────────────────────
 
@@ -83,16 +87,16 @@ class BombServerIo implements BombServer {
           // Confirm assignment
           channel.sink.add(BombMessage.joined(id, name).encode());
           // Notify host notifier
-          onMessage?.call(msg, id);
+          _onMessage?.call(msg, id);
         } else {
-          onMessage?.call(msg, id);
+          _onMessage?.call(msg, id);
         }
       },
       onDone: () {
         _connections.remove(id);
         room.removePlayer(id);
         broadcast(BombMessage.disconnect(id).encode());
-        onMessage?.call(BombMessage.disconnect(id), id);
+        _onMessage?.call(BombMessage.disconnect(id), id);
       },
       onError: (_) {
         _connections.remove(id);
