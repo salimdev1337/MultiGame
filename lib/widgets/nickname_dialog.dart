@@ -347,7 +347,7 @@ class _NicknameDialogState extends State<NicknameDialog>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _LegalLink(
+                      const _LegalLink(
                         label: 'Privacy Policy',
                         url: 'https://salimdev1337.github.io/MultiGame/privacy.html',
                       ),
@@ -358,7 +358,7 @@ class _NicknameDialogState extends State<NicknameDialog>
                           style: TextStyle(color: Colors.white38, fontSize: 12),
                         ),
                       ),
-                      _LegalLink(
+                      const _LegalLink(
                         label: 'Terms of Service',
                         url: 'https://salimdev1337.github.io/MultiGame/terms.html',
                       ),

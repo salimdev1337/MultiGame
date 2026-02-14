@@ -8,6 +8,8 @@ import 'package:multigame/games/snake/widgets/snake_animations.dart';
 import 'package:multigame/games/snake/widgets/snake_board_widget.dart';
 import 'package:multigame/widgets/shared/game_result_widget.dart';
 
+const _kGameTitle = 'NEON SNAKE';
+
 class SnakeGamePage extends ConsumerStatefulWidget {
   const SnakeGamePage({super.key});
 
@@ -130,7 +132,7 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF111317),
         title: const Text(
-          'NEON SNAKE',
+          _kGameTitle,
           style: TextStyle(color: Color(0xFF55ff00), letterSpacing: 2),
         ),
       ),
@@ -161,7 +163,7 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
             ),
             const SizedBox(height: 24),
             const Text(
-              'NEON SNAKE',
+              _kGameTitle,
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
@@ -259,7 +261,7 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'NEON SNAKE',
+                _kGameTitle,
                 style: TextStyle(
                   color: Color(0xFF55ff00),
                   letterSpacing: 2,

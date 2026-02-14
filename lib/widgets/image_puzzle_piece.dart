@@ -28,47 +28,51 @@ class _ImagePuzzlePieceState extends State<ImagePuzzlePiece> {
 
   @override
   Widget build(BuildContext context) {
-    // debug: 'Building piece: number=${widget.piece.number}, imageUrl=${widget.piece.imageUrl}, pos=${widget.piece.currentPosition}'
-    if (widget.piece.isEmpty) {
-      return DragTarget<int>(
-        onWillAcceptWithDetails: (details) => true,
-        onAcceptWithDetails: (details) {
-          if (widget.onDragEnd != null) {
-            widget.onDragEnd!(details.data, widget.index);
-          }
-        },
-        builder: (context, candidateData, rejectedData) {
-          final isHovering = candidateData.isNotEmpty;
-          return Container(
-            width: widget.size,
-            height: widget.size,
-            decoration: BoxDecoration(
-              color: isHovering
-                  ? const Color(0xFF00d4ff).withValues(alpha: 0.2 * 255)
-                  : const Color(0xFF16181d).withValues(alpha: 0.5 * 255),
-              borderRadius: BorderRadius.circular(12.0),
-              border: Border.all(
-                color: isHovering
-                    ? const Color(0xFF00d4ff)
-                    : Colors.white.withValues(alpha: 0.1 * 255),
-                width: isHovering ? 3 : 2,
-                style: BorderStyle.solid,
-              ),
-            ),
-            child: Center(
-              child: Icon(
-                Icons.add_circle_outline,
-                color: isHovering
-                    ? const Color(0xFF00d4ff)
-                    : const Color(0xFF00d4ff).withValues(alpha: 0.3 * 255),
-                size: 32,
-              ),
-            ),
-          );
-        },
-      );
-    }
+    if (widget.piece.isEmpty) return _buildEmptyTarget();
+    return _buildDraggablePiece();
+  }
 
+  Widget _buildEmptyTarget() {
+    return DragTarget<int>(
+      onWillAcceptWithDetails: (details) => true,
+      onAcceptWithDetails: (details) {
+        if (widget.onDragEnd != null) {
+          widget.onDragEnd!(details.data, widget.index);
+        }
+      },
+      builder: (context, candidateData, rejectedData) {
+        final isHovering = candidateData.isNotEmpty;
+        return Container(
+          width: widget.size,
+          height: widget.size,
+          decoration: BoxDecoration(
+            color: isHovering
+                ? const Color(0xFF00d4ff).withValues(alpha: 0.2 * 255)
+                : const Color(0xFF16181d).withValues(alpha: 0.5 * 255),
+            borderRadius: BorderRadius.circular(12.0),
+            border: Border.all(
+              color: isHovering
+                  ? const Color(0xFF00d4ff)
+                  : Colors.white.withValues(alpha: 0.1 * 255),
+              width: isHovering ? 3 : 2,
+              style: BorderStyle.solid,
+            ),
+          ),
+          child: Center(
+            child: Icon(
+              Icons.add_circle_outline,
+              color: isHovering
+                  ? const Color(0xFF00d4ff)
+                  : const Color(0xFF00d4ff).withValues(alpha: 0.3 * 255),
+              size: 32,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDraggablePiece() {
     return LongPressDraggable<int>(
       data: widget.index,
       feedback: Opacity(

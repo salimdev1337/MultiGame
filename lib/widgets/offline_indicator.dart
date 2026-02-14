@@ -80,7 +80,7 @@ class _OfflineIndicatorState extends State<OfflineIndicator> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.cloud_off,
                     color: Colors.white,
                     size: 16,

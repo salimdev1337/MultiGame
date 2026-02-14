@@ -53,38 +53,40 @@ class SudokuValidator {
     int col,
     int value,
   ) {
-    if (value < 1 || value > 9) {
-      return false;
-    }
+    if (value < 1 || value > 9) return false;
+    if (_hasValueInRow(board, row, col, value)) return false;
+    if (_hasValueInColumn(board, row, col, value)) return false;
+    if (_hasValueInBox(board, row, col, value)) return false;
+    return true;
+  }
 
+  static bool _hasValueInRow(SudokuBoard board, int row, int col, int value) {
     final rowCells = board.getRow(row);
     for (int c = 0; c < 9; c++) {
-      if (c != col && rowCells[c].value == value) {
-        return false;
-      }
+      if (c != col && rowCells[c].value == value) return true;
     }
+    return false;
+  }
 
+  static bool _hasValueInColumn(SudokuBoard board, int row, int col, int value) {
     final colCells = board.getColumn(col);
     for (int r = 0; r < 9; r++) {
-      if (r != row && colCells[r].value == value) {
-        return false;
-      }
+      if (r != row && colCells[r].value == value) return true;
     }
+    return false;
+  }
 
+  static bool _hasValueInBox(SudokuBoard board, int row, int col, int value) {
     final boxStartRow = (row ~/ 3) * 3;
     final boxStartCol = (col ~/ 3) * 3;
-
     for (int r = boxStartRow; r < boxStartRow + 3; r++) {
       for (int c = boxStartCol; c < boxStartCol + 3; c++) {
-        if (r != row || c != col) {
-          if (board.getCell(r, c).value == value) {
-            return false;
-          }
+        if ((r != row || c != col) && board.getCell(r, c).value == value) {
+          return true;
         }
       }
     }
-
-    return true;
+    return false;
   }
 
   static Set<Position> _findRowConflicts(SudokuBoard board, int row) {

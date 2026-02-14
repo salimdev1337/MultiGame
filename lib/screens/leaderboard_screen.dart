@@ -171,7 +171,15 @@ class _LeaderboardTabState extends ConsumerState<LeaderboardTab> {
     return StreamBuilder<List<LeaderboardEntry>>(
       key: ValueKey(_refreshKey),
       stream: statsService.leaderboardStream(gameType: widget.gameType, limit: 100),
-      builder: (context, snapshot) {
+      builder: (context, snapshot) => _buildStreamContent(context, snapshot, authProvider),
+    );
+  }
+
+  Widget _buildStreamContent(
+    BuildContext context,
+    AsyncSnapshot<List<LeaderboardEntry>> snapshot,
+    UserAuthState authProvider,
+  ) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(
             child: CircularProgressIndicator(color: const Color(0xFF00F0FF)),
@@ -373,89 +381,83 @@ class _LeaderboardTabState extends ConsumerState<LeaderboardTab> {
               child: ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 itemCount: entries.length,
-                itemBuilder: (context, index) {
-                  final entry = entries[index];
-                  final rank = index + 1;
-                  final isCurrentUser = authProvider.userId == entry.userId;
-
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0F0F12),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isCurrentUser
-                            ? const Color(0xFF00F0FF).withValues(alpha: 0.3)
-                            : Colors.white.withValues(alpha: 0.05),
-                        width: 1,
-                      ),
-                      boxShadow: isCurrentUser
-                          ? [
-                              BoxShadow(
-                                color: const Color(
-                                  0xFF00F0FF,
-                                ).withValues(alpha: 0.15),
-                                blurRadius: 15,
-                                spreadRadius: -3,
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          _buildRankBadge(rank, isUser: isCurrentUser),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Text(
-                              entry.displayName,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: isCurrentUser
-                                    ? FontWeight.bold
-                                    : FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                entry.highScore.toString(),
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: rank <= 3
-                                      ? _getRankColor(rank)
-                                      : (isCurrentUser
-                                            ? const Color(0xFF00F0FF)
-                                            : Colors.white),
-                                ),
-                              ),
-                              if (entry.lastUpdated != null)
-                                Text(
-                                  _formatDate(entry.lastUpdated!),
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.grey.withValues(alpha: 0.6),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+                itemBuilder: (context, index) => _buildEntryItem(
+                  entries[index],
+                  index + 1,
+                  authProvider.userId == entries[index].userId,
+                ),
               ),
             ),
             const SizedBox(height: 16),
           ],
         );
-      },
+  }
+
+  Widget _buildEntryItem(LeaderboardEntry entry, int rank, bool isCurrentUser) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F0F12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isCurrentUser
+              ? const Color(0xFF00F0FF).withValues(alpha: 0.3)
+              : Colors.white.withValues(alpha: 0.05),
+          width: 1,
+        ),
+        boxShadow: isCurrentUser
+            ? [
+                BoxShadow(
+                  color: const Color(0xFF00F0FF).withValues(alpha: 0.15),
+                  blurRadius: 15,
+                  spreadRadius: -3,
+                ),
+              ]
+            : null,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            _buildRankBadge(rank, isUser: isCurrentUser),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                entry.displayName,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: isCurrentUser ? FontWeight.bold : FontWeight.w600,
+                  color: Colors.white,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  entry.highScore.toString(),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: rank <= 3
+                        ? _getRankColor(rank)
+                        : (isCurrentUser ? const Color(0xFF00F0FF) : Colors.white),
+                  ),
+                ),
+                if (entry.lastUpdated != null)
+                  Text(
+                    _formatDate(entry.lastUpdated!),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey.withValues(alpha: 0.6),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 

@@ -120,7 +120,6 @@ class _SudokuRushScreenState extends ConsumerState<SudokuRushScreen>
       ),
     );
     final uiState = ref.watch(sudokuUIProvider);
-    final notifier = ref.read(sudokuRushProvider.notifier);
 
     // Manage timer pulse based on remaining time
     ref.listen<SudokuRushState>(sudokuRushProvider, (prev, next) {
@@ -162,98 +161,101 @@ class _SudokuRushScreenState extends ConsumerState<SudokuRushScreen>
               }
 
               return LayoutBuilder(
-                builder: (context, constraints) {
-                  final isVeryCompact = constraints.maxHeight < 600;
-                  final isCompact = constraints.maxHeight < 700;
-
-                  final headerHeight = isVeryCompact ? 36.0 : 44.0;
-                  final statsHeight =
-                      isVeryCompact ? 78.0 : (isCompact ? 88.0 : 100.0);
-                  final controlButtonsHeight =
-                      isVeryCompact ? 68.0 : (isCompact ? 78.0 : 90.0);
-                  final numberPadHeight =
-                      isVeryCompact ? 46.0 : (isCompact ? 52.0 : 60.0);
-                  final spacing =
-                      isVeryCompact ? 14.0 : (isCompact ? 22.0 : 32.0);
-
-                  final remainingHeight = constraints.maxHeight -
-                      headerHeight -
-                      statsHeight -
-                      controlButtonsHeight -
-                      numberPadHeight -
-                      spacing;
-
-                  final useCompactMode = isCompact;
-
-                  final maxWidth = constraints.maxWidth - 32;
-                  final minGrid = isVeryCompact ? 220.0 : 250.0;
-                  final gridSize =
-                      (maxWidth < remainingHeight ? maxWidth : remainingHeight)
-                          .clamp(minGrid, 600.0);
-
-                  return Stack(
-                    children: [
-                      Column(
-                        children: [
-                          _buildHeader(context),
-                          _RushStatsPanel(timerPulseScale: _timerPulseScale),
-                          const SizedBox(height: 8),
-                          Expanded(
-                            child: Center(
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 16),
-                                child: SizedBox(
-                                  width: gridSize,
-                                  height: gridSize,
-                                  child: SudokuGrid(
-                                    board: notifier.currentBoard!,
-                                    selectedRow: state.selectedRow,
-                                    selectedCol: state.selectedCol,
-                                    selectedCellValue:
-                                        state.selectedRow != null &&
-                                                state.selectedCol != null
-                                            ? notifier.currentBoard!
-                                                .getCell(
-                                                  state.selectedRow!,
-                                                  state.selectedCol!,
-                                                )
-                                                .value
-                                            : null,
-                                    onCellTap: notifier.selectCell,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          ControlButtons(
-                            notesMode: state.notesMode,
-                            canUndo: notifier.canUndo,
-                            canErase: notifier.canErase,
-                            hintsRemaining: state.hintsRemaining,
-                            onUndo: notifier.undo,
-                            onErase: notifier.eraseCell,
-                            onToggleNotes: notifier.toggleNotesMode,
-                            onHint: notifier.useHint,
-                          ),
-                          NumberPad(
-                            board: notifier.currentBoard!,
-                            onNumberTap: notifier.placeNumber,
-                            useCompactMode: useCompactMode,
-                          ),
-                          SizedBox(height: useCompactMode ? 8 : 12),
-                        ],
-                      ),
-                      if (state.showPenalty) _buildPenaltyOverlay(),
-                    ],
-                  );
-                },
+                builder: (context, constraints) => _buildLayout(
+                  context,
+                  constraints,
+                  selectedRow: state.selectedRow,
+                  selectedCol: state.selectedCol,
+                  notesMode: state.notesMode,
+                  hintsRemaining: state.hintsRemaining,
+                  showPenalty: state.showPenalty,
+                ),
               );
             },
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildLayout(
+    BuildContext context,
+    BoxConstraints constraints, {
+    required int? selectedRow,
+    required int? selectedCol,
+    required bool notesMode,
+    required int hintsRemaining,
+    required bool showPenalty,
+  }) {
+    final notifier = ref.read(sudokuRushProvider.notifier);
+    final isVeryCompact = constraints.maxHeight < 600;
+    final isCompact = constraints.maxHeight < 700;
+
+    final headerHeight = isVeryCompact ? 36.0 : 44.0;
+    final statsHeight = isVeryCompact ? 78.0 : (isCompact ? 88.0 : 100.0);
+    final controlButtonsHeight = isVeryCompact ? 68.0 : (isCompact ? 78.0 : 90.0);
+    final numberPadHeight = isVeryCompact ? 46.0 : (isCompact ? 52.0 : 60.0);
+    final spacing = isVeryCompact ? 14.0 : (isCompact ? 22.0 : 32.0);
+
+    final remainingHeight = constraints.maxHeight -
+        headerHeight - statsHeight - controlButtonsHeight -
+        numberPadHeight - spacing;
+
+    final useCompactMode = isCompact;
+    final maxWidth = constraints.maxWidth - 32;
+    final minGrid = isVeryCompact ? 220.0 : 250.0;
+    final gridSize =
+        (maxWidth < remainingHeight ? maxWidth : remainingHeight)
+            .clamp(minGrid, 600.0);
+
+    return Stack(
+      children: [
+        Column(
+          children: [
+            _buildHeader(context),
+            _RushStatsPanel(timerPulseScale: _timerPulseScale),
+            const SizedBox(height: 8),
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SizedBox(
+                    width: gridSize,
+                    height: gridSize,
+                    child: SudokuGrid(
+                      board: notifier.currentBoard!,
+                      selectedRow: selectedRow,
+                      selectedCol: selectedCol,
+                      selectedCellValue: selectedRow != null && selectedCol != null
+                          ? notifier.currentBoard!.getCell(selectedRow, selectedCol).value
+                          : null,
+                      onCellTap: notifier.selectCell,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            ControlButtons(
+              notesMode: notesMode,
+              canUndo: notifier.canUndo,
+              canErase: notifier.canErase,
+              hintsRemaining: hintsRemaining,
+              onUndo: notifier.undo,
+              onErase: notifier.eraseCell,
+              onToggleNotes: notifier.toggleNotesMode,
+              onHint: notifier.useHint,
+            ),
+            NumberPad(
+              board: notifier.currentBoard!,
+              onNumberTap: notifier.placeNumber,
+              useCompactMode: useCompactMode,
+            ),
+            SizedBox(height: useCompactMode ? 8 : 12),
+          ],
+        ),
+        if (showPenalty) _buildPenaltyOverlay(),
+      ],
     );
   }
 
