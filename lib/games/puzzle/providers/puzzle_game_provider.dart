@@ -23,8 +23,8 @@ class PuzzleGameNotifier extends ChangeNotifier with GameStatsMixin {
   PuzzleGameNotifier({
     required AchievementService achievementService,
     required FirebaseStatsService statsService,
-  })  : _achievementService = achievementService,
-        _statsService = statsService;
+  }) : _achievementService = achievementService,
+       _statsService = statsService;
 
   // Getters
   PuzzleGame? get game => _game;

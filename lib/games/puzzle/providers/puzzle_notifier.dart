@@ -88,7 +88,11 @@ class PuzzleNotifier extends GameStatsNotifier<PuzzleState> {
     final game = PuzzleGame(gridSize: newSize);
     await game.loadPuzzleImages();
     state = state.copyWith(
-        game: game, gridSize: newSize, moveCount: 0, elapsedSeconds: 0);
+      game: game,
+      gridSize: newSize,
+      moveCount: 0,
+      elapsedSeconds: 0,
+    );
     _startTimer();
   }
 
@@ -133,8 +137,10 @@ class PuzzleNotifier extends GameStatsNotifier<PuzzleState> {
 
   void _saveScore(int moves) {
     if (moves > 0) {
-      final score =
-          (10000 - (moves * 10) - state.elapsedSeconds).clamp(0, 10000);
+      final score = (10000 - (moves * 10) - state.elapsedSeconds).clamp(
+        0,
+        10000,
+      );
       SecureLogger.firebase('Saving puzzle score', details: 'score: $score');
       saveScore('puzzle', score);
     }
@@ -143,4 +149,5 @@ class PuzzleNotifier extends GameStatsNotifier<PuzzleState> {
 
 final puzzleProvider =
     NotifierProvider.autoDispose<PuzzleNotifier, PuzzleState>(
-        PuzzleNotifier.new);
+      PuzzleNotifier.new,
+    );

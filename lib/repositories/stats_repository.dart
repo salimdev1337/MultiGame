@@ -138,10 +138,7 @@ abstract class StatsRepository {
   });
 
   /// Get user's rank in a game's leaderboard
-  Future<int?> getUserRank({
-    required String userId,
-    required String gameType,
-  });
+  Future<int?> getUserRank({required String userId, required String gameType});
 
   /// Stream of leaderboard updates
   Stream<List<LeaderboardEntry>> leaderboardStream({
@@ -159,9 +156,8 @@ class FirebaseStatsRepository implements StatsRepository {
   static const String _usersCollection = 'users';
   static const String _leaderboardCollection = 'leaderboard';
 
-  FirebaseStatsRepository({
-    FirebaseFirestore? firestore,
-  }) : _firestore = firestore ?? FirebaseFirestore.instance;
+  FirebaseStatsRepository({FirebaseFirestore? firestore})
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   @override
   Future<void> saveUserStats({
@@ -224,7 +220,11 @@ class FirebaseStatsRepository implements StatsRepository {
         score: score,
       );
     } catch (e) {
-      SecureLogger.error('Failed to save user stats', error: e, tag: 'StatsRepository');
+      SecureLogger.error(
+        'Failed to save user stats',
+        error: e,
+        tag: 'StatsRepository',
+      );
       rethrow;
     }
   }
@@ -254,7 +254,10 @@ class FirebaseStatsRepository implements StatsRepository {
           'lastUpdated': FieldValue.serverTimestamp(),
         });
       } else if (score > currentHighScore) {
-        SecureLogger.firebase('Updating leaderboard', details: 'New high score');
+        SecureLogger.firebase(
+          'Updating leaderboard',
+          details: 'New high score',
+        );
         await leaderboardRef.set({
           'userId': userId,
           'displayName': displayName ?? 'Anonymous',
@@ -262,10 +265,16 @@ class FirebaseStatsRepository implements StatsRepository {
           'lastUpdated': FieldValue.serverTimestamp(),
         });
       } else {
-        SecureLogger.firebase('Score not higher than current high score, skipping update');
+        SecureLogger.firebase(
+          'Score not higher than current high score, skipping update',
+        );
       }
     } catch (e) {
-      SecureLogger.error('Failed to update leaderboard', error: e, tag: 'StatsRepository');
+      SecureLogger.error(
+        'Failed to update leaderboard',
+        error: e,
+        tag: 'StatsRepository',
+      );
     }
   }
 
@@ -283,7 +292,11 @@ class FirebaseStatsRepository implements StatsRepository {
 
       return UserStats.fromFirestore(doc);
     } catch (e) {
-      SecureLogger.error('Failed to get user stats', error: e, tag: 'StatsRepository');
+      SecureLogger.error(
+        'Failed to get user stats',
+        error: e,
+        tag: 'StatsRepository',
+      );
       return null;
     }
   }
@@ -301,7 +314,10 @@ class FirebaseStatsRepository implements StatsRepository {
           return UserStats.fromFirestore(doc);
         })
         .handleError((error) {
-          SecureLogger.error('Error in user stats stream', tag: 'StatsRepository');
+          SecureLogger.error(
+            'Error in user stats stream',
+            tag: 'StatsRepository',
+          );
           return null;
         });
   }
@@ -324,7 +340,11 @@ class FirebaseStatsRepository implements StatsRepository {
           .map((doc) => LeaderboardEntry.fromFirestore(doc))
           .toList();
     } catch (e) {
-      SecureLogger.error('Failed to get leaderboard', error: e, tag: 'StatsRepository');
+      SecureLogger.error(
+        'Failed to get leaderboard',
+        error: e,
+        tag: 'StatsRepository',
+      );
       return [];
     }
   }
@@ -358,7 +378,11 @@ class FirebaseStatsRepository implements StatsRepository {
 
       return (higherScoresCount.count ?? 0) + 1;
     } catch (e) {
-      SecureLogger.error('Failed to get user rank', error: e, tag: 'StatsRepository');
+      SecureLogger.error(
+        'Failed to get user rank',
+        error: e,
+        tag: 'StatsRepository',
+      );
       return null;
     }
   }
@@ -376,7 +400,11 @@ class FirebaseStatsRepository implements StatsRepository {
         .limit(limit)
         .snapshots()
         .handleError((error) {
-          SecureLogger.error('Leaderboard stream error', error: error, tag: 'StatsRepository');
+          SecureLogger.error(
+            'Leaderboard stream error',
+            error: error,
+            tag: 'StatsRepository',
+          );
           throw error;
         })
         .map(

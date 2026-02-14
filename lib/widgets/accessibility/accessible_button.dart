@@ -46,8 +46,8 @@ class AccessibleButton extends StatelessWidget {
                 duration: const Duration(milliseconds: 100),
                 decoration: hasFocus
                     ? DSAccessibility.buildFocusIndicator(
-                        borderRadius: focusBorderRadius ??
-                            BorderRadius.circular(8),
+                        borderRadius:
+                            focusBorderRadius ?? BorderRadius.circular(8),
                       )
                     : null,
                 child: GestureDetector(

@@ -129,14 +129,17 @@ void main() {
       expect(result, 60);
     });
 
-    test('updates overall best time when improving across grid sizes', () async {
-      await repository.updateBestTime(3, 100);
-      await repository.updateBestTime(4, 80);
-      await repository.updateBestTime(5, 50);
+    test(
+      'updates overall best time when improving across grid sizes',
+      () async {
+        await repository.updateBestTime(3, 100);
+        await repository.updateBestTime(4, 80);
+        await repository.updateBestTime(5, 50);
 
-      final result = await repository.getBestOverallTime();
-      expect(result, 50);
-    });
+        final result = await repository.getBestOverallTime();
+        expect(result, 50);
+      },
+    );
 
     test('maintains separate best times for each grid size', () async {
       await repository.updateBestTime(3, 60);
@@ -156,10 +159,13 @@ void main() {
   });
 
   group('AchievementRepository - Achievements', () {
-    test('returns false for unlocked achievement that does not exist', () async {
-      final result = await repository.isAchievementUnlocked('first_win');
-      expect(result, false);
-    });
+    test(
+      'returns false for unlocked achievement that does not exist',
+      () async {
+        final result = await repository.isAchievementUnlocked('first_win');
+        expect(result, false);
+      },
+    );
 
     test('unlocks an achievement', () async {
       await repository.unlockAchievement('first_win');
@@ -206,15 +212,18 @@ void main() {
       expect(results, isEmpty);
     });
 
-    test('getAllAchievements returns all false when no achievements unlocked', () async {
-      final results = await repository.getAllAchievements([
-        'first_win',
-        'puzzle_fan',
-      ]);
+    test(
+      'getAllAchievements returns all false when no achievements unlocked',
+      () async {
+        final results = await repository.getAllAchievements([
+          'first_win',
+          'puzzle_fan',
+        ]);
 
-      expect(results['first_win'], false);
-      expect(results['puzzle_fan'], false);
-    });
+        expect(results['first_win'], false);
+        expect(results['puzzle_fan'], false);
+      },
+    );
   });
 
   group('AchievementRepository - 2048 stats', () {
@@ -243,63 +252,123 @@ void main() {
     });
 
     test('updates best score when new score is higher', () async {
-      await repository.save2048Stats(score: 1000, highestTile: 256, levelPassed: 'Level 1');
-      await repository.save2048Stats(score: 2000, highestTile: 512, levelPassed: 'Level 2');
+      await repository.save2048Stats(
+        score: 1000,
+        highestTile: 256,
+        levelPassed: 'Level 1',
+      );
+      await repository.save2048Stats(
+        score: 2000,
+        highestTile: 512,
+        levelPassed: 'Level 2',
+      );
 
       final stats = await repository.get2048Stats();
       expect(stats['bestScore'], 2000);
     });
 
     test('keeps best score when new score is lower', () async {
-      await repository.save2048Stats(score: 2000, highestTile: 512, levelPassed: 'Level 2');
-      await repository.save2048Stats(score: 1000, highestTile: 256, levelPassed: 'Level 1');
+      await repository.save2048Stats(
+        score: 2000,
+        highestTile: 512,
+        levelPassed: 'Level 2',
+      );
+      await repository.save2048Stats(
+        score: 1000,
+        highestTile: 256,
+        levelPassed: 'Level 1',
+      );
 
       final stats = await repository.get2048Stats();
       expect(stats['bestScore'], 2000);
     });
 
     test('updates highest tile when new tile is higher', () async {
-      await repository.save2048Stats(score: 1000, highestTile: 256, levelPassed: 'Level 1');
-      await repository.save2048Stats(score: 1500, highestTile: 512, levelPassed: 'Level 2');
+      await repository.save2048Stats(
+        score: 1000,
+        highestTile: 256,
+        levelPassed: 'Level 1',
+      );
+      await repository.save2048Stats(
+        score: 1500,
+        highestTile: 512,
+        levelPassed: 'Level 2',
+      );
 
       final stats = await repository.get2048Stats();
       expect(stats['highestTile'], 512);
     });
 
     test('keeps highest tile when new tile is lower', () async {
-      await repository.save2048Stats(score: 1000, highestTile: 512, levelPassed: 'Level 2');
-      await repository.save2048Stats(score: 1500, highestTile: 256, levelPassed: 'Level 1');
+      await repository.save2048Stats(
+        score: 1000,
+        highestTile: 512,
+        levelPassed: 'Level 2',
+      );
+      await repository.save2048Stats(
+        score: 1500,
+        highestTile: 256,
+        levelPassed: 'Level 1',
+      );
 
       final stats = await repository.get2048Stats();
       expect(stats['highestTile'], 512);
     });
 
     test('increments games played on each save', () async {
-      await repository.save2048Stats(score: 1000, highestTile: 256, levelPassed: 'Level 1');
-      await repository.save2048Stats(score: 1500, highestTile: 512, levelPassed: 'Level 2');
-      await repository.save2048Stats(score: 2000, highestTile: 1024, levelPassed: 'Level 3');
+      await repository.save2048Stats(
+        score: 1000,
+        highestTile: 256,
+        levelPassed: 'Level 1',
+      );
+      await repository.save2048Stats(
+        score: 1500,
+        highestTile: 512,
+        levelPassed: 'Level 2',
+      );
+      await repository.save2048Stats(
+        score: 2000,
+        highestTile: 1024,
+        levelPassed: 'Level 3',
+      );
 
       final stats = await repository.get2048Stats();
       expect(stats['gamesPlayed'], 3);
     });
 
     test('updates last level passed on each save', () async {
-      await repository.save2048Stats(score: 1000, highestTile: 256, levelPassed: 'Level 1');
-      await repository.save2048Stats(score: 1500, highestTile: 512, levelPassed: 'Level 2');
+      await repository.save2048Stats(
+        score: 1000,
+        highestTile: 256,
+        levelPassed: 'Level 1',
+      );
+      await repository.save2048Stats(
+        score: 1500,
+        highestTile: 512,
+        levelPassed: 'Level 2',
+      );
 
       final stats = await repository.get2048Stats();
       expect(stats['lastLevelPassed'], 'Level 2');
     });
 
     test('handles reaching 2048 tile', () async {
-      await repository.save2048Stats(score: 5000, highestTile: 2048, levelPassed: 'Level 5');
+      await repository.save2048Stats(
+        score: 5000,
+        highestTile: 2048,
+        levelPassed: 'Level 5',
+      );
 
       final stats = await repository.get2048Stats();
       expect(stats['highestTile'], 2048);
     });
 
     test('handles reaching 4096 tile', () async {
-      await repository.save2048Stats(score: 10000, highestTile: 4096, levelPassed: 'Level 7');
+      await repository.save2048Stats(
+        score: 10000,
+        highestTile: 4096,
+        levelPassed: 'Level 7',
+      );
 
       final stats = await repository.get2048Stats();
       expect(stats['highestTile'], 4096);
@@ -347,7 +416,11 @@ void main() {
       await repository.updateBestMoves(3, 50);
       await repository.updateBestTime(3, 60);
       await repository.unlockAchievement('first_win');
-      await repository.save2048Stats(score: 1000, highestTile: 512, levelPassed: 'Level 2');
+      await repository.save2048Stats(
+        score: 1000,
+        highestTile: 512,
+        levelPassed: 'Level 2',
+      );
 
       // Reset
       await repository.resetAll();
@@ -419,16 +492,32 @@ void main() {
 
     test('2048 game progression', () async {
       // First game
-      await repository.save2048Stats(score: 500, highestTile: 128, levelPassed: 'Level 1');
+      await repository.save2048Stats(
+        score: 500,
+        highestTile: 128,
+        levelPassed: 'Level 1',
+      );
 
       // Better game
-      await repository.save2048Stats(score: 1000, highestTile: 256, levelPassed: 'Level 2');
+      await repository.save2048Stats(
+        score: 1000,
+        highestTile: 256,
+        levelPassed: 'Level 2',
+      );
 
       // Best game
-      await repository.save2048Stats(score: 2000, highestTile: 512, levelPassed: 'Level 3');
+      await repository.save2048Stats(
+        score: 2000,
+        highestTile: 512,
+        levelPassed: 'Level 3',
+      );
 
       // Worse game (shouldn't update best)
-      await repository.save2048Stats(score: 800, highestTile: 256, levelPassed: 'Level 2');
+      await repository.save2048Stats(
+        score: 800,
+        highestTile: 256,
+        levelPassed: 'Level 2',
+      );
 
       final stats = await repository.get2048Stats();
       expect(stats['bestScore'], 2000);

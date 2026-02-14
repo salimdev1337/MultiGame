@@ -301,46 +301,55 @@ void main() {
         expect(notificationCount, equals(4));
       });
 
-      test('should not break when reset is called multiple times consecutively', () {
-        // Arrange
-        provider.setShowingGameOverDialog(true);
-        provider.setShowingPauseDialog(true);
-        provider.setShowingModeSelectionDialog(true);
+      test(
+        'should not break when reset is called multiple times consecutively',
+        () {
+          // Arrange
+          provider.setShowingGameOverDialog(true);
+          provider.setShowingPauseDialog(true);
+          provider.setShowingModeSelectionDialog(true);
 
-        var notificationCount = 0;
-        provider.addListener(() => notificationCount++);
+          var notificationCount = 0;
+          provider.addListener(() => notificationCount++);
 
-        // Act
-        provider.reset();
-        provider.reset();
-        provider.reset();
+          // Act
+          provider.reset();
+          provider.reset();
+          provider.reset();
 
-        // Assert
-        expect(provider.showingGameOverDialog, isFalse);
-        expect(provider.showingPauseDialog, isFalse);
-        expect(provider.showingModeSelectionDialog, isFalse);
-        expect(notificationCount, equals(3));
-      });
+          // Assert
+          expect(provider.showingGameOverDialog, isFalse);
+          expect(provider.showingPauseDialog, isFalse);
+          expect(provider.showingModeSelectionDialog, isFalse);
+          expect(notificationCount, equals(3));
+        },
+      );
     });
 
     group('Dialog State Scenarios', () {
-      test('should allow showing pause dialog while game over dialog is hidden', () {
-        // Act
-        provider.setShowingPauseDialog(true);
+      test(
+        'should allow showing pause dialog while game over dialog is hidden',
+        () {
+          // Act
+          provider.setShowingPauseDialog(true);
 
-        // Assert
-        expect(provider.showingPauseDialog, isTrue);
-        expect(provider.showingGameOverDialog, isFalse);
-      });
+          // Assert
+          expect(provider.showingPauseDialog, isTrue);
+          expect(provider.showingGameOverDialog, isFalse);
+        },
+      );
 
-      test('should allow showing game over dialog while pause dialog is hidden', () {
-        // Act
-        provider.setShowingGameOverDialog(true);
+      test(
+        'should allow showing game over dialog while pause dialog is hidden',
+        () {
+          // Act
+          provider.setShowingGameOverDialog(true);
 
-        // Assert
-        expect(provider.showingGameOverDialog, isTrue);
-        expect(provider.showingPauseDialog, isFalse);
-      });
+          // Assert
+          expect(provider.showingGameOverDialog, isTrue);
+          expect(provider.showingPauseDialog, isFalse);
+        },
+      );
 
       test('should allow both dialogs to be shown simultaneously', () {
         // Act

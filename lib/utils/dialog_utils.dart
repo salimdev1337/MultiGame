@@ -156,10 +156,7 @@ void showLoadingDialog(BuildContext context, {String message = 'Loading...'}) {
             const SizedBox(height: 16),
             Text(
               message,
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.white,
-              ),
+              style: const TextStyle(fontSize: 16, color: Colors.white),
             ),
           ],
         ),

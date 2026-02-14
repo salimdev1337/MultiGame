@@ -210,10 +210,7 @@ class DSEmptyState extends StatelessWidget {
       return content
           .animate()
           .fadeIn(duration: DSAnimations.normal)
-          .scale(
-            duration: DSAnimations.slow,
-            curve: DSAnimations.easeOutCubic,
-          );
+          .scale(duration: DSAnimations.slow, curve: DSAnimations.easeOutCubic);
     }
 
     return content;
@@ -225,10 +222,7 @@ class DSEmptyState extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: RadialGradient(
           colors: [
-            DSColors.withOpacity(
-              iconColor ?? DSColors.primary,
-              0.1,
-            ),
+            DSColors.withOpacity(iconColor ?? DSColors.primary, 0.1),
             Colors.transparent,
           ],
         ),
@@ -247,10 +241,7 @@ class _BreathingIcon extends StatefulWidget {
   final IconData icon;
   final Color color;
 
-  const _BreathingIcon({
-    required this.icon,
-    required this.color,
-  });
+  const _BreathingIcon({required this.icon, required this.color});
 
   @override
   State<_BreathingIcon> createState() => _BreathingIconState();
@@ -273,10 +264,7 @@ class _BreathingIconState extends State<_BreathingIcon>
     _scaleAnimation = Tween<double>(
       begin: 0.9,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -289,11 +277,7 @@ class _BreathingIconState extends State<_BreathingIcon>
   Widget build(BuildContext context) {
     return ScaleTransition(
       scale: _scaleAnimation,
-      child: Icon(
-        widget.icon,
-        size: 80,
-        color: widget.color,
-      ),
+      child: Icon(widget.icon, size: 80, color: widget.color),
     );
   }
 }
@@ -302,10 +286,7 @@ class _BreathingIconState extends State<_BreathingIcon>
 class DSEmptyStateList extends StatelessWidget {
   final DSEmptyState emptyState;
 
-  const DSEmptyStateList({
-    super.key,
-    required this.emptyState,
-  });
+  const DSEmptyStateList({super.key, required this.emptyState});
 
   @override
   Widget build(BuildContext context) {

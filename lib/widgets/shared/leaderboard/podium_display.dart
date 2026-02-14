@@ -150,16 +150,15 @@ class _PodiumItemState extends State<_PodiumItem>
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
 
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 1),
       end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-    );
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
     // Stagger entrance based on rank
     Future.delayed(Duration(milliseconds: (widget.rank - 1) * 100), () {
@@ -207,9 +206,7 @@ class _PodiumItemState extends State<_PodiumItem>
           colors: [Color(0xFFCD7F32), Color(0xFF8B4513)],
         );
       default:
-        return LinearGradient(
-          colors: [DSColors.surface, DSColors.surface],
-        );
+        return LinearGradient(colors: [DSColors.surface, DSColors.surface]);
     }
   }
 
@@ -221,7 +218,9 @@ class _PodiumItemState extends State<_PodiumItem>
       return const SizedBox();
     }
 
-    final rankName = widget.rank <= 3 ? _rankNames[widget.rank] : '#${widget.rank}';
+    final rankName = widget.rank <= 3
+        ? _rankNames[widget.rank]
+        : '#${widget.rank}';
     final entry = widget.entry!;
 
     return Semantics(

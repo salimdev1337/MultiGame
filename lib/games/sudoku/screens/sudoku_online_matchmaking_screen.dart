@@ -67,9 +67,7 @@ class _SudokuOnlineMatchmakingScreenState
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => ProviderScope(
-            overrides: [
-              sudokuOnlineProvider.overrideWith((ref) => provider),
-            ],
+            overrides: [sudokuOnlineProvider.overrideWith((ref) => provider)],
             child: const SudokuOnlineGameScreen(),
           ),
         ),
@@ -115,9 +113,7 @@ class _SudokuOnlineMatchmakingScreenState
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => ProviderScope(
-            overrides: [
-              sudokuOnlineProvider.overrideWith((ref) => provider),
-            ],
+            overrides: [sudokuOnlineProvider.overrideWith((ref) => provider)],
             child: const SudokuOnlineGameScreen(),
           ),
         ),
@@ -140,10 +136,7 @@ class _SudokuOnlineMatchmakingScreenState
         backgroundColor: _surfaceDark,
         title: const Text(
           'Join with Code',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -151,10 +144,7 @@ class _SudokuOnlineMatchmakingScreenState
           children: [
             const Text(
               'Enter the 6-digit room code:',
-              style: TextStyle(
-                color: Color(0x99FFFFFF),
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Color(0x99FFFFFF), fontSize: 14),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -212,20 +202,14 @@ class _SudokuOnlineMatchmakingScreenState
             style: ElevatedButton.styleFrom(
               backgroundColor: _accentBlue,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
             child: const Text(
               'JOIN',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.2,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 1.2),
             ),
           ),
         ],
@@ -297,9 +281,7 @@ class _SudokuOnlineMatchmakingScreenState
         elevation: 0,
       ),
       body: SafeArea(
-        child: _isSearching
-            ? _buildSearchingUI()
-            : _buildDifficultySelection(),
+        child: _isSearching ? _buildSearchingUI() : _buildDifficultySelection(),
       ),
     );
   }
@@ -395,10 +377,7 @@ class _SudokuOnlineMatchmakingScreenState
               padding: EdgeInsets.symmetric(horizontal: 32),
               child: Text(
                 'Share this code with a friend to play together!',
-                style: TextStyle(
-                  color: Color(0x99FFFFFF),
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: Color(0x99FFFFFF), fontSize: 13),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -407,10 +386,7 @@ class _SudokuOnlineMatchmakingScreenState
             const SizedBox(height: 24),
             const Text(
               'Please wait...',
-              style: TextStyle(
-                color: Color(0x99FFFFFF),
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Color(0x99FFFFFF), fontSize: 14),
             ),
           ],
           if (_errorMessage != null) ...[
@@ -419,10 +395,7 @@ class _SudokuOnlineMatchmakingScreenState
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Text(
                 _errorMessage!,
-                style: const TextStyle(
-                  color: Colors.red,
-                  fontSize: 14,
-                ),
+                style: const TextStyle(color: Colors.red, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -475,7 +448,8 @@ class _SudokuOnlineMatchmakingScreenState
           icon: Icons.sentiment_satisfied,
           color: const Color(0xFF4ade80),
           isSelected: _selectedDifficulty == SudokuDifficulty.easy,
-          onTap: () => setState(() => _selectedDifficulty = SudokuDifficulty.easy),
+          onTap: () =>
+              setState(() => _selectedDifficulty = SudokuDifficulty.easy),
         ),
         const SizedBox(height: 12),
         SudokuDifficultyCard(
@@ -485,7 +459,8 @@ class _SudokuOnlineMatchmakingScreenState
           icon: Icons.sentiment_neutral,
           color: const Color(0xFFfbbf24),
           isSelected: _selectedDifficulty == SudokuDifficulty.medium,
-          onTap: () => setState(() => _selectedDifficulty = SudokuDifficulty.medium),
+          onTap: () =>
+              setState(() => _selectedDifficulty = SudokuDifficulty.medium),
         ),
         const SizedBox(height: 12),
         SudokuDifficultyCard(
@@ -495,7 +470,8 @@ class _SudokuOnlineMatchmakingScreenState
           icon: Icons.sentiment_dissatisfied,
           color: const Color(0xFFfb923c),
           isSelected: _selectedDifficulty == SudokuDifficulty.hard,
-          onTap: () => setState(() => _selectedDifficulty = SudokuDifficulty.hard),
+          onTap: () =>
+              setState(() => _selectedDifficulty = SudokuDifficulty.hard),
         ),
         const SizedBox(height: 12),
         SudokuDifficultyCard(
@@ -505,7 +481,8 @@ class _SudokuOnlineMatchmakingScreenState
           icon: Icons.sentiment_very_dissatisfied,
           color: const Color(0xFFef4444),
           isSelected: _selectedDifficulty == SudokuDifficulty.expert,
-          onTap: () => setState(() => _selectedDifficulty = SudokuDifficulty.expert),
+          onTap: () =>
+              setState(() => _selectedDifficulty = SudokuDifficulty.expert),
         ),
         const SizedBox(height: 32),
         Padding(
@@ -536,10 +513,7 @@ class _SudokuOnlineMatchmakingScreenState
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             'You will be matched with another player of similar skill level.',
-            style: TextStyle(
-              color: Color(0x99FFFFFF),
-              fontSize: 12,
-            ),
+            style: TextStyle(color: Color(0x99FFFFFF), fontSize: 12),
             textAlign: TextAlign.center,
           ),
         ),

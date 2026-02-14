@@ -33,37 +33,36 @@ void main() {
   // Mock audioplayers platform channels
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(
-    const MethodChannel('xyz.luan/audioplayers.global'),
-    (MethodCall methodCall) async {
-      // Mock responses for audioplayers global channel
-      if (methodCall.method == 'init') {
-        return null;
-      }
-      return null;
-    },
-  );
+        const MethodChannel('xyz.luan/audioplayers.global'),
+        (MethodCall methodCall) async {
+          // Mock responses for audioplayers global channel
+          if (methodCall.method == 'init') {
+            return null;
+          }
+          return null;
+        },
+      );
 
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(
-    const MethodChannel('xyz.luan/audioplayers'),
-    (MethodCall methodCall) async {
-      // Mock responses for audioplayers instance channel
-      return null;
-    },
-  );
+      .setMockMethodCallHandler(const MethodChannel('xyz.luan/audioplayers'), (
+        MethodCall methodCall,
+      ) async {
+        // Mock responses for audioplayers instance channel
+        return null;
+      });
 
   tearDownAll(() {
     // Clean up mock handlers
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('xyz.luan/audioplayers.global'),
-      null,
-    );
+          const MethodChannel('xyz.luan/audioplayers.global'),
+          null,
+        );
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('xyz.luan/audioplayers'),
-      null,
-    );
+          const MethodChannel('xyz.luan/audioplayers'),
+          null,
+        );
   });
 
   group('SudokuSoundService', () {
@@ -99,10 +98,7 @@ void main() {
         await service.initialize();
 
         // Should complete without throwing
-        await expectLater(
-          service.playSelectCell(),
-          completes,
-        );
+        await expectLater(service.playSelectCell(), completes);
       });
 
       test('should not play sound when sound disabled', () async {
@@ -110,10 +106,7 @@ void main() {
         await service.initialize();
 
         // Should complete quickly without playing
-        await expectLater(
-          service.playSelectCell(),
-          completes,
-        );
+        await expectLater(service.playSelectCell(), completes);
       });
 
       test('should not play sound when not initialized', () async {
@@ -121,10 +114,7 @@ void main() {
         // Don't initialize
 
         // Should complete without throwing
-        await expectLater(
-          service.playSelectCell(),
-          completes,
-        );
+        await expectLater(service.playSelectCell(), completes);
       });
     });
 
@@ -133,20 +123,14 @@ void main() {
         fakeSettings.setSoundEnabled(true);
         await service.initialize();
 
-        await expectLater(
-          service.playNumberEntry(),
-          completes,
-        );
+        await expectLater(service.playNumberEntry(), completes);
       });
 
       test('should not play when sound disabled', () async {
         fakeSettings.setSoundEnabled(false);
         await service.initialize();
 
-        await expectLater(
-          service.playNumberEntry(),
-          completes,
-        );
+        await expectLater(service.playNumberEntry(), completes);
       });
     });
 
@@ -155,20 +139,14 @@ void main() {
         fakeSettings.setSoundEnabled(true);
         await service.initialize();
 
-        await expectLater(
-          service.playError(),
-          completes,
-        );
+        await expectLater(service.playError(), completes);
       });
 
       test('should not play when sound disabled', () async {
         fakeSettings.setSoundEnabled(false);
         await service.initialize();
 
-        await expectLater(
-          service.playError(),
-          completes,
-        );
+        await expectLater(service.playError(), completes);
       });
     });
 
@@ -177,20 +155,14 @@ void main() {
         fakeSettings.setSoundEnabled(true);
         await service.initialize();
 
-        await expectLater(
-          service.playHint(),
-          completes,
-        );
+        await expectLater(service.playHint(), completes);
       });
 
       test('should not play when sound disabled', () async {
         fakeSettings.setSoundEnabled(false);
         await service.initialize();
 
-        await expectLater(
-          service.playHint(),
-          completes,
-        );
+        await expectLater(service.playHint(), completes);
       });
     });
 
@@ -199,20 +171,14 @@ void main() {
         fakeSettings.setSoundEnabled(true);
         await service.initialize();
 
-        await expectLater(
-          service.playVictory(),
-          completes,
-        );
+        await expectLater(service.playVictory(), completes);
       });
 
       test('should not play when sound disabled', () async {
         fakeSettings.setSoundEnabled(false);
         await service.initialize();
 
-        await expectLater(
-          service.playVictory(),
-          completes,
-        );
+        await expectLater(service.playVictory(), completes);
       });
 
       test('should play multiple sounds in sequence', () async {
@@ -233,20 +199,14 @@ void main() {
         fakeSettings.setSoundEnabled(true);
         await service.initialize();
 
-        await expectLater(
-          service.playUndo(),
-          completes,
-        );
+        await expectLater(service.playUndo(), completes);
       });
 
       test('should not play when sound disabled', () async {
         fakeSettings.setSoundEnabled(false);
         await service.initialize();
 
-        await expectLater(
-          service.playUndo(),
-          completes,
-        );
+        await expectLater(service.playUndo(), completes);
       });
     });
 
@@ -255,20 +215,14 @@ void main() {
         fakeSettings.setSoundEnabled(true);
         await service.initialize();
 
-        await expectLater(
-          service.playErase(),
-          completes,
-        );
+        await expectLater(service.playErase(), completes);
       });
 
       test('should not play when sound disabled', () async {
         fakeSettings.setSoundEnabled(false);
         await service.initialize();
 
-        await expectLater(
-          service.playErase(),
-          completes,
-        );
+        await expectLater(service.playErase(), completes);
       });
     });
 
@@ -277,20 +231,14 @@ void main() {
         fakeSettings.setSoundEnabled(true);
         await service.initialize();
 
-        await expectLater(
-          service.playNotesToggle(),
-          completes,
-        );
+        await expectLater(service.playNotesToggle(), completes);
       });
 
       test('should not play when sound disabled', () async {
         fakeSettings.setSoundEnabled(false);
         await service.initialize();
 
-        await expectLater(
-          service.playNotesToggle(),
-          completes,
-        );
+        await expectLater(service.playNotesToggle(), completes);
       });
     });
 
@@ -300,20 +248,14 @@ void main() {
         final testService = SudokuSoundService(settings: fakeSettings);
         await testService.initialize();
 
-        await expectLater(
-          testService.dispose(),
-          completes,
-        );
+        await expectLater(testService.dispose(), completes);
       });
 
       test('should dispose even if not initialized', () async {
         // Create a separate service instance to avoid double dispose
         final testService = SudokuSoundService(settings: fakeSettings);
         // Don't initialize
-        await expectLater(
-          testService.dispose(),
-          completes,
-        );
+        await expectLater(testService.dispose(), completes);
       });
     });
 

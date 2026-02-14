@@ -18,6 +18,7 @@ import 'package:multigame/utils/secure_logger.dart';
 /// - Warning: Alerts, important notifications
 class HapticFeedbackService {
   static const String _storageKey = 'app_haptics_enabled';
+  static const String _hapticFailed = 'Haptic feedback failed';
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
 
   bool? _hasVibrator;
@@ -59,10 +60,7 @@ class HapticFeedbackService {
   Future<void> setEnabled(bool enabled) async {
     _hapticsEnabled = enabled;
     try {
-      await _storage.write(
-        key: _storageKey,
-        value: enabled.toString(),
-      );
+      await _storage.write(key: _storageKey, value: enabled.toString());
     } catch (e) {
       SecureLogger.error(
         'Failed to save haptic preference',
@@ -83,7 +81,7 @@ class HapticFeedbackService {
     try {
       await Vibration.vibrate(duration: 10);
     } catch (e) {
-      SecureLogger.error('Haptic feedback failed', error: e, tag: 'Haptics');
+      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
     }
   }
 
@@ -94,7 +92,7 @@ class HapticFeedbackService {
     try {
       await Vibration.vibrate(duration: 20);
     } catch (e) {
-      SecureLogger.error('Haptic feedback failed', error: e, tag: 'Haptics');
+      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
     }
   }
 
@@ -105,7 +103,7 @@ class HapticFeedbackService {
     try {
       await Vibration.vibrate(duration: 40);
     } catch (e) {
-      SecureLogger.error('Haptic feedback failed', error: e, tag: 'Haptics');
+      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
     }
   }
 
@@ -116,7 +114,7 @@ class HapticFeedbackService {
     try {
       await Vibration.vibrate(pattern: [0, 15, 50, 15]);
     } catch (e) {
-      SecureLogger.error('Haptic feedback failed', error: e, tag: 'Haptics');
+      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
     }
   }
 
@@ -132,7 +130,7 @@ class HapticFeedbackService {
     try {
       await Vibration.vibrate(pattern: [0, 30, 100, 40, 100, 50]);
     } catch (e) {
-      SecureLogger.error('Haptic feedback failed', error: e, tag: 'Haptics');
+      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
     }
   }
 
@@ -144,7 +142,7 @@ class HapticFeedbackService {
     try {
       await Vibration.vibrate(pattern: [0, 50, 50, 50, 50, 50]);
     } catch (e) {
-      SecureLogger.error('Haptic feedback failed', error: e, tag: 'Haptics');
+      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
     }
   }
 
@@ -156,7 +154,7 @@ class HapticFeedbackService {
     try {
       await Vibration.vibrate(pattern: [0, 40, 80, 40]);
     } catch (e) {
-      SecureLogger.error('Haptic feedback failed', error: e, tag: 'Haptics');
+      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
     }
   }
 
@@ -168,7 +166,7 @@ class HapticFeedbackService {
     try {
       await Vibration.vibrate(duration: 30);
     } catch (e) {
-      SecureLogger.error('Haptic feedback failed', error: e, tag: 'Haptics');
+      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
     }
   }
 
@@ -179,7 +177,7 @@ class HapticFeedbackService {
     try {
       await Vibration.vibrate(duration: 5);
     } catch (e) {
-      SecureLogger.error('Haptic feedback failed', error: e, tag: 'Haptics');
+      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
     }
   }
 
@@ -191,7 +189,7 @@ class HapticFeedbackService {
     try {
       await Vibration.vibrate(duration: 50);
     } catch (e) {
-      SecureLogger.error('Haptic feedback failed', error: e, tag: 'Haptics');
+      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
     }
   }
 
@@ -206,7 +204,7 @@ class HapticFeedbackService {
     try {
       await Vibration.vibrate(duration: 25);
     } catch (e) {
-      SecureLogger.error('Haptic feedback failed', error: e, tag: 'Haptics');
+      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
     }
   }
 
@@ -218,7 +216,7 @@ class HapticFeedbackService {
     try {
       await Vibration.vibrate(pattern: [0, 30, 50, 40, 50, 50, 50, 60]);
     } catch (e) {
-      SecureLogger.error('Haptic feedback failed', error: e, tag: 'Haptics');
+      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
     }
   }
 
@@ -230,7 +228,7 @@ class HapticFeedbackService {
     try {
       await Vibration.vibrate(pattern: pattern);
     } catch (e) {
-      SecureLogger.error('Haptic feedback failed', error: e, tag: 'Haptics');
+      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
     }
   }
 

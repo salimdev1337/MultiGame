@@ -52,15 +52,21 @@ class SudokuUINotifier extends AutoDisposeNotifier<SudokuUIState> {
   SudokuUIState build() => const SudokuUIState();
 
   void setLoading(bool v) {
-    if (state.isLoading != v) { state = state.copyWith(isLoading: v); }
+    if (state.isLoading != v) {
+      state = state.copyWith(isLoading: v);
+    }
   }
 
   void setGenerating(bool v) {
-    if (state.isGenerating != v) { state = state.copyWith(isGenerating: v); }
+    if (state.isGenerating != v) {
+      state = state.copyWith(isGenerating: v);
+    }
   }
 
   void setShowSettings(bool v) {
-    if (state.showSettings != v) { state = state.copyWith(showSettings: v); }
+    if (state.showSettings != v) {
+      state = state.copyWith(showSettings: v);
+    }
   }
 
   void setShowVictoryDialog(bool v) {
@@ -70,15 +76,15 @@ class SudokuUINotifier extends AutoDisposeNotifier<SudokuUIState> {
   }
 
   void setShowHintDialog(bool v) {
-    if (state.showHintDialog != v) { state = state.copyWith(showHintDialog: v); }
+    if (state.showHintDialog != v) {
+      state = state.copyWith(showHintDialog: v);
+    }
   }
 
   void triggerCellAnimation(int row, int col) {
-    state = state.copyWith(
-        cellAnimating: true, animatingCell: '${row}_$col');
+    state = state.copyWith(cellAnimating: true, animatingCell: '${row}_$col');
     Future.delayed(const Duration(milliseconds: 200), () {
-      state = state.copyWith(
-          cellAnimating: false, clearAnimatingCell: true);
+      state = state.copyWith(cellAnimating: false, clearAnimatingCell: true);
     });
   }
 
@@ -94,4 +100,5 @@ class SudokuUINotifier extends AutoDisposeNotifier<SudokuUIState> {
 
 final sudokuUIProvider =
     NotifierProvider.autoDispose<SudokuUINotifier, SudokuUIState>(
-        SudokuUINotifier.new);
+      SudokuUINotifier.new,
+    );

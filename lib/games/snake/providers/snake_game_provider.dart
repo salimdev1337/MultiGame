@@ -50,9 +50,8 @@ class SnakeGameProvider extends ChangeNotifier with GameStatsMixin {
     }
   }
 
-  SnakeGameProvider({
-    required FirebaseStatsService statsService,
-  }) : _statsService = statsService;
+  SnakeGameProvider({required FirebaseStatsService statsService})
+    : _statsService = statsService;
 
   void startGame() {
     _timer?.cancel();

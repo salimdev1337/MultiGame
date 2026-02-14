@@ -13,10 +13,7 @@ import 'package:multigame/widgets/shared/ds_button.dart';
 class PremiumGameCarousel extends StatefulWidget {
   final Function(GameModel) onGameSelected;
 
-  const PremiumGameCarousel({
-    super.key,
-    required this.onGameSelected,
-  });
+  const PremiumGameCarousel({super.key, required this.onGameSelected});
 
   @override
   State<PremiumGameCarousel> createState() => _PremiumGameCarouselState();
@@ -38,19 +35,20 @@ class _PremiumGameCarouselState extends State<PremiumGameCarousel> {
             final isCurrent = index == _currentIndex;
 
             return AnimatedPremiumGameCard(
-              game: game,
-              isCurrent: isCurrent,
-              onTap: () => _handleGameTap(game),
-            ).animate(
-              delay: Duration(milliseconds: 100 * index),
-            ).fadeIn(
-              duration: DSAnimations.normal,
-              curve: DSAnimations.easeOut,
-            ).slideY(
-              begin: 0.2,
-              duration: DSAnimations.normal,
-              curve: DSAnimations.easeOutCubic,
-            );
+                  game: game,
+                  isCurrent: isCurrent,
+                  onTap: () => _handleGameTap(game),
+                )
+                .animate(delay: Duration(milliseconds: 100 * index))
+                .fadeIn(
+                  duration: DSAnimations.normal,
+                  curve: DSAnimations.easeOut,
+                )
+                .slideY(
+                  begin: 0.2,
+                  duration: DSAnimations.normal,
+                  curve: DSAnimations.easeOutCubic,
+                );
           },
           options: CarouselOptions(
             height: 320,
@@ -88,12 +86,10 @@ class _PremiumGameCarouselState extends State<PremiumGameCarousel> {
           margin: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
             borderRadius: DSSpacing.borderRadiusFull,
-            gradient: isCurrent
-              ? DSColors.gradientPrimary
-              : null,
+            gradient: isCurrent ? DSColors.gradientPrimary : null,
             color: isCurrent
-              ? null
-              : DSColors.withOpacity(DSColors.primary, 0.3),
+                ? null
+                : DSColors.withOpacity(DSColors.primary, 0.3),
             boxShadow: isCurrent ? DSShadows.shadowPrimary : null,
           ),
         );
@@ -114,91 +110,98 @@ class _PremiumGameCarouselState extends State<PremiumGameCarousel> {
       context: context,
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 400),
-          decoration: BoxDecoration(
-            color: DSColors.surface,
-            borderRadius: DSSpacing.borderRadiusXL,
-            border: Border.all(
-              color: DSColors.withOpacity(DSColors.warning, 0.3),
-              width: 2,
-            ),
-            boxShadow: DSShadows.shadowXl,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Container(
-                padding: DSSpacing.paddingLG,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      DSColors.withOpacity(DSColors.warning, 0.2),
-                      Colors.transparent,
+        child:
+            Container(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  decoration: BoxDecoration(
+                    color: DSColors.surface,
+                    borderRadius: DSSpacing.borderRadiusXL,
+                    border: Border.all(
+                      color: DSColors.withOpacity(DSColors.warning, 0.3),
+                      width: 2,
+                    ),
+                    boxShadow: DSShadows.shadowXl,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Header
+                      Container(
+                        padding: DSSpacing.paddingLG,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              DSColors.withOpacity(DSColors.warning, 0.2),
+                              Colors.transparent,
+                            ],
+                          ),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(DSSpacing.radiusXL),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: DSSpacing.paddingXS,
+                              decoration: BoxDecoration(
+                                color: DSColors.withOpacity(
+                                  DSColors.warning,
+                                  0.2,
+                                ),
+                                borderRadius: DSSpacing.borderRadiusMD,
+                              ),
+                              child: const Icon(
+                                Icons.lock_rounded,
+                                color: DSColors.warning,
+                                size: 32,
+                              ),
+                            ),
+                            DSSpacing.gapHorizontalMD,
+                            Expanded(
+                              child: Text(
+                                'Coming Soon!',
+                                style: DSTypography.titleLarge,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Content
+                      Padding(
+                        padding: DSSpacing.paddingLG,
+                        child: Text(
+                          '${game.name} is not available yet. Stay tuned for updates!',
+                          style: DSTypography.bodyMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+
+                      // Close button
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          DSSpacing.lg,
+                          0,
+                          DSSpacing.lg,
+                          DSSpacing.lg,
+                        ),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: DSButton.primary(
+                            text: 'Got It',
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(DSSpacing.radiusXL),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: DSSpacing.paddingXS,
-                      decoration: BoxDecoration(
-                        color: DSColors.withOpacity(DSColors.warning, 0.2),
-                        borderRadius: DSSpacing.borderRadiusMD,
-                      ),
-                      child: const Icon(
-                        Icons.lock_rounded,
-                        color: DSColors.warning,
-                        size: 32,
-                      ),
-                    ),
-                    DSSpacing.gapHorizontalMD,
-                    Expanded(
-                      child: Text(
-                        'Coming Soon!',
-                        style: DSTypography.titleLarge,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Content
-              Padding(
-                padding: DSSpacing.paddingLG,
-                child: Text(
-                  '${game.name} is not available yet. Stay tuned for updates!',
-                  style: DSTypography.bodyMedium,
-                  textAlign: TextAlign.center,
-                ),
-              ),
-
-              // Close button
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  DSSpacing.lg,
-                  0,
-                  DSSpacing.lg,
-                  DSSpacing.lg,
-                ),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: DSButton.primary(
-                    text: 'Got It',
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ).animate().scale(
-          duration: DSAnimations.normal,
-          curve: DSAnimations.easeOutCubic,
-        ).fadeIn(),
+                )
+                .animate()
+                .scale(
+                  duration: DSAnimations.normal,
+                  curve: DSAnimations.easeOutCubic,
+                )
+                .fadeIn(),
       ),
     );
   }
@@ -231,10 +234,7 @@ class _AnimatedPremiumGameCardState extends State<AnimatedPremiumGameCard>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: DSAnimations.fast,
-    );
+    _controller = AnimationController(vsync: this, duration: DSAnimations.fast);
   }
 
   @override
@@ -321,9 +321,7 @@ class _AnimatedPremiumGameCardState extends State<AnimatedPremiumGameCard>
               child: Stack(
                 children: [
                   // Background image
-                  Positioned.fill(
-                    child: _buildBackground(),
-                  ),
+                  Positioned.fill(child: _buildBackground()),
 
                   // Gradient overlay
                   Positioned.fill(

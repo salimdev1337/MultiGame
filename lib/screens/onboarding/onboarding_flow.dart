@@ -28,7 +28,8 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   }
 
   Future<void> _checkOnboardingStatus() async {
-    final hasCompleted = await widget.onboardingService.hasCompletedOnboarding();
+    final hasCompleted = await widget.onboardingService
+        .hasCompletedOnboarding();
     setState(() {
       _currentStep = hasCompleted
           ? OnboardingStep.completed
@@ -54,21 +55,13 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     switch (_currentStep) {
       case OnboardingStep.checking:
         // Show loading while checking status
-        return const Scaffold(
-          body: Center(
-            child: CircularProgressIndicator(),
-          ),
-        );
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
       case OnboardingStep.splash:
-        return WelcomeSplashScreen(
-          onComplete: _onSplashComplete,
-        );
+        return WelcomeSplashScreen(onComplete: _onSplashComplete);
 
       case OnboardingStep.tutorial:
-        return OnboardingTutorialScreen(
-          onComplete: _onTutorialComplete,
-        );
+        return OnboardingTutorialScreen(onComplete: _onTutorialComplete);
 
       case OnboardingStep.completed:
         return widget.child;
@@ -77,9 +70,4 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
 }
 
 /// Onboarding flow steps
-enum OnboardingStep {
-  checking,
-  splash,
-  tutorial,
-  completed,
-}
+enum OnboardingStep { checking, splash, tutorial, completed }

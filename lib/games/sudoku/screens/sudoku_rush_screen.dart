@@ -20,10 +20,7 @@ const _warningOrange = Color(0xFFfb923c);
 class SudokuRushScreen extends ConsumerStatefulWidget {
   final SudokuDifficulty difficulty;
 
-  const SudokuRushScreen({
-    super.key,
-    required this.difficulty,
-  });
+  const SudokuRushScreen({super.key, required this.difficulty});
 
   @override
   ConsumerState<SudokuRushScreen> createState() => _SudokuRushScreenState();
@@ -72,27 +69,49 @@ class _SudokuRushScreenState extends ConsumerState<SudokuRushScreen>
         backgroundColor: _surfaceDark,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.1), width: 1),
+          side: BorderSide(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 1,
+          ),
         ),
         title: const Text(
           'Quit game?',
-          style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         content: Text(
           'The timer keeps running. Your progress will be lost.',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 15),
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.6),
+            fontSize: 15,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('RESUME', style: TextStyle(color: _primaryCyan, fontWeight: FontWeight.w700)),
+            child: Text(
+              'RESUME',
+              style: TextStyle(
+                color: _primaryCyan,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
               Navigator.pop(context);
             },
-            child: Text('QUIT', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontWeight: FontWeight.w600)),
+            child: Text(
+              'QUIT',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -120,12 +139,12 @@ class _SudokuRushScreenState extends ConsumerState<SudokuRushScreen>
       ),
     );
     final uiState = ref.watch(sudokuUIProvider);
-    final notifier = ref.read(sudokuRushProvider.notifier);
 
     // Manage timer pulse based on remaining time
     ref.listen<SudokuRushState>(sudokuRushProvider, (prev, next) {
       final wasAbove30 = prev == null || prev.remainingSeconds > 30;
-      final isBelow30 = next.remainingSeconds <= 30 && next.remainingSeconds > 0;
+      final isBelow30 =
+          next.remainingSeconds <= 30 && next.remainingSeconds > 0;
 
       if (isBelow30 && wasAbove30) {
         _timerPulseController.repeat(reverse: true);
@@ -162,98 +181,109 @@ class _SudokuRushScreenState extends ConsumerState<SudokuRushScreen>
               }
 
               return LayoutBuilder(
-                builder: (context, constraints) {
-                  final isVeryCompact = constraints.maxHeight < 600;
-                  final isCompact = constraints.maxHeight < 700;
-
-                  final headerHeight = isVeryCompact ? 36.0 : 44.0;
-                  final statsHeight =
-                      isVeryCompact ? 78.0 : (isCompact ? 88.0 : 100.0);
-                  final controlButtonsHeight =
-                      isVeryCompact ? 68.0 : (isCompact ? 78.0 : 90.0);
-                  final numberPadHeight =
-                      isVeryCompact ? 46.0 : (isCompact ? 52.0 : 60.0);
-                  final spacing =
-                      isVeryCompact ? 14.0 : (isCompact ? 22.0 : 32.0);
-
-                  final remainingHeight = constraints.maxHeight -
-                      headerHeight -
-                      statsHeight -
-                      controlButtonsHeight -
-                      numberPadHeight -
-                      spacing;
-
-                  final useCompactMode = isCompact;
-
-                  final maxWidth = constraints.maxWidth - 32;
-                  final minGrid = isVeryCompact ? 220.0 : 250.0;
-                  final gridSize =
-                      (maxWidth < remainingHeight ? maxWidth : remainingHeight)
-                          .clamp(minGrid, 600.0);
-
-                  return Stack(
-                    children: [
-                      Column(
-                        children: [
-                          _buildHeader(context),
-                          _RushStatsPanel(timerPulseScale: _timerPulseScale),
-                          const SizedBox(height: 8),
-                          Expanded(
-                            child: Center(
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 16),
-                                child: SizedBox(
-                                  width: gridSize,
-                                  height: gridSize,
-                                  child: SudokuGrid(
-                                    board: notifier.currentBoard!,
-                                    selectedRow: state.selectedRow,
-                                    selectedCol: state.selectedCol,
-                                    selectedCellValue:
-                                        state.selectedRow != null &&
-                                                state.selectedCol != null
-                                            ? notifier.currentBoard!
-                                                .getCell(
-                                                  state.selectedRow!,
-                                                  state.selectedCol!,
-                                                )
-                                                .value
-                                            : null,
-                                    onCellTap: notifier.selectCell,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          ControlButtons(
-                            notesMode: state.notesMode,
-                            canUndo: notifier.canUndo,
-                            canErase: notifier.canErase,
-                            hintsRemaining: state.hintsRemaining,
-                            onUndo: notifier.undo,
-                            onErase: notifier.eraseCell,
-                            onToggleNotes: notifier.toggleNotesMode,
-                            onHint: notifier.useHint,
-                          ),
-                          NumberPad(
-                            board: notifier.currentBoard!,
-                            onNumberTap: notifier.placeNumber,
-                            useCompactMode: useCompactMode,
-                          ),
-                          SizedBox(height: useCompactMode ? 8 : 12),
-                        ],
-                      ),
-                      if (state.showPenalty) _buildPenaltyOverlay(),
-                    ],
-                  );
-                },
+                builder: (context, constraints) => _buildLayout(
+                  context,
+                  constraints,
+                  selectedRow: state.selectedRow,
+                  selectedCol: state.selectedCol,
+                  notesMode: state.notesMode,
+                  hintsRemaining: state.hintsRemaining,
+                  showPenalty: state.showPenalty,
+                ),
               );
             },
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildLayout(
+    BuildContext context,
+    BoxConstraints constraints, {
+    required int? selectedRow,
+    required int? selectedCol,
+    required bool notesMode,
+    required int hintsRemaining,
+    required bool showPenalty,
+  }) {
+    final notifier = ref.read(sudokuRushProvider.notifier);
+    final isVeryCompact = constraints.maxHeight < 600;
+    final isCompact = constraints.maxHeight < 700;
+
+    final headerHeight = isVeryCompact ? 36.0 : 44.0;
+    final statsHeight = isVeryCompact ? 78.0 : (isCompact ? 88.0 : 100.0);
+    final controlButtonsHeight = isVeryCompact
+        ? 68.0
+        : (isCompact ? 78.0 : 90.0);
+    final numberPadHeight = isVeryCompact ? 46.0 : (isCompact ? 52.0 : 60.0);
+    final spacing = isVeryCompact ? 14.0 : (isCompact ? 22.0 : 32.0);
+
+    final remainingHeight =
+        constraints.maxHeight -
+        headerHeight -
+        statsHeight -
+        controlButtonsHeight -
+        numberPadHeight -
+        spacing;
+
+    final useCompactMode = isCompact;
+    final maxWidth = constraints.maxWidth - 32;
+    final minGrid = isVeryCompact ? 220.0 : 250.0;
+    final gridSize = (maxWidth < remainingHeight ? maxWidth : remainingHeight)
+        .clamp(minGrid, 600.0);
+
+    return Stack(
+      children: [
+        Column(
+          children: [
+            _buildHeader(context),
+            _RushStatsPanel(timerPulseScale: _timerPulseScale),
+            const SizedBox(height: 8),
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SizedBox(
+                    width: gridSize,
+                    height: gridSize,
+                    child: SudokuGrid(
+                      board: notifier.currentBoard!,
+                      selectedRow: selectedRow,
+                      selectedCol: selectedCol,
+                      selectedCellValue:
+                          selectedRow != null && selectedCol != null
+                          ? notifier.currentBoard!
+                                .getCell(selectedRow, selectedCol)
+                                .value
+                          : null,
+                      onCellTap: notifier.selectCell,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            ControlButtons(
+              notesMode: notesMode,
+              canUndo: notifier.canUndo,
+              canErase: notifier.canErase,
+              hintsRemaining: hintsRemaining,
+              onUndo: notifier.undo,
+              onErase: notifier.eraseCell,
+              onToggleNotes: notifier.toggleNotesMode,
+              onHint: notifier.useHint,
+            ),
+            NumberPad(
+              board: notifier.currentBoard!,
+              onNumberTap: notifier.placeNumber,
+              useCompactMode: useCompactMode,
+            ),
+            SizedBox(height: useCompactMode ? 8 : 12),
+          ],
+        ),
+        if (showPenalty) _buildPenaltyOverlay(),
+      ],
     );
   }
 
@@ -320,7 +350,11 @@ class _SudokuRushScreenState extends ConsumerState<SudokuRushScreen>
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.warning_amber_rounded, color: _dangerRed, size: 32),
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: _dangerRed,
+                    size: 32,
+                  ),
                   SizedBox(width: 12),
                   Text(
                     '-10 SECONDS',
@@ -374,7 +408,10 @@ class _SudokuRushScreenState extends ConsumerState<SudokuRushScreen>
         title: 'Victory!',
         subtitle: Text(
           'You beat the clock!',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.5),
+            fontSize: 14,
+          ),
         ),
         icon: Container(
           width: 80,
@@ -386,14 +423,24 @@ class _SudokuRushScreenState extends ConsumerState<SudokuRushScreen>
               end: Alignment.bottomRight,
             ),
             shape: BoxShape.circle,
-            boxShadow: [BoxShadow(color: Color(0x7Ffb923c), blurRadius: 24, spreadRadius: 4)],
+            boxShadow: [
+              BoxShadow(
+                color: Color(0x7Ffb923c),
+                blurRadius: 24,
+                spreadRadius: 4,
+              ),
+            ],
           ),
           child: const Icon(Icons.emoji_events, color: Colors.white, size: 40),
         ),
         accentColor: _primaryCyan,
         accentGradient: const [Color(0xFFfb923c), Color(0xFFef4444)],
         stats: [
-          GameResultStat('Time Remaining', state.formattedTime, isHighlighted: true),
+          GameResultStat(
+            'Time Remaining',
+            state.formattedTime,
+            isHighlighted: true,
+          ),
           GameResultStat('Mistakes', '${state.mistakes}'),
           GameResultStat('Penalties', '${state.penaltiesApplied}'),
           GameResultStat('Hints Used', '${state.hintsUsed}'),
@@ -435,7 +482,10 @@ class _SudokuRushScreenState extends ConsumerState<SudokuRushScreen>
         title: "Time's Up!",
         subtitle: Text(
           'Better luck next time.',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.5),
+            fontSize: 14,
+          ),
         ),
         icon: Container(
           width: 80,
@@ -447,7 +497,13 @@ class _SudokuRushScreenState extends ConsumerState<SudokuRushScreen>
               end: Alignment.bottomRight,
             ),
             shape: BoxShape.circle,
-            boxShadow: [BoxShadow(color: Color(0x7Fef4444), blurRadius: 24, spreadRadius: 4)],
+            boxShadow: [
+              BoxShadow(
+                color: Color(0x7Fef4444),
+                blurRadius: 24,
+                spreadRadius: 4,
+              ),
+            ],
           ),
           child: const Icon(Icons.timer_off, color: Colors.white, size: 40),
         ),
@@ -455,7 +511,11 @@ class _SudokuRushScreenState extends ConsumerState<SudokuRushScreen>
         accentGradient: const [Color(0xFFef4444), Color(0xFF7f1d1d)],
         stats: [
           GameResultStat('Mistakes', '${state.mistakes}'),
-          GameResultStat('Penalties', '${state.penaltiesApplied}', isHighlighted: true),
+          GameResultStat(
+            'Penalties',
+            '${state.penaltiesApplied}',
+            isHighlighted: true,
+          ),
           GameResultStat('Hints Used', '${state.hintsUsed}'),
         ],
         primary: GameResultAction(
@@ -492,9 +552,9 @@ class _DifficultyBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (difficulty) {
-      SudokuDifficulty.easy   => ('EASY',   const Color(0xFF22c55e)),
+      SudokuDifficulty.easy => ('EASY', const Color(0xFF22c55e)),
       SudokuDifficulty.medium => ('MEDIUM', const Color(0xFFf59e0b)),
-      SudokuDifficulty.hard   => ('HARD',   const Color(0xFFef4444)),
+      SudokuDifficulty.hard => ('HARD', const Color(0xFFef4444)),
       SudokuDifficulty.expert => ('EXPERT', const Color(0xFF8b5cf6)),
     };
 
@@ -517,7 +577,6 @@ class _DifficultyBadge extends StatelessWidget {
     );
   }
 }
-
 
 // ─── Rush stats panel ─────────────────────────────────────────────────────────
 // Isolated ConsumerWidget so the countdown every second only rebuilds this
@@ -578,7 +637,12 @@ class _RushStatsPanel extends ConsumerWidget {
                     fontWeight: FontWeight.w700,
                     color: timerColor,
                     shadows: stats.remainingSeconds <= 30
-                        ? [Shadow(color: timerColor.withValues(alpha: 0.5), blurRadius: 12)]
+                        ? [
+                            Shadow(
+                              color: timerColor.withValues(alpha: 0.5),
+                              blurRadius: 12,
+                            ),
+                          ]
                         : null,
                   ),
                 ),

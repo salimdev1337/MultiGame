@@ -8,12 +8,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:multigame/design_system/design_system.dart';
 
 /// Toast type enum
-enum DSToastType {
-  success,
-  error,
-  warning,
-  info,
-}
+enum DSToastType { success, error, warning, info }
 
 /// Toast notification widget
 ///
@@ -183,73 +178,73 @@ class DSToast extends StatelessWidget {
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: DSSpacing.md),
         padding: EdgeInsets.all(DSSpacing.sm),
-      decoration: BoxDecoration(
-        color: _backgroundColor,
-        borderRadius: DSSpacing.borderRadiusLG,
-        boxShadow: [
-          BoxShadow(
-            color: _backgroundColor.withValues(alpha: (0.4 * 255)),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Icon
-          Container(
-            padding: EdgeInsets.all(DSSpacing.xxs),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: (0.2 * 255)),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              _icon,
-              color: Colors.white,
-              size: DSSpacing.iconMedium,
-            ),
-          ),
-
-          DSSpacing.gapHorizontalMD,
-
-          // Message
-          Expanded(
-            child: Text(
-              message,
-              style: DSTypography.bodyMedium.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-
-          // Action button (optional)
-          if (actionLabel != null && onAction != null) ...[
-            DSSpacing.gapHorizontalSM,
-            TextButton(
-              onPressed: onAction,
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.white,
-                backgroundColor: Colors.white.withValues(alpha: (0.2 * 255)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: DSSpacing.borderRadiusMD,
-                ),
-                padding: EdgeInsets.symmetric(
-                  horizontal: DSSpacing.sm,
-                  vertical: DSSpacing.xs,
-                ),
-              ),
-              child: Text(
-                actionLabel!,
-                style: DSTypography.labelMedium.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+        decoration: BoxDecoration(
+          color: _backgroundColor,
+          borderRadius: DSSpacing.borderRadiusLG,
+          boxShadow: [
+            BoxShadow(
+              color: _backgroundColor.withValues(alpha: (0.4 * 255)),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
-        ],
-      ),
+        ),
+        child: Row(
+          children: [
+            // Icon
+            Container(
+              padding: EdgeInsets.all(DSSpacing.xxs),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: (0.2 * 255)),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _icon,
+                color: Colors.white,
+                size: DSSpacing.iconMedium,
+              ),
+            ),
+
+            DSSpacing.gapHorizontalMD,
+
+            // Message
+            Expanded(
+              child: Text(
+                message,
+                style: DSTypography.bodyMedium.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+
+            // Action button (optional)
+            if (actionLabel != null && onAction != null) ...[
+              DSSpacing.gapHorizontalSM,
+              TextButton(
+                onPressed: onAction,
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: Colors.white.withValues(alpha: (0.2 * 255)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: DSSpacing.borderRadiusMD,
+                  ),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: DSSpacing.sm,
+                    vertical: DSSpacing.xs,
+                  ),
+                ),
+                child: Text(
+                  actionLabel!,
+                  style: DSTypography.labelMedium.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -260,10 +255,7 @@ class _ToastOverlay extends StatefulWidget {
   final DSToast toast;
   final VoidCallback? onDismissComplete;
 
-  const _ToastOverlay({
-    required this.toast,
-    this.onDismissComplete,
-  });
+  const _ToastOverlay({required this.toast, this.onDismissComplete});
 
   @override
   State<_ToastOverlay> createState() => _ToastOverlayState();
@@ -285,21 +277,18 @@ class _ToastOverlayState extends State<_ToastOverlay>
     );
 
     // Slide in from top
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, -1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: DSAnimations.easeOutCubic,
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: DSAnimations.easeOutCubic,
+          ),
+        );
 
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     _controller.forward();
 
@@ -325,22 +314,23 @@ class _ToastOverlayState extends State<_ToastOverlay>
       top: MediaQuery.of(context).padding.top + DSSpacing.md,
       left: 0,
       right: 0,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: Material(
-            type: MaterialType.transparency,
-            child: widget.toast,
+      child:
+          SlideTransition(
+            position: _slideAnimation,
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Material(
+                type: MaterialType.transparency,
+                child: widget.toast,
+              ),
+            ),
+          ).animate().shake(
+            duration: widget.toast.type == DSToastType.error
+                ? 500.milliseconds
+                : 0.milliseconds,
+            hz: 5,
+            rotation: 0.03,
           ),
-        ),
-      ).animate().shake(
-        duration: widget.toast.type == DSToastType.error
-            ? 500.milliseconds
-            : 0.milliseconds,
-        hz: 5,
-        rotation: 0.03,
-      ),
     );
   }
 }

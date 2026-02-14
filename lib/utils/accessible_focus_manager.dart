@@ -188,9 +188,6 @@ class KeyboardFocusTraversalWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FocusScope(
-      node: focusScopeNode,
-      child: child,
-    );
+    return FocusScope(node: focusScopeNode, child: child);
   }
 }

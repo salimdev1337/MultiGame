@@ -14,8 +14,11 @@ class FriendStats {
   final int gamesPlayed;
   final double winRate;
 
-  static const FriendStats empty =
-      FriendStats(totalScore: 0, gamesPlayed: 0, winRate: 0);
+  static const FriendStats empty = FriendStats(
+    totalScore: 0,
+    gamesPlayed: 0,
+    winRate: 0,
+  );
 }
 
 class Friend {

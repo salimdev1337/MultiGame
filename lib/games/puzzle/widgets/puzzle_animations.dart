@@ -36,20 +36,21 @@ class _MagneticSnapAnimationState extends State<MagneticSnapAnimation>
       vsync: this,
     );
 
-    _scaleAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.05), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: 1.05, end: 1.0), weight: 1),
-    ]).animate(CurvedAnimation(
-      parent: _controller,
-      curve: DSAnimations.puzzleSnap.curve,
-    ));
+    _scaleAnimation =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.05), weight: 1),
+          TweenSequenceItem(tween: Tween(begin: 1.05, end: 1.0), weight: 1),
+        ]).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: DSAnimations.puzzleSnap.curve,
+          ),
+        );
 
-    _glowAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOut,
-      ),
-    );
+    _glowAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
@@ -83,18 +84,16 @@ class _MagneticSnapAnimationState extends State<MagneticSnapAnimation>
             boxShadow: _glowAnimation.value > 0
                 ? [
                     BoxShadow(
-                      color: DSColors.puzzlePrimary
-                          .withValues(alpha: _glowAnimation.value * 0.5),
+                      color: DSColors.puzzlePrimary.withValues(
+                        alpha: _glowAnimation.value * 0.5,
+                      ),
                       blurRadius: 15 * _glowAnimation.value,
                       spreadRadius: 5 * _glowAnimation.value,
                     ),
                   ]
                 : null,
           ),
-          child: Transform.scale(
-            scale: _scaleAnimation.value,
-            child: child,
-          ),
+          child: Transform.scale(scale: _scaleAnimation.value, child: child),
         );
       },
       child: widget.child,
@@ -121,7 +120,8 @@ class PuzzleCompletionCelebration extends StatefulWidget {
 }
 
 class _PuzzleCompletionCelebrationState
-    extends State<PuzzleCompletionCelebration> with TickerProviderStateMixin {
+    extends State<PuzzleCompletionCelebration>
+    with TickerProviderStateMixin {
   late AnimationController _revealController;
   late AnimationController _celebrationController;
   late Animation<double> _revealAnimation;
@@ -143,10 +143,7 @@ class _PuzzleCompletionCelebrationState
     );
 
     _revealAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _revealController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _revealController, curve: Curves.easeInOut),
     );
 
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
@@ -230,9 +227,7 @@ class _PuzzleCompletionCelebrationState
         Positioned.fill(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-            child: Container(
-              color: DSColors.scrimLight,
-            ),
+            child: Container(color: DSColors.scrimLight),
           ),
         ),
 
@@ -314,9 +309,7 @@ class _PuzzleCompletionCelebrationState
                   children: [
                     Text(
                       '🎉',
-                      style: TextStyle(
-                        fontSize: 64 * _scaleAnimation.value,
-                      ),
+                      style: TextStyle(fontSize: 64 * _scaleAnimation.value),
                     ),
                     SizedBox(height: DSSpacing.md),
                     Text(
@@ -426,17 +419,12 @@ class _ShuffleAnimationState extends State<ShuffleAnimation>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: widget.duration,
-      vsync: this,
-    );
+    _controller = AnimationController(duration: widget.duration, vsync: this);
 
-    _flipAnimation = Tween<double>(begin: 0.0, end: 2 * math.pi).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
-    );
+    _flipAnimation = Tween<double>(
+      begin: 0.0,
+      end: 2 * math.pi,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override

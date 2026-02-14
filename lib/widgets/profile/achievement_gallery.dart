@@ -28,10 +28,7 @@ class _AchievementGalleryState extends State<AchievementGallery>
   void initState() {
     super.initState();
     final categories = _getCategories();
-    _tabController = TabController(
-      length: categories.length,
-      vsync: this,
-    );
+    _tabController = TabController(length: categories.length, vsync: this);
 
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
@@ -59,7 +56,9 @@ class _AchievementGalleryState extends State<AchievementGallery>
 
     return widget.achievements.where((a) {
       if (_selectedCategory == 'Completion') {
-        return a.id.contains('win') || a.id.contains('fan') || a.id.contains('master');
+        return a.id.contains('win') ||
+            a.id.contains('fan') ||
+            a.id.contains('master');
       } else if (_selectedCategory == 'Efficiency') {
         return a.id.contains('efficient');
       } else if (_selectedCategory == 'Speed') {
@@ -205,24 +204,16 @@ class _AchievementCardState extends State<_AchievementCard>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: DSAnimations.slow,
-      vsync: this,
-    );
+    _controller = AnimationController(duration: DSAnimations.slow, vsync: this);
 
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: DSAnimations.elasticOut,
-      ),
+      CurvedAnimation(parent: _controller, curve: DSAnimations.elasticOut),
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOut,
-      ),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     Future.delayed(widget.delay, () {
       if (mounted) _controller.forward();
@@ -241,7 +232,7 @@ class _AchievementCardState extends State<_AchievementCard>
         widget.achievement.id.contains('demon')) {
       return DSColors.rarityLegendary;
     } else if (widget.achievement.id.contains('expert') ||
-               widget.achievement.id.contains('efficient')) {
+        widget.achievement.id.contains('efficient')) {
       return DSColors.rarityEpic;
     } else if (widget.achievement.id.contains('fan')) {
       return DSColors.rarityRare;
@@ -255,7 +246,7 @@ class _AchievementCardState extends State<_AchievementCard>
         widget.achievement.id.contains('demon')) {
       return 'Legendary';
     } else if (widget.achievement.id.contains('expert') ||
-               widget.achievement.id.contains('efficient')) {
+        widget.achievement.id.contains('efficient')) {
       return 'Epic';
     } else if (widget.achievement.id.contains('fan')) {
       return 'Rare';
@@ -273,10 +264,7 @@ class _AchievementCardState extends State<_AchievementCard>
       builder: (context, child) {
         return Transform.scale(
           scale: _scaleAnimation.value,
-          child: Opacity(
-            opacity: _fadeAnimation.value,
-            child: child,
-          ),
+          child: Opacity(opacity: _fadeAnimation.value, child: child),
         );
       },
       child: Material(
@@ -382,11 +370,7 @@ class _AchievementCardState extends State<_AchievementCard>
                 if (isUnlocked && widget.onShare != null) ...[
                   SizedBox(height: DSSpacing.xs),
                   IconButton(
-                    icon: Icon(
-                      Icons.share_rounded,
-                      size: 18,
-                      color: color,
-                    ),
+                    icon: Icon(Icons.share_rounded, size: 18, color: color),
                     onPressed: widget.onShare,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -431,18 +415,13 @@ class _AchievementDetailModalState extends State<AchievementDetailModal>
     );
 
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: DSAnimations.easeOutCubic,
-      ),
+      CurvedAnimation(parent: _controller, curve: DSAnimations.easeOutCubic),
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOut,
-      ),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     _controller.forward();
   }
@@ -459,7 +438,7 @@ class _AchievementDetailModalState extends State<AchievementDetailModal>
         widget.achievement.id.contains('demon')) {
       return DSColors.rarityLegendary;
     } else if (widget.achievement.id.contains('expert') ||
-               widget.achievement.id.contains('efficient')) {
+        widget.achievement.id.contains('efficient')) {
       return DSColors.rarityEpic;
     } else if (widget.achievement.id.contains('fan')) {
       return DSColors.rarityRare;
@@ -473,7 +452,7 @@ class _AchievementDetailModalState extends State<AchievementDetailModal>
         widget.achievement.id.contains('demon')) {
       return 'Legendary';
     } else if (widget.achievement.id.contains('expert') ||
-               widget.achievement.id.contains('efficient')) {
+        widget.achievement.id.contains('efficient')) {
       return 'Epic';
     } else if (widget.achievement.id.contains('fan')) {
       return 'Rare';
@@ -508,10 +487,7 @@ class _AchievementDetailModalState extends State<AchievementDetailModal>
             decoration: BoxDecoration(
               color: DSColors.surface,
               borderRadius: BorderRadius.circular(DSSpacing.lg),
-              border: Border.all(
-                color: color.withValues(alpha: 0.3),
-                width: 2,
-              ),
+              border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -604,9 +580,7 @@ class _AchievementDetailModalState extends State<AchievementDetailModal>
                         onPressed: widget.onShare,
                         icon: Icon(Icons.share_rounded, size: 18),
                         label: const Text('Share'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: color,
-                        ),
+                        style: TextButton.styleFrom(foregroundColor: color),
                       ),
                       SizedBox(width: DSSpacing.sm),
                     ],

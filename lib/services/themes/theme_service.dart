@@ -3,8 +3,7 @@ import 'package:multigame/repositories/secure_storage_repository.dart';
 
 /// Persists and retrieves user theme preferences.
 class ThemeService {
-  ThemeService({required SecureStorageRepository storage})
-      : _storage = storage;
+  ThemeService({required SecureStorageRepository storage}) : _storage = storage;
 
   final SecureStorageRepository _storage;
 

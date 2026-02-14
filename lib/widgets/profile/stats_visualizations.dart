@@ -34,12 +34,10 @@ class _PerformanceChartState extends State<PerformanceChart>
       vsync: this,
     );
 
-    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
-    );
+    _animation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     _controller.forward();
   }
@@ -59,10 +57,7 @@ class _PerformanceChartState extends State<PerformanceChart>
       decoration: BoxDecoration(
         color: DSColors.surface,
         borderRadius: BorderRadius.circular(DSSpacing.md),
-        border: Border.all(
-          color: color.withValues(alpha: 0.2),
-          width: 1,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -119,69 +114,61 @@ class LineChartPainter extends CustomPainter {
     final maxValue = dataPoints.reduce(math.max);
     final minValue = dataPoints.reduce(math.min);
     final range = maxValue - minValue;
-
-    final points = <Offset>[];
     final spacing = size.width / (dataPoints.length - 1);
 
-    // Calculate points
-    for (int i = 0; i < dataPoints.length; i++) {
-      final x = i * spacing;
-      final normalizedValue = range > 0 ? (dataPoints[i] - minValue) / range : 0.5;
-      final y = size.height - (normalizedValue * size.height * 0.8) - 20;
-      points.add(Offset(x, y));
-    }
+    final points = <Offset>[
+      for (int i = 0; i < dataPoints.length; i++)
+        Offset(
+          i * spacing,
+          size.height -
+              ((range > 0 ? (dataPoints[i] - minValue) / range : 0.5) *
+                  size.height *
+                  0.8) -
+              20,
+        ),
+    ];
 
-    // Draw grid lines
+    _drawGridLines(canvas, size);
+    _drawGradientFill(canvas, size, points);
+    _drawLine(canvas, points);
+    _drawDataPoints(canvas, points);
+    _drawLabels(canvas, size, points);
+  }
+
+  void _drawGridLines(Canvas canvas, Size size) {
     final gridPaint = Paint()
       ..color = DSColors.textTertiary.withValues(alpha: 0.1)
       ..strokeWidth = 1;
-
     for (int i = 0; i <= 4; i++) {
       final y = (size.height / 4) * i;
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(size.width, y),
-        gridPaint,
-      );
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
+  }
 
-    // Draw gradient fill
-    if (progress > 0) {
-      final path = Path();
-      path.moveTo(0, size.height);
-
-      for (int i = 0; i < points.length; i++) {
-        if (i / points.length <= progress) {
-          if (i == 0) {
-            path.lineTo(points[i].dx, points[i].dy);
-          } else {
-            path.lineTo(points[i].dx, points[i].dy);
-          }
-        }
+  void _drawGradientFill(Canvas canvas, Size size, List<Offset> points) {
+    if (progress <= 0) return;
+    final path = Path()..moveTo(0, size.height);
+    for (int i = 0; i < points.length; i++) {
+      if (i / points.length <= progress) {
+        path.lineTo(points[i].dx, points[i].dy);
       }
-
-      path.lineTo(size.width * progress, size.height);
-      path.close();
-
-      final gradientPaint = Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            color.withValues(alpha: 0.3),
-            color.withValues(alpha: 0.05),
-          ],
-        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-
-      canvas.drawPath(path, gradientPaint);
     }
+    path.lineTo(size.width * progress, size.height);
+    path.close();
+    final gradientPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [color.withValues(alpha: 0.3), color.withValues(alpha: 0.05)],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    canvas.drawPath(path, gradientPaint);
+  }
 
-    // Draw line
+  void _drawLine(Canvas canvas, List<Offset> points) {
     final linePaint = Paint()
       ..color = color
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
-
     final linePath = Path();
     for (int i = 0; i < points.length; i++) {
       if (i / points.length <= progress) {
@@ -192,41 +179,32 @@ class LineChartPainter extends CustomPainter {
         }
       }
     }
-
     canvas.drawPath(linePath, linePaint);
+  }
 
-    // Draw points
+  void _drawDataPoints(Canvas canvas, List<Offset> points) {
     final pointPaint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
-
+    final haloPaint = Paint()
+      ..color = color.withValues(alpha: 0.3)
+      ..style = PaintingStyle.fill;
     for (int i = 0; i < points.length; i++) {
       if (i / points.length <= progress) {
         canvas.drawCircle(points[i], 4, pointPaint);
-        canvas.drawCircle(
-          points[i],
-          6,
-          Paint()
-            ..color = color.withValues(alpha: 0.3)
-            ..style = PaintingStyle.fill,
-        );
+        canvas.drawCircle(points[i], 6, haloPaint);
       }
     }
+  }
 
-    // Draw labels
-    final textStyle = TextStyle(
-      color: DSColors.textTertiary,
-      fontSize: 10,
-    );
-
+  void _drawLabels(Canvas canvas, Size size, List<Offset> points) {
+    final textStyle = TextStyle(color: DSColors.textTertiary, fontSize: 10);
     for (int i = 0; i < labels.length; i++) {
       if (i / labels.length <= progress) {
-        final textSpan = TextSpan(text: labels[i], style: textStyle);
         final textPainter = TextPainter(
-          text: textSpan,
+          text: TextSpan(text: labels[i], style: textStyle),
           textDirection: TextDirection.ltr,
-        );
-        textPainter.layout();
+        )..layout();
         textPainter.paint(
           canvas,
           Offset(points[i].dx - textPainter.width / 2, size.height - 15),
@@ -268,12 +246,10 @@ class _ActivityHeatMapState extends State<ActivityHeatMap>
       vsync: this,
     );
 
-    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOut,
-      ),
-    );
+    _animation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     _controller.forward();
   }
@@ -341,9 +317,7 @@ class _HeatMapLegend extends StatelessWidget {
       children: [
         Text(
           'Less',
-          style: DSTypography.labelSmall.copyWith(
-            color: DSColors.textTertiary,
-          ),
+          style: DSTypography.labelSmall.copyWith(color: DSColors.textTertiary),
         ),
         SizedBox(width: DSSpacing.xs),
         ...List.generate(5, (index) {
@@ -360,9 +334,7 @@ class _HeatMapLegend extends StatelessWidget {
         SizedBox(width: DSSpacing.xs),
         Text(
           'More',
-          style: DSTypography.labelSmall.copyWith(
-            color: DSColors.textTertiary,
-          ),
+          style: DSTypography.labelSmall.copyWith(color: DSColors.textTertiary),
         ),
       ],
     );
@@ -435,10 +407,7 @@ class HeatMapPainter extends CustomPainter {
 
     // Draw day labels
     final days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-    final textStyle = TextStyle(
-      color: DSColors.textTertiary,
-      fontSize: 10,
-    );
+    final textStyle = TextStyle(color: DSColors.textTertiary, fontSize: 10);
 
     for (int i = 0; i < days.length; i++) {
       final textSpan = TextSpan(text: days[i], style: textStyle);
@@ -447,10 +416,7 @@ class HeatMapPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       );
       textPainter.layout();
-      textPainter.paint(
-        canvas,
-        Offset(-20, i * (cellSize + spacing)),
-      );
+      textPainter.paint(canvas, Offset(-20, i * (cellSize + spacing)));
     }
   }
 
@@ -468,11 +434,7 @@ class HeatMapPainter extends CustomPainter {
 
 /// Win rate circular chart
 class WinRateChart extends StatefulWidget {
-  const WinRateChart({
-    super.key,
-    required this.winRate,
-    this.size = 120,
-  });
+  const WinRateChart({super.key, required this.winRate, this.size = 120});
 
   final double winRate; // 0.0 to 1.0
   final double size;
@@ -494,12 +456,10 @@ class _WinRateChartState extends State<WinRateChart>
       vsync: this,
     );
 
-    _animation = Tween<double>(begin: 0.0, end: widget.winRate).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
-    );
+    _animation = Tween<double>(
+      begin: 0.0,
+      end: widget.winRate,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     _controller.forward();
   }

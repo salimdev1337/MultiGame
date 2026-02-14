@@ -2,5 +2,9 @@
     "cmake.sourceDirectory": "/home/king/Documents/flutter/MultiGame/linux",
     "chat.tools.terminal.autoApprove": {
         "flutter": true
+    },
+    "sonarlint.connectedMode.project": {
+        "connectionId": "salimdev1337",
+        "projectKey": "salimdev1337_MultiGame"
     }
 }

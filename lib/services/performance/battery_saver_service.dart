@@ -10,7 +10,7 @@ import 'package:multigame/utils/secure_logger.dart';
 /// - Provides a flag for widgets to skip expensive effects
 class BatterySaverService {
   BatterySaverService({required SecureStorageRepository storage})
-      : _storage = storage;
+    : _storage = storage;
 
   final SecureStorageRepository _storage;
 

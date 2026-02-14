@@ -11,9 +11,8 @@ export 'package:multigame/repositories/stats_repository.dart'
 class FirebaseStatsService {
   final StatsRepository _statsRepository;
 
-  FirebaseStatsService({
-    StatsRepository? statsRepository,
-  }) : _statsRepository = statsRepository ?? FirebaseStatsRepository();
+  FirebaseStatsService({StatsRepository? statsRepository})
+    : _statsRepository = statsRepository ?? FirebaseStatsRepository();
 
   /// Save or update user statistics
   Future<void> saveUserStats({
@@ -67,9 +66,6 @@ class FirebaseStatsService {
     required String gameType,
     int limit = 100,
   }) {
-    return _statsRepository.leaderboardStream(
-      gameType: gameType,
-      limit: limit,
-    );
+    return _statsRepository.leaderboardStream(gameType: gameType, limit: limit);
   }
 }

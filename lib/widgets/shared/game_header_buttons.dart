@@ -19,13 +19,11 @@ class _GameHeaderBackButtonState extends State<GameHeaderBackButton>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: DSAnimations.fast,
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _controller = AnimationController(duration: DSAnimations.fast, vsync: this);
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.9,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -85,9 +83,10 @@ class _GameHeaderSettingsButtonState extends State<GameHeaderSettingsButton>
       duration: DSAnimations.normal,
       vsync: this,
     );
-    _rotationAnimation = Tween<double>(begin: 0.0, end: 0.25).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _rotationAnimation = Tween<double>(
+      begin: 0.0,
+      end: 0.25,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override

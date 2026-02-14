@@ -42,9 +42,7 @@ class _SudokuOnlineGameScreenState
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => ProviderScope(
-            overrides: [
-              sudokuOnlineProvider.overrideWith((ref) => provider),
-            ],
+            overrides: [sudokuOnlineProvider.overrideWith((ref) => provider)],
             child: const SudokuOnlineResultScreen(),
           ),
         ),
@@ -88,12 +86,15 @@ class _SudokuOnlineGameScreenState
                       ControlButtons(
                         notesMode: provider.notesMode,
                         canUndo: provider.canUndo,
-                        canErase: provider.selectedRow != null &&
+                        canErase:
+                            provider.selectedRow != null &&
                             provider.selectedCol != null,
                         hintsRemaining: provider.hintsRemaining,
-                        onUndo:
-                            provider.canUndo ? () => provider.undo() : () {},
-                        onErase: provider.selectedRow != null &&
+                        onUndo: provider.canUndo
+                            ? () => provider.undo()
+                            : () {},
+                        onErase:
+                            provider.selectedRow != null &&
                                 provider.selectedCol != null
                             ? () => provider.clearCell()
                             : () {},
@@ -181,9 +182,7 @@ class _SudokuOnlineGameScreenState
       child: Row(
         children: [
           Icon(
-            provider.opponentCompleted
-                ? Icons.check_circle
-                : Icons.person,
+            provider.opponentCompleted ? Icons.check_circle : Icons.person,
             color: provider.opponentCompleted ? _accentGreen : _accentBlue,
             size: 28,
           ),
@@ -297,9 +296,7 @@ class _SudokuOnlineGameScreenState
           const CircularProgressIndicator(color: _accentBlue),
           const SizedBox(height: 24),
           Text(
-            provider.isWaiting
-                ? 'WAITING FOR OPPONENT'
-                : 'LOADING GAME',
+            provider.isWaiting ? 'WAITING FOR OPPONENT' : 'LOADING GAME',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -339,7 +336,10 @@ class _SudokuOnlineGameScreenState
     );
   }
 
-  Future<void> _showLeaveDialog(BuildContext context, SudokuOnlineProvider provider) async {
+  Future<void> _showLeaveDialog(
+    BuildContext context,
+    SudokuOnlineProvider provider,
+  ) async {
     final shouldLeave = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -419,7 +419,10 @@ class _SudokuOnlineGameScreenState
     );
   }
 
-  Future<void> _useHint(BuildContext context, SudokuOnlineProvider provider) async {
+  Future<void> _useHint(
+    BuildContext context,
+    SudokuOnlineProvider provider,
+  ) async {
     try {
       await provider.useHint();
     } catch (e) {

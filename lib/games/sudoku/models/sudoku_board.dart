@@ -6,11 +6,9 @@ class SudokuBoard {
   final List<List<SudokuCell>> grid;
 
   SudokuBoard({List<List<SudokuCell>>? grid})
-      : grid = grid ??
-            List.generate(
-              9,
-              (_) => List.generate(9, (_) => SudokuCell()),
-            );
+    : grid =
+          grid ??
+          List.generate(9, (_) => List.generate(9, (_) => SudokuCell()));
 
   factory SudokuBoard.empty() {
     return SudokuBoard();
@@ -149,7 +147,9 @@ class SudokuBoard {
 
   Map<String, dynamic> toJson() {
     return {
-      'grid': grid.map((row) => row.map((cell) => cell.toJson()).toList()).toList(),
+      'grid': grid
+          .map((row) => row.map((cell) => cell.toJson()).toList())
+          .toList(),
     };
   }
 
@@ -157,7 +157,11 @@ class SudokuBoard {
     final gridData = json['grid'] as List<dynamic>;
     final grid = gridData.map((rowData) {
       final row = rowData as List<dynamic>;
-      return row.map((cellData) => SudokuCell.fromJson(cellData as Map<String, dynamic>)).toList();
+      return row
+          .map(
+            (cellData) => SudokuCell.fromJson(cellData as Map<String, dynamic>),
+          )
+          .toList();
     }).toList();
     return SudokuBoard(grid: grid);
   }

@@ -18,10 +18,7 @@ const _primaryCyan = Color(0xFF00d4ff);
 class SudokuClassicScreen extends ConsumerStatefulWidget {
   final SudokuDifficulty difficulty;
 
-  const SudokuClassicScreen({
-    super.key,
-    required this.difficulty,
-  });
+  const SudokuClassicScreen({super.key, required this.difficulty});
 
   @override
   ConsumerState<SudokuClassicScreen> createState() =>
@@ -52,27 +49,49 @@ class _SudokuClassicScreenState extends ConsumerState<SudokuClassicScreen> {
         backgroundColor: _surfaceDark,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.1), width: 1),
+          side: BorderSide(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 1,
+          ),
         ),
         title: const Text(
           'Quit game?',
-          style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         content: Text(
           'Your progress will be lost.',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 15),
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.6),
+            fontSize: 15,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('RESUME', style: TextStyle(color: _primaryCyan, fontWeight: FontWeight.w700)),
+            child: Text(
+              'RESUME',
+              style: TextStyle(
+                color: _primaryCyan,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
               Navigator.pop(context);
             },
-            child: Text('QUIT', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontWeight: FontWeight.w600)),
+            child: Text(
+              'QUIT',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -98,7 +117,6 @@ class _SudokuClassicScreenState extends ConsumerState<SudokuClassicScreen> {
       ),
     );
     final uiState = ref.watch(sudokuUIProvider);
-    final notifier = ref.read(sudokuClassicProvider.notifier);
 
     return PopScope(
       canPop: false,
@@ -121,87 +139,14 @@ class _SudokuClassicScreenState extends ConsumerState<SudokuClassicScreen> {
               }
 
               return LayoutBuilder(
-                builder: (context, constraints) {
-                  final isVeryCompact = constraints.maxHeight < 600;
-                  final isCompact = constraints.maxHeight < 700;
-
-                  final headerHeight = isVeryCompact ? 36.0 : 44.0;
-                  final statsHeight =
-                      isVeryCompact ? 60.0 : (isCompact ? 70.0 : 80.0);
-                  final controlButtonsHeight =
-                      isVeryCompact ? 68.0 : (isCompact ? 78.0 : 90.0);
-                  final numberPadHeight =
-                      isVeryCompact ? 46.0 : (isCompact ? 52.0 : 60.0);
-                  final spacing =
-                      isVeryCompact ? 14.0 : (isCompact ? 22.0 : 32.0);
-
-                  final remainingHeight = constraints.maxHeight -
-                      headerHeight -
-                      statsHeight -
-                      controlButtonsHeight -
-                      numberPadHeight -
-                      spacing;
-
-                  final useCompactMode = isCompact;
-
-                  final maxWidth = constraints.maxWidth - 32;
-                  final minGrid = isVeryCompact ? 220.0 : 250.0;
-                  final gridSize =
-                      (maxWidth < remainingHeight ? maxWidth : remainingHeight)
-                          .clamp(minGrid, 600.0);
-
-                  return Column(
-                    children: [
-                      _buildHeader(context),
-                      const StatsPanel(),
-                      const SizedBox(height: 8),
-                      Expanded(
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: SizedBox(
-                              width: gridSize,
-                              height: gridSize,
-                              child: SudokuGrid(
-                                board: notifier.currentBoard!,
-                                selectedRow: state.selectedRow,
-                                selectedCol: state.selectedCol,
-                                selectedCellValue:
-                                    state.selectedRow != null &&
-                                            state.selectedCol != null
-                                        ? notifier.currentBoard!
-                                            .getCell(
-                                              state.selectedRow!,
-                                              state.selectedCol!,
-                                            )
-                                            .value
-                                        : null,
-                                onCellTap: notifier.selectCell,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ControlButtons(
-                        notesMode: state.notesMode,
-                        canUndo: notifier.canUndo,
-                        canErase: notifier.canErase,
-                        hintsRemaining: state.hintsRemaining,
-                        onUndo: notifier.undo,
-                        onErase: notifier.eraseCell,
-                        onToggleNotes: notifier.toggleNotesMode,
-                        onHint: notifier.useHint,
-                      ),
-                      NumberPad(
-                        board: notifier.currentBoard!,
-                        onNumberTap: notifier.placeNumber,
-                        useCompactMode: useCompactMode,
-                      ),
-                      SizedBox(height: useCompactMode ? 8 : 12),
-                    ],
-                  );
-                },
+                builder: (context, constraints) => _buildLayout(
+                  context,
+                  constraints,
+                  selectedRow: state.selectedRow,
+                  selectedCol: state.selectedCol,
+                  notesMode: state.notesMode,
+                  hintsRemaining: state.hintsRemaining,
+                ),
               );
             },
           ),
@@ -234,6 +179,88 @@ class _SudokuClassicScreenState extends ConsumerState<SudokuClassicScreen> {
           _DifficultyBadge(difficulty: widget.difficulty),
         ],
       ),
+    );
+  }
+
+  Widget _buildLayout(
+    BuildContext context,
+    BoxConstraints constraints, {
+    required int? selectedRow,
+    required int? selectedCol,
+    required bool notesMode,
+    required int hintsRemaining,
+  }) {
+    final notifier = ref.read(sudokuClassicProvider.notifier);
+    final isVeryCompact = constraints.maxHeight < 600;
+    final isCompact = constraints.maxHeight < 700;
+
+    final headerHeight = isVeryCompact ? 36.0 : 44.0;
+    final statsHeight = isVeryCompact ? 60.0 : (isCompact ? 70.0 : 80.0);
+    final controlButtonsHeight = isVeryCompact
+        ? 68.0
+        : (isCompact ? 78.0 : 90.0);
+    final numberPadHeight = isVeryCompact ? 46.0 : (isCompact ? 52.0 : 60.0);
+    final spacing = isVeryCompact ? 14.0 : (isCompact ? 22.0 : 32.0);
+
+    final remainingHeight =
+        constraints.maxHeight -
+        headerHeight -
+        statsHeight -
+        controlButtonsHeight -
+        numberPadHeight -
+        spacing;
+
+    final useCompactMode = isCompact;
+    final maxWidth = constraints.maxWidth - 32;
+    final minGrid = isVeryCompact ? 220.0 : 250.0;
+    final gridSize = (maxWidth < remainingHeight ? maxWidth : remainingHeight)
+        .clamp(minGrid, 600.0);
+
+    return Column(
+      children: [
+        _buildHeader(context),
+        const StatsPanel(),
+        const SizedBox(height: 8),
+        Expanded(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                width: gridSize,
+                height: gridSize,
+                child: SudokuGrid(
+                  board: notifier.currentBoard!,
+                  selectedRow: selectedRow,
+                  selectedCol: selectedCol,
+                  selectedCellValue: selectedRow != null && selectedCol != null
+                      ? notifier.currentBoard!
+                            .getCell(selectedRow, selectedCol)
+                            .value
+                      : null,
+                  onCellTap: notifier.selectCell,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        ControlButtons(
+          notesMode: notesMode,
+          canUndo: notifier.canUndo,
+          canErase: notifier.canErase,
+          hintsRemaining: hintsRemaining,
+          onUndo: notifier.undo,
+          onErase: notifier.eraseCell,
+          onToggleNotes: notifier.toggleNotesMode,
+          onHint: notifier.useHint,
+        ),
+        NumberPad(
+          board: notifier.currentBoard!,
+          onNumberTap: notifier.placeNumber,
+          useCompactMode: useCompactMode,
+        ),
+        SizedBox(height: useCompactMode ? 8 : 12),
+      ],
     );
   }
 
@@ -337,9 +364,9 @@ class _DifficultyBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (difficulty) {
-      SudokuDifficulty.easy   => ('EASY',   const Color(0xFF22c55e)),
+      SudokuDifficulty.easy => ('EASY', const Color(0xFF22c55e)),
       SudokuDifficulty.medium => ('MEDIUM', const Color(0xFFf59e0b)),
-      SudokuDifficulty.hard   => ('HARD',   const Color(0xFFef4444)),
+      SudokuDifficulty.hard => ('HARD', const Color(0xFFef4444)),
       SudokuDifficulty.expert => ('EXPERT', const Color(0xFF8b5cf6)),
     };
 

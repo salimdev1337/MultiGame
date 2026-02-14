@@ -52,10 +52,7 @@ class _DSLongPressButtonState extends State<DSLongPressButton>
   void initState() {
     super.initState();
 
-    _controller = AnimationController(
-      duration: widget.duration,
-      vsync: this,
-    );
+    _controller = AnimationController(duration: widget.duration, vsync: this);
 
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
@@ -122,7 +119,8 @@ class _DSLongPressButtonState extends State<DSLongPressButton>
                       valueColor: AlwaysStoppedAnimation<Color>(
                         widget.progressColor ?? DSColors.primary,
                       ),
-                      backgroundColor: widget.backgroundColor ??
+                      backgroundColor:
+                          widget.backgroundColor ??
                           DSColors.surface.withValues(alpha: (0.3 * 255)),
                     );
                   },
@@ -174,11 +172,7 @@ class DSLongPressDelete extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              color: DSColors.error,
-              size: DSSpacing.iconMedium,
-            ),
+            Icon(icon, color: DSColors.error, size: DSSpacing.iconMedium),
             DSSpacing.gapHorizontalSM,
             Text(
               label,
@@ -228,11 +222,7 @@ class DSLongPressConfirm extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              color: Colors.white,
-              size: DSSpacing.iconMedium,
-            ),
+            Icon(icon, color: Colors.white, size: DSSpacing.iconMedium),
             DSSpacing.gapHorizontalSM,
             Text(
               label,
@@ -285,11 +275,7 @@ class DSLongPressCircular extends StatelessWidget {
           ),
           shape: BoxShape.circle,
         ),
-        child: Icon(
-          icon,
-          color: color ?? DSColors.primary,
-          size: size * 0.5,
-        ),
+        child: Icon(icon, color: color ?? DSColors.primary, size: size * 0.5),
       ),
     );
   }

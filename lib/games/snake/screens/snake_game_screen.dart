@@ -8,6 +8,8 @@ import 'package:multigame/games/snake/widgets/snake_animations.dart';
 import 'package:multigame/games/snake/widgets/snake_board_widget.dart';
 import 'package:multigame/widgets/shared/game_result_widget.dart';
 
+const _kGameTitle = 'NEON SNAKE';
+
 class SnakeGamePage extends ConsumerStatefulWidget {
   const SnakeGamePage({super.key});
 
@@ -33,8 +35,9 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
     final notifier = ref.read(snakeProvider.notifier);
     final highScore = ref.read(snakeProvider).highScore;
     final gameMode = ref.read(snakeProvider).gameMode;
-    final accentColor =
-        isWin ? const Color(0xFF55ff00) : const Color(0xFFBB2C2C);
+    final accentColor = isWin
+        ? const Color(0xFF55ff00)
+        : const Color(0xFFBB2C2C);
 
     GameResultWidget.show(
       context,
@@ -47,10 +50,7 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
           letterSpacing: 4,
           color: accentColor,
           shadows: [
-            Shadow(
-              color: accentColor.withValues(alpha: 0.5),
-              blurRadius: 10,
-            ),
+            Shadow(color: accentColor.withValues(alpha: 0.5), blurRadius: 10),
           ],
         ),
         icon: Container(
@@ -130,7 +130,7 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF111317),
         title: const Text(
-          'NEON SNAKE',
+          _kGameTitle,
           style: TextStyle(color: Color(0xFF55ff00), letterSpacing: 2),
         ),
       ),
@@ -147,7 +147,9 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
                 color: const Color(0xFF55ff00).withAlpha((0.1 * 255).toInt()),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF55ff00).withAlpha((0.3 * 255).toInt()),
+                    color: const Color(
+                      0xFF55ff00,
+                    ).withAlpha((0.3 * 255).toInt()),
                     blurRadius: 24,
                     spreadRadius: 4,
                   ),
@@ -161,7 +163,7 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
             ),
             const SizedBox(height: 24),
             const Text(
-              'NEON SNAKE',
+              _kGameTitle,
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
@@ -183,14 +185,14 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
               width: 200,
               height: 56,
               child: ElevatedButton(
-                onPressed: () =>
-                    ref.read(snakeProvider.notifier).startGame(),
+                onPressed: () => ref.read(snakeProvider.notifier).startGame(),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF55ff00),
                   foregroundColor: const Color(0xFF111317),
                   elevation: 0,
-                  shadowColor:
-                      const Color(0xFF55ff00).withAlpha((0.4 * 255).toInt()),
+                  shadowColor: const Color(
+                    0xFF55ff00,
+                  ).withAlpha((0.4 * 255).toInt()),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -259,11 +261,8 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'NEON SNAKE',
-                style: TextStyle(
-                  color: Color(0xFF55ff00),
-                  letterSpacing: 2,
-                ),
+                _kGameTitle,
+                style: TextStyle(color: Color(0xFF55ff00), letterSpacing: 2),
               ),
               // Isolated widget — only rebuilds when score changes.
               _SnakeScoreDisplay(),
@@ -276,18 +275,9 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
                 ref.read(snakeProvider.notifier).setGameMode(m);
               },
               itemBuilder: (_) => const [
-                PopupMenuItem(
-                  value: GameMode.classic,
-                  child: Text('Classic'),
-                ),
-                PopupMenuItem(
-                  value: GameMode.wrap,
-                  child: Text('Wrap Around'),
-                ),
-                PopupMenuItem(
-                  value: GameMode.speed,
-                  child: Text('Speed Mode'),
-                ),
+                PopupMenuItem(value: GameMode.classic, child: Text('Classic')),
+                PopupMenuItem(value: GameMode.wrap, child: Text('Wrap Around')),
+                PopupMenuItem(value: GameMode.speed, child: Text('Speed Mode')),
               ],
             ),
           ],
@@ -304,10 +294,7 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
               const SizedBox(height: 8),
 
               // ─── D-PAD CONTROLS ───────────────────────────────────────
-              const Expanded(
-                flex: 2,
-                child: _SnakeDPad(),
-              ),
+              const Expanded(flex: 2, child: _SnakeDPad()),
             ],
           ),
         ),
@@ -447,8 +434,8 @@ class _SnakeGameModeChip extends StatelessWidget {
     final label = gameMode == GameMode.classic
         ? 'CLASSIC MODE'
         : gameMode == GameMode.wrap
-            ? 'WRAP MODE'
-            : 'SPEED MODE';
+        ? 'WRAP MODE'
+        : 'SPEED MODE';
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [

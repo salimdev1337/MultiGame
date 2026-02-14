@@ -350,15 +350,21 @@ class DSTheme {
     required Color surface,
     bool highContrast = false,
   }) {
-    final effectivePrimary =
-        highContrast ? DSColors.highContrastPrimary : primary;
-    final effectiveSecondary =
-        highContrast ? DSColors.highContrastSecondary : secondary;
-    final effectiveBackground =
-        highContrast ? DSColors.highContrastBackground : background;
-    final effectiveSurface =
-        highContrast ? DSColors.highContrastSurface : surface;
-    final onSurface = highContrast ? DSColors.highContrastText : DSColors.textPrimary;
+    final effectivePrimary = highContrast
+        ? DSColors.highContrastPrimary
+        : primary;
+    final effectiveSecondary = highContrast
+        ? DSColors.highContrastSecondary
+        : secondary;
+    final effectiveBackground = highContrast
+        ? DSColors.highContrastBackground
+        : background;
+    final effectiveSurface = highContrast
+        ? DSColors.highContrastSurface
+        : surface;
+    final onSurface = highContrast
+        ? DSColors.highContrastText
+        : DSColors.textPrimary;
 
     return buildDarkTheme().copyWith(
       scaffoldBackgroundColor: effectiveBackground,
@@ -390,9 +396,7 @@ class DSTheme {
             horizontal: DSSpacing.buttonHorizontal,
             vertical: DSSpacing.buttonVertical,
           ),
-          shape: RoundedRectangleBorder(
-            borderRadius: DSSpacing.borderRadiusMD,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: DSSpacing.borderRadiusMD),
           textStyle: DSTypography.labelLarge,
         ),
       ),

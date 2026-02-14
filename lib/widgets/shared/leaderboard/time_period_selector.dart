@@ -49,7 +49,8 @@ class _TimePeriodSelectorState extends State<TimePeriodSelector> {
               child: Material(
                 color: Colors.transparent,
                 child: Semantics(
-                  label: '${period.label} time period${isSelected ? ", selected" : ""}',
+                  label:
+                      '${period.label} time period${isSelected ? ", selected" : ""}',
                   button: true,
                   selected: isSelected,
                   child: InkWell(
@@ -68,8 +69,9 @@ class _TimePeriodSelectorState extends State<TimePeriodSelector> {
                           color: isSelected
                               ? Colors.black
                               : DSColors.textSecondary,
-                          fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.w600,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w600,
                         ),
                         textAlign: TextAlign.center,
                       ),

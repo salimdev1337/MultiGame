@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:multigame/config/app_router.dart';
 import '../infinite_runner_game.dart';
+import '../screens/race_lobby_screen.dart';
 
 /// Overlay shown when game is loading
 class LoadingOverlay extends StatelessWidget {
@@ -79,13 +81,31 @@ class IdleOverlay extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  _buildInstruction('^', 'Tap to JUMP'),
+                  _buildInstruction(
+                    const _BouncingIcon(
+                      icon: Icons.keyboard_arrow_up_rounded,
+                      direction: -1,
+                    ),
+                    'Swipe UP to jump',
+                  ),
                   const SizedBox(height: 12),
-                  _buildInstruction('!', 'Avoid obstacles!'),
+                  _buildInstruction(
+                    const _BouncingIcon(
+                      icon: Icons.keyboard_arrow_down_rounded,
+                      direction: 1,
+                    ),
+                    'Swipe DOWN to slide',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildInstruction(
+                    const _PulsingWarning(),
+                    'Avoid obstacles!',
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 40),
+            // Solo run
             ElevatedButton(
               onPressed: () {
                 game.overlays.remove('idle');
@@ -102,7 +122,7 @@ class IdleOverlay extends StatelessWidget {
                 ),
               ),
               child: const Text(
-                'TAP TO START',
+                'SOLO RUN',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -110,17 +130,47 @@ class IdleOverlay extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+            // Race mode row — HOST RACE only available on native (dart:io required)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (!kIsWeb) ...[
+                  _RaceButton(
+                    label: 'HOST RACE',
+                    icon: Icons.wifi_tethering,
+                    color: const Color(0xFFffd700),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const RaceLobbyScreen(isHost: true),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                _RaceButton(
+                  label: 'JOIN RACE',
+                  icon: Icons.group,
+                  color: const Color(0xFF7c4dff),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const RaceLobbyScreen(isHost: false),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInstruction(String emoji, String text) {
+  Widget _buildInstruction(Widget icon, String text) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(emoji, style: const TextStyle(fontSize: 24)),
+        icon,
         const SizedBox(width: 12),
         Text(text, style: const TextStyle(fontSize: 16, color: Colors.white)),
       ],
@@ -128,102 +178,158 @@ class IdleOverlay extends StatelessWidget {
   }
 }
 
+// ── Animated gesture indicator widgets ────────────────────────────────────────
+
+/// Arrow icon that bounces vertically (direction: -1 = up, 1 = down).
+class _BouncingIcon extends StatefulWidget {
+  const _BouncingIcon({required this.icon, required this.direction});
+  final IconData icon;
+  final double direction; // -1 = up, 1 = down
+
+  @override
+  State<_BouncingIcon> createState() => _BouncingIconState();
+}
+
+class _BouncingIconState extends State<_BouncingIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _offset;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    )..repeat(reverse: true);
+    _offset = Tween<double>(
+      begin: 0,
+      end: 6,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _offset,
+      builder: (context, _) => Transform.translate(
+        offset: Offset(0, _offset.value * widget.direction),
+        child: Icon(widget.icon, size: 26, color: const Color(0xFF00d4ff)),
+      ),
+    );
+  }
+}
+
+/// Warning icon that pulses in opacity.
+class _PulsingWarning extends StatefulWidget {
+  const _PulsingWarning();
+
+  @override
+  State<_PulsingWarning> createState() => _PulsingWarningState();
+}
+
+class _PulsingWarningState extends State<_PulsingWarning>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _opacity = Tween<double>(
+      begin: 0.5,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _opacity,
+      builder: (context, _) => Icon(
+        Icons.warning_amber_rounded,
+        size: 26,
+        color: Colors.amber.withValues(alpha: _opacity.value),
+      ),
+    );
+  }
+}
+
 /// HUD showing score during gameplay
-class GameHud extends StatefulWidget {
+class GameHud extends StatelessWidget {
   const GameHud({super.key, required this.game});
 
   final InfiniteRunnerGame game;
 
   @override
-  State<GameHud> createState() => _GameHudState();
-}
-
-class _GameHudState extends State<GameHud> {
-  @override
-  void initState() {
-    super.initState();
-    // Rebuild UI periodically to update score
-    Future.delayed(const Duration(milliseconds: 100), _updateScore);
-  }
-
-  void _updateScore() {
-    if (mounted) {
-      setState(() {});
-      Future.delayed(const Duration(milliseconds: 100), _updateScore);
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return ValueListenableBuilder<int>(
+      valueListenable: game.gameTick,
+      builder: (context, _, _) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               children: [
-                // Pause button
-                IconButton(
-                  onPressed: () => widget.game.pauseGame(),
-                  icon: const Icon(Icons.pause, color: Colors.white, size: 32),
-                ),
-                // Score
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: const Color(0xFF00d4ff).withValues(alpha: 0.5),
-                      width: 2,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Pause button
+                    IconButton(
+                      onPressed: () => game.pauseGame(),
+                      icon: const Icon(
+                        Icons.pause,
+                        color: Colors.white,
+                        size: 32,
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    '${widget.game.score}',
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF00d4ff),
+                    // Score
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: const Color(0xFF00d4ff).withValues(alpha: 0.5),
+                          width: 2,
+                        ),
+                      ),
+                      child: Text(
+                        '${game.score}',
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF00d4ff),
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 48), // Balance layout
+                  ],
                 ),
-                const SizedBox(width: 48), // Balance layout
               ],
             ),
-            // FPS Counter (debug)
-            Align(
-              alignment: Alignment.topRight,
-              child: Container(
-                margin: const EdgeInsets.only(top: 8),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.green.withValues(alpha: 0.5),
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  'FPS: ${widget.game.fps}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.greenAccent,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -285,6 +391,31 @@ class PausedOverlay extends StatelessWidget {
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton(
+                onPressed: () => context.go(AppRoutes.home),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    width: 1.5,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 48,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'QUIT TO MENU',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white70,
                   ),
                 ),
               ),
@@ -400,6 +531,22 @@ class GameOverOverlay extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.7),
                   ),
                 ),
+                SizedBox(height: spacing),
+                // Run stats row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _StatChip(
+                      icon: Icons.timer_outlined,
+                      label: _formatRunTime(game.runTimeSeconds),
+                    ),
+                    SizedBox(width: spacing),
+                    _StatChip(
+                      icon: Icons.directions_run,
+                      label: '${game.obstaclesDodged} dodged',
+                    ),
+                  ],
+                ),
                 SizedBox(height: spacing * 2),
                 // Restart button
                 SizedBox(
@@ -452,6 +599,91 @@ class GameOverOverlay extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+String _formatRunTime(int totalSeconds) {
+  final m = totalSeconds ~/ 60;
+  final s = totalSeconds % 60;
+  return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+}
+
+// ── Small stat chip ───────────────────────────────────────────────────────────
+
+class _StatChip extends StatelessWidget {
+  const _StatChip({required this.icon, required this.label});
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: const Color(0xFF00d4ff)),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: Colors.white70),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Small race-mode button ────────────────────────────────────────────────────
+
+class _RaceButton extends StatelessWidget {
+  const _RaceButton({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.7), width: 1.5),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ],
         ),
       ),
     );

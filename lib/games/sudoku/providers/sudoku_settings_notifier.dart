@@ -45,8 +45,7 @@ class SudokuSettingsNotifier extends AsyncNotifier<SudokuSettingsState> {
   Future<SudokuSettingsState> build() async {
     final prefs = await SharedPreferences.getInstance();
     return SudokuSettingsState(
-      soundEnabled:
-          prefs.getBool(SudokuSettingsState._keySoundEnabled) ?? true,
+      soundEnabled: prefs.getBool(SudokuSettingsState._keySoundEnabled) ?? true,
       hapticsEnabled:
           prefs.getBool(SudokuSettingsState._keyHapticsEnabled) ?? true,
       errorHighlightingEnabled:
@@ -62,11 +61,18 @@ class SudokuSettingsNotifier extends AsyncNotifier<SudokuSettingsState> {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(SudokuSettingsState._keySoundEnabled, newValue);
-      state = AsyncData(current.copyWith(soundEnabled: newValue, clearError: true));
+      state = AsyncData(
+        current.copyWith(soundEnabled: newValue, clearError: true),
+      );
     } catch (e) {
-      SecureLogger.error('Failed to save sound setting', error: e,
-          tag: 'SudokuSettings');
-      state = AsyncData(current.copyWith(lastError: 'Failed to save sound setting'));
+      SecureLogger.error(
+        'Failed to save sound setting',
+        error: e,
+        tag: 'SudokuSettings',
+      );
+      state = AsyncData(
+        current.copyWith(lastError: 'Failed to save sound setting'),
+      );
     }
   }
 
@@ -77,11 +83,18 @@ class SudokuSettingsNotifier extends AsyncNotifier<SudokuSettingsState> {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(SudokuSettingsState._keyHapticsEnabled, newValue);
-      state = AsyncData(current.copyWith(hapticsEnabled: newValue, clearError: true));
+      state = AsyncData(
+        current.copyWith(hapticsEnabled: newValue, clearError: true),
+      );
     } catch (e) {
-      SecureLogger.error('Failed to save haptics setting', error: e,
-          tag: 'SudokuSettings');
-      state = AsyncData(current.copyWith(lastError: 'Failed to save haptics setting'));
+      SecureLogger.error(
+        'Failed to save haptics setting',
+        error: e,
+        tag: 'SudokuSettings',
+      );
+      state = AsyncData(
+        current.copyWith(lastError: 'Failed to save haptics setting'),
+      );
     }
   }
 
@@ -91,15 +104,21 @@ class SudokuSettingsNotifier extends AsyncNotifier<SudokuSettingsState> {
     final newValue = !current.errorHighlightingEnabled;
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(
-          SudokuSettingsState._keyErrorHighlighting, newValue);
-      state = AsyncData(current.copyWith(
-          errorHighlightingEnabled: newValue, clearError: true));
+      await prefs.setBool(SudokuSettingsState._keyErrorHighlighting, newValue);
+      state = AsyncData(
+        current.copyWith(errorHighlightingEnabled: newValue, clearError: true),
+      );
     } catch (e) {
-      SecureLogger.error('Failed to save error highlighting setting',
-          error: e, tag: 'SudokuSettings');
-      state = AsyncData(current.copyWith(
-          lastError: 'Failed to save error highlighting setting'));
+      SecureLogger.error(
+        'Failed to save error highlighting setting',
+        error: e,
+        tag: 'SudokuSettings',
+      );
+      state = AsyncData(
+        current.copyWith(
+          lastError: 'Failed to save error highlighting setting',
+        ),
+      );
     }
   }
 
@@ -111,8 +130,11 @@ class SudokuSettingsNotifier extends AsyncNotifier<SudokuSettingsState> {
       await prefs.setBool(SudokuSettingsState._keyErrorHighlighting, true);
       state = const AsyncData(SudokuSettingsState(isInitialized: true));
     } catch (e) {
-      SecureLogger.error('Failed to reset settings', error: e,
-          tag: 'SudokuSettings');
+      SecureLogger.error(
+        'Failed to reset settings',
+        error: e,
+        tag: 'SudokuSettings',
+      );
     }
   }
 
@@ -127,4 +149,5 @@ class SudokuSettingsNotifier extends AsyncNotifier<SudokuSettingsState> {
 /// Not autoDispose — settings persist across the app lifetime.
 final sudokuSettingsProvider =
     AsyncNotifierProvider<SudokuSettingsNotifier, SudokuSettingsState>(
-        SudokuSettingsNotifier.new);
+      SudokuSettingsNotifier.new,
+    );

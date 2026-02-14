@@ -40,6 +40,11 @@ dependencies:
   # Phase 8: Social & Performance
   share_plus: ^10.1.4
   path_provider: ^2.1.5
+  # Phase 3: Runner Race Multiplayer (local WiFi WebSocket)
+  shelf: ^1.4.0
+  shelf_web_socket: ^2.0.0
+  web_socket_channel: ^3.0.0
+  network_info_plus: ^6.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

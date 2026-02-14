@@ -21,7 +21,8 @@ class ShellScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     // Hide bottom nav during any game session (any route under /play/<game>)
     final uri = GoRouterState.of(context).uri;
-    final segments = uri.pathSegments; // e.g. ['play', '2048'] or ['play', 'sudoku', 'classic']
+    final segments = uri
+        .pathSegments; // e.g. ['play', '2048'] or ['play', 'sudoku', 'classic']
     final hideBottomNav = segments.length >= 2 && segments.first == 'play';
 
     return Scaffold(

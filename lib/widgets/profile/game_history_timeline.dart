@@ -100,11 +100,7 @@ class _EmptyState extends StatelessWidget {
         padding: EdgeInsets.all(DSSpacing.xl),
         child: Column(
           children: [
-            Icon(
-              Icons.history_rounded,
-              size: 64,
-              color: DSColors.textTertiary,
-            ),
+            Icon(Icons.history_rounded, size: 64, color: DSColors.textTertiary),
             SizedBox(height: DSSpacing.md),
             Text(
               'No Game History',
@@ -152,24 +148,16 @@ class _TimelineEntryState extends State<_TimelineEntry>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: DSAnimations.slow,
-      vsync: this,
-    );
+    _controller = AnimationController(duration: DSAnimations.slow, vsync: this);
 
     _slideAnimation = Tween<double>(begin: 30.0, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: DSAnimations.easeOutCubic,
-      ),
+      CurvedAnimation(parent: _controller, curve: DSAnimations.easeOutCubic),
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOut,
-      ),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     Future.delayed(widget.delay, () {
       if (mounted) _controller.forward();
@@ -218,10 +206,7 @@ class _TimelineEntryState extends State<_TimelineEntry>
       builder: (context, child) {
         return Transform.translate(
           offset: Offset(0, _slideAnimation.value),
-          child: Opacity(
-            opacity: _fadeAnimation.value,
-            child: child,
-          ),
+          child: Opacity(opacity: _fadeAnimation.value, child: child),
         );
       },
       child: IntrinsicHeight(
@@ -316,11 +301,7 @@ class _TimelineEntryState extends State<_TimelineEntry>
                     // Score
                     Row(
                       children: [
-                        Icon(
-                          Icons.stars_rounded,
-                          size: 16,
-                          color: color,
-                        ),
+                        Icon(Icons.stars_rounded, size: 16, color: color),
                         SizedBox(width: 4),
                         Text(
                           '${widget.entry.score} points',

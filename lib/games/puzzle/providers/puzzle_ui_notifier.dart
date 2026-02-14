@@ -29,7 +29,9 @@ class PuzzleUINotifier extends AutoDisposeNotifier<PuzzleUIState> {
   PuzzleUIState build() => const PuzzleUIState();
 
   void setLoading(bool v) {
-    if (state.isLoading != v) { state = state.copyWith(isLoading: v); }
+    if (state.isLoading != v) {
+      state = state.copyWith(isLoading: v);
+    }
   }
 
   void setNewImageLoading(bool v) {
@@ -49,4 +51,5 @@ class PuzzleUINotifier extends AutoDisposeNotifier<PuzzleUIState> {
 
 final puzzleUIProvider =
     NotifierProvider.autoDispose<PuzzleUINotifier, PuzzleUIState>(
-        PuzzleUINotifier.new);
+      PuzzleUINotifier.new,
+    );

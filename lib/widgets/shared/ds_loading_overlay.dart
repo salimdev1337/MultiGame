@@ -35,9 +35,7 @@ class DSLoadingOverlay extends StatelessWidget {
 
         // Loading overlay
         if (show)
-          Positioned.fill(
-            child: _LoadingOverlayContent(message: message),
-          ),
+          Positioned.fill(child: _LoadingOverlayContent(message: message)),
       ],
     );
   }
@@ -135,10 +133,7 @@ class DSLoadingController {
   OverlayEntry? _overlayEntry;
 
   /// Show loading overlay
-  void show(
-    BuildContext context, {
-    String? message,
-  }) {
+  void show(BuildContext context, {String? message}) {
     // Remove existing overlay if any
     hide();
 

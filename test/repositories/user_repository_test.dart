@@ -90,7 +90,10 @@ class MockFlutterSecureStorage implements FlutterSecureStorage {
   Future<bool> isCupertinoProtectedDataAvailable() async => true;
 
   @override
-  void registerListener({required String key, required void Function(String value) listener}) {}
+  void registerListener({
+    required String key,
+    required void Function(String value) listener,
+  }) {}
 
   @override
   void unregisterAllListeners() {}
@@ -99,7 +102,10 @@ class MockFlutterSecureStorage implements FlutterSecureStorage {
   void unregisterAllListenersForKey({required String key}) {}
 
   @override
-  void unregisterListener({required String key, required void Function(String value) listener}) {}
+  void unregisterListener({
+    required String key,
+    required void Function(String value) listener,
+  }) {}
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -440,12 +446,17 @@ void main() {
 
     test('preserves data isolation between user ID and display name', () async {
       await repository.saveUserId('uid_abc');
-      await repository.saveDisplayName('uid_abc'); // Same value but different keys
+      await repository.saveDisplayName(
+        'uid_abc',
+      ); // Same value but different keys
 
       await repository.clearUserId();
 
       expect(await repository.getUserId(), isNull);
-      expect(await repository.getDisplayName(), 'uid_abc'); // Should still exist
+      expect(
+        await repository.getDisplayName(),
+        'uid_abc',
+      ); // Should still exist
     });
 
     test('handles empty strings correctly', () async {

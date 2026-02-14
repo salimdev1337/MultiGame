@@ -57,11 +57,7 @@ class GameDialog extends StatelessWidget {
                 child: Row(
                   children: [
                     if (titleIcon != null) ...[
-                      Icon(
-                        titleIcon,
-                        color: dialogColor,
-                        size: 28,
-                      ),
+                      Icon(titleIcon, color: dialogColor, size: 28),
                       const SizedBox(width: 12),
                     ],
                     Expanded(
@@ -77,10 +73,7 @@ class GameDialog extends StatelessWidget {
                   ],
                 ),
               ),
-              Divider(
-                color: Colors.white.withValues(alpha: 0.1),
-                height: 1,
-              ),
+              Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
             ],
             Flexible(
               child: Padding(
@@ -89,19 +82,18 @@ class GameDialog extends StatelessWidget {
               ),
             ),
             if (actions != null && actions!.isNotEmpty) ...[
-              Divider(
-                color: Colors.white.withValues(alpha: 0.1),
-                height: 1,
-              ),
+              Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: actions!
-                      .map((action) => Padding(
-                            padding: const EdgeInsets.only(left: 8),
-                            child: action,
-                          ))
+                      .map(
+                        (action) => Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: action,
+                        ),
+                      )
                       .toList(),
                 ),
               ),
@@ -133,7 +125,8 @@ class DialogButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final buttonColor = color ??
+    final buttonColor =
+        color ??
         (isPrimary
             ? theme.colorScheme.primary
             : Colors.white.withValues(alpha: 0.1));
@@ -144,23 +137,15 @@ class DialogButton extends StatelessWidget {
         backgroundColor: buttonColor,
         foregroundColor: isPrimary ? Colors.black : Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (icon != null) ...[
-            Icon(icon, size: 20),
-            const SizedBox(width: 8),
-          ],
+          if (icon != null) ...[Icon(icon, size: 20), const SizedBox(width: 8)],
           Text(
             text,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ],
       ),

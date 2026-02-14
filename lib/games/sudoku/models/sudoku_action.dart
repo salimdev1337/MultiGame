@@ -1,11 +1,6 @@
 // Sudoku action model for undo - see docs/SUDOKU_ARCHITECTURE.md
 
-enum SudokuActionType {
-  setValue,
-  clearValue,
-  addNote,
-  removeNote,
-}
+enum SudokuActionType { setValue, clearValue, addNote, removeNote }
 
 class SudokuAction {
   final SudokuActionType type;

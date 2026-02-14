@@ -39,9 +39,7 @@ class _StickyRankCardState extends State<StickyRankCard>
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 1),
       end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-    );
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
     _controller.forward();
   }
@@ -80,11 +78,12 @@ class _StickyRankCardState extends State<StickyRankCard>
     final rankChangeDesc = rankChange == null
         ? ''
         : rankChange! > 0
-            ? ', up ${rankChange!} position${rankChange! > 1 ? 's' : ''}'
-            : ', down ${rankChange!.abs()} position${rankChange!.abs() > 1 ? 's' : ''}';
+        ? ', up ${rankChange!} position${rankChange! > 1 ? 's' : ''}'
+        : ', down ${rankChange!.abs()} position${rankChange!.abs() > 1 ? 's' : ''}';
 
     return Semantics(
-      label: 'Your rank: ${widget.currentRank} out of ${widget.totalPlayers}'
+      label:
+          'Your rank: ${widget.currentRank} out of ${widget.totalPlayers}'
           ' players, ${widget.score} points$rankChangeDesc',
       child: SlideTransition(
         position: _slideAnimation,
@@ -98,10 +97,7 @@ class _StickyRankCardState extends State<StickyRankCard>
               color: DSColors.primary.withValues(alpha: 0.3),
               width: 2,
             ),
-            boxShadow: [
-              ...DSShadows.shadowLg,
-              ...DSShadows.shadowPrimary,
-            ],
+            boxShadow: [...DSShadows.shadowLg, ...DSShadows.shadowPrimary],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

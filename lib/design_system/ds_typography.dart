@@ -265,9 +265,7 @@ class DSTypography {
   static TextStyle withGradient(TextStyle base, Gradient gradient) {
     return base.copyWith(
       foreground: Paint()
-        ..shader = gradient.createShader(
-          const Rect.fromLTWH(0, 0, 200, 70),
-        ),
+        ..shader = gradient.createShader(const Rect.fromLTWH(0, 0, 200, 70)),
     );
   }
 

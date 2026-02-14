@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 import 'package:flame/components.dart';
+import '../abilities/ability_pickup.dart';
+import '../abilities/ability_type.dart';
 import '../components/obstacle.dart';
 import 'obstacle_pool.dart';
 
@@ -28,6 +30,13 @@ class SpawnSystem {
 
   // Track last obstacle type for variety
   ObstacleType? _lastObstacleType;
+
+  // Ability pickup spawning (race mode only)
+  static const double minPickupDistance = 1200.0;
+  static const double maxPickupDistance = 1800.0;
+  double _pickupDistanceTraveled = 0.0;
+  double _nextPickupDistance = 1500.0;
+  AbilityType? _lastPickupType;
 
   /// Update distance traveled and check if should spawn
   /// Returns obstacle if spawn needed, null otherwise
@@ -104,11 +113,48 @@ class SpawnSystem {
         _random.nextDouble() * (maxSpawnDistance - minSpawnDistance);
   }
 
+  /// Check if an ability pickup should spawn (race mode only).
+  /// Call once per frame with current scroll speed.
+  AbilityPickup? updatePickups(double dt, double scrollSpeed) {
+    _pickupDistanceTraveled += scrollSpeed * dt;
+    if (_pickupDistanceTraveled >= _nextPickupDistance) {
+      _pickupDistanceTraveled = 0;
+      _nextPickupDistance =
+          minPickupDistance +
+          _random.nextDouble() * (maxPickupDistance - minPickupDistance);
+      return _createPickup(scrollSpeed);
+    }
+    return null;
+  }
+
+  /// Create a pickup with variety (avoid repeating the same type back-to-back)
+  AbilityPickup _createPickup(double scrollSpeed) {
+    final types = AbilityType.values;
+    var available = types.toList();
+    if (_lastPickupType != null) {
+      available = types.where((t) => t != _lastPickupType).toList();
+    }
+    final type = available[_random.nextInt(available.length)];
+    _lastPickupType = type;
+
+    // Spawn slightly above ground so the player runs through it
+    final spawnXPos = gameWidth + spawnX;
+    final spawnYPos = groundY - 10;
+    return AbilityPickup(
+      type: type,
+      position: Vector2(spawnXPos, spawnYPos),
+      scrollSpeed: scrollSpeed,
+    );
+  }
+
   /// Reset spawn system for new game
   void reset() {
     _distanceTraveled = 0;
     _nextSpawnDistance = minSpawnDistance;
     _lastObstacleType = null;
+    _pickupDistanceTraveled = 0;
+    _nextPickupDistance = 1500.0;
+    _lastPickupType = null;
   }
 
   /// Update dimensions when screen size changes

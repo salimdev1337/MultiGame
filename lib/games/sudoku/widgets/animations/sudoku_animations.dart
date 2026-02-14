@@ -294,10 +294,7 @@ class _PauseButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(DSSpacing.md),
-            border: Border.all(
-              color: color.withValues(alpha: 0.3),
-              width: 1,
-            ),
+            border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -355,10 +352,7 @@ class _ShakeAnimationState extends State<ShakeAnimation>
       TweenSequenceItem(tween: Tween(begin: -10.0, end: 10.0), weight: 1),
       TweenSequenceItem(tween: Tween(begin: 10.0, end: -10.0), weight: 1),
       TweenSequenceItem(tween: Tween(begin: -10.0, end: 0.0), weight: 1),
-    ]).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+    ]).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
@@ -495,12 +489,7 @@ class SpotlightPainter extends CustomPainter {
           Colors.transparent,
         ],
         stops: const [0.0, 0.5, 1.0],
-      ).createShader(
-        Rect.fromCircle(
-          center: position,
-          radius: 100 * progress,
-        ),
-      );
+      ).createShader(Rect.fromCircle(center: position, radius: 100 * progress));
 
     canvas.drawCircle(position, 100 * progress, paint);
   }
@@ -511,11 +500,7 @@ class SpotlightPainter extends CustomPainter {
 
 /// Pop animation for number placement
 class PopAnimation extends StatefulWidget {
-  const PopAnimation({
-    super.key,
-    required this.child,
-    required this.trigger,
-  });
+  const PopAnimation({super.key, required this.child, required this.trigger});
 
   final Widget child;
   final bool trigger;
@@ -532,18 +517,15 @@ class _PopAnimationState extends State<PopAnimation>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: DSAnimations.fast,
-      vsync: this,
-    );
+    _controller = AnimationController(duration: DSAnimations.fast, vsync: this);
 
-    _scaleAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.2), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: 1.2, end: 1.0), weight: 1),
-    ]).animate(CurvedAnimation(
-      parent: _controller,
-      curve: DSAnimations.elasticOut,
-    ));
+    _scaleAnimation =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.2), weight: 1),
+          TweenSequenceItem(tween: Tween(begin: 1.2, end: 1.0), weight: 1),
+        ]).animate(
+          CurvedAnimation(parent: _controller, curve: DSAnimations.elasticOut),
+        );
   }
 
   @override
@@ -562,9 +544,6 @@ class _PopAnimationState extends State<PopAnimation>
 
   @override
   Widget build(BuildContext context) {
-    return ScaleTransition(
-      scale: _scaleAnimation,
-      child: widget.child,
-    );
+    return ScaleTransition(scale: _scaleAnimation, child: widget.child);
   }
 }

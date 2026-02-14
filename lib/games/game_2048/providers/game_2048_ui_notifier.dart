@@ -60,4 +60,5 @@ class Game2048UINotifier extends AutoDisposeNotifier<Game2048UIState> {
 
 final game2048UIProvider =
     NotifierProvider.autoDispose<Game2048UINotifier, Game2048UIState>(
-        Game2048UINotifier.new);
+      Game2048UINotifier.new,
+    );

@@ -23,9 +23,7 @@ class SnakeBoardPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(SnakeBoardPainter old) =>
-      old.t != t ||
-      old.currentSnake != currentSnake ||
-      old.food != food;
+      old.t != t || old.currentSnake != currentSnake || old.food != food;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -68,8 +66,9 @@ class SnakeBoardPainter extends CustomPainter {
 
       final isHead = i == 0;
       // Body segments fade slightly toward the tail for a gradient effect
-      final brightness =
-          isHead ? 1.0 : (1.0 - (i / len) * 0.35).clamp(0.65, 1.0);
+      final brightness = isHead
+          ? 1.0
+          : (1.0 - (i / len) * 0.35).clamp(0.65, 1.0);
 
       final r = (0x55 * brightness).round().clamp(0, 255);
       final g = (0xff * brightness).round().clamp(0, 255);

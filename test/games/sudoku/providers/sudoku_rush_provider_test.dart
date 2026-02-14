@@ -40,7 +40,11 @@ class FakePersistenceService implements SudokuPersistenceService {
   Future<bool> hasSavedGame(String mode) async => _savedGame != null;
 
   @override
-  Future<bool> saveBestScore(String mode, SudokuDifficulty difficulty, int score) async {
+  Future<bool> saveBestScore(
+    String mode,
+    SudokuDifficulty difficulty,
+    int score,
+  ) async {
     _bestScores['${mode}_${difficulty.name}'] = score;
     return true;
   }
@@ -64,11 +68,19 @@ class FakeSudokuStatsService implements SudokuStatsService {
     return SudokuStats(
       totalGamesPlayed: _completedGames.length,
       totalGamesWon: _completedGames.where((g) => g.victory).length,
-      classicGamesPlayed: _completedGames.where((g) => g.mode == 'classic').length,
-      classicGamesWon: _completedGames.where((g) => g.mode == 'classic' && g.victory).length,
+      classicGamesPlayed: _completedGames
+          .where((g) => g.mode == 'classic')
+          .length,
+      classicGamesWon: _completedGames
+          .where((g) => g.mode == 'classic' && g.victory)
+          .length,
       rushGamesPlayed: _completedGames.where((g) => g.mode == 'rush').length,
-      rushGamesWon: _completedGames.where((g) => g.mode == 'rush' && g.victory).length,
-      rushGamesLost: _completedGames.where((g) => g.mode == 'rush' && !g.victory).length,
+      rushGamesWon: _completedGames
+          .where((g) => g.mode == 'rush' && g.victory)
+          .length,
+      rushGamesLost: _completedGames
+          .where((g) => g.mode == 'rush' && !g.victory)
+          .length,
       totalMistakes: _completedGames.fold(0, (sum, g) => sum + g.mistakes),
       totalHintsUsed: _completedGames.fold(0, (sum, g) => sum + g.hintsUsed),
       totalTimePlayed: _completedGames.fold(0, (sum, g) => sum + g.timeSeconds),
@@ -170,7 +182,10 @@ void main() {
     group('initialization', () {
       test('initializes with correct default values', () {
         expect(provider.currentBoard, isNull);
-        expect(provider.remainingSeconds, SudokuRushProvider.initialTimeSeconds);
+        expect(
+          provider.remainingSeconds,
+          SudokuRushProvider.initialTimeSeconds,
+        );
         expect(provider.penaltiesApplied, 0);
         expect(provider.mistakes, 0);
         expect(provider.isGameOver, false);
@@ -185,7 +200,10 @@ void main() {
         expect(provider.currentBoard, isNotNull);
         expect(provider.originalBoard, isNotNull);
         expect(provider.difficulty, SudokuDifficulty.easy);
-        expect(provider.remainingSeconds, SudokuRushProvider.initialTimeSeconds);
+        expect(
+          provider.remainingSeconds,
+          SudokuRushProvider.initialTimeSeconds,
+        );
         expect(provider.penaltiesApplied, 0);
       });
 
@@ -193,7 +211,7 @@ void main() {
         await provider.initializeGame(SudokuDifficulty.medium);
 
         final initialTime = provider.remainingSeconds;
-        
+
         await Future.delayed(const Duration(milliseconds: 1100));
 
         expect(provider.remainingSeconds, lessThan(initialTime));
@@ -207,7 +225,7 @@ void main() {
 
       test('counts down remaining time', () async {
         final initialTime = provider.remainingSeconds;
-        
+
         await Future.delayed(const Duration(milliseconds: 1100));
 
         expect(provider.remainingSeconds, lessThan(initialTime));
@@ -247,7 +265,7 @@ void main() {
 
       test('shows penalty indicator temporarily', () async {
         expect(provider.showPenalty, false);
-        
+
         // Penalty display is triggered by placing conflicting number
         // which is hard to simulate in test without board knowledge
         // Just verify the getter works
@@ -268,7 +286,10 @@ void main() {
 
         expect(provider.mistakes, 0);
         expect(provider.hintsUsed, 0);
-        expect(provider.remainingSeconds, SudokuRushProvider.initialTimeSeconds);
+        expect(
+          provider.remainingSeconds,
+          SudokuRushProvider.initialTimeSeconds,
+        );
         expect(provider.penaltiesApplied, 0);
         expect(provider.selectedRow, isNull);
         expect(provider.isGameOver, false);
@@ -578,7 +599,7 @@ void main() {
     group('disposal', () {
       test('cleans up resources on dispose', () async {
         await provider.initializeGame(SudokuDifficulty.easy);
-        
+
         provider.dispose();
 
         // Timers should be cancelled - shouldn't crash

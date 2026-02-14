@@ -66,9 +66,9 @@ class ImageCacheService {
   }
 
   Map<String, dynamic> getStats() => {
-        'cachedObjects': cachedCount,
-        'cacheSizeMB': cacheSizeMB.toStringAsFixed(1),
-        'maxSizeMB': _maxCacheSizeMB,
-        'maxObjects': _maxCacheObjects,
-      };
+    'cachedObjects': cachedCount,
+    'cacheSizeMB': cacheSizeMB.toStringAsFixed(1),
+    'maxSizeMB': _maxCacheSizeMB,
+    'maxObjects': _maxCacheObjects,
+  };
 }

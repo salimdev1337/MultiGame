@@ -46,7 +46,11 @@ class StorageMigrator {
         return false;
       }
     } catch (e) {
-      SecureLogger.error('Error migrating key: $key', error: e, tag: 'Migration');
+      SecureLogger.error(
+        'Error migrating key: $key',
+        error: e,
+        tag: 'Migration',
+      );
       return false;
     }
   }
@@ -100,10 +104,7 @@ class StorageMigrator {
   Future<bool> isMigrationComplete() async {
     final prefs = await SharedPreferences.getInstance();
 
-    final sensitiveKeys = [
-      'user_id',
-      'user_nickname',
-    ];
+    final sensitiveKeys = ['user_id', 'user_nickname'];
 
     // Check if any sensitive keys still exist in SharedPreferences
     for (final key in sensitiveKeys) {

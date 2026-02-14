@@ -147,9 +147,9 @@ class _PuzzlePageState extends ConsumerState<PuzzlePage>
                                 const SizedBox(height: 24),
                                 PuzzleFooterControls(
                                   onReset: () {
-                                    Navigator.of(context).popUntil(
-                                      (route) => route.isFirst,
-                                    );
+                                    Navigator.of(
+                                      context,
+                                    ).popUntil((route) => route.isFirst);
                                   },
                                   onPlayAgain: () {
                                     ref

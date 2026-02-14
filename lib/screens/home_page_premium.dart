@@ -49,7 +49,11 @@ class _HomePagePremiumState extends State<HomePagePremium> {
     // Batch: fetch all data in parallel, then rebuild exactly once
     if (mounted) setState(() => _isLoading = true);
     try {
-      await Future.wait([_fetchNickname(), _fetchAchievementsData(), _fetchStreak()]);
+      await Future.wait([
+        _fetchNickname(),
+        _fetchAchievementsData(),
+        _fetchStreak(),
+      ]);
     } catch (_) {}
     if (mounted) setState(() => _isLoading = false);
   }

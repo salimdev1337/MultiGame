@@ -1,5 +1,6 @@
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import '../abilities/ability_type.dart';
 import '../state/player_state.dart';
 
 /// Player character in the infinite runner using Kenney sprites
@@ -15,6 +16,9 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
        _standingHeight = size.y,
        super(position: position, size: size, anchor: Anchor.bottomCenter);
 
+  // Asset constants
+  static const String _kWalk1Asset = 'alienBlue_walk1.png';
+
   // Physics constants (primitives only - no allocations)
   static const double gravity = 1200.0;
   static const double jumpVelocity = -650.0;
@@ -28,6 +32,17 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
   bool _isSliding = false;
   double _slideTimer = 0.0;
   static const double slideDuration = 0.6;
+
+  // Speed multiplier state (race mode) — <1 = slowed, >1 = boosted
+  double speedMultiplier = 1.0;
+  double _speedEffectTimer = 0.0;
+  double _speedEffectDuration = 0.0;
+  bool get isSlowed => speedMultiplier < 1.0;
+  bool get isBoosted => speedMultiplier > 1.0;
+
+  // Ability state (race mode)
+  AbilityType? heldAbility;
+  bool hasShield = false;
 
   // Dimensions (primitives - no Vector2 allocations)
   final double _standingWidth;
@@ -83,7 +98,7 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
   Future<SpriteAnimation> _loadRunAnimation() async {
     return SpriteAnimation.spriteList(
       [
-        await Sprite.load('alienBlue_walk1.png'),
+        await Sprite.load(_kWalk1Asset),
         await Sprite.load('alienBlue_walk2.png'),
       ],
       stepTime: 0.15,
@@ -103,7 +118,7 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
   /// Load slide animation (reuse walk1 for now, scaled)
   Future<SpriteAnimation> _loadSlideAnimation() async {
     return SpriteAnimation.spriteList(
-      [await Sprite.load('alienBlue_walk1.png')],
+      [await Sprite.load(_kWalk1Asset)],
       stepTime: 1.0,
       loop: false,
     );
@@ -112,10 +127,33 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
   /// Load dead animation (walk1 but static)
   Future<SpriteAnimation> _loadDeadAnimation() async {
     return SpriteAnimation.spriteList(
-      [await Sprite.load('alienBlue_walk1.png')],
+      [await Sprite.load(_kWalk1Asset)],
       stepTime: 1.0,
       loop: false,
     );
+  }
+
+  /// Apply a temporary speed effect (race mode).
+  /// [factor] < 1.0 = penalty (e.g. 0.6 = 40% slower)
+  /// [factor] > 1.0 = boost  (e.g. 1.5 = 50% faster)
+  void applySpeedEffect({required double factor, required double duration}) {
+    speedMultiplier = factor;
+    _speedEffectTimer = 0.0;
+    _speedEffectDuration = duration;
+  }
+
+  /// Activate shield — negates the next obstacle hit
+  void activateShield() => hasShield = true;
+
+  /// Ticks the speed effect timer and resets when expired.
+  void _tickSpeedEffect(double dt) {
+    if (speedMultiplier == 1.0) return;
+    _speedEffectTimer += dt;
+    if (_speedEffectTimer >= _speedEffectDuration) {
+      speedMultiplier = 1.0;
+      _speedEffectTimer = 0.0;
+      _speedEffectDuration = 0.0;
+    }
   }
 
   /// ✅ OPTIMIZED update() - ZERO allocations in hot path
@@ -125,6 +163,8 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
   @override
   void update(double dt) {
     super.update(dt);
+
+    _tickSpeedEffect(dt);
 
     // Update slide timer
     if (_isSliding) {
@@ -242,6 +282,11 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
     _isOnGround = true;
     _isSliding = false;
     _slideTimer = 0.0;
+    speedMultiplier = 1.0;
+    _speedEffectTimer = 0.0;
+    _speedEffectDuration = 0.0;
+    heldAbility = null;
+    hasShield = false;
     _updateHitboxSize(_standingWidth, _standingHeight);
     _setState(PlayerState.running);
   }

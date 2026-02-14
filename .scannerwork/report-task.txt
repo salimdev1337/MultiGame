@@ -1,0 +1,7 @@
+organization=salimdev1337
+projectKey=salimdev1337_MultiGame
+serverUrl=https://sonarcloud.io
+serverVersion=8.0.0.81246
+dashboardUrl=https://sonarcloud.io/dashboard?id=salimdev1337_MultiGame
+ceTaskId=AZxXD-Ej19x-RBLlOG9Q
+ceTaskUrl=https://sonarcloud.io/api/ce/task?id=AZxXD-Ej19x-RBLlOG9Q

@@ -9,7 +9,7 @@ import 'package:multigame/utils/secure_logger.dart';
 ///   /friend_requests/{requestId} — FriendRequest documents
 class FriendService {
   FriendService({FirebaseFirestore? firestore})
-      : _db = firestore ?? FirebaseFirestore.instance;
+    : _db = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _db;
 
@@ -33,12 +33,16 @@ class FriendService {
   }
 
   Future<void> acceptFriendRequest(
-      String requestId, String userId, String friendId) async {
+    String requestId,
+    String userId,
+    String friendId,
+  ) async {
     final batch = _db.batch();
 
     // Update request status
-    batch.update(_db.collection('friend_requests').doc(requestId),
-        {'status': 'accepted'});
+    batch.update(_db.collection('friend_requests').doc(requestId), {
+      'status': 'accepted',
+    });
 
     // Add to both users' friend lists
     batch.set(
@@ -55,10 +59,9 @@ class FriendService {
   }
 
   Future<void> rejectFriendRequest(String requestId) async {
-    await _db
-        .collection('friend_requests')
-        .doc(requestId)
-        .update({'status': 'rejected'});
+    await _db.collection('friend_requests').doc(requestId).update({
+      'status': 'rejected',
+    });
   }
 
   Future<void> cancelFriendRequest(String requestId) async {
@@ -77,17 +80,18 @@ class FriendService {
     final friends = <Friend>[];
     for (final doc in snap.docs) {
       final friendId = doc.data()['friendId'] as String? ?? doc.id;
-      final userDoc =
-          await _db.collection('users').doc(friendId).get();
+      final userDoc = await _db.collection('users').doc(friendId).get();
       if (!userDoc.exists) continue;
       final data = userDoc.data()!;
-      friends.add(Friend(
-        userId: friendId,
-        displayName: data['displayName'] as String? ?? 'Player',
-        avatarId: data['avatarId'] as String?,
-        isOnline: data['isOnline'] as bool? ?? false,
-        lastSeen: (data['lastSeen'] as Timestamp?)?.toDate(),
-      ));
+      friends.add(
+        Friend(
+          userId: friendId,
+          displayName: data['displayName'] as String? ?? 'Player',
+          avatarId: data['avatarId'] as String?,
+          isOnline: data['isOnline'] as bool? ?? false,
+          lastSeen: (data['lastSeen'] as Timestamp?)?.toDate(),
+        ),
+      );
     }
     return friends;
   }
@@ -101,26 +105,24 @@ class FriendService {
         .asyncMap((_) => getFriends(userId));
   }
 
-  Future<void> removeFriend(
-      String userId, String friendId) async {
+  Future<void> removeFriend(String userId, String friendId) async {
     final batch = _db.batch();
     batch.delete(
-        _db.collection('users').doc(userId).collection('friends').doc(friendId));
+      _db.collection('users').doc(userId).collection('friends').doc(friendId),
+    );
     batch.delete(
-        _db.collection('users').doc(friendId).collection('friends').doc(userId));
+      _db.collection('users').doc(friendId).collection('friends').doc(userId),
+    );
     await batch.commit();
   }
 
   // ── Online Status ─────────────────────────────────────────────────────────
 
   Future<void> updateOnlineStatus(String userId, bool isOnline) async {
-    await _db.collection('users').doc(userId).set(
-      {
-        'isOnline': isOnline,
-        'lastSeen': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+    await _db.collection('users').doc(userId).set({
+      'isOnline': isOnline,
+      'lastSeen': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   // ── Search ────────────────────────────────────────────────────────────────
@@ -162,7 +164,8 @@ class FriendService {
         fromUserId: data['from'] as String,
         fromDisplayName: data['fromDisplayName'] as String? ?? 'Player',
         status: FriendRequestStatus.pending,
-        createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+        createdAt:
+            (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       );
     }).toList();
   }

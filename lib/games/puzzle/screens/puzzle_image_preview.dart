@@ -17,8 +17,7 @@ class PuzzleImagePreviewOverlay extends ConsumerWidget {
     final game = ref.watch(puzzleProvider).game;
     if (game == null) return const SizedBox.shrink();
 
-    final imageUrl =
-        game.pieces.firstWhere((p) => p.imageUrl != null).imageUrl;
+    final imageUrl = game.pieces.firstWhere((p) => p.imageUrl != null).imageUrl;
     if (imageUrl == null) return const SizedBox.shrink();
 
     RenderBox? hintBox;
@@ -26,8 +25,7 @@ class PuzzleImagePreviewOverlay extends ConsumerWidget {
     Size? hintSize;
 
     try {
-      hintBox =
-          hintButtonKey.currentContext?.findRenderObject() as RenderBox?;
+      hintBox = hintButtonKey.currentContext?.findRenderObject() as RenderBox?;
       if (hintBox != null) {
         hintPosition = hintBox.localToGlobal(Offset.zero);
         hintSize = hintBox.size;
@@ -53,10 +51,8 @@ class PuzzleImagePreviewOverlay extends ConsumerWidget {
         final endWidth = hintSize?.width ?? 64;
         final endHeight = hintSize?.height ?? 64;
 
-        final currentLeft =
-            startLeft + (endLeft - startLeft) * animation.value;
-        final currentTop =
-            startTop + (endTop - startTop) * animation.value;
+        final currentLeft = startLeft + (endLeft - startLeft) * animation.value;
+        final currentTop = startTop + (endTop - startTop) * animation.value;
         final currentWidth =
             startWidth + (endWidth - startWidth) * animation.value;
         final currentHeight =
@@ -85,14 +81,16 @@ class PuzzleImagePreviewOverlay extends ConsumerWidget {
                       24 - (animation.value * 8),
                     ),
                     border: Border.all(
-                      color: const Color(0xFF00d4ff)
-                          .withValues(alpha: currentOpacity),
+                      color: const Color(
+                        0xFF00d4ff,
+                      ).withValues(alpha: currentOpacity),
                       width: 3,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF00d4ff)
-                            .withValues(alpha: 0.5 * currentOpacity),
+                        color: const Color(
+                          0xFF00d4ff,
+                        ).withValues(alpha: 0.5 * currentOpacity),
                         blurRadius: 20,
                         spreadRadius: 5,
                       ),
@@ -111,12 +109,10 @@ class PuzzleImagePreviewOverlay extends ConsumerWidget {
                           color: const Color(0xFF21242b),
                           child: Center(
                             child: CircularProgressIndicator(
-                              value:
-                                  loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress
-                                              .cumulativeBytesLoaded /
-                                          loadingProgress.expectedTotalBytes!
-                                      : null,
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                  : null,
                               color: const Color(0xFF00d4ff),
                             ),
                           ),

@@ -302,10 +302,7 @@ class DSSpacing {
     }
 
     if (horizontal != null && vertical != null) {
-      return EdgeInsets.symmetric(
-        horizontal: horizontal,
-        vertical: vertical,
-      );
+      return EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical);
     }
 
     return EdgeInsets.only(

@@ -189,11 +189,7 @@ class DSShadows {
       blurRadius: 10,
       offset: Offset(-5, -5),
     ),
-    BoxShadow(
-      color: _black30,
-      blurRadius: 15,
-      offset: Offset(5, 5),
-    ),
+    BoxShadow(color: _black30, blurRadius: 15, offset: Offset(5, 5)),
   ];
 
   // ==========================================

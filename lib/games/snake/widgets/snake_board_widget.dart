@@ -76,12 +76,16 @@ class _SnakeBoardWidgetState extends ConsumerState<SnakeBoardWidget>
   Widget build(BuildContext context) {
     // Select only the fields the painter needs — avoids rebuilding on unrelated
     // state changes (score, playing, etc.).
-    final board = ref.watch(snakeProvider.select((s) => (
+    final board = ref.watch(
+      snakeProvider.select(
+        (s) => (
           prev: s.previousSnake,
           curr: s.snake,
           food: s.food,
           foodEaten: s.foodEaten,
-        )));
+        ),
+      ),
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {

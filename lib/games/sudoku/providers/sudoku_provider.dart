@@ -56,11 +56,11 @@ class SudokuProvider extends ChangeNotifier with GameStatsMixin {
     required SudokuStatsService sudokuStatsService,
     required SudokuSoundService soundService,
     required SudokuHapticService hapticService,
-  })  : _statsService = statsService,
-        _persistenceService = persistenceService,
-        _sudokuStatsService = sudokuStatsService,
-        _soundService = soundService,
-        _hapticService = hapticService {
+  }) : _statsService = statsService,
+       _persistenceService = persistenceService,
+       _sudokuStatsService = sudokuStatsService,
+       _soundService = soundService,
+       _hapticService = hapticService {
     _generator = SudokuGenerator();
   }
 
@@ -209,13 +209,15 @@ class SudokuProvider extends ChangeNotifier with GameStatsMixin {
     final previousValue = cell.value;
     final previousNotes = Set<int>.from(cell.notes);
 
-    _actionHistory.add(SudokuAction.setValue(
-      row: _selectedRow!,
-      col: _selectedCol!,
-      value: number,
-      previousValue: previousValue,
-      previousNotes: previousNotes,
-    ));
+    _actionHistory.add(
+      SudokuAction.setValue(
+        row: _selectedRow!,
+        col: _selectedCol!,
+        value: number,
+        previousValue: previousValue,
+        previousNotes: previousNotes,
+      ),
+    );
 
     cell.value = number;
     cell.notes.clear();
@@ -242,20 +244,24 @@ class SudokuProvider extends ChangeNotifier with GameStatsMixin {
     final previousNotes = Set<int>.from(cell.notes);
 
     if (cell.notes.contains(number)) {
-      _actionHistory.add(SudokuAction.removeNote(
-        row: _selectedRow!,
-        col: _selectedCol!,
-        value: number,
-        previousNotes: previousNotes,
-      ));
+      _actionHistory.add(
+        SudokuAction.removeNote(
+          row: _selectedRow!,
+          col: _selectedCol!,
+          value: number,
+          previousNotes: previousNotes,
+        ),
+      );
       cell.notes.remove(number);
     } else {
-      _actionHistory.add(SudokuAction.addNote(
-        row: _selectedRow!,
-        col: _selectedCol!,
-        value: number,
-        previousNotes: previousNotes,
-      ));
+      _actionHistory.add(
+        SudokuAction.addNote(
+          row: _selectedRow!,
+          col: _selectedCol!,
+          value: number,
+          previousNotes: previousNotes,
+        ),
+      );
       cell.notes.add(number);
     }
 
@@ -279,12 +285,14 @@ class SudokuProvider extends ChangeNotifier with GameStatsMixin {
       return;
     }
 
-    _actionHistory.add(SudokuAction.clearValue(
-      row: _selectedRow!,
-      col: _selectedCol!,
-      previousValue: cell.value,
-      previousNotes: Set<int>.from(cell.notes),
-    ));
+    _actionHistory.add(
+      SudokuAction.clearValue(
+        row: _selectedRow!,
+        col: _selectedCol!,
+        previousValue: cell.value,
+        previousNotes: Set<int>.from(cell.notes),
+      ),
+    );
 
     cell.value = null;
     cell.notes.clear();
@@ -353,7 +361,8 @@ class SudokuProvider extends ChangeNotifier with GameStatsMixin {
     final hintPenalty = _hintsUsed * 200;
     final timePenalty = _elapsedSeconds;
 
-    final score = (baseScore - mistakePenalty - hintPenalty - timePenalty).clamp(0, 10000);
+    final score = (baseScore - mistakePenalty - hintPenalty - timePenalty)
+        .clamp(0, 10000);
     return score;
   }
 
@@ -362,8 +371,7 @@ class SudokuProvider extends ChangeNotifier with GameStatsMixin {
     saveScore('sudoku', finalScore);
   }
 
-  Future<void> _recordAchievement() async {
-  }
+  Future<void> _recordAchievement() async {}
 
   void useHint() {
     if (_isGameOver ||
@@ -390,20 +398,24 @@ class SudokuProvider extends ChangeNotifier with GameStatsMixin {
     final randomIndex = _generator.hashCode % emptyCells.length;
     final hintPosition = emptyCells[randomIndex];
 
-    final correctValue = _solvedBoard!.getCell(hintPosition.row, hintPosition.col).value;
+    final correctValue = _solvedBoard!
+        .getCell(hintPosition.row, hintPosition.col)
+        .value;
 
     if (correctValue == null) {
       return;
     }
 
     final cell = _currentBoard!.getCell(hintPosition.row, hintPosition.col);
-    _actionHistory.add(SudokuAction.setValue(
-      row: hintPosition.row,
-      col: hintPosition.col,
-      value: correctValue,
-      previousValue: cell.value,
-      previousNotes: Set<int>.from(cell.notes),
-    ));
+    _actionHistory.add(
+      SudokuAction.setValue(
+        row: hintPosition.row,
+        col: hintPosition.col,
+        value: correctValue,
+        previousValue: cell.value,
+        previousNotes: Set<int>.from(cell.notes),
+      ),
+    );
 
     cell.value = correctValue;
     cell.notes.clear();
@@ -502,7 +514,11 @@ class SudokuProvider extends ChangeNotifier with GameStatsMixin {
 
     await _sudokuStatsService.recordGameCompletion(completedGame);
 
-    await _persistenceService.saveBestScore('classic', _difficulty, _calculateScore());
+    await _persistenceService.saveBestScore(
+      'classic',
+      _difficulty,
+      _calculateScore(),
+    );
   }
 
   Future<void> saveGameState() async {

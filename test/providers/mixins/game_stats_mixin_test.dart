@@ -400,17 +400,23 @@ void main() {
       expect(provider.retryAttempt, 0); // Reset after success
     });
 
-    test('retries 3 times after failures and succeeds on final attempt', () async {
-      provider.setUserInfo('user_123', 'Player1');
-      mockStatsService.failureCount = 3; // Fail 3 times, succeed on 4th
+    test(
+      'retries 3 times after failures and succeeds on final attempt',
+      () async {
+        provider.setUserInfo('user_123', 'Player1');
+        mockStatsService.failureCount = 3; // Fail 3 times, succeed on 4th
 
-      final result = await provider.saveScore('puzzle', 100);
+        final result = await provider.saveScore('puzzle', 100);
 
-      expect(result, isTrue);
-      expect(mockStatsService.attemptCount, 4); // 4 total attempts (1 initial + 3 retries)
-      expect(mockStatsService.savedStats.length, 1);
-      expect(provider.retryAttempt, 0); // Reset after success
-    });
+        expect(result, isTrue);
+        expect(
+          mockStatsService.attemptCount,
+          4,
+        ); // 4 total attempts (1 initial + 3 retries)
+        expect(mockStatsService.savedStats.length, 1);
+        expect(provider.retryAttempt, 0); // Reset after success
+      },
+    );
 
     test('fails after exhausting all 3 retries', () async {
       provider.setUserInfo('user_123', 'Player1');
@@ -419,7 +425,10 @@ void main() {
       final result = await provider.saveScore('puzzle', 100);
 
       expect(result, isFalse);
-      expect(mockStatsService.attemptCount, 4); // 4 total attempts (1 initial + 3 retries)
+      expect(
+        mockStatsService.attemptCount,
+        4,
+      ); // 4 total attempts (1 initial + 3 retries)
       expect(mockStatsService.savedStats, isEmpty);
       expect(provider.lastError, contains('after 4 attempts'));
       expect(provider.retryAttempt, 0); // Reset after final failure

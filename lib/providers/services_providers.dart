@@ -25,53 +25,66 @@ import 'package:multigame/services/themes/theme_service.dart';
 import 'package:multigame/providers/theme_provider.dart';
 import 'package:multigame/games/sudoku/providers/sudoku_online_provider.dart';
 
-final authServiceProvider =
-    Provider<AuthService>((_) => getIt<AuthService>());
+final authServiceProvider = Provider<AuthService>((_) => getIt<AuthService>());
 
-final firebaseStatsServiceProvider =
-    Provider<FirebaseStatsService>((_) => getIt<FirebaseStatsService>());
+final firebaseStatsServiceProvider = Provider<FirebaseStatsService>(
+  (_) => getIt<FirebaseStatsService>(),
+);
 
-final achievementServiceProvider =
-    Provider<AchievementService>((_) => getIt<AchievementService>());
+final achievementServiceProvider = Provider<AchievementService>(
+  (_) => getIt<AchievementService>(),
+);
 
-final nicknameServiceProvider =
-    Provider<NicknameService>((_) => getIt<NicknameService>());
+final nicknameServiceProvider = Provider<NicknameService>(
+  (_) => getIt<NicknameService>(),
+);
 
-final hapticFeedbackServiceProvider =
-    Provider<HapticFeedbackService>((_) => getIt<HapticFeedbackService>());
+final hapticFeedbackServiceProvider = Provider<HapticFeedbackService>(
+  (_) => getIt<HapticFeedbackService>(),
+);
 
-final soundServiceProvider =
-    Provider<SoundService>((_) => getIt<SoundService>());
+final soundServiceProvider = Provider<SoundService>(
+  (_) => getIt<SoundService>(),
+);
 
-final sudokuPersistenceServiceProvider =
-    Provider<SudokuPersistenceService>((_) => getIt<SudokuPersistenceService>());
+final sudokuPersistenceServiceProvider = Provider<SudokuPersistenceService>(
+  (_) => getIt<SudokuPersistenceService>(),
+);
 
-final sudokuStatsServiceProvider =
-    Provider<SudokuStatsService>((_) => getIt<SudokuStatsService>());
+final sudokuStatsServiceProvider = Provider<SudokuStatsService>(
+  (_) => getIt<SudokuStatsService>(),
+);
 
-final sudokuSoundServiceProvider =
-    Provider<SudokuSoundService>((_) => getIt<SudokuSoundService>());
+final sudokuSoundServiceProvider = Provider<SudokuSoundService>(
+  (_) => getIt<SudokuSoundService>(),
+);
 
-final sudokuHapticServiceProvider =
-    Provider<SudokuHapticService>((_) => getIt<SudokuHapticService>());
+final sudokuHapticServiceProvider = Provider<SudokuHapticService>(
+  (_) => getIt<SudokuHapticService>(),
+);
 
-final matchmakingServiceProvider =
-    Provider<MatchmakingService>((_) => getIt<MatchmakingService>());
+final matchmakingServiceProvider = Provider<MatchmakingService>(
+  (_) => getIt<MatchmakingService>(),
+);
 
-final unsplashServiceProvider =
-    Provider<UnsplashService>((_) => getIt<UnsplashService>());
+final unsplashServiceProvider = Provider<UnsplashService>(
+  (_) => getIt<UnsplashService>(),
+);
 
-final accessibilityServiceProvider =
-    Provider<AccessibilityService>((_) => getIt<AccessibilityService>());
+final accessibilityServiceProvider = Provider<AccessibilityService>(
+  (_) => getIt<AccessibilityService>(),
+);
 
-final accessibilityProvider =
-    ChangeNotifierProvider<AccessibilityProvider>((ref) {
+final accessibilityProvider = ChangeNotifierProvider<AccessibilityProvider>((
+  ref,
+) {
   final service = ref.watch(accessibilityServiceProvider);
   return AccessibilityProvider(service: service)..loadSettings();
 });
 
-final themeServiceProvider =
-    Provider<ThemeService>((_) => getIt<ThemeService>());
+final themeServiceProvider = Provider<ThemeService>(
+  (_) => getIt<ThemeService>(),
+);
 
 final themeProvider = ChangeNotifierProvider<ThemeProvider>((ref) {
   final service = ref.watch(themeServiceProvider);
@@ -81,8 +94,10 @@ final themeProvider = ChangeNotifierProvider<ThemeProvider>((ref) {
 /// Placeholder for the current online Sudoku session.
 /// Override with [ProviderScope] when starting a match so that
 /// [SudokuOnlineGameScreen] and [SudokuOnlineResultScreen] can read it.
-final sudokuOnlineProvider =
-    ChangeNotifierProvider<SudokuOnlineProvider>((ref) {
+final sudokuOnlineProvider = ChangeNotifierProvider<SudokuOnlineProvider>((
+  ref,
+) {
   throw UnimplementedError(
-      'sudokuOnlineProvider must be overridden before navigating to the online game');
+    'sudokuOnlineProvider must be overridden before navigating to the online game',
+  );
 });

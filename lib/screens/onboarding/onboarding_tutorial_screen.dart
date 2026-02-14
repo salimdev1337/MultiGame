@@ -41,10 +41,8 @@ class _OnboardingTutorialScreenState extends State<OnboardingTutorialScreen>
         : OnboardingPage.defaultPages;
     _iconControllers = List.generate(
       pages.length,
-      (index) => AnimationController(
-        duration: DSAnimations.normal,
-        vsync: this,
-      ),
+      (index) =>
+          AnimationController(duration: DSAnimations.normal, vsync: this),
     );
 
     // Animate first icon
@@ -148,7 +146,9 @@ class _OnboardingTutorialScreenState extends State<OnboardingTutorialScreen>
                   // Action button
                   DSButton(
                     text: isLastPage ? 'Get Started' : 'Next',
-                    icon: isLastPage ? Icons.check_rounded : Icons.arrow_forward,
+                    icon: isLastPage
+                        ? Icons.check_rounded
+                        : Icons.arrow_forward,
                     variant: DSButtonVariant.gradient,
                     gradient: DSColors.gradientPrimary,
                     onPressed: _nextPage,
@@ -208,11 +208,7 @@ class _OnboardingTutorialScreenState extends State<OnboardingTutorialScreen>
                       ),
                     ],
                   ),
-                  child: Icon(
-                    page.icon,
-                    size: 70,
-                    color: page.primaryColor,
-                  ),
+                  child: Icon(page.icon, size: 70, color: page.primaryColor),
                 ),
               );
             },
@@ -258,9 +254,7 @@ class _OnboardingTutorialScreenState extends State<OnboardingTutorialScreen>
           width: _currentPage == index ? 32 : 8,
           height: 8,
           decoration: BoxDecoration(
-            gradient: _currentPage == index
-                ? DSColors.gradientPrimary
-                : null,
+            gradient: _currentPage == index ? DSColors.gradientPrimary : null,
             color: _currentPage == index
                 ? null
                 : DSColors.textSecondary.withValues(alpha: 0.3),

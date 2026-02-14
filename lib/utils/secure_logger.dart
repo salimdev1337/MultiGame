@@ -32,7 +32,11 @@ class SecureLogger {
   /// Examples:
   /// - "my_secret_key_12345" → "my_s***45" (first 4 + last 2)
   /// - "uid_abc123def456" → "uid_***456" (prefix + last 3)
-  static String maskValue(String? value, {int visibleStart = 4, int visibleEnd = 2}) {
+  static String maskValue(
+    String? value, {
+    int visibleStart = 4,
+    int visibleEnd = 2,
+  }) {
     if (value == null || value.isEmpty) {
       return '[EMPTY]';
     }

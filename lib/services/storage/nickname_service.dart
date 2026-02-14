@@ -12,11 +12,9 @@ class NicknameService {
 
   bool _migrationChecked = false;
 
-  NicknameService({
-    UserRepository? userRepository,
-    StorageMigrator? migrator,
-  })  : _userRepository = userRepository ?? SecureUserRepository(),
-        _migrator = migrator ?? StorageMigrator(SecureStorageRepository());
+  NicknameService({UserRepository? userRepository, StorageMigrator? migrator})
+    : _userRepository = userRepository ?? SecureUserRepository(),
+      _migrator = migrator ?? StorageMigrator(SecureStorageRepository());
 
   /// Ensure migration is performed before any operation
   Future<void> _ensureMigration() async {

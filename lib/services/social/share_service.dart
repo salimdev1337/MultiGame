@@ -35,8 +35,7 @@ class ShareService {
 
     try {
       await Share.share(text);
-      SecureLogger.log(
-          'High score shared: $gameType $score', tag: 'Social');
+      SecureLogger.log('High score shared: $gameType $score', tag: 'Social');
     } catch (e) {
       SecureLogger.error('Failed to share high score', error: e);
     }

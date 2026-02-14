@@ -147,7 +147,7 @@ GoRouter buildAppRouter(WidgetRef ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.profile,
-                builder: (_, _) => ProfilePage(),
+                builder: (_, _) => const ProfilePage(),
               ),
             ],
           ),

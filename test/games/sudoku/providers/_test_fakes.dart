@@ -38,7 +38,11 @@ class FakePersistenceService implements SudokuPersistenceService {
   Future<bool> hasSavedGame(String mode) async => _savedGame != null;
 
   @override
-  Future<bool> saveBestScore(String mode, SudokuDifficulty difficulty, int score) async {
+  Future<bool> saveBestScore(
+    String mode,
+    SudokuDifficulty difficulty,
+    int score,
+  ) async {
     _bestScores['${mode}_${difficulty.name}'] = score;
     return true;
   }
@@ -62,11 +66,19 @@ class FakeSudokuStatsService implements SudokuStatsService {
     return SudokuStats(
       totalGamesPlayed: _completedGames.length,
       totalGamesWon: _completedGames.where((g) => g.victory).length,
-      classicGamesPlayed: _completedGames.where((g) => g.mode == 'classic').length,
-      classicGamesWon: _completedGames.where((g) => g.mode == 'classic' && g.victory).length,
+      classicGamesPlayed: _completedGames
+          .where((g) => g.mode == 'classic')
+          .length,
+      classicGamesWon: _completedGames
+          .where((g) => g.mode == 'classic' && g.victory)
+          .length,
       rushGamesPlayed: _completedGames.where((g) => g.mode == 'rush').length,
-      rushGamesWon: _completedGames.where((g) => g.mode == 'rush' && g.victory).length,
-      rushGamesLost: _completedGames.where((g) => g.mode == 'rush' && !g.victory).length,
+      rushGamesWon: _completedGames
+          .where((g) => g.mode == 'rush' && g.victory)
+          .length,
+      rushGamesLost: _completedGames
+          .where((g) => g.mode == 'rush' && !g.victory)
+          .length,
       totalMistakes: _completedGames.fold(0, (sum, g) => sum + g.mistakes),
       totalHintsUsed: _completedGames.fold(0, (sum, g) => sum + g.hintsUsed),
       totalTimePlayed: _completedGames.fold(0, (sum, g) => sum + g.timeSeconds),

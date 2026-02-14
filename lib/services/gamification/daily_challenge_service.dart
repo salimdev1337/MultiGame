@@ -9,7 +9,7 @@ import 'package:multigame/utils/secure_logger.dart';
 /// Progress is persisted locally; completed challenges award XP via callback.
 class DailyChallengeService {
   DailyChallengeService({required SecureStorageRepository storage})
-      : _storage = storage;
+    : _storage = storage;
 
   final SecureStorageRepository _storage;
 
@@ -83,7 +83,9 @@ class DailyChallengeService {
 
   /// Update progress for [challengeId]. Completes if target is reached.
   Future<DailyChallenge?> updateProgress(
-      String challengeId, int newProgress) async {
+    String challengeId,
+    int newProgress,
+  ) async {
     final challenges = await _loadSavedChallenges();
     final idx = challenges.indexWhere((c) => c.id == challengeId);
     if (idx < 0) return null;
@@ -117,7 +119,11 @@ class DailyChallengeService {
 
   List<DailyChallenge> _generateAndSave(String dateKey) {
     final midnight = DateTime.now().copyWith(
-        hour: 23, minute: 59, second: 59, millisecond: 999);
+      hour: 23,
+      minute: 59,
+      second: 59,
+      millisecond: 999,
+    );
 
     // Pick 3 templates based on today's date seed
     final seed = DateTime.now().day % _templates.length;

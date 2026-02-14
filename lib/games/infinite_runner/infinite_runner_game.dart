@@ -1,13 +1,22 @@
+import 'dart:async';
+
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'abilities/ability_pickup.dart';
+import 'abilities/ability_type.dart';
 import 'components/player.dart';
 import 'components/obstacle.dart';
 import 'components/ground.dart';
+import 'components/ghost_player.dart';
 import 'components/parallax_background.dart';
+import 'multiplayer/race_client.dart';
+import 'multiplayer/race_player_state.dart';
+import 'multiplayer/race_room.dart';
 import 'state/game_state.dart';
+import 'state/game_mode.dart';
 import 'systems/collision_system.dart';
 import 'systems/spawn_system.dart';
 import 'systems/obstacle_pool.dart';
@@ -16,7 +25,20 @@ import 'systems/obstacle_pool.dart';
 /// Optimized for 60 FPS with object pooling and clean architecture
 class InfiniteRunnerGame extends FlameGame
     with DragCallbacks, HasCollisionDetection, KeyboardEvents {
-  InfiniteRunnerGame() : super();
+  InfiniteRunnerGame({
+    this.gameMode = GameMode.solo,
+    this.raceClient,
+    this.raceRoom,
+  }) : super();
+
+  /// Whether this is a solo run or a multiplayer race
+  final GameMode gameMode;
+
+  /// Multiplayer client — non-null when racing with others over local WiFi
+  final RaceClient? raceClient;
+
+  /// Shared room state — non-null when racing with others
+  final RaceRoom? raceRoom;
 
   // Game state
   GameState _gameState = GameState.idle;
@@ -39,11 +61,72 @@ class InfiniteRunnerGame extends FlameGame
   int get score => _score.floor();
   int get highScore => _highScore;
 
+  // Solo run stats (reset each game)
+  int _obstaclesDodged = 0;
+  int get obstaclesDodged => _obstaclesDodged;
+  double _soloElapsedSeconds = 0.0;
+  int get runTimeSeconds => _soloElapsedSeconds.floor();
+
+  // Race mode fields
+  static const double trackLength = 10000.0;
+  static const double raceLimitMs = 180000.0; // 3-minute cap
+  double _distanceTraveled = 0.0;
+  double get distanceTraveled => _distanceTraveled;
+  double _raceElapsedMs = 0.0;
+  double get raceElapsedMs => _raceElapsedMs;
+  int _finishTimeSeconds = 0;
+  int get finishTimeSeconds => _finishTimeSeconds;
+
+  /// Properly-sorted race results: finished players by finish time,
+  /// then unfinished players by distance (furthest first).
+  List<RacePlayerState> get raceLeaderboard {
+    if (raceRoom == null) return [];
+    return List<RacePlayerState>.from(raceRoom!.players)..sort((a, b) {
+      if (a.isFinished && b.isFinished) {
+        return a.finishTimeMs.compareTo(b.finishTimeMs);
+      }
+      if (a.isFinished) return -1;
+      if (b.isFinished) return 1;
+      return b.distance.compareTo(a.distance);
+    });
+  }
+
+  // Last effective speed propagated to components (avoids redundant calls)
+  double _lastPropagatedSpeed = 0.0;
+  bool get isPlayerSlowed => _player.speedMultiplier < 1.0;
+  bool get isPlayerBoosted => _player.speedMultiplier > 1.0;
+  bool get playerHasShield => _player.hasShield;
+  AbilityType? get playerHeldAbility => _player.heldAbility;
+
+  // Active ability pickups on the track
+  final List<AbilityPickup> _abilityPickups = [];
+
+  // Multiplayer: ghost opponents
+  final Map<int, GhostPlayer> _ghosts = {};
+  // Colours per player slot (0=host cyan, 1=gold, 2=purple, 3=orange)
+  static const List<Color> playerColors = [
+    Color(0xFF00d4ff),
+    Color(0xFFffd700),
+    Color(0xFF7c4dff),
+    Color(0xFFff6b35),
+  ];
+
   // FPS tracking for debug
   int _fps = 0;
   double _fpsTimer = 0.0;
   int _frameCount = 0;
   int get fps => _fps;
+
+  // HUD tick — incremented every 50 ms so Flutter HUD widgets rebuild efficiently
+  final gameTick = ValueNotifier<int>(0);
+  double _hudTickTimer = 0.0;
+
+  // Event streams for transient HUD notifications
+  final _abilityToastCtrl = StreamController<AbilityType>.broadcast();
+  Stream<AbilityType> get abilityToastStream => _abilityToastCtrl.stream;
+
+  final _slowedByCtrl = StreamController<String>.broadcast();
+  Stream<String> get slowedByStream => _slowedByCtrl.stream;
 
   // Game speed
   final double _baseScrollSpeed = 250.0;
@@ -145,26 +228,30 @@ class InfiniteRunnerGame extends FlameGame
       _fpsTimer = 0.0;
     }
 
+    // Notify Flutter HUD widgets every 50 ms (20 fps is plenty for score/timer)
+    _hudTickTimer += dt;
+    if (_hudTickTimer >= 0.05) {
+      _hudTickTimer = 0.0;
+      gameTick.value++;
+    }
+
     switch (_gameState) {
       case GameState.idle:
-        // Waiting for player to start
+      case GameState.countdown:
+      case GameState.paused:
+      case GameState.gameOver:
+      case GameState.finished:
         break;
-
       case GameState.playing:
         _updatePlaying(dt);
-        break;
-
-      case GameState.paused:
-        // Game frozen
-        break;
-
-      case GameState.gameOver:
-        // Game ended
         break;
     }
   }
 
   void _updatePlaying(double dt) {
+    // Track run time (solo mode only; race uses _raceElapsedMs)
+    if (gameMode == GameMode.solo) _soloElapsedSeconds += dt;
+
     // Update score (distance based)
     _score += _currentScrollSpeed * dt * 0.01;
 
@@ -174,16 +261,48 @@ class InfiniteRunnerGame extends FlameGame
       if (_currentScrollSpeed > maxScrollSpeed) {
         _currentScrollSpeed = maxScrollSpeed;
       }
+    }
 
-      // Update all scrolling components (avoid frequent updates)
-      _background.updateSpeed(_currentScrollSpeed);
-      _obstaclePool.updateSpeed(_currentScrollSpeed);
-
-      for (final ground in _groundTiles) {
-        ground.updateSpeed(_currentScrollSpeed);
+    // In race mode, effective speed = base speed × player multiplier.
+    // Propagate whenever the effective speed changes (slowdown start/end or speed increase).
+    if (gameMode == GameMode.race) {
+      final effective = _currentScrollSpeed * _player.speedMultiplier;
+      if (effective != _lastPropagatedSpeed) {
+        _propagateSpeed(effective);
+        _lastPropagatedSpeed = effective;
       }
-      for (final obstacle in _obstacles) {
-        obstacle.updateSpeed(_currentScrollSpeed);
+      _distanceTraveled += effective * dt;
+      _raceElapsedMs += dt * 1000;
+      _checkFinishLine();
+      // Solo race timeout — server handles multiplayer timeout via its own timer
+      if (raceClient == null && _raceElapsedMs >= raceLimitMs) {
+        _finishTimeSeconds = 180;
+        _gameState = GameState.finished;
+        overlays.remove('raceHud');
+        overlays.add('raceFinish');
+        return;
+      }
+
+      // Update ghost positions from latest room state
+      if (raceRoom != null) {
+        for (final opponent in raceRoom!.opponents) {
+          final ghost = _ghosts[opponent.playerId];
+          if (ghost != null) {
+            ghost.distanceDelta = opponent.distance - _distanceTraveled;
+          }
+        }
+      }
+    } else {
+      // Solo mode: propagate base speed only while still increasing
+      if (_currentScrollSpeed < maxScrollSpeed) {
+        _background.updateSpeed(_currentScrollSpeed);
+        _obstaclePool.updateSpeed(_currentScrollSpeed);
+        for (final ground in _groundTiles) {
+          ground.updateSpeed(_currentScrollSpeed);
+        }
+        for (final obstacle in _obstacles) {
+          obstacle.updateSpeed(_currentScrollSpeed);
+        }
       }
     }
 
@@ -203,6 +322,7 @@ class InfiniteRunnerGame extends FlameGame
       if (obstacle.isOffScreen) {
         remove(obstacle);
         _obstaclePool.release(obstacle); // Return to pool
+        if (gameMode == GameMode.solo) _obstaclesDodged++;
         return true;
       }
       return false;
@@ -227,6 +347,32 @@ class InfiniteRunnerGame extends FlameGame
 
     // Check collisions
     _collisionSystem.checkCollisions(_player, _obstacles);
+
+    // Ability pickups (race mode only)
+    if (gameMode == GameMode.race) {
+      final newPickup = _spawnSystem.updatePickups(dt, _currentScrollSpeed);
+      if (newPickup != null) {
+        _abilityPickups.add(newPickup);
+        add(newPickup);
+      }
+
+      // Check collection
+      final collected = _collisionSystem.checkPickups(_player, _abilityPickups);
+      if (collected != null) {
+        _player.heldAbility = collected.type;
+        _abilityToastCtrl.add(collected.type);
+        HapticFeedback.mediumImpact();
+      }
+
+      // Remove collected or off-screen pickups
+      _abilityPickups.removeWhere((p) {
+        if (p.isCollected || p.isOffScreen) {
+          remove(p);
+          return true;
+        }
+        return false;
+      });
+    }
   }
 
   /// Handle swipe start
@@ -262,14 +408,20 @@ class InfiniteRunnerGame extends FlameGame
     if (deltaY < 0) {
       switch (_gameState) {
         case GameState.idle:
-          startGame();
+          if (gameMode == GameMode.race) {
+            startRace();
+          } else {
+            startGame();
+          }
           break;
         case GameState.playing:
           _player.jump();
+          HapticFeedback.lightImpact();
           break;
+        case GameState.countdown:
         case GameState.paused:
         case GameState.gameOver:
-          // Handled by overlay buttons
+        case GameState.finished:
           break;
       }
     }
@@ -293,9 +445,14 @@ class InfiniteRunnerGame extends FlameGame
       // Up arrow - jump
       if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
         if (_gameState == GameState.idle) {
-          startGame();
+          if (gameMode == GameMode.race) {
+            startRace();
+          } else {
+            startGame();
+          }
         } else if (_gameState == GameState.playing) {
           _player.jump();
+          HapticFeedback.lightImpact();
         }
         return KeyEventResult.handled;
       }
@@ -314,6 +471,8 @@ class InfiniteRunnerGame extends FlameGame
   void startGame() {
     _gameState = GameState.playing;
     _score = 0.0;
+    _obstaclesDodged = 0;
+    _soloElapsedSeconds = 0.0;
     _currentScrollSpeed = _baseScrollSpeed;
     _player.reset();
     _collisionSystem.reset();
@@ -334,7 +493,8 @@ class InfiniteRunnerGame extends FlameGame
   void pauseGame() {
     if (_gameState == GameState.playing) {
       _gameState = GameState.paused;
-      overlays.remove('hud');
+      final hudKey = gameMode == GameMode.race ? 'raceHud' : 'hud';
+      overlays.remove(hudKey);
       overlays.add('paused');
     }
   }
@@ -343,30 +503,251 @@ class InfiniteRunnerGame extends FlameGame
   void resumeGame() {
     if (_gameState == GameState.paused) {
       _gameState = GameState.playing;
+      final hudKey = gameMode == GameMode.race ? 'raceHud' : 'hud';
       overlays.remove('paused');
-      overlays.add('hud');
+      overlays.add(hudKey);
+    }
+  }
+
+  /// Propagate a speed value to all scrolling components
+  void _propagateSpeed(double speed) {
+    _background.updateSpeed(speed);
+    _obstaclePool.updateSpeed(speed);
+    for (final ground in _groundTiles) {
+      ground.updateSpeed(speed);
+    }
+    for (final obstacle in _obstacles) {
+      obstacle.updateSpeed(speed);
+    }
+  }
+
+  /// Check if player has reached the finish line (race mode only)
+  void _checkFinishLine() {
+    if (_distanceTraveled >= trackLength) {
+      _finishTimeSeconds = _raceElapsedMs ~/ 1000;
+      _gameState = GameState.finished;
+      HapticFeedback.vibrate();
+
+      // Notify network (multiplayer) or show local finish immediately (solo race)
+      if (raceClient != null) {
+        raceClient!.stopPositionBroadcast();
+        raceClient!.sendFinish(_raceElapsedMs.toInt());
+        // Don't show finish overlay yet — wait for results from host
+      } else {
+        overlays.remove('raceHud');
+        overlays.add('raceFinish');
+      }
     }
   }
 
   /// Handle collision
   void _handleCollision() {
-    _gameState = GameState.gameOver;
-    _player.die(); // Set player to dead state
-
-    // Update high score
-    if (score > _highScore) {
-      _highScore = score;
-      _saveHighScore();
+    if (gameMode == GameMode.race) {
+      // Shield absorbs the hit
+      if (_player.hasShield) {
+        _player.hasShield = false;
+        _collisionSystem.reset();
+        return;
+      }
+      // Race mode: slow the player down, allow further collisions
+      _player.applySpeedEffect(factor: 0.6, duration: 2.0);
+      _collisionSystem.reset();
+      _slowedByCtrl.add('Hit! Running slower for 2s');
+      HapticFeedback.heavyImpact();
+    } else {
+      // Solo mode: game over
+      _gameState = GameState.gameOver;
+      _player.die();
+      if (score > _highScore) {
+        _highScore = score;
+        _saveHighScore();
+      }
+      overlays.remove('hud');
+      overlays.add('gameOver');
+      HapticFeedback.vibrate();
     }
-
-    overlays.remove('hud');
-    overlays.add('gameOver');
   }
 
-  /// Restart the game
+  /// Activate the player's currently held ability (race mode)
+  void activateAbility() {
+    final ability = _player.heldAbility;
+    if (ability == null || _gameState != GameState.playing) return;
+    _player.heldAbility = null;
+
+    switch (ability) {
+      case AbilityType.speedBoost:
+        _player.applySpeedEffect(factor: 1.5, duration: 5.0);
+      case AbilityType.shield:
+        _player.activateShield();
+      case AbilityType.slowField:
+        // Broadcast so opponents ahead apply the slow to themselves
+        // (In solo / Phase 2: no client, so apply locally as before)
+        if (raceClient == null) {
+          _player.applySpeedEffect(factor: 0.7, duration: 4.0);
+        }
+      case AbilityType.obstacleRain:
+        _spawnObstacleRain();
+    }
+
+    // Broadcast to other players in multiplayer
+    raceClient?.sendAbilityUsed(ability.name);
+  }
+
+  /// Force-spawn 3 obstacles ahead of the current position (obstacleRain ability)
+  void _spawnObstacleRain() {
+    final types = ObstacleType.values;
+    for (int i = 0; i < 3; i++) {
+      final type = types[i % types.length];
+      final spawnXPos = size.x + 120 + i * 180.0;
+      final obstacle = _obstaclePool.acquire(type, Vector2(spawnXPos, groundY));
+      _obstacles.add(obstacle);
+      add(obstacle);
+    }
+  }
+
+  /// Restart solo game
   void restart() {
     overlays.remove('gameOver');
     startGame();
+  }
+
+  /// Begin countdown then race (race mode entry point)
+  void startRace() {
+    _distanceTraveled = 0.0;
+    _raceElapsedMs = 0.0;
+    _lastPropagatedSpeed = 0.0;
+    _score = 0.0;
+    _currentScrollSpeed = _baseScrollSpeed;
+    _player.reset();
+    _collisionSystem.reset();
+    _spawnSystem.reset();
+    for (final obstacle in _obstacles) {
+      remove(obstacle);
+      _obstaclePool.release(obstacle);
+    }
+    _obstacles.clear();
+    for (final pickup in _abilityPickups) {
+      remove(pickup);
+    }
+    _abilityPickups.clear();
+    for (final ghost in _ghosts.values) {
+      remove(ghost);
+    }
+    _ghosts.clear();
+    _gameState = GameState.countdown;
+    overlays.remove('idle');
+    overlays.add('countdown');
+  }
+
+  /// Called by CountdownOverlay when GO! animation completes
+  void beginRacing() {
+    _gameState = GameState.playing;
+    overlays.remove('countdown');
+    overlays.add('raceHud');
+
+    // Multiplayer: wire client events and create ghost components
+    if (raceClient != null && raceRoom != null) {
+      raceClient!.onEvent = _handleNetworkEvent;
+      raceClient!.onHostLeft = _handleHostLeft;
+
+      // Create a ghost for every opponent already in the room
+      for (final opponent in raceRoom!.opponents) {
+        _addGhost(opponent);
+      }
+
+      // Start broadcasting our position every 100ms
+      raceClient!.startPositionBroadcast(() => _distanceTraveled);
+    }
+  }
+
+  void _addGhost(RacePlayerState opponent) {
+    if (_ghosts.containsKey(opponent.playerId)) return;
+    final color =
+        playerColors[opponent.playerId.clamp(0, playerColors.length - 1)];
+    final ghost = GhostPlayer(
+      playerId: opponent.playerId,
+      displayName: opponent.displayName,
+      playerColor: color,
+      groundY: groundY,
+    );
+    _ghosts[opponent.playerId] = ghost;
+    add(ghost);
+  }
+
+  void _handleNetworkEvent(RaceClientEvent event) {
+    switch (event.type) {
+      case RaceClientEventType.playerListUpdated:
+        // A new opponent joined mid-lobby — add a ghost for them
+        if (raceRoom != null) {
+          for (final opponent in raceRoom!.opponents) {
+            _addGhost(opponent);
+          }
+        }
+
+      case RaceClientEventType.positionsUpdated:
+        // Ghost positions are refreshed in _updatePlaying() from raceRoom
+        break;
+
+      case RaceClientEventType.opponentUsedAbility:
+        // Phase 3: if someone activates slowField and we're ahead of them,
+        // apply the slow penalty to ourselves
+        if (event.abilityId == 'slowField' && raceRoom != null) {
+          final opponent = raceRoom!.players.firstWhere(
+            (p) => p.playerId == event.opponentId,
+            orElse: () => RacePlayerState(
+              playerId: event.opponentId ?? -1,
+              displayName: '',
+            ),
+          );
+          if (_distanceTraveled > opponent.distance) {
+            _player.applySpeedEffect(factor: 0.7, duration: 4.0);
+            final name = opponent.displayName.isNotEmpty
+                ? opponent.displayName
+                : 'Opponent';
+            _slowedByCtrl.add('Slowed by $name!');
+            HapticFeedback.mediumImpact();
+          }
+        }
+
+      case RaceClientEventType.resultsReceived:
+        // Show finish overlay if not already shown
+        if (_gameState != GameState.finished) {
+          _gameState = GameState.finished;
+          overlays.remove('raceHud');
+          overlays.add('raceFinish');
+        }
+
+      case RaceClientEventType.playerDisconnected:
+        // Mark ghost as disconnected (faded out handled via isConnected)
+        break;
+
+      case RaceClientEventType.rematchStarting:
+        // Reset room player distances/finish flags for the new race
+        if (raceRoom != null) {
+          for (final p in raceRoom!.players) {
+            raceRoom!.upsertPlayer(
+              p.copyWith(distance: 0, isFinished: false, finishTimeMs: 0),
+            );
+          }
+        }
+        restartRace();
+
+      default:
+        break;
+    }
+  }
+
+  void _handleHostLeft() {
+    raceClient?.stopPositionBroadcast();
+    _gameState = GameState.finished;
+    overlays.remove('raceHud');
+    overlays.add('raceHostLeft');
+  }
+
+  /// Restart a race after finishing
+  void restartRace() {
+    overlays.remove('raceFinish');
+    startRace();
   }
 
   /// Load high score from storage
@@ -421,6 +802,15 @@ class InfiniteRunnerGame extends FlameGame
     // Clear object pool
     _obstaclePool.clear();
 
+    // Disconnect from race network
+    raceClient?.stopPositionBroadcast();
+    raceClient?.disconnect();
+
+    // Close HUD notification channels
+    _abilityToastCtrl.close();
+    _slowedByCtrl.close();
+    gameTick.dispose();
+
     super.onRemove();
   }
 
@@ -449,6 +839,11 @@ class InfiniteRunnerGame extends FlameGame
     // Update player position to always be on the ground
     final newGroundY = groundY;
     _player.updateGroundY(newGroundY);
+
+    // Update ghost ground Y
+    for (final ghost in _ghosts.values) {
+      ghost.updateGroundY(newGroundY);
+    }
 
     // Update spawn system with new dimensions
     _spawnSystem.updateDimensions(size.x, groundY);

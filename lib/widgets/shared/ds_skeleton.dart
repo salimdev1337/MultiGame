@@ -7,11 +7,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:multigame/design_system/design_system.dart';
 
 /// Skeleton shape types
-enum DSSkeletonShape {
-  rectangle,
-  circle,
-  roundedRectangle,
-}
+enum DSSkeletonShape { rectangle, circle, roundedRectangle }
 
 /// Basic skeleton widget with shimmer effect
 class DSSkeleton extends StatelessWidget {
@@ -29,14 +25,8 @@ class DSSkeleton extends StatelessWidget {
   });
 
   /// Factory: Circle skeleton (for avatars)
-  factory DSSkeleton.circle({
-    required double size,
-  }) {
-    return DSSkeleton(
-      width: size,
-      height: size,
-      shape: DSSkeletonShape.circle,
-    );
+  factory DSSkeleton.circle({required double size}) {
+    return DSSkeleton(width: size, height: size, shape: DSSkeletonShape.circle);
   }
 
   /// Factory: Rectangle with rounded corners
@@ -102,9 +92,7 @@ class DSSkeletonText extends StatelessWidget {
             : width;
 
         return Padding(
-          padding: EdgeInsets.only(
-            bottom: index < lines - 1 ? spacing : 0,
-          ),
+          padding: EdgeInsets.only(bottom: index < lines - 1 ? spacing : 0),
           child: DSSkeleton.rounded(
             width: lineWidth,
             height: lineHeight,
@@ -155,24 +143,15 @@ class DSSkeletonListItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                DSSkeleton.rounded(
-                  width: double.infinity,
-                  height: 16,
-                ),
+                DSSkeleton.rounded(width: double.infinity, height: 16),
                 DSSpacing.gapVerticalXS,
-                DSSkeleton.rounded(
-                  width: 150,
-                  height: 12,
-                ),
+                DSSkeleton.rounded(width: 150, height: 12),
               ],
             ),
           ),
           if (hasTrailing) ...[
             DSSpacing.gapHorizontalMD,
-            DSSkeleton.rounded(
-              width: 60,
-              height: 32,
-            ),
+            DSSkeleton.rounded(width: 60, height: 32),
           ],
         ],
       ),
@@ -188,10 +167,7 @@ class DSSkeletonAchievementCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: DSSpacing.xs),
-      child: DSSkeletonListItem(
-        hasAvatar: true,
-        hasTrailing: true,
-      ),
+      child: DSSkeletonListItem(hasAvatar: true, hasTrailing: true),
     );
   }
 }
@@ -206,15 +182,9 @@ class DSSkeletonProfileHeader extends StatelessWidget {
       children: [
         DSSkeleton.circle(size: 120),
         DSSpacing.gapVerticalLG,
-        DSSkeleton.rounded(
-          width: 200,
-          height: 28,
-        ),
+        DSSkeleton.rounded(width: 200, height: 28),
         DSSpacing.gapVerticalSM,
-        DSSkeleton.rounded(
-          width: 150,
-          height: 16,
-        ),
+        DSSkeleton.rounded(width: 150, height: 16),
       ],
     );
   }
@@ -224,10 +194,7 @@ class DSSkeletonProfileHeader extends StatelessWidget {
 class DSSkeletonLeaderboardEntry extends StatelessWidget {
   final int rank;
 
-  const DSSkeletonLeaderboardEntry({
-    super.key,
-    required this.rank,
-  });
+  const DSSkeletonLeaderboardEntry({super.key, required this.rank});
 
   @override
   Widget build(BuildContext context) {
@@ -236,10 +203,7 @@ class DSSkeletonLeaderboardEntry extends StatelessWidget {
       child: Row(
         children: [
           // Rank number
-          DSSkeleton.rounded(
-            width: 32,
-            height: 32,
-          ),
+          DSSkeleton.rounded(width: 32, height: 32),
           DSSpacing.gapHorizontalMD,
           // Avatar
           DSSkeleton.circle(size: 48),
@@ -249,23 +213,14 @@ class DSSkeletonLeaderboardEntry extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                DSSkeleton.rounded(
-                  width: double.infinity,
-                  height: 16,
-                ),
+                DSSkeleton.rounded(width: double.infinity, height: 16),
                 DSSpacing.gapVerticalXS,
-                DSSkeleton.rounded(
-                  width: 100,
-                  height: 12,
-                ),
+                DSSkeleton.rounded(width: 100, height: 12),
               ],
             ),
           ),
           // Score
-          DSSkeleton.rounded(
-            width: 80,
-            height: 24,
-          ),
+          DSSkeleton.rounded(width: 80, height: 24),
         ],
       ),
     );
@@ -276,10 +231,7 @@ class DSSkeletonLeaderboardEntry extends StatelessWidget {
 class DSSkeletonFullScreen extends StatelessWidget {
   final String? message;
 
-  const DSSkeletonFullScreen({
-    super.key,
-    this.message,
-  });
+  const DSSkeletonFullScreen({super.key, this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -289,11 +241,7 @@ class DSSkeletonFullScreen extends StatelessWidget {
         children: [
           DSSkeleton.circle(size: 64),
           DSSpacing.gapVerticalLG,
-          if (message != null)
-            Text(
-              message!,
-              style: DSTypography.bodyMedium,
-            ),
+          if (message != null) Text(message!, style: DSTypography.bodyMedium),
         ],
       ),
     );

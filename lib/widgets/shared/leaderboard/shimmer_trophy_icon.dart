@@ -5,11 +5,7 @@ class ShimmerTrophyIcon extends StatefulWidget {
   final int rank;
   final double size;
 
-  const ShimmerTrophyIcon({
-    super.key,
-    required this.rank,
-    this.size = 40,
-  });
+  const ShimmerTrophyIcon({super.key, required this.rank, this.size = 40});
 
   @override
   State<ShimmerTrophyIcon> createState() => _ShimmerTrophyIconState();

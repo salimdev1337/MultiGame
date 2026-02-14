@@ -287,7 +287,10 @@ class _LeaderboardTabState extends ConsumerState<LeaderboardTab> {
 
     return StreamBuilder<List<LeaderboardEntry>>(
       key: ValueKey(_refreshKey),
-      stream: _statsService.leaderboardStream(gameType: widget.gameType, limit: 100),
+      stream: _statsService.leaderboardStream(
+        gameType: widget.gameType,
+        limit: 100,
+      ),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(
@@ -425,21 +428,18 @@ class _LeaderboardTabState extends ConsumerState<LeaderboardTab> {
                   SliverPadding(
                     padding: EdgeInsets.symmetric(horizontal: DSSpacing.md),
                     sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final entry = entries[index];
-                          final rank = index + 1;
-                          final isCurrentUser =
-                              authProvider.userId == entry.userId;
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        final entry = entries[index];
+                        final rank = index + 1;
+                        final isCurrentUser =
+                            authProvider.userId == entry.userId;
 
-                          return _LeaderboardListItem(
-                            entry: entry,
-                            rank: rank,
-                            isCurrentUser: isCurrentUser,
-                          );
-                        },
-                        childCount: entries.length,
-                      ),
+                        return _LeaderboardListItem(
+                          entry: entry,
+                          rank: rank,
+                          isCurrentUser: isCurrentUser,
+                        );
+                      }, childCount: entries.length),
                     ),
                   ),
                   // Bottom padding for sticky rank card
@@ -518,9 +518,7 @@ class _LeaderboardListItem extends StatelessWidget {
         colors: [Color(0xFFCD7F32), Color(0xFF8B4513)],
       );
     } else {
-      solidColor = isCurrentUser
-          ? DSColors.primary
-          : DSColors.surface;
+      solidColor = isCurrentUser ? DSColors.primary : DSColors.surface;
     }
 
     return Container(
@@ -590,9 +588,7 @@ class _LeaderboardListItem extends StatelessWidget {
               : DSColors.textTertiary.withValues(alpha: 0.05),
           width: 1,
         ),
-        boxShadow: isCurrentUser
-            ? DSShadows.shadowPrimary
-            : DSShadows.shadowSm,
+        boxShadow: isCurrentUser ? DSShadows.shadowPrimary : DSShadows.shadowSm,
       ),
       child: Padding(
         padding: DSSpacing.paddingMD,
@@ -604,8 +600,7 @@ class _LeaderboardListItem extends StatelessWidget {
               child: Text(
                 entry.displayName,
                 style: DSTypography.bodyLarge.copyWith(
-                  fontWeight:
-                      isCurrentUser ? FontWeight.bold : FontWeight.w600,
+                  fontWeight: isCurrentUser ? FontWeight.bold : FontWeight.w600,
                   color: DSColors.textPrimary,
                 ),
                 overflow: TextOverflow.ellipsis,

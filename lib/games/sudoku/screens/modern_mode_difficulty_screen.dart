@@ -16,8 +16,7 @@ class ModernModeDifficultyScreen extends StatefulWidget {
       _ModernModeDifficultyScreenState();
 }
 
-class _ModernModeDifficultyScreenState
-    extends State<ModernModeDifficultyScreen>
+class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -110,22 +109,22 @@ class _ModernModeDifficultyScreenState
   }
 
   _ModeData get _currentMode => switch (_currentTab) {
-        0 => const _ModeData(
-            title: 'Classic',
-            icon: Icons.grid_on,
-            gradient: SudokuColors.classicGradient,
-          ),
-        1 => const _ModeData(
-            title: 'Rush',
-            icon: Icons.flash_on,
-            gradient: SudokuColors.rushGradient,
-          ),
-        _ => const _ModeData(
-            title: 'Online 1v1',
-            icon: Icons.people,
-            gradient: SudokuColors.onlineGradient,
-          ),
-      };
+    0 => const _ModeData(
+      title: 'Classic',
+      icon: Icons.grid_on,
+      gradient: SudokuColors.classicGradient,
+    ),
+    1 => const _ModeData(
+      title: 'Rush',
+      icon: Icons.flash_on,
+      gradient: SudokuColors.rushGradient,
+    ),
+    _ => const _ModeData(
+      title: 'Online 1v1',
+      icon: Icons.people,
+      gradient: SudokuColors.onlineGradient,
+    ),
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -257,7 +256,7 @@ class _ModernModeDifficultyScreenState
               ),
             ],
           ),
-              // Block touches on the Online tab (right third of the bar)
+          // Block touches on the Online tab (right third of the bar)
           Positioned.fill(
             child: LayoutBuilder(
               builder: (context, constraints) => Align(
@@ -325,8 +324,9 @@ class _ModernModeDifficultyScreenState
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: data.color
-                        .withValues(alpha: isSelected ? 0.45 : 0.15),
+                    color: data.color.withValues(
+                      alpha: isSelected ? 0.45 : 0.15,
+                    ),
                     blurRadius: isSelected ? 18 : 8,
                     spreadRadius: isSelected ? 1 : 0,
                   ),
@@ -334,7 +334,9 @@ class _ModernModeDifficultyScreenState
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 10),
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 child: Row(
                   children: [
                     Container(
@@ -373,8 +375,7 @@ class _ModernModeDifficultyScreenState
                       ),
                     ),
                     if (isSelected)
-                      Icon(Icons.check_circle,
-                          color: data.color, size: 18),
+                      Icon(Icons.check_circle, color: data.color, size: 18),
                   ],
                 ),
               ),
@@ -442,8 +443,10 @@ class _ModernModeDifficultyScreenState
               ),
               const SizedBox(height: 20),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
@@ -518,8 +521,11 @@ class _ModernModeDifficultyScreenState
                   ),
                   if (canStart) ...[
                     const SizedBox(width: 10),
-                    const Icon(Icons.arrow_forward,
-                        color: Colors.white, size: 20),
+                    const Icon(
+                      Icons.arrow_forward,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ],
                 ],
               ),

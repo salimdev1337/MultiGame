@@ -89,7 +89,10 @@ class MockFlutterSecureStorage implements FlutterSecureStorage {
   Future<bool> isCupertinoProtectedDataAvailable() async => true;
 
   @override
-  void registerListener({required String key, required void Function(String value) listener}) {}
+  void registerListener({
+    required String key,
+    required void Function(String value) listener,
+  }) {}
 
   @override
   void unregisterAllListeners() {}
@@ -98,7 +101,10 @@ class MockFlutterSecureStorage implements FlutterSecureStorage {
   void unregisterAllListenersForKey({required String key}) {}
 
   @override
-  void unregisterListener({required String key, required void Function(String value) listener}) {}
+  void unregisterListener({
+    required String key,
+    required void Function(String value) listener,
+  }) {}
 
   // Stub methods for completeness
   @override
@@ -147,7 +153,10 @@ void main() {
     });
 
     test('reads value with special characters', () async {
-      await mockStorage.write(key: 'special_key', value: 'Value with émojis 🔥 and symbols: @#\$%');
+      await mockStorage.write(
+        key: 'special_key',
+        value: 'Value with émojis 🔥 and symbols: @#\$%',
+      );
 
       final result = await repository.read('special_key');
 
@@ -190,10 +199,16 @@ void main() {
     });
 
     test('writes value with special characters', () async {
-      final result = await repository.write('special', 'Émojis 🚀 and symbols: !@#\$%^&*()');
+      final result = await repository.write(
+        'special',
+        'Émojis 🚀 and symbols: !@#\$%^&*()',
+      );
 
       expect(result, true);
-      expect(await mockStorage.read(key: 'special'), 'Émojis 🚀 and symbols: !@#\$%^&*()');
+      expect(
+        await mockStorage.read(key: 'special'),
+        'Émojis 🚀 and symbols: !@#\$%^&*()',
+      );
     });
 
     test('writes very long value', () async {

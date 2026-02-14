@@ -13,9 +13,11 @@ import 'package:multigame/utils/secure_logger.dart';
 class MatchmakingService {
   final FirebaseFirestore _firestore;
   static const String _matchesCollection = 'sudoku_matches';
+  static const String _matchNotFound = 'Match not found';
+  static const String _userNotInMatch = 'User not in match';
 
   MatchmakingService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   Future<String> createMatch({
     required String userId,
@@ -46,7 +48,9 @@ class MatchmakingService {
 
       await docRef.set(matchRoom.toJson());
 
-      SecureLogger.firebase('Match created: ${docRef.id} ($difficulty) - Code: $roomCode');
+      SecureLogger.firebase(
+        'Match created: ${docRef.id} ($difficulty) - Code: $roomCode',
+      );
 
       return docRef.id;
     } catch (e) {
@@ -79,7 +83,9 @@ class MatchmakingService {
       }
 
       final matchDoc = snapshot.docs.first;
-      final matchRoom = MatchRoom.fromJson(matchDoc.data() as Map<String, dynamic>);
+      final matchRoom = MatchRoom.fromJson(
+        matchDoc.data() as Map<String, dynamic>,
+      );
 
       if (matchRoom.player1?.userId == userId) {
         SecureLogger.log('Cannot join own match', tag: 'Matchmaking');
@@ -134,11 +140,11 @@ class MatchmakingService {
         .doc(matchId)
         .snapshots()
         .map((snapshot) {
-      if (!snapshot.exists) {
-        throw Exception('Match not found');
-      }
-      return MatchRoom.fromJson(snapshot.data() as Map<String, dynamic>);
-    });
+          if (!snapshot.exists) {
+            throw Exception(_matchNotFound);
+          }
+          return MatchRoom.fromJson(snapshot.data() as Map<String, dynamic>);
+        });
   }
 
   Future<void> updatePlayerBoard({
@@ -152,27 +158,21 @@ class MatchmakingService {
       final snapshot = await matchDoc.get();
 
       if (!snapshot.exists) {
-        throw Exception('Match not found');
+        throw Exception(_matchNotFound);
       }
 
-      final matchRoom = MatchRoom.fromJson(snapshot.data() as Map<String, dynamic>);
+      final matchRoom = MatchRoom.fromJson(
+        snapshot.data() as Map<String, dynamic>,
+      );
       final isPlayer1 = matchRoom.player1?.userId == userId;
 
       if (!isPlayer1 && matchRoom.player2?.userId != userId) {
-        throw Exception('User not in match');
+        throw Exception(_userNotInMatch);
       }
 
       final currentPlayer = isPlayer1 ? matchRoom.player1! : matchRoom.player2!;
 
-      int filledCells = 0;
-      for (int row = 0; row < 9; row++) {
-        for (int col = 0; col < 9; col++) {
-          final cellValue = board.getCell(row, col).value;
-          if (cellValue != null) {
-            filledCells++;
-          }
-        }
-      }
+      final filledCells = _countFilledCells(board);
 
       final updatedPlayer = currentPlayer.copyWith(
         boardState: board.toValues(),
@@ -296,7 +296,9 @@ class MatchmakingService {
           'endedAt': DateTime.now().toIso8601String(),
         });
 
-        SecureLogger.firebase('Match timed out: $matchId (winner: ${winnerId ?? "tie"})');
+        SecureLogger.firebase(
+          'Match timed out: $matchId (winner: ${winnerId ?? "tie"})',
+        );
       }
     } catch (e) {
       SecureLogger.error('Failed to handle timeout', error: e);
@@ -344,7 +346,9 @@ class MatchmakingService {
         'lastActivityAt': DateTime.now().toIso8601String(),
       });
 
-      SecureLogger.firebase('Joined match via code: ${matchDoc.id} (code: $roomCode)');
+      SecureLogger.firebase(
+        'Joined match via code: ${matchDoc.id} (code: $roomCode)',
+      );
 
       return matchDoc.id;
     } catch (e) {
@@ -363,14 +367,14 @@ class MatchmakingService {
       final snapshot = await matchDoc.get();
 
       if (!snapshot.exists) {
-        throw Exception('Match not found');
+        throw Exception(_matchNotFound);
       }
 
       final matchRoom = MatchRoom.fromJson(snapshot.data()!);
       final isPlayer1 = matchRoom.player1?.userId == userId;
 
       if (!isPlayer1 && matchRoom.player2?.userId != userId) {
-        throw Exception('User not in match');
+        throw Exception(_userNotInMatch);
       }
 
       final currentPlayer = isPlayer1 ? matchRoom.player1! : matchRoom.player2!;
@@ -400,14 +404,14 @@ class MatchmakingService {
       final snapshot = await matchDoc.get();
 
       if (!snapshot.exists) {
-        throw Exception('Match not found');
+        throw Exception(_matchNotFound);
       }
 
       final matchRoom = MatchRoom.fromJson(snapshot.data()!);
       final isPlayer1 = matchRoom.player1?.userId == userId;
 
       if (!isPlayer1 && matchRoom.player2?.userId != userId) {
-        throw Exception('User not in match');
+        throw Exception(_userNotInMatch);
       }
 
       final currentPlayer = isPlayer1 ? matchRoom.player1! : matchRoom.player2!;
@@ -423,6 +427,16 @@ class MatchmakingService {
       SecureLogger.error('Failed to update player stats', error: e);
       rethrow;
     }
+  }
+
+  int _countFilledCells(SudokuBoard board) {
+    int count = 0;
+    for (int row = 0; row < 9; row++) {
+      for (int col = 0; col < 9; col++) {
+        if (board.getCell(row, col).value != null) count++;
+      }
+    }
+    return count;
   }
 
   String _generateRoomCode() {

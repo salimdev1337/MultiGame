@@ -115,17 +115,32 @@ void main() {
 
       registry.register(game1);
 
-      expect(
-        () => registry.register(game2),
-        throwsA(isA<ArgumentError>()),
-      );
+      expect(() => registry.register(game2), throwsA(isA<ArgumentError>()));
     });
 
     test('registers multiple different games', () {
       final games = [
-        MockGameDefinition(id: 'game1', displayName: 'Game 1', description: 'Desc 1', icon: Icons.games, route: '/1'),
-        MockGameDefinition(id: 'game2', displayName: 'Game 2', description: 'Desc 2', icon: Icons.gamepad, route: '/2'),
-        MockGameDefinition(id: 'game3', displayName: 'Game 3', description: 'Desc 3', icon: Icons.sports_esports, route: '/3'),
+        MockGameDefinition(
+          id: 'game1',
+          displayName: 'Game 1',
+          description: 'Desc 1',
+          icon: Icons.games,
+          route: '/1',
+        ),
+        MockGameDefinition(
+          id: 'game2',
+          displayName: 'Game 2',
+          description: 'Desc 2',
+          icon: Icons.gamepad,
+          route: '/2',
+        ),
+        MockGameDefinition(
+          id: 'game3',
+          displayName: 'Game 3',
+          description: 'Desc 3',
+          icon: Icons.sports_esports,
+          route: '/3',
+        ),
       ];
 
       for (final game in games) {
@@ -139,9 +154,27 @@ void main() {
     });
 
     test('maintains registration order', () {
-      final game1 = MockGameDefinition(id: 'first', displayName: 'First', description: 'D1', icon: Icons.looks_one, route: '/1');
-      final game2 = MockGameDefinition(id: 'second', displayName: 'Second', description: 'D2', icon: Icons.looks_two, route: '/2');
-      final game3 = MockGameDefinition(id: 'third', displayName: 'Third', description: 'D3', icon: Icons.looks_3, route: '/3');
+      final game1 = MockGameDefinition(
+        id: 'first',
+        displayName: 'First',
+        description: 'D1',
+        icon: Icons.looks_one,
+        route: '/1',
+      );
+      final game2 = MockGameDefinition(
+        id: 'second',
+        displayName: 'Second',
+        description: 'D2',
+        icon: Icons.looks_two,
+        route: '/2',
+      );
+      final game3 = MockGameDefinition(
+        id: 'third',
+        displayName: 'Third',
+        description: 'D3',
+        icon: Icons.looks_3,
+        route: '/3',
+      );
 
       registry.register(game1);
       registry.register(game2);
@@ -156,7 +189,13 @@ void main() {
 
   group('GameRegistry - unregister', () {
     test('unregisters a game successfully', () {
-      final game = MockGameDefinition(id: 'temp_game', displayName: 'Temp', description: 'Desc', icon: Icons.gamepad, route: '/temp');
+      final game = MockGameDefinition(
+        id: 'temp_game',
+        displayName: 'Temp',
+        description: 'Desc',
+        icon: Icons.gamepad,
+        route: '/temp',
+      );
 
       registry.register(game);
       expect(registry.hasGame('temp_game'), true);
@@ -167,9 +206,27 @@ void main() {
     });
 
     test('unregister removes from registration order', () {
-      final game1 = MockGameDefinition(id: 'game1', displayName: 'Game 1', description: 'D1', icon: Icons.games, route: '/1');
-      final game2 = MockGameDefinition(id: 'game2', displayName: 'Game 2', description: 'D2', icon: Icons.gamepad, route: '/2');
-      final game3 = MockGameDefinition(id: 'game3', displayName: 'Game 3', description: 'D3', icon: Icons.sports, route: '/3');
+      final game1 = MockGameDefinition(
+        id: 'game1',
+        displayName: 'Game 1',
+        description: 'D1',
+        icon: Icons.games,
+        route: '/1',
+      );
+      final game2 = MockGameDefinition(
+        id: 'game2',
+        displayName: 'Game 2',
+        description: 'D2',
+        icon: Icons.gamepad,
+        route: '/2',
+      );
+      final game3 = MockGameDefinition(
+        id: 'game3',
+        displayName: 'Game 3',
+        description: 'D3',
+        icon: Icons.sports,
+        route: '/3',
+      );
 
       registry.register(game1);
       registry.register(game2);
@@ -212,8 +269,20 @@ void main() {
     });
 
     test('retrieves correct game when multiple are registered', () {
-      final game1 = MockGameDefinition(id: 'game1', displayName: 'Game 1', description: 'D1', icon: Icons.games, route: '/1');
-      final game2 = MockGameDefinition(id: 'game2', displayName: 'Game 2', description: 'D2', icon: Icons.gamepad, route: '/2');
+      final game1 = MockGameDefinition(
+        id: 'game1',
+        displayName: 'Game 1',
+        description: 'D1',
+        icon: Icons.games,
+        route: '/1',
+      );
+      final game2 = MockGameDefinition(
+        id: 'game2',
+        displayName: 'Game 2',
+        description: 'D2',
+        icon: Icons.gamepad,
+        route: '/2',
+      );
 
       registry.register(game1);
       registry.register(game2);
@@ -230,8 +299,20 @@ void main() {
     });
 
     test('returns all registered games', () {
-      final game1 = MockGameDefinition(id: 'game1', displayName: 'Game 1', description: 'D1', icon: Icons.games, route: '/1');
-      final game2 = MockGameDefinition(id: 'game2', displayName: 'Game 2', description: 'D2', icon: Icons.gamepad, route: '/2');
+      final game1 = MockGameDefinition(
+        id: 'game1',
+        displayName: 'Game 1',
+        description: 'D1',
+        icon: Icons.games,
+        route: '/1',
+      );
+      final game2 = MockGameDefinition(
+        id: 'game2',
+        displayName: 'Game 2',
+        description: 'D2',
+        icon: Icons.gamepad,
+        route: '/2',
+      );
 
       registry.register(game1);
       registry.register(game2);
@@ -241,9 +322,27 @@ void main() {
     });
 
     test('maintains registration order', () {
-      final game1 = MockGameDefinition(id: 'first', displayName: 'First', description: 'D1', icon: Icons.looks_one, route: '/1');
-      final game2 = MockGameDefinition(id: 'second', displayName: 'Second', description: 'D2', icon: Icons.looks_two, route: '/2');
-      final game3 = MockGameDefinition(id: 'third', displayName: 'Third', description: 'D3', icon: Icons.looks_3, route: '/3');
+      final game1 = MockGameDefinition(
+        id: 'first',
+        displayName: 'First',
+        description: 'D1',
+        icon: Icons.looks_one,
+        route: '/1',
+      );
+      final game2 = MockGameDefinition(
+        id: 'second',
+        displayName: 'Second',
+        description: 'D2',
+        icon: Icons.looks_two,
+        route: '/2',
+      );
+      final game3 = MockGameDefinition(
+        id: 'third',
+        displayName: 'Third',
+        description: 'D3',
+        icon: Icons.looks_3,
+        route: '/3',
+      );
 
       registry.register(game1);
       registry.register(game2);
@@ -285,8 +384,22 @@ void main() {
     });
 
     test('returns empty list when no games are available', () {
-      final game1 = MockGameDefinition(id: 'game1', displayName: 'Game 1', description: 'D1', icon: Icons.games, route: '/1', isAvailable: false);
-      final game2 = MockGameDefinition(id: 'game2', displayName: 'Game 2', description: 'D2', icon: Icons.gamepad, route: '/2', isAvailable: false);
+      final game1 = MockGameDefinition(
+        id: 'game1',
+        displayName: 'Game 1',
+        description: 'D1',
+        icon: Icons.games,
+        route: '/1',
+        isAvailable: false,
+      );
+      final game2 = MockGameDefinition(
+        id: 'game2',
+        displayName: 'Game 2',
+        description: 'D2',
+        icon: Icons.gamepad,
+        route: '/2',
+        isAvailable: false,
+      );
 
       registry.register(game1);
       registry.register(game2);
@@ -296,8 +409,22 @@ void main() {
     });
 
     test('returns all games when all are available', () {
-      final game1 = MockGameDefinition(id: 'game1', displayName: 'Game 1', description: 'D1', icon: Icons.games, route: '/1', isAvailable: true);
-      final game2 = MockGameDefinition(id: 'game2', displayName: 'Game 2', description: 'D2', icon: Icons.gamepad, route: '/2', isAvailable: true);
+      final game1 = MockGameDefinition(
+        id: 'game1',
+        displayName: 'Game 1',
+        description: 'D1',
+        icon: Icons.games,
+        route: '/1',
+        isAvailable: true,
+      );
+      final game2 = MockGameDefinition(
+        id: 'game2',
+        displayName: 'Game 2',
+        description: 'D2',
+        icon: Icons.gamepad,
+        route: '/2',
+        isAvailable: true,
+      );
 
       registry.register(game1);
       registry.register(game2);
@@ -309,9 +436,30 @@ void main() {
 
   group('GameRegistry - getGamesByCategory', () {
     test('returns games in specified category', () {
-      final puzzle1 = MockGameDefinition(id: 'puzzle1', displayName: 'Puzzle 1', description: 'D1', icon: Icons.extension, route: '/p1', category: 'puzzle');
-      final puzzle2 = MockGameDefinition(id: 'puzzle2', displayName: 'Puzzle 2', description: 'D2', icon: Icons.grid_4x4, route: '/p2', category: 'puzzle');
-      final arcade = MockGameDefinition(id: 'arcade1', displayName: 'Arcade 1', description: 'D3', icon: Icons.gamepad, route: '/a1', category: 'arcade');
+      final puzzle1 = MockGameDefinition(
+        id: 'puzzle1',
+        displayName: 'Puzzle 1',
+        description: 'D1',
+        icon: Icons.extension,
+        route: '/p1',
+        category: 'puzzle',
+      );
+      final puzzle2 = MockGameDefinition(
+        id: 'puzzle2',
+        displayName: 'Puzzle 2',
+        description: 'D2',
+        icon: Icons.grid_4x4,
+        route: '/p2',
+        category: 'puzzle',
+      );
+      final arcade = MockGameDefinition(
+        id: 'arcade1',
+        displayName: 'Arcade 1',
+        description: 'D3',
+        icon: Icons.gamepad,
+        route: '/a1',
+        category: 'arcade',
+      );
 
       registry.register(puzzle1);
       registry.register(puzzle2);
@@ -324,7 +472,14 @@ void main() {
     });
 
     test('returns empty list for non-existent category', () {
-      final game = MockGameDefinition(id: 'game1', displayName: 'Game 1', description: 'D1', icon: Icons.games, route: '/1', category: 'puzzle');
+      final game = MockGameDefinition(
+        id: 'game1',
+        displayName: 'Game 1',
+        description: 'D1',
+        icon: Icons.games,
+        route: '/1',
+        category: 'puzzle',
+      );
       registry.register(game);
 
       final strategyGames = registry.getGamesByCategory('strategy');
@@ -339,7 +494,13 @@ void main() {
 
   group('GameRegistry - hasGame', () {
     test('returns true for registered game', () {
-      final game = MockGameDefinition(id: 'test', displayName: 'Test', description: 'D', icon: Icons.gamepad, route: '/test');
+      final game = MockGameDefinition(
+        id: 'test',
+        displayName: 'Test',
+        description: 'D',
+        icon: Icons.gamepad,
+        route: '/test',
+      );
       registry.register(game);
 
       expect(registry.hasGame('test'), true);
@@ -350,7 +511,13 @@ void main() {
     });
 
     test('returns false after game is unregistered', () {
-      final game = MockGameDefinition(id: 'temp', displayName: 'Temp', description: 'D', icon: Icons.gamepad, route: '/temp');
+      final game = MockGameDefinition(
+        id: 'temp',
+        displayName: 'Temp',
+        description: 'D',
+        icon: Icons.gamepad,
+        route: '/temp',
+      );
       registry.register(game);
 
       registry.unregister('temp');
@@ -364,9 +531,27 @@ void main() {
     });
 
     test('returns correct count after registrations', () {
-      final game1 = MockGameDefinition(id: 'game1', displayName: 'Game 1', description: 'D1', icon: Icons.games, route: '/1');
-      final game2 = MockGameDefinition(id: 'game2', displayName: 'Game 2', description: 'D2', icon: Icons.gamepad, route: '/2');
-      final game3 = MockGameDefinition(id: 'game3', displayName: 'Game 3', description: 'D3', icon: Icons.sports, route: '/3');
+      final game1 = MockGameDefinition(
+        id: 'game1',
+        displayName: 'Game 1',
+        description: 'D1',
+        icon: Icons.games,
+        route: '/1',
+      );
+      final game2 = MockGameDefinition(
+        id: 'game2',
+        displayName: 'Game 2',
+        description: 'D2',
+        icon: Icons.gamepad,
+        route: '/2',
+      );
+      final game3 = MockGameDefinition(
+        id: 'game3',
+        displayName: 'Game 3',
+        description: 'D3',
+        icon: Icons.sports,
+        route: '/3',
+      );
 
       registry.register(game1);
       expect(registry.gameCount, 1);
@@ -379,8 +564,20 @@ void main() {
     });
 
     test('decrements after unregistration', () {
-      final game1 = MockGameDefinition(id: 'game1', displayName: 'Game 1', description: 'D1', icon: Icons.games, route: '/1');
-      final game2 = MockGameDefinition(id: 'game2', displayName: 'Game 2', description: 'D2', icon: Icons.gamepad, route: '/2');
+      final game1 = MockGameDefinition(
+        id: 'game1',
+        displayName: 'Game 1',
+        description: 'D1',
+        icon: Icons.games,
+        route: '/1',
+      );
+      final game2 = MockGameDefinition(
+        id: 'game2',
+        displayName: 'Game 2',
+        description: 'D2',
+        icon: Icons.gamepad,
+        route: '/2',
+      );
 
       registry.register(game1);
       registry.register(game2);
@@ -393,8 +590,20 @@ void main() {
 
   group('GameRegistry - clear', () {
     test('clears all registered games', () {
-      final game1 = MockGameDefinition(id: 'game1', displayName: 'Game 1', description: 'D1', icon: Icons.games, route: '/1');
-      final game2 = MockGameDefinition(id: 'game2', displayName: 'Game 2', description: 'D2', icon: Icons.gamepad, route: '/2');
+      final game1 = MockGameDefinition(
+        id: 'game1',
+        displayName: 'Game 1',
+        description: 'D1',
+        icon: Icons.games,
+        route: '/1',
+      );
+      final game2 = MockGameDefinition(
+        id: 'game2',
+        displayName: 'Game 2',
+        description: 'D2',
+        icon: Icons.gamepad,
+        route: '/2',
+      );
 
       registry.register(game1);
       registry.register(game2);
@@ -407,7 +616,13 @@ void main() {
     });
 
     test('allows re-registration after clear', () {
-      final game = MockGameDefinition(id: 'game1', displayName: 'Game 1', description: 'D1', icon: Icons.games, route: '/1');
+      final game = MockGameDefinition(
+        id: 'game1',
+        displayName: 'Game 1',
+        description: 'D1',
+        icon: Icons.games,
+        route: '/1',
+      );
 
       registry.register(game);
       registry.clear();
@@ -418,8 +633,20 @@ void main() {
     });
 
     test('clears registration order', () {
-      final game1 = MockGameDefinition(id: 'game1', displayName: 'Game 1', description: 'D1', icon: Icons.games, route: '/1');
-      final game2 = MockGameDefinition(id: 'game2', displayName: 'Game 2', description: 'D2', icon: Icons.gamepad, route: '/2');
+      final game1 = MockGameDefinition(
+        id: 'game1',
+        displayName: 'Game 1',
+        description: 'D1',
+        icon: Icons.games,
+        route: '/1',
+      );
+      final game2 = MockGameDefinition(
+        id: 'game2',
+        displayName: 'Game 2',
+        description: 'D2',
+        icon: Icons.gamepad,
+        route: '/2',
+      );
 
       registry.register(game1);
       registry.register(game2);

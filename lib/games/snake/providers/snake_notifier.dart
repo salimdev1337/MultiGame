@@ -17,16 +17,16 @@ class SnakeState {
   // Cache all 400 grid cells once — used by _spawnFood
   static final Set<Offset> _allCells = {
     for (int x = 0; x < gridSize; x++)
-      for (int y = 0; y < gridSize; y++)
-        Offset(x.toDouble(), y.toDouble()),
+      for (int y = 0; y < gridSize; y++) Offset(x.toDouble(), y.toDouble()),
   };
   static Set<Offset> get allCells => _allCells;
 
   final List<Offset> snake;
-  final Set<Offset> snakeSet;       // O(1) collision lookup
-  final List<Offset> previousSnake; // snapshot before last tick (for interpolation)
-  final int lastTickUs;             // microseconds epoch at last tick
-  final bool foodEaten;             // true only on the tick food was collected
+  final Set<Offset> snakeSet; // O(1) collision lookup
+  final List<Offset>
+  previousSnake; // snapshot before last tick (for interpolation)
+  final int lastTickUs; // microseconds epoch at last tick
+  final bool foodEaten; // true only on the tick food was collected
 
   final Offset food;
   final Direction currentDirection;
@@ -71,7 +71,7 @@ class SnakeState {
     final nextSnake = snake ?? this.snake;
     return SnakeState(
       snake: nextSnake,
-      snakeSet: nextSnake.toSet(),  // always derived from snake
+      snakeSet: nextSnake.toSet(), // always derived from snake
       previousSnake: previousSnake ?? this.previousSnake,
       lastTickUs: lastTickUs ?? this.lastTickUs,
       foodEaten: foodEaten ?? this.foodEaten,
@@ -232,11 +232,14 @@ class SnakeNotifier extends GameStatsNotifier<SnakeState> {
 
   void _gameOver() {
     _timer?.cancel();
-    final newHigh = state.score > state.highScore ? state.score : state.highScore;
+    final newHigh = state.score > state.highScore
+        ? state.score
+        : state.highScore;
     state = state.copyWith(playing: false, highScore: newHigh);
     saveScore('snake', state.score);
   }
 }
 
-final snakeProvider =
-    NotifierProvider.autoDispose<SnakeNotifier, SnakeState>(SnakeNotifier.new);
+final snakeProvider = NotifierProvider.autoDispose<SnakeNotifier, SnakeState>(
+  SnakeNotifier.new,
+);

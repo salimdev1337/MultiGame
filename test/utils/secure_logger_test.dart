@@ -9,7 +9,11 @@ void main() {
     });
 
     test('masks value with custom visibility', () {
-      final result = SecureLogger.maskValue('uid_abc123def456', visibleStart: 4, visibleEnd: 3);
+      final result = SecureLogger.maskValue(
+        'uid_abc123def456',
+        visibleStart: 4,
+        visibleEnd: 3,
+      );
       expect(result, 'uid_***456');
     });
 
@@ -23,10 +27,17 @@ void main() {
       expect(result, '[REDACTED]');
     });
 
-    test('returns [REDACTED] when value length equals visibleStart + visibleEnd', () {
-      final result = SecureLogger.maskValue('123456', visibleStart: 3, visibleEnd: 3);
-      expect(result, '[REDACTED]');
-    });
+    test(
+      'returns [REDACTED] when value length equals visibleStart + visibleEnd',
+      () {
+        final result = SecureLogger.maskValue(
+          '123456',
+          visibleStart: 3,
+          visibleEnd: 3,
+        );
+        expect(result, '[REDACTED]');
+      },
+    );
 
     test('returns [EMPTY] for null value', () {
       final result = SecureLogger.maskValue(null);
@@ -41,30 +52,54 @@ void main() {
     test('handles different visibleStart values', () {
       final value = 'long_secret_key_value_12345';
 
-      final result1 = SecureLogger.maskValue(value, visibleStart: 2, visibleEnd: 2);
+      final result1 = SecureLogger.maskValue(
+        value,
+        visibleStart: 2,
+        visibleEnd: 2,
+      );
       expect(result1, 'lo***45');
 
-      final result2 = SecureLogger.maskValue(value, visibleStart: 6, visibleEnd: 3);
+      final result2 = SecureLogger.maskValue(
+        value,
+        visibleStart: 6,
+        visibleEnd: 3,
+      );
       expect(result2, 'long_s***345');
     });
 
     test('handles different visibleEnd values', () {
       final value = 'another_api_key_abcdef';
 
-      final result1 = SecureLogger.maskValue(value, visibleStart: 4, visibleEnd: 1);
+      final result1 = SecureLogger.maskValue(
+        value,
+        visibleStart: 4,
+        visibleEnd: 1,
+      );
       expect(result1, 'anot***f');
 
-      final result2 = SecureLogger.maskValue(value, visibleStart: 4, visibleEnd: 5);
+      final result2 = SecureLogger.maskValue(
+        value,
+        visibleStart: 4,
+        visibleEnd: 5,
+      );
       expect(result2, 'anot***bcdef');
     });
 
     test('handles edge case: visibleStart=0', () {
-      final result = SecureLogger.maskValue('secret123', visibleStart: 0, visibleEnd: 3);
+      final result = SecureLogger.maskValue(
+        'secret123',
+        visibleStart: 0,
+        visibleEnd: 3,
+      );
       expect(result, '***123');
     });
 
     test('handles edge case: visibleEnd=0', () {
-      final result = SecureLogger.maskValue('secret123', visibleStart: 6, visibleEnd: 0);
+      final result = SecureLogger.maskValue(
+        'secret123',
+        visibleStart: 6,
+        visibleEnd: 0,
+      );
       expect(result, 'secret***');
     });
 
@@ -85,11 +120,18 @@ void main() {
     });
 
     test('log method with tag executes without error', () {
-      expect(() => SecureLogger.log('Test message', tag: 'TEST'), returnsNormally);
+      expect(
+        () => SecureLogger.log('Test message', tag: 'TEST'),
+        returnsNormally,
+      );
     });
 
     test('log method handles special characters', () {
-      expect(() => SecureLogger.log('Message with émojis 🔥 and special chars: @#\$%'), returnsNormally);
+      expect(
+        () =>
+            SecureLogger.log('Message with émojis 🔥 and special chars: @#\$%'),
+        returnsNormally,
+      );
     });
 
     test('log method handles empty message', () {
@@ -108,17 +150,26 @@ void main() {
     });
 
     test('error method with tag executes without error', () {
-      expect(() => SecureLogger.error('Error occurred', tag: 'ERROR'), returnsNormally);
+      expect(
+        () => SecureLogger.error('Error occurred', tag: 'ERROR'),
+        returnsNormally,
+      );
     });
 
     test('error method with error object executes without error', () {
       final error = Exception('Test exception');
-      expect(() => SecureLogger.error('Error occurred', error: error), returnsNormally);
+      expect(
+        () => SecureLogger.error('Error occurred', error: error),
+        returnsNormally,
+      );
     });
 
     test('error method with tag and error executes without error', () {
       final error = FormatException('Invalid format');
-      expect(() => SecureLogger.error('Parse failed', error: error, tag: 'PARSER'), returnsNormally);
+      expect(
+        () => SecureLogger.error('Parse failed', error: error, tag: 'PARSER'),
+        returnsNormally,
+      );
     });
 
     test('error method handles null error gracefully', () {
@@ -145,31 +196,52 @@ void main() {
 
     test('api method with partial parameters executes without error', () {
       expect(
-        () => SecureLogger.api(
-          endpoint: '/api/stats',
-          statusCode: 404,
-        ),
+        () => SecureLogger.api(endpoint: '/api/stats', statusCode: 404),
         returnsNormally,
       );
     });
 
     test('api method handles different HTTP methods', () {
-      expect(() => SecureLogger.api(endpoint: '/data', method: 'GET'), returnsNormally);
-      expect(() => SecureLogger.api(endpoint: '/data', method: 'POST'), returnsNormally);
-      expect(() => SecureLogger.api(endpoint: '/data', method: 'PUT'), returnsNormally);
-      expect(() => SecureLogger.api(endpoint: '/data', method: 'DELETE'), returnsNormally);
+      expect(
+        () => SecureLogger.api(endpoint: '/data', method: 'GET'),
+        returnsNormally,
+      );
+      expect(
+        () => SecureLogger.api(endpoint: '/data', method: 'POST'),
+        returnsNormally,
+      );
+      expect(
+        () => SecureLogger.api(endpoint: '/data', method: 'PUT'),
+        returnsNormally,
+      );
+      expect(
+        () => SecureLogger.api(endpoint: '/data', method: 'DELETE'),
+        returnsNormally,
+      );
     });
 
     test('api method handles different status codes', () {
-      expect(() => SecureLogger.api(endpoint: '/test', statusCode: 200), returnsNormally);
-      expect(() => SecureLogger.api(endpoint: '/test', statusCode: 404), returnsNormally);
-      expect(() => SecureLogger.api(endpoint: '/test', statusCode: 500), returnsNormally);
+      expect(
+        () => SecureLogger.api(endpoint: '/test', statusCode: 200),
+        returnsNormally,
+      );
+      expect(
+        () => SecureLogger.api(endpoint: '/test', statusCode: 404),
+        returnsNormally,
+      );
+      expect(
+        () => SecureLogger.api(endpoint: '/test', statusCode: 500),
+        returnsNormally,
+      );
     });
   });
 
   group('SecureLogger - config method', () {
     test('config method with set value executes without error', () {
-      expect(() => SecureLogger.config('API_KEY', 'sk_test_123456'), returnsNormally);
+      expect(
+        () => SecureLogger.config('API_KEY', 'sk_test_123456'),
+        returnsNormally,
+      );
     });
 
     test('config method with null value executes without error', () {
@@ -182,11 +254,17 @@ void main() {
 
     test('config method handles long values', () {
       final longValue = 'x' * 1000;
-      expect(() => SecureLogger.config('LONG_CONFIG', longValue), returnsNormally);
+      expect(
+        () => SecureLogger.config('LONG_CONFIG', longValue),
+        returnsNormally,
+      );
     });
 
     test('config method handles special characters in key', () {
-      expect(() => SecureLogger.config('CONFIG_KEY_123', 'value'), returnsNormally);
+      expect(
+        () => SecureLogger.config('CONFIG_KEY_123', 'value'),
+        returnsNormally,
+      );
     });
   });
 
@@ -196,11 +274,17 @@ void main() {
     });
 
     test('user method with userId executes without error', () {
-      expect(() => SecureLogger.user('User action', userId: 'user_abc123def456'), returnsNormally);
+      expect(
+        () => SecureLogger.user('User action', userId: 'user_abc123def456'),
+        returnsNormally,
+      );
     });
 
     test('user method handles null userId', () {
-      expect(() => SecureLogger.user('Anonymous action', userId: null), returnsNormally);
+      expect(
+        () => SecureLogger.user('Anonymous action', userId: null),
+        returnsNormally,
+      );
     });
 
     test('user method handles empty userId', () {
@@ -210,29 +294,47 @@ void main() {
     test('user method masks userId in output', () {
       // The userId should be masked when logged
       // This test just ensures it executes without error
-      expect(() => SecureLogger.user('Login', userId: 'sensitive_user_id_12345'), returnsNormally);
+      expect(
+        () => SecureLogger.user('Login', userId: 'sensitive_user_id_12345'),
+        returnsNormally,
+      );
     });
   });
 
   group('SecureLogger - firebase method', () {
     test('firebase method with operation only executes without error', () {
-      expect(() => SecureLogger.firebase('User authenticated'), returnsNormally);
+      expect(
+        () => SecureLogger.firebase('User authenticated'),
+        returnsNormally,
+      );
     });
 
     test('firebase method with details executes without error', () {
-      expect(() => SecureLogger.firebase('Document written', details: 'users/123'), returnsNormally);
+      expect(
+        () => SecureLogger.firebase('Document written', details: 'users/123'),
+        returnsNormally,
+      );
     });
 
     test('firebase method handles null details', () {
-      expect(() => SecureLogger.firebase('Operation complete', details: null), returnsNormally);
+      expect(
+        () => SecureLogger.firebase('Operation complete', details: null),
+        returnsNormally,
+      );
     });
 
     test('firebase method handles empty details', () {
-      expect(() => SecureLogger.firebase('Operation', details: ''), returnsNormally);
+      expect(
+        () => SecureLogger.firebase('Operation', details: ''),
+        returnsNormally,
+      );
     });
 
     test('firebase method handles various operations', () {
-      expect(() => SecureLogger.firebase('Auth state changed'), returnsNormally);
+      expect(
+        () => SecureLogger.firebase('Auth state changed'),
+        returnsNormally,
+      );
       expect(() => SecureLogger.firebase('Firestore read'), returnsNormally);
       expect(() => SecureLogger.firebase('Firestore write'), returnsNormally);
       expect(() => SecureLogger.firebase('Analytics event'), returnsNormally);
@@ -273,7 +375,10 @@ void main() {
     test('safely logs error with sensitive data in exception', () {
       final error = Exception('API key sk_test_123 is invalid');
       // The error message itself isn't logged, only the type
-      expect(() => SecureLogger.error('Authentication failed', error: error), returnsNormally);
+      expect(
+        () => SecureLogger.error('Authentication failed', error: error),
+        returnsNormally,
+      );
     });
   });
 }

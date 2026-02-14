@@ -36,8 +36,12 @@ class SudokuOnlineProvider with ChangeNotifier {
   int _elapsedSeconds = 0;
   Timer? _timeoutCheckTimer;
 
-  final Debouncer _boardSyncDebouncer = Debouncer(delay: const Duration(seconds: 2));
-  final Debouncer _statsSyncDebouncer = Debouncer(delay: const Duration(milliseconds: 500));
+  final Debouncer _boardSyncDebouncer = Debouncer(
+    delay: const Duration(seconds: 2),
+  );
+  final Debouncer _statsSyncDebouncer = Debouncer(
+    delay: const Duration(milliseconds: 500),
+  );
 
   ConnectionState _connectionState = ConnectionState.offline;
   Timer? _heartbeatTimer;
@@ -66,7 +70,8 @@ class SudokuOnlineProvider with ChangeNotifier {
   int get mistakes => _mistakes;
   int get hintsUsed => _hintsUsed;
   int get hintsRemaining => 3 - _hintsUsed;
-  bool get canUseHint => _hintsUsed < 3 && _selectedRow != null && _selectedCol != null;
+  bool get canUseHint =>
+      _hintsUsed < 3 && _selectedRow != null && _selectedCol != null;
   bool get notesMode => _notesMode;
   int get elapsedSeconds => _elapsedSeconds;
   bool get canUndo => _historyIndex >= 0;
@@ -83,13 +88,17 @@ class SudokuOnlineProvider with ChangeNotifier {
 
   int? get opponentProgress => _currentMatch?.getOpponent(userId)?.filledCells;
 
-  bool get opponentCompleted => _currentMatch?.getOpponent(userId)?.isCompleted ?? false;
+  bool get opponentCompleted =>
+      _currentMatch?.getOpponent(userId)?.isCompleted ?? false;
 
-  int get opponentMistakes => _currentMatch?.getOpponent(userId)?.mistakeCount ?? 0;
+  int get opponentMistakes =>
+      _currentMatch?.getOpponent(userId)?.mistakeCount ?? 0;
 
-  int get opponentHintsUsed => _currentMatch?.getOpponent(userId)?.hintsUsed ?? 0;
+  int get opponentHintsUsed =>
+      _currentMatch?.getOpponent(userId)?.hintsUsed ?? 0;
 
-  bool get opponentIsConnected => _currentMatch?.getOpponent(userId)?.isConnected ?? false;
+  bool get opponentIsConnected =>
+      _currentMatch?.getOpponent(userId)?.isConnected ?? false;
 
   ConnectionState get opponentConnectionState =>
       opponentIsConnected ? ConnectionState.online : ConnectionState.offline;
@@ -142,32 +151,36 @@ class SudokuOnlineProvider with ChangeNotifier {
   Future<void> _listenToMatch(String matchId) async {
     _matchSubscription?.cancel();
 
-    _matchSubscription = _matchmakingService.watchMatch(matchId).listen(
-      (matchRoom) {
-        _currentMatch = matchRoom;
+    _matchSubscription = _matchmakingService
+        .watchMatch(matchId)
+        .listen(
+          (matchRoom) {
+            _currentMatch = matchRoom;
 
-        if (_board == null && matchRoom.puzzleData.isNotEmpty) {
-          _initializeBoard(matchRoom.puzzleData);
-        }
+            if (_board == null && matchRoom.puzzleData.isNotEmpty) {
+              _initializeBoard(matchRoom.puzzleData);
+            }
 
-        if (matchRoom.isFull && _gameTimer == null && !matchRoom.isCompleted) {
-          _startTimer();
-          _startTimeoutCheck();
-          _startHeartbeat();
-        }
+            if (matchRoom.isFull &&
+                _gameTimer == null &&
+                !matchRoom.isCompleted) {
+              _startTimer();
+              _startTimeoutCheck();
+              _startHeartbeat();
+            }
 
-        if (matchRoom.isCompleted) {
-          _stopTimer();
-          _stopTimeoutCheck();
-          _stopHeartbeat();
-        }
+            if (matchRoom.isCompleted) {
+              _stopTimer();
+              _stopTimeoutCheck();
+              _stopHeartbeat();
+            }
 
-        notifyListeners();
-      },
-      onError: (error) {
-        SecureLogger.error('Match stream error', error: error);
-      },
-    );
+            notifyListeners();
+          },
+          onError: (error) {
+            SecureLogger.error('Match stream error', error: error);
+          },
+        );
   }
 
   void _initializeBoard(List<List<int>> puzzleData) {
@@ -223,32 +236,38 @@ class SudokuOnlineProvider with ChangeNotifier {
 
       if (cell.notes.contains(number)) {
         cell.notes.remove(number);
-        _saveState(SudokuAction.removeNote(
-          row: _selectedRow!,
-          col: _selectedCol!,
-          value: number,
-          previousNotes: previousNotes,
-        ));
+        _saveState(
+          SudokuAction.removeNote(
+            row: _selectedRow!,
+            col: _selectedCol!,
+            value: number,
+            previousNotes: previousNotes,
+          ),
+        );
       } else {
         cell.notes.add(number);
-        _saveState(SudokuAction.addNote(
-          row: _selectedRow!,
-          col: _selectedCol!,
-          value: number,
-          previousNotes: previousNotes,
-        ));
+        _saveState(
+          SudokuAction.addNote(
+            row: _selectedRow!,
+            col: _selectedCol!,
+            value: number,
+            previousNotes: previousNotes,
+          ),
+        );
       }
     } else {
       final previousValue = cell.value;
       final previousNotes = Set<int>.from(cell.notes);
 
-      _saveState(SudokuAction.setValue(
-        row: _selectedRow!,
-        col: _selectedCol!,
-        value: number,
-        previousValue: previousValue,
-        previousNotes: previousNotes,
-      ));
+      _saveState(
+        SudokuAction.setValue(
+          row: _selectedRow!,
+          col: _selectedCol!,
+          value: number,
+          previousValue: previousValue,
+          previousNotes: previousNotes,
+        ),
+      );
 
       cell.value = number;
 
@@ -288,12 +307,14 @@ class SudokuOnlineProvider with ChangeNotifier {
     final previousValue = cell.value;
     final previousNotes = Set<int>.from(cell.notes);
 
-    _saveState(SudokuAction.clearValue(
-      row: _selectedRow!,
-      col: _selectedCol!,
-      previousValue: previousValue,
-      previousNotes: previousNotes,
-    ));
+    _saveState(
+      SudokuAction.clearValue(
+        row: _selectedRow!,
+        col: _selectedCol!,
+        previousValue: previousValue,
+        previousNotes: previousNotes,
+      ),
+    );
 
     cell.value = null;
     cell.notes.clear();
@@ -327,7 +348,9 @@ class SudokuOnlineProvider with ChangeNotifier {
       return;
     }
 
-    final correctValue = _solvedBoard!.getCell(_selectedRow!, _selectedCol!).value;
+    final correctValue = _solvedBoard!
+        .getCell(_selectedRow!, _selectedCol!)
+        .value;
     if (correctValue == null) {
       SecureLogger.error('Solved board has no value for this cell');
       return;
@@ -336,13 +359,15 @@ class SudokuOnlineProvider with ChangeNotifier {
     final previousValue = cell.value;
     final previousNotes = Set<int>.from(cell.notes);
 
-    _saveState(SudokuAction.setValue(
-      row: _selectedRow!,
-      col: _selectedCol!,
-      value: correctValue,
-      previousValue: previousValue,
-      previousNotes: previousNotes,
-    ));
+    _saveState(
+      SudokuAction.setValue(
+        row: _selectedRow!,
+        col: _selectedCol!,
+        value: correctValue,
+        previousValue: previousValue,
+        previousNotes: previousNotes,
+      ),
+    );
 
     cell.value = correctValue;
     cell.notes.clear();
@@ -589,7 +614,10 @@ class SudokuOnlineProvider with ChangeNotifier {
 
   void _handleConnectionLoss() {
     _updateConnectionState(ConnectionState.reconnecting);
-    SecureLogger.log('Connection lost, attempting to reconnect...', tag: 'Connection');
+    SecureLogger.log(
+      'Connection lost, attempting to reconnect...',
+      tag: 'Connection',
+    );
 
     _attemptReconnection();
   }
@@ -606,7 +634,10 @@ class SudokuOnlineProvider with ChangeNotifier {
 
       if (timeSinceStart > _reconnectionGracePeriod) {
         _updateConnectionState(ConnectionState.offline);
-        SecureLogger.log('Reconnection grace period expired', tag: 'Connection');
+        SecureLogger.log(
+          'Reconnection grace period expired',
+          tag: 'Connection',
+        );
 
         try {
           await _matchmakingService.updateConnectionState(
@@ -615,7 +646,10 @@ class SudokuOnlineProvider with ChangeNotifier {
             isConnected: false,
           );
         } catch (firestoreError) {
-          SecureLogger.error('Failed to update disconnected state', error: firestoreError);
+          SecureLogger.error(
+            'Failed to update disconnected state',
+            error: firestoreError,
+          );
         }
       }
     }
@@ -637,7 +671,10 @@ class SudokuOnlineProvider with ChangeNotifier {
           isConnected: false,
         );
       } catch (e) {
-        SecureLogger.error('Failed to update connection state on cleanup', error: e);
+        SecureLogger.error(
+          'Failed to update connection state on cleanup',
+          error: e,
+        );
       }
     }
 

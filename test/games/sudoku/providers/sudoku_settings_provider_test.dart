@@ -153,14 +153,17 @@ void main() {
         expect(provider.errorHighlightingEnabled, true);
       });
 
-      test('persists error highlighting setting to SharedPreferences', () async {
-        await provider.initialize();
+      test(
+        'persists error highlighting setting to SharedPreferences',
+        () async {
+          await provider.initialize();
 
-        await provider.toggleErrorHighlighting();
+          await provider.toggleErrorHighlighting();
 
-        final prefs = await SharedPreferences.getInstance();
-        expect(prefs.getBool('sudoku_error_highlighting'), false);
-      });
+          final prefs = await SharedPreferences.getInstance();
+          expect(prefs.getBool('sudoku_error_highlighting'), false);
+        },
+      );
 
       test('notifies listeners when error highlighting is toggled', () async {
         await provider.initialize();

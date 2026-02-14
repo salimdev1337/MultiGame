@@ -339,26 +339,29 @@ void main() {
         expect(notificationCount, equals(4));
       });
 
-      test('should not break when reset is called multiple times consecutively', () {
-        // Arrange
-        provider.setLoading(false);
-        provider.setNewImageLoading(true);
-        provider.setShowImagePreview(true);
+      test(
+        'should not break when reset is called multiple times consecutively',
+        () {
+          // Arrange
+          provider.setLoading(false);
+          provider.setNewImageLoading(true);
+          provider.setShowImagePreview(true);
 
-        var notificationCount = 0;
-        provider.addListener(() => notificationCount++);
+          var notificationCount = 0;
+          provider.addListener(() => notificationCount++);
 
-        // Act
-        provider.reset();
-        provider.reset();
-        provider.reset();
+          // Act
+          provider.reset();
+          provider.reset();
+          provider.reset();
 
-        // Assert
-        expect(provider.isLoading, isTrue);
-        expect(provider.isNewImageLoading, isFalse);
-        expect(provider.showImagePreview, isFalse);
-        expect(notificationCount, equals(3));
-      });
+          // Assert
+          expect(provider.isLoading, isTrue);
+          expect(provider.isNewImageLoading, isFalse);
+          expect(provider.showImagePreview, isFalse);
+          expect(notificationCount, equals(3));
+        },
+      );
     });
 
     group('Loading State Scenarios', () {

@@ -86,7 +86,9 @@ void main() {
     });
 
     test('collapses multiple spaces to single space', () {
-      final result = InputValidator.sanitizeForFirestore('Cool   Player   Name');
+      final result = InputValidator.sanitizeForFirestore(
+        'Cool   Player   Name',
+      );
       expect(result, 'Cool Player Name');
     });
 
@@ -96,12 +98,16 @@ void main() {
     });
 
     test('removes HTML tags', () {
-      final result = InputValidator.sanitizeForFirestore('<script>alert("XSS")</script>Player');
+      final result = InputValidator.sanitizeForFirestore(
+        '<script>alert("XSS")</script>Player',
+      );
       expect(result, 'Player');
     });
 
     test('handles complex HTML', () {
-      final result = InputValidator.sanitizeForFirestore('<div class="test">Player<span>123</span></div>');
+      final result = InputValidator.sanitizeForFirestore(
+        '<div class="test">Player<span>123</span></div>',
+      );
       expect(result, 'Player123');
     });
 
@@ -214,7 +220,10 @@ void main() {
     });
 
     test('detects javascript protocol', () {
-      expect(InputValidator.containsDangerousChars('javascript:alert(1)'), true);
+      expect(
+        InputValidator.containsDangerousChars('javascript:alert(1)'),
+        true,
+      );
     });
 
     test('detects SQL injection attempt', () {

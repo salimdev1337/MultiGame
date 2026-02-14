@@ -43,15 +43,11 @@ class _ParallaxBackgroundState extends State<ParallaxBackground>
         return AnimatedBuilder(
           animation: _controller,
           builder: (context, child) {
-            final offset = (_controller.value * widget.scrollSpeed * layer.speed) % 1.0;
+            final offset =
+                (_controller.value * widget.scrollSpeed * layer.speed) % 1.0;
             return Transform.translate(
               offset: Offset(-offset * MediaQuery.of(context).size.width, 0),
-              child: Row(
-                children: [
-                  layer.widget,
-                  layer.widget,
-                ],
-              ),
+              child: Row(children: [layer.widget, layer.widget]),
             );
           },
         );
@@ -111,17 +107,17 @@ class _ScreenShakeEffectState extends State<ScreenShakeEffect>
         weight: 1,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: widget.intensity * 0.5, end: -widget.intensity * 0.5),
+        tween: Tween(
+          begin: widget.intensity * 0.5,
+          end: -widget.intensity * 0.5,
+        ),
         weight: 1,
       ),
       TweenSequenceItem(
         tween: Tween(begin: -widget.intensity * 0.5, end: 0.0),
         weight: 1,
       ),
-    ]).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+    ]).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
@@ -182,10 +178,8 @@ class _JumpTrailEffectState extends State<JumpTrailEffect>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: DSAnimations.fast,
-      vsync: this,
-    )..repeat();
+    _controller = AnimationController(duration: DSAnimations.fast, vsync: this)
+      ..repeat();
 
     _controller.addListener(_updateTrail);
   }
@@ -287,10 +281,7 @@ class _CoinCollectionSparkleState extends State<CoinCollectionSparkle>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: DSAnimations.slow,
-      vsync: this,
-    );
+    _controller = AnimationController(duration: DSAnimations.slow, vsync: this);
 
     if (widget.show) {
       _initializeParticles();
@@ -390,7 +381,8 @@ class SparklePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     for (final particle in particles) {
       final x = particle.x + particle.vx * progress;
-      final y = particle.y + particle.vy * progress + 9.8 * progress * progress * 50;
+      final y =
+          particle.y + particle.vy * progress + 9.8 * progress * progress * 50;
       final alpha = 1.0 - progress;
 
       // Draw star shape
@@ -485,8 +477,9 @@ class _SpeedLinesEffectState extends State<SpeedLinesEffect>
               painter: SpeedLinesPainter(
                 lines: _lines,
                 progress: _controller.value,
-                intensity: ((widget.velocity - widget.threshold) / widget.threshold)
-                    .clamp(0.0, 1.0),
+                intensity:
+                    ((widget.velocity - widget.threshold) / widget.threshold)
+                        .clamp(0.0, 1.0),
               ),
             );
           },
@@ -532,11 +525,7 @@ class SpeedLinesPainter extends CustomPainter {
         ..strokeWidth = line.thickness
         ..strokeCap = StrokeCap.round;
 
-      canvas.drawLine(
-        Offset(x, y),
-        Offset(x - line.length, y),
-        paint,
-      );
+      canvas.drawLine(Offset(x, y), Offset(x - line.length, y), paint);
     }
   }
 

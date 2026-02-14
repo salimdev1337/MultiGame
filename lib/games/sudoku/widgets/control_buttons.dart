@@ -97,16 +97,18 @@ class _ControlButton extends StatelessWidget {
     final buttonColor = isActive
         ? _primaryCyan
         : isEnabled
-            ? _surfaceDark
-            : _surfaceDark.withValues(alpha: 0.5 * 255);
+        ? _surfaceDark
+        : _surfaceDark.withValues(alpha: 0.5 * 255);
 
     final iconColor = isActive
         ? _surfaceDark
         : isEnabled
-            ? _textWhite
-            : _textGray.withValues(alpha: 0.3 * 255);
+        ? _textWhite
+        : _textGray.withValues(alpha: 0.3 * 255);
 
-    final labelColor = isEnabled ? _textGray : _textGray.withValues(alpha: 0.5 * 255);
+    final labelColor = isEnabled
+        ? _textGray
+        : _textGray.withValues(alpha: 0.5 * 255);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -127,13 +129,7 @@ class _ControlButton extends StatelessWidget {
             ),
             child: Stack(
               children: [
-                Center(
-                  child: Icon(
-                    icon,
-                    color: iconColor,
-                    size: 24,
-                  ),
-                ),
+                Center(child: Icon(icon, color: iconColor, size: 24)),
                 if (badge != null)
                   Positioned(
                     top: 6,
@@ -143,10 +139,7 @@ class _ControlButton extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: _primaryCyan,
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: _surfaceDark,
-                          width: 2,
-                        ),
+                        border: Border.all(color: _surfaceDark, width: 2),
                       ),
                       constraints: const BoxConstraints(
                         minWidth: 18,

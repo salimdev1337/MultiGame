@@ -56,10 +56,7 @@ class SoundService {
   Future<void> setEnabled(bool enabled) async {
     _soundEnabled = enabled;
     try {
-      await _storage.write(
-        key: _storageKey,
-        value: enabled.toString(),
-      );
+      await _storage.write(key: _storageKey, value: enabled.toString());
     } catch (e) {
       SecureLogger.error(
         'Failed to save sound preference',
@@ -199,11 +196,7 @@ class SoundService {
   Future<void> levelUp() async {
     // Quick ascending scale
     for (var i = 0; i < 5; i++) {
-      await _playTone(
-        frequency: 800 + (i * 100),
-        duration: 50,
-        volume: 0.6,
-      );
+      await _playTone(frequency: 800 + (i * 100), duration: 50, volume: 0.6);
       await Future.delayed(const Duration(milliseconds: 40));
     }
   }
@@ -266,7 +259,11 @@ class SoundService {
     try {
       await _player?.dispose();
     } catch (e) {
-      SecureLogger.error('Failed to dispose sound service', error: e, tag: 'Sound');
+      SecureLogger.error(
+        'Failed to dispose sound service',
+        error: e,
+        tag: 'Sound',
+      );
     }
   }
 }

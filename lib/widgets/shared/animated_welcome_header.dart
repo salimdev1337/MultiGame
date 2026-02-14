@@ -69,25 +69,27 @@ class AnimatedWelcomeHeader extends StatelessWidget {
             child: Row(
               children: [
                 Flexible(
-                  child: ShaderMask(
-                    shaderCallback: (bounds) => DSColors.gradientPrimary
-                        .createShader(bounds),
-                    child: Text(
-                      nickname,
-                      style: DSTypography.displaySmall.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ).animate().slideX(
-                    begin: -0.3,
-                    duration: DSAnimations.normal,
-                    delay: 100.milliseconds,
-                    curve: DSAnimations.easeOutCubic,
-                  ).fadeIn(
-                    duration: DSAnimations.fast,
-                  ),
+                  child:
+                      ShaderMask(
+                            shaderCallback: (bounds) =>
+                                DSColors.gradientPrimary.createShader(bounds),
+                            child: Text(
+                              nickname,
+                              style: DSTypography.displaySmall.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          )
+                          .animate()
+                          .slideX(
+                            begin: -0.3,
+                            duration: DSAnimations.normal,
+                            delay: 100.milliseconds,
+                            curve: DSAnimations.easeOutCubic,
+                          )
+                          .fadeIn(duration: DSAnimations.fast),
                 ),
 
                 DSSpacing.gapHorizontalMD,
@@ -106,10 +108,7 @@ class AnimatedWelcomeHeader extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
-                        '👑',
-                        style: TextStyle(fontSize: 16),
-                      ),
+                      const Text('👑', style: TextStyle(fontSize: 16)),
                       DSSpacing.gapHorizontalXS,
                       Text(
                         totalCompleted.toString(),
@@ -198,19 +197,12 @@ class _StatBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: DSColors.surfaceElevated,
         borderRadius: DSSpacing.borderRadiusMD,
-        border: Border.all(
-          color: DSColors.withOpacity(color, 0.3),
-          width: 1,
-        ),
+        border: Border.all(color: DSColors.withOpacity(color, 0.3), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 16,
-            color: color,
-          ),
+          Icon(icon, size: 16, color: color),
           DSSpacing.gapHorizontalXXS,
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -302,9 +294,7 @@ class XPProgressBar extends StatelessWidget {
                 ),
               ),
             ],
-          ).animate().fadeIn(
-            duration: DSAnimations.fast,
-          ),
+          ).animate().fadeIn(duration: DSAnimations.fast),
         ],
       ),
     );

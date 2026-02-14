@@ -8,7 +8,7 @@ import 'package:multigame/utils/secure_logger.dart';
 ///   /challenges/{challengeId} — Challenge documents
 class ChallengeService {
   ChallengeService({FirebaseFirestore? firestore})
-      : _db = firestore ?? FirebaseFirestore.instance;
+    : _db = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _db;
 
@@ -46,17 +46,15 @@ class ChallengeService {
   }
 
   Future<void> acceptChallenge(String challengeId) async {
-    await _db
-        .collection('challenges')
-        .doc(challengeId)
-        .update({'status': 'active'});
+    await _db.collection('challenges').doc(challengeId).update({
+      'status': 'active',
+    });
   }
 
   Future<void> declineChallenge(String challengeId) async {
-    await _db
-        .collection('challenges')
-        .doc(challengeId)
-        .update({'status': 'expired'});
+    await _db.collection('challenges').doc(challengeId).update({
+      'status': 'expired',
+    });
   }
 
   // ── Score Submission ──────────────────────────────────────────────────────
@@ -86,8 +84,10 @@ class ChallengeService {
         'status': 'completed',
         'winner': winner,
       });
-      SecureLogger.log('Challenge $challengeId completed. Winner: $winner',
-          tag: 'Social');
+      SecureLogger.log(
+        'Challenge $challengeId completed. Winner: $winner',
+        tag: 'Social',
+      );
     }
   }
 
@@ -136,9 +136,9 @@ class ChallengeService {
         (s) => s.name == data['status'],
         orElse: () => ChallengeStatus.pending,
       ),
-      createdAt:
-          (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      expiresAt: (data['expiresAt'] as Timestamp?)?.toDate() ??
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      expiresAt:
+          (data['expiresAt'] as Timestamp?)?.toDate() ??
           DateTime.now().add(const Duration(hours: 48)),
       challengerScore: data['challengerScore'] as int?,
       challengedScore: data['challengedScore'] as int?,

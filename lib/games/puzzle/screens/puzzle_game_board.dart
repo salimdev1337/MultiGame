@@ -33,9 +33,7 @@ class PuzzleGameBoard extends ConsumerWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF21242b),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.05 * 255),
-          ),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05 * 255)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.5 * 255),
@@ -141,8 +139,9 @@ class PuzzleGameBoard extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(6),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00d4ff)
-                              .withValues(alpha: 0.4 * 255),
+                          color: const Color(
+                            0xFF00d4ff,
+                          ).withValues(alpha: 0.4 * 255),
                           blurRadius: 10,
                           spreadRadius: 2,
                         ),

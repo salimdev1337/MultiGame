@@ -6,13 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:multigame/design_system/design_system.dart';
 
 /// Card variant types
-enum DSCardVariant {
-  elevated,
-  outlined,
-  filled,
-  glassmorphic,
-  gradient,
-}
+enum DSCardVariant { elevated, outlined, filled, glassmorphic, gradient }
 
 /// Premium animated card widget
 class DSCard extends StatefulWidget {
@@ -106,8 +100,7 @@ class DSCard extends StatefulWidget {
   State<DSCard> createState() => _DSCardState();
 }
 
-class _DSCardState extends State<DSCard>
-    with SingleTickerProviderStateMixin {
+class _DSCardState extends State<DSCard> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _elevationAnimation;
@@ -118,26 +111,15 @@ class _DSCardState extends State<DSCard>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: DSAnimations.fast,
+    _controller = AnimationController(vsync: this, duration: DSAnimations.fast);
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.02).animate(
+      CurvedAnimation(parent: _controller, curve: DSAnimations.easeOutCubic),
     );
 
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.02,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: DSAnimations.easeOutCubic,
-    ));
-
-    _elevationAnimation = Tween<double>(
-      begin: 0.0,
-      end: 4.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: DSAnimations.easeOutCubic,
-    ));
+    _elevationAnimation = Tween<double>(begin: 0.0, end: 4.0).animate(
+      CurvedAnimation(parent: _controller, curve: DSAnimations.easeOutCubic),
+    );
   }
 
   @override
@@ -229,9 +211,7 @@ class _DSCardState extends State<DSCard>
             color: _isHovered
                 ? DSColors.primary
                 : DSColors.withOpacity(DSColors.textTertiary, 0.3),
-            width: _isHovered
-                ? DSSpacing.borderMedium
-                : DSSpacing.borderThin,
+            width: _isHovered ? DSSpacing.borderMedium : DSSpacing.borderThin,
           ),
         );
 
@@ -356,12 +336,7 @@ class DSGameCard extends StatelessWidget {
               ),
 
             // Badge (top right)
-            if (badge != null)
-              Positioned(
-                top: 12,
-                right: 12,
-                child: badge!,
-              ),
+            if (badge != null) Positioned(top: 12, right: 12, child: badge!),
 
             // Content
             Positioned(

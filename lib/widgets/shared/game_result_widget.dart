@@ -223,16 +223,10 @@ class GameResultWidget extends StatefulWidget {
         if (config.backdropBlur) {
           return BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Dialog(
-              backgroundColor: Colors.transparent,
-              child: content,
-            ),
+            child: Dialog(backgroundColor: Colors.transparent, child: content),
           );
         }
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: content,
-        );
+        return Dialog(backgroundColor: Colors.transparent, child: content);
       },
     );
   }
@@ -291,7 +285,8 @@ class _GameResultWidgetState extends State<GameResultWidget>
         ? BorderRadius.vertical(top: Radius.circular(radius))
         : BorderRadius.circular(radius);
     final bgColor = config.containerColor ?? const Color(0xFF1a1d24);
-    final padding = config.contentPadding ??
+    final padding =
+        config.contentPadding ??
         (isBottomSheet
             ? const EdgeInsets.fromLTRB(24, 12, 24, 0)
             : const EdgeInsets.all(24));
@@ -313,10 +308,7 @@ class _GameResultWidgetState extends State<GameResultWidget>
         const SizedBox(height: 28),
 
         // Animated icon
-        ScaleTransition(
-          scale: _iconScale,
-          child: config.icon,
-        ),
+        ScaleTransition(scale: _iconScale, child: config.icon),
 
         const SizedBox(height: 16),
 
@@ -328,7 +320,8 @@ class _GameResultWidgetState extends State<GameResultWidget>
               Text(
                 config.title,
                 textAlign: TextAlign.center,
-                style: config.titleStyle ??
+                style:
+                    config.titleStyle ??
                     const TextStyle(
                       color: Colors.white,
                       fontSize: 26,
@@ -449,13 +442,12 @@ class _GameResultWidgetState extends State<GameResultWidget>
           return Column(
             children: [
               if (i > 0)
-                Divider(
-                  height: 1,
-                  color: Colors.white.withValues(alpha: 0.06),
-                ),
+                Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 13,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -477,8 +469,9 @@ class _GameResultWidgetState extends State<GameResultWidget>
                         shadows: stat.isHighlighted
                             ? [
                                 Shadow(
-                                  color: config.accentColor
-                                      .withValues(alpha: 0.5),
+                                  color: config.accentColor.withValues(
+                                    alpha: 0.5,
+                                  ),
                                   blurRadius: 8,
                                 ),
                               ]
@@ -530,9 +523,7 @@ class _GameResultWidgetState extends State<GameResultWidget>
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.05),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
             ),
             child: stat.cardDecoration != null
                 ? Stack(
@@ -645,9 +636,7 @@ class _GameResultWidgetState extends State<GameResultWidget>
             onPressed: action.onTap,
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.white70,
-              side: BorderSide(
-                color: Colors.white.withValues(alpha: 0.2),
-              ),
+              side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),

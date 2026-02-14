@@ -35,6 +35,89 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
     super.dispose();
   }
 
+  KeyEventResult _handleKeyEvent(KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    switch (event.logicalKey) {
+      case LogicalKeyboardKey.arrowLeft:
+        _move('left');
+      case LogicalKeyboardKey.arrowRight:
+        _move('right');
+      case LogicalKeyboardKey.arrowUp:
+        _move('up');
+      case LogicalKeyboardKey.arrowDown:
+        _move('down');
+      default:
+        return KeyEventResult.ignored;
+    }
+    return KeyEventResult.handled;
+  }
+
+  void _onHorizontalDrag(DragEndDetails details) {
+    final velocity = details.primaryVelocity;
+    if (velocity == null) return;
+    if (velocity > 0) {
+      _move('right');
+    } else if (velocity < 0) {
+      _move('left');
+    }
+  }
+
+  void _onVerticalDrag(DragEndDetails details) {
+    final velocity = details.primaryVelocity;
+    if (velocity == null) return;
+    if (velocity > 0) {
+      _move('down');
+    } else if (velocity < 0) {
+      _move('up');
+    }
+  }
+
+  int _tileFontSize(int value) {
+    if (value >= 4096) return 16;
+    if (value >= 1024) return 20;
+    if (value >= 128) return 24;
+    return 28;
+  }
+
+  Widget _buildTile(int value) {
+    final tileColor = _getTileColor(value);
+    final hasGlow = value >= 8 && value != 0;
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) => Transform.scale(
+        scale: value != 0 ? 1.0 - (_animationController.value * 0.1) : 1.0,
+        child: child,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: tileColor,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: hasGlow
+              ? [
+                  BoxShadow(
+                    color: tileColor.withValues(alpha: 0.4),
+                    blurRadius: value >= 512 ? 20 : 12,
+                    spreadRadius: value >= 512 ? 2 : 0,
+                  ),
+                ]
+              : null,
+        ),
+        child: Center(
+          child: value != 0
+              ? Text(
+                  '$value',
+                  style: TextStyle(
+                    fontSize: _tileFontSize(value).toDouble(),
+                    fontWeight: FontWeight.w800,
+                    color: _getTextColor(value),
+                  ),
+                )
+              : null,
+        ),
+      ),
+    );
+  }
+
   void _move(String direction) {
     final prevState = ref.read(game2048Provider);
     final moved = ref.read(game2048Provider.notifier).move(direction);
@@ -46,7 +129,8 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
 
       if (newState.gameOver) {
         _showGameOverDialog(newState);
-      } else if (newState.highestMilestoneIndex > prevState.highestMilestoneIndex) {
+      } else if (newState.highestMilestoneIndex >
+          prevState.highestMilestoneIndex) {
         _showMilestoneBanner(newState.highestMilestoneIndex);
       }
     }
@@ -119,7 +203,10 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
             // Milestone badge
             if (state.highestMilestoneIndex >= 0) ...[
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF19e6a2).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
@@ -163,7 +250,10 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
             if (isNewBest) ...[
               const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFf59e0b).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
@@ -174,7 +264,11 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.emoji_events, color: Color(0xFFf59e0b), size: 14),
+                    Icon(
+                      Icons.emoji_events,
+                      color: Color(0xFFf59e0b),
+                      size: 14,
+                    ),
                     SizedBox(width: 4),
                     Text(
                       'New Best Score!',
@@ -192,10 +286,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
             const SizedBox(height: 8),
             Text(
               'Highest tile: $highestTile',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 13,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontSize: 13),
             ),
           ],
         ),
@@ -237,7 +328,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
           children: [
             Icon(
               Icons.settings,
-              color: const Color(0xFF19e6a2).withValues(alpha: (0.6 * 255)),
+              color: const Color(0xFF19e6a2).withValues(alpha: 0.6),
               size: 28,
             ),
             const SizedBox(width: 12),
@@ -259,7 +350,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF19e6a2).withValues(alpha: (0.1 * 255)),
+                  color: const Color(0xFF19e6a2).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
@@ -277,7 +368,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
               subtitle: Text(
                 'Start a new game',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: (0.6 * 255)),
+                  color: Colors.white.withValues(alpha: 0.6),
                   fontSize: 12,
                 ),
               ),
@@ -304,7 +395,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
   Color _getTileColor(int value) {
     switch (value) {
       case 0:
-        return const Color(0xFF101318).withValues(alpha: (0.4 * 255));
+        return const Color(0xFF101318).withValues(alpha: 0.4);
       case 2:
         return const Color(0xFF2d343f);
       case 4:
@@ -338,7 +429,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
 
   Color _getTextColor(int value) {
     if (value == 0) return Colors.transparent;
-    if (value <= 4) return Colors.white.withValues(alpha: (0.9 * 255));
+    if (value <= 4) return Colors.white.withValues(alpha: 0.9);
     return const Color(0xFF101318);
   }
 
@@ -348,39 +439,13 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
 
     return Focus(
       autofocus: true,
-      onKeyEvent: (node, event) {
-        if (event is KeyDownEvent) {
-          if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-            _move('left');
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-            _move('right');
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-            _move('up');
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-            _move('down');
-          }
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
+      onKeyEvent: (node, event) => _handleKeyEvent(event),
       child: Scaffold(
         backgroundColor: const Color(0xFF101318),
         body: SafeArea(
           child: GestureDetector(
-            onHorizontalDragEnd: (details) {
-              if (details.primaryVelocity! > 0) {
-                _move('right');
-              } else if (details.primaryVelocity! < 0) {
-                _move('left');
-              }
-            },
-            onVerticalDragEnd: (details) {
-              if (details.primaryVelocity! > 0) {
-                _move('down');
-              } else if (details.primaryVelocity! < 0) {
-                _move('up');
-              }
-            },
+            onHorizontalDragEnd: _onHorizontalDrag,
+            onVerticalDragEnd: _onVerticalDrag,
             child: Column(
               children: [
                 // Header
@@ -432,7 +497,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                             color: const Color(0xFF1a1e26),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: Colors.grey.withValues(alpha: (0.2 * 255)),
+                              color: Colors.grey.withValues(alpha: 0.2),
                             ),
                           ),
                           child: Column(
@@ -441,7 +506,7 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                               Text(
                                 'LEVEL',
                                 style: TextStyle(
-                                  color: Colors.grey.withValues(alpha: (0.7 * 255)),
+                                  color: Colors.grey.withValues(alpha: 0.7),
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 1.5,
@@ -495,8 +560,9 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF19e6a2)
-                                    .withValues(alpha: (0.2 * 255)),
+                                color: const Color(
+                                  0xFF19e6a2,
+                                ).withValues(alpha: 0.2),
                                 blurRadius: 16,
                                 offset: const Offset(0, 4),
                               ),
@@ -508,8 +574,9 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                               Text(
                                 'SCORE',
                                 style: TextStyle(
-                                  color: const Color(0xFF101318)
-                                      .withValues(alpha: (0.6 * 255)),
+                                  color: const Color(
+                                    0xFF101318,
+                                  ).withValues(alpha: 0.6),
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 1.5,
@@ -552,8 +619,9 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                                 Text(
                                   'Best: ${state.bestScore}',
                                   style: TextStyle(
-                                    color: const Color(0xFF101318)
-                                        .withValues(alpha: 0.55),
+                                    color: const Color(
+                                      0xFF101318,
+                                    ).withValues(alpha: 0.55),
                                     fontSize: 11,
                                   ),
                                 ),
@@ -588,58 +656,8 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                               ),
                           itemCount: 16,
                           itemBuilder: (context, index) {
-                            int row = index ~/ 4;
-                            int col = index % 4;
-                            int value = state.grid[row][col];
-
-                            return AnimatedBuilder(
-                              animation: _animationController,
-                              builder: (context, child) {
-                                return Transform.scale(
-                                  scale: value != 0
-                                      ? 1.0 -
-                                            (_animationController.value * 0.1)
-                                      : 1.0,
-                                  child: child,
-                                );
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: _getTileColor(value),
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: value >= 8 && value != 0
-                                      ? [
-                                          BoxShadow(
-                                            color: _getTileColor(value)
-                                                .withValues(alpha: (0.4 * 255)),
-                                            blurRadius:
-                                                value >= 512 ? 20 : 12,
-                                            spreadRadius:
-                                                value >= 512 ? 2 : 0,
-                                          ),
-                                        ]
-                                      : null,
-                                ),
-                                child: Center(
-                                  child: value != 0
-                                      ? Text(
-                                          '$value',
-                                          style: TextStyle(
-                                            fontSize: value >= 4096
-                                                ? 16
-                                                : value >= 1024
-                                                ? 20
-                                                : value >= 128
-                                                ? 24
-                                                : 28,
-                                            fontWeight: FontWeight.w800,
-                                            color: _getTextColor(value),
-                                          ),
-                                        )
-                                      : null,
-                                ),
-                              ),
-                            );
+                            final value = state.grid[index ~/ 4][index % 4];
+                            return _buildTile(value);
                           },
                         ),
                       ),
@@ -652,14 +670,14 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF21242b).withValues(alpha: 0.5 * 255),
+                      color: const Color(0xFF21242b).withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.05 * 255),
+                        color: Colors.white.withValues(alpha: 0.05),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.3 * 255),
+                          color: Colors.black.withValues(alpha: 0.3),
                           blurRadius: 20,
                           offset: const Offset(0, 2),
                         ),
@@ -670,8 +688,9 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                         Expanded(
                           child: _buildFooterButton(
                             label: 'RESET',
-                            onPressed: () =>
-                                ref.read(game2048Provider.notifier).initializeGame(),
+                            onPressed: () => ref
+                                .read(game2048Provider.notifier)
+                                .initializeGame(),
                             isPrimary: false,
                           ),
                         ),
@@ -680,9 +699,9 @@ class _Game2048PageState extends ConsumerState<Game2048Page>
                           flex: 2,
                           child: _buildFooterButton(
                             label: 'MAIN MENU',
-                            onPressed: () => Navigator.of(context).popUntil(
-                              (route) => route.isFirst,
-                            ),
+                            onPressed: () => Navigator.of(
+                              context,
+                            ).popUntil((route) => route.isFirst),
                             isPrimary: true,
                           ),
                         ),
@@ -771,8 +790,10 @@ class _MilestoneBannerState extends State<_MilestoneBanner>
       begin: const Offset(0, -1),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
-    _fade = Tween<double>(begin: 0, end: 1)
-        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+    _fade = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
 
     _ctrl.forward();
 
@@ -826,7 +847,11 @@ class _MilestoneBannerState extends State<_MilestoneBanner>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.celebration, color: Color(0xFF19e6a2), size: 22),
+                  const Icon(
+                    Icons.celebration,
+                    color: Color(0xFF19e6a2),
+                    size: 22,
+                  ),
                   const SizedBox(width: 10),
                   Text(
                     'Milestone! ',
