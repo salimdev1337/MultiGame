@@ -333,6 +333,23 @@ test('should save score', () async {
 3. Barrel files (`index.dart`) for clean imports
 4. Documentation on public APIs
 
+### Flow Control — Curly Braces Required
+**ALWAYS wrap `if`, `else`, `for`, `while`, and `do` bodies in curly braces**, even single-line ones. The CI enforces `curly_braces_in_flow_control_structures`.
+
+```dart
+// ❌ WRONG — breaks CI
+if (idx != -1) doSomething();
+for (final x in list) process(x);
+
+// ✅ CORRECT
+if (idx != -1) {
+  doSomething();
+}
+for (final x in list) {
+  process(x);
+}
+```
+
 ### Error Handling
 ```dart
 // ✅ DO: Handle gracefully
