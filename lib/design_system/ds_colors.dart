@@ -160,7 +160,7 @@ class DSColors {
 
   /// Get color with custom opacity
   static Color withOpacity(Color color, double opacity) {
-    return color.withValues(alpha: opacity * 255);
+    return color.withValues(alpha: opacity);
   }
 
   /// Get game-specific color

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:multigame/utils/secure_logger.dart';
 
@@ -155,9 +156,42 @@ class FirebaseStatsRepository implements StatsRepository {
 
   static const String _usersCollection = 'users';
   static const String _leaderboardCollection = 'leaderboard';
+  static const Duration _timeout = Duration(seconds: 8);
+
+  /// Delays between retry attempts: immediate, 500 ms, 1500 ms
+  static const List<Duration> _retryDelays = [
+    Duration.zero,
+    Duration(milliseconds: 500),
+    Duration(milliseconds: 1500),
+  ];
 
   FirebaseStatsRepository({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
+
+  /// Runs [operation] up to [_retryDelays.length] times with the configured
+  /// backoff schedule.  Only retries on network/timeout errors — any exception
+  /// from the last attempt is rethrown.
+  Future<T> _withRetry<T>(
+    String label,
+    Future<T> Function() operation,
+  ) async {
+    Exception? lastException;
+    for (int attempt = 0; attempt < _retryDelays.length; attempt++) {
+      if (attempt > 0) {
+        await Future.delayed(_retryDelays[attempt]);
+        SecureLogger.log(
+          '$label retry attempt $attempt',
+          tag: 'StatsRepository',
+        );
+      }
+      try {
+        return await operation();
+      } on Exception catch (e) {
+        lastException = e;
+      }
+    }
+    throw lastException!;
+  }
 
   @override
   Future<void> saveUserStats({
@@ -167,52 +201,56 @@ class FirebaseStatsRepository implements StatsRepository {
     required int score,
   }) async {
     try {
-      final userRef = _firestore.collection(_usersCollection).doc(userId);
-      final doc = await userRef.get();
+      await _withRetry('saveUserStats($gameType)', () async {
+        final userRef = _firestore.collection(_usersCollection).doc(userId);
+        final doc = await userRef.get().timeout(_timeout);
 
-      if (!doc.exists) {
-        // Create new user document
-        await userRef.set({
-          'displayName': displayName,
-          'totalGamesPlayed': 1,
-          'totalScore': score,
-          'lastPlayed': FieldValue.serverTimestamp(),
-          'gameStats': {
-            gameType: {
-              'gamesPlayed': 1,
-              'highScore': score,
-              'totalScore': score,
-              'lastPlayed': FieldValue.serverTimestamp(),
-            },
-          },
-        });
-      } else {
-        // Update existing user document
-        final data = doc.data()!;
-        final gameStats = data['gameStats'] as Map<String, dynamic>? ?? {};
-        final currentGameStats =
-            gameStats[gameType] as Map<String, dynamic>? ??
-            {'gamesPlayed': 0, 'highScore': 0, 'totalScore': 0};
+        if (!doc.exists) {
+          await userRef
+              .set({
+                'displayName': displayName,
+                'totalGamesPlayed': 1,
+                'totalScore': score,
+                'lastPlayed': FieldValue.serverTimestamp(),
+                'gameStats': {
+                  gameType: {
+                    'gamesPlayed': 1,
+                    'highScore': score,
+                    'totalScore': score,
+                    'lastPlayed': FieldValue.serverTimestamp(),
+                  },
+                },
+              })
+              .timeout(_timeout);
+        } else {
+          final data = doc.data()!;
+          final gameStats = data['gameStats'] as Map<String, dynamic>? ?? {};
+          final currentGameStats =
+              gameStats[gameType] as Map<String, dynamic>? ??
+              {'gamesPlayed': 0, 'highScore': 0, 'totalScore': 0};
 
-        final newHighScore = score > (currentGameStats['highScore'] ?? 0)
-            ? score
-            : currentGameStats['highScore'];
+          final newHighScore = score > (currentGameStats['highScore'] ?? 0)
+              ? score
+              : currentGameStats['highScore'];
 
-        await userRef.update({
-          'displayName': displayName ?? data['displayName'],
-          'totalGamesPlayed': FieldValue.increment(1),
-          'totalScore': FieldValue.increment(score),
-          'lastPlayed': FieldValue.serverTimestamp(),
-          'gameStats.$gameType': {
-            'gamesPlayed': FieldValue.increment(1),
-            'highScore': newHighScore,
-            'totalScore': FieldValue.increment(score),
-            'lastPlayed': FieldValue.serverTimestamp(),
-          },
-        });
-      }
+          await userRef
+              .update({
+                'displayName': displayName ?? data['displayName'],
+                'totalGamesPlayed': FieldValue.increment(1),
+                'totalScore': FieldValue.increment(score),
+                'lastPlayed': FieldValue.serverTimestamp(),
+                'gameStats.$gameType': {
+                  'gamesPlayed': FieldValue.increment(1),
+                  'highScore': newHighScore,
+                  'totalScore': FieldValue.increment(score),
+                  'lastPlayed': FieldValue.serverTimestamp(),
+                },
+              })
+              .timeout(_timeout);
+        }
+      });
 
-      // Update leaderboard
+      // Update leaderboard (has its own retry)
       await _updateLeaderboard(
         userId: userId,
         displayName: displayName,
@@ -220,8 +258,11 @@ class FirebaseStatsRepository implements StatsRepository {
         score: score,
       );
     } catch (e) {
+      final isTimeout = e is TimeoutException;
       SecureLogger.error(
-        'Failed to save user stats',
+        isTimeout
+            ? 'saveUserStats timed out after ${_timeout.inSeconds}s'
+            : 'Failed to save user stats',
         error: e,
         tag: 'StatsRepository',
       );
@@ -237,38 +278,44 @@ class FirebaseStatsRepository implements StatsRepository {
     required int score,
   }) async {
     try {
-      final leaderboardRef = _firestore
-          .collection(_leaderboardCollection)
-          .doc(gameType)
-          .collection('scores')
-          .doc(userId);
+      await _withRetry('_updateLeaderboard($gameType)', () async {
+        final leaderboardRef = _firestore
+            .collection(_leaderboardCollection)
+            .doc(gameType)
+            .collection('scores')
+            .doc(userId);
 
-      final doc = await leaderboardRef.get();
-      final currentHighScore = doc.data()?['highScore'] ?? 0;
+        final doc = await leaderboardRef.get().timeout(_timeout);
+        final currentHighScore = doc.data()?['highScore'] ?? 0;
 
-      if (!doc.exists) {
-        await leaderboardRef.set({
-          'userId': userId,
-          'displayName': displayName ?? 'Anonymous',
-          'highScore': score,
-          'lastUpdated': FieldValue.serverTimestamp(),
-        });
-      } else if (score > currentHighScore) {
-        SecureLogger.firebase(
-          'Updating leaderboard',
-          details: 'New high score',
-        );
-        await leaderboardRef.set({
-          'userId': userId,
-          'displayName': displayName ?? 'Anonymous',
-          'highScore': score,
-          'lastUpdated': FieldValue.serverTimestamp(),
-        });
-      } else {
-        SecureLogger.firebase(
-          'Score not higher than current high score, skipping update',
-        );
-      }
+        if (!doc.exists) {
+          await leaderboardRef
+              .set({
+                'userId': userId,
+                'displayName': displayName ?? 'Anonymous',
+                'highScore': score,
+                'lastUpdated': FieldValue.serverTimestamp(),
+              })
+              .timeout(_timeout);
+        } else if (score > currentHighScore) {
+          SecureLogger.firebase(
+            'Updating leaderboard',
+            details: 'New high score',
+          );
+          await leaderboardRef
+              .set({
+                'userId': userId,
+                'displayName': displayName ?? 'Anonymous',
+                'highScore': score,
+                'lastUpdated': FieldValue.serverTimestamp(),
+              })
+              .timeout(_timeout);
+        } else {
+          SecureLogger.firebase(
+            'Score not higher than current high score, skipping update',
+          );
+        }
+      });
     } catch (e) {
       SecureLogger.error(
         'Failed to update leaderboard',
@@ -284,7 +331,8 @@ class FirebaseStatsRepository implements StatsRepository {
       final doc = await _firestore
           .collection(_usersCollection)
           .doc(userId)
-          .get();
+          .get()
+          .timeout(_timeout);
 
       if (!doc.exists) {
         return null;
@@ -293,7 +341,9 @@ class FirebaseStatsRepository implements StatsRepository {
       return UserStats.fromFirestore(doc);
     } catch (e) {
       SecureLogger.error(
-        'Failed to get user stats',
+        e is TimeoutException
+            ? 'getUserStats timed out after ${_timeout.inSeconds}s'
+            : 'Failed to get user stats',
         error: e,
         tag: 'StatsRepository',
       );
@@ -313,12 +363,13 @@ class FirebaseStatsRepository implements StatsRepository {
           }
           return UserStats.fromFirestore(doc);
         })
-        .handleError((error) {
+        .handleError((error, StackTrace stackTrace) {
           SecureLogger.error(
             'Error in user stats stream',
+            error: error,
             tag: 'StatsRepository',
           );
-          return null;
+          throw error;
         });
   }
 
@@ -334,14 +385,17 @@ class FirebaseStatsRepository implements StatsRepository {
           .collection('scores')
           .orderBy('highScore', descending: true)
           .limit(limit)
-          .get();
+          .get()
+          .timeout(_timeout);
 
       return querySnapshot.docs
           .map((doc) => LeaderboardEntry.fromFirestore(doc))
           .toList();
     } catch (e) {
       SecureLogger.error(
-        'Failed to get leaderboard',
+        e is TimeoutException
+            ? 'getLeaderboard timed out after ${_timeout.inSeconds}s'
+            : 'Failed to get leaderboard',
         error: e,
         tag: 'StatsRepository',
       );
@@ -360,7 +414,8 @@ class FirebaseStatsRepository implements StatsRepository {
           .doc(gameType)
           .collection('scores')
           .doc(userId)
-          .get();
+          .get()
+          .timeout(_timeout);
 
       if (!userDoc.exists) {
         return null;
@@ -374,12 +429,15 @@ class FirebaseStatsRepository implements StatsRepository {
           .collection('scores')
           .where('highScore', isGreaterThan: userScore)
           .count()
-          .get();
+          .get()
+          .timeout(_timeout);
 
       return (higherScoresCount.count ?? 0) + 1;
     } catch (e) {
       SecureLogger.error(
-        'Failed to get user rank',
+        e is TimeoutException
+            ? 'getUserRank timed out after ${_timeout.inSeconds}s'
+            : 'Failed to get user rank',
         error: e,
         tag: 'StatsRepository',
       );
