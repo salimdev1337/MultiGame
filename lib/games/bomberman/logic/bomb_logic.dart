@@ -26,7 +26,8 @@ class BombLogic {
     List<BombPlayer> players,
     List<PowerupCell> powerups,
     List<Bomb> chainBombs,
-  }) explode({
+  })
+  explode({
     required Bomb bomb,
     required List<List<CellType>> grid,
     required List<Bomb> allBombs,
@@ -72,7 +73,8 @@ class BombLogic {
           newGrid[ny][nx] = CellType.empty;
           // Maybe spawn powerup
           if (r.nextDouble() < _powerupChance) {
-            final type = PowerupType.values[r.nextInt(PowerupType.values.length)];
+            final type =
+                PowerupType.values[r.nextInt(PowerupType.values.length)];
             newPowerups.add(PowerupCell(x: nx, y: ny, type: type));
           }
           break; // blast doesn't continue through destroyed block
@@ -122,7 +124,8 @@ class BombLogic {
 
   /// Collect powerups at each player's grid position.
   /// Only living non-ghost players collect powerups.
-  static ({List<BombPlayer> players, List<PowerupCell> powerups}) collectPowerups({
+  static ({List<BombPlayer> players, List<PowerupCell> powerups})
+  collectPowerups({
     required List<BombPlayer> players,
     required List<PowerupCell> powerups,
   }) {

@@ -37,8 +37,8 @@ enum _MultiRole { solo, host, guest }
 
 final bombermanProvider =
     NotifierProvider.autoDispose<BombermanNotifier, BombGameState>(
-  BombermanNotifier.new,
-);
+      BombermanNotifier.new,
+    );
 
 // ─── Notifier ────────────────────────────────────────────────────────────────
 
@@ -56,7 +56,8 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
   Timer? _countdownTimer;
   int _nextBombId = 0;
   int _tickCount = 0;
-  double _roundTimeAccum = 0.0; // seconds accumulated toward next round-second decrement
+  double _roundTimeAccum =
+      0.0; // seconds accumulated toward next round-second decrement
 
   BotDifficulty _difficulty = BotDifficulty.medium;
   // Last bot decisions, refreshed every _botAiInterval ticks
@@ -240,9 +241,7 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
 
   void _broadcastIfHost() {
     if (_role != _MultiRole.host) return;
-    _netServer?.broadcast(
-      BombMessage.frameSync(state.toFrameJson()).encode(),
-    );
+    _netServer?.broadcast(BombMessage.frameSync(state.toFrameJson()).encode());
     if (_gridChangedThisTick && _changedCells.isNotEmpty) {
       _netServer?.broadcast(
         BombMessage.gridUpdate(List.from(_changedCells)).encode(),
@@ -388,7 +387,11 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
   // the player reaches a junction the cross axis is already centred.
 
   BombGameState _movePlayer(
-    BombGameState s, int playerId, double dx, double dy, double dt,
+    BombGameState s,
+    int playerId,
+    double dx,
+    double dy,
+    double dt,
   ) {
     final p = s.players[playerId];
     if (!p.isAlive) return s;
@@ -418,9 +421,13 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
     }
 
     // Keep targetX/Y in sync — bombCellX/Y derive from them
-    final updated = s.players.map((pl) => pl.id == playerId
-        ? pl.copyWith(x: nx, y: ny, targetX: nx, targetY: ny)
-        : pl).toList();
+    final updated = s.players
+        .map(
+          (pl) => pl.id == playerId
+              ? pl.copyWith(x: nx, y: ny, targetX: nx, targetY: ny)
+              : pl,
+        )
+        .toList();
     return s.copyWith(players: updated);
   }
 
@@ -439,9 +446,14 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
   /// player body overlaps).  [isHorizontal] controls how (tx, ty) are assembled
   /// for the cell-blocked check.
   double _slideAxis(
-    double main, double cross, double dir, double step,
-    BombGameState s, BombPlayer p, {required bool isHorizontal}
-  ) {
+    double main,
+    double cross,
+    double dir,
+    double step,
+    BombGameState s,
+    BombPlayer p, {
+    required bool isHorizontal,
+  }) {
     const r = _kPlayerRadius;
     final newMain = main + dir * step;
 
@@ -452,7 +464,7 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
 
     // Check every tile the player body overlaps on the perpendicular axis.
     // 0.001 inset avoids double-counting at exact integer boundaries.
-    final crossLow  = (cross - r + 0.001).floor();
+    final crossLow = (cross - r + 0.001).floor();
     final crossHigh = (cross + r - 0.001).floor();
 
     for (int ci = crossLow; ci <= crossHigh; ci++) {
@@ -463,8 +475,13 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
         // The tiny gap keeps floor(leading) in the safe cell on the next tick,
         // preventing the "same-cell skip" that causes clipping.
         return dir > 0
-            ? newCell - r - 0.001          // right/down: right edge just left of wall
-            : newCell + 1.0 + r + 0.001;   // left/up:   left edge just right of wall
+            ? newCell -
+                  r -
+                  0.001 // right/down: right edge just left of wall
+            : newCell +
+                  1.0 +
+                  r +
+                  0.001; // left/up:   left edge just right of wall
       }
     }
 
@@ -485,10 +502,12 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
     if (cell == CellType.wall || cell == CellType.block) return true;
     // Bombs block passage unless it's the cell the player just placed a bomb on
     // (they're allowed to walk away from their own freshly-placed bomb)
-    return bombs.any((b) =>
-        b.x == tx &&
-        b.y == ty &&
-        !(b.x == player.bombCellX && b.y == player.bombCellY));
+    return bombs.any(
+      (b) =>
+          b.x == tx &&
+          b.y == ty &&
+          !(b.x == player.bombCellX && b.y == player.bombCellY),
+    );
   }
 
   // ─── Bomb placement ────────────────────────────────────────────────────────
@@ -528,10 +547,7 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
           : pl;
     }).toList();
 
-    return s.copyWith(
-      bombs: [...s.bombs, bomb],
-      players: updatedPlayers,
-    );
+    return s.copyWith(bombs: [...s.bombs, bomb], players: updatedPlayers);
   }
 
   // ─── Bomb tick ─────────────────────────────────────────────────────────────
@@ -652,8 +668,9 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
     }
 
     final maxWins = wins.reduce(max);
-    final gameWinner =
-        maxWins >= (kMaxRounds + 1) ~/ 2 ? wins.indexOf(maxWins) : -1;
+    final gameWinner = maxWins >= (kMaxRounds + 1) ~/ 2
+        ? wins.indexOf(maxWins)
+        : -1;
 
     if (gameWinner >= 0) {
       state = state.copyWith(

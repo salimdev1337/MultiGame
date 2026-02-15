@@ -17,12 +17,16 @@ class BombermanHud extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final s = ref.watch(bombermanProvider.select((s) => (
-      round: s.round,
-      time: s.roundTimeSeconds,
-      wins: s.roundWins,
-      players: s.players,
-    )));
+    final s = ref.watch(
+      bombermanProvider.select(
+        (s) => (
+          round: s.round,
+          time: s.roundTimeSeconds,
+          wins: s.roundWins,
+          players: s.players,
+        ),
+      ),
+    );
 
     final mins = s.time ~/ 60;
     final secs = s.time % 60;
@@ -37,10 +41,14 @@ class BombermanHud extends ConsumerWidget {
         children: [
           // Player status indicators
           Row(
-            children: s.players.mapIndexed((i, p) => _PlayerChip(
-              player: p,
-              wins: i < s.wins.length ? s.wins[i] : 0,
-            )).toList(),
+            children: s.players
+                .mapIndexed(
+                  (i, p) => _PlayerChip(
+                    player: p,
+                    wins: i < s.wins.length ? s.wins[i] : 0,
+                  ),
+                )
+                .toList(),
           ),
 
           // Timer
@@ -99,9 +107,7 @@ class _PlayerChip extends StatelessWidget {
               (i) => Icon(
                 Icons.favorite,
                 size: 10,
-                color: i < player.lives
-                    ? color
-                    : color.withValues(alpha: 0.2),
+                color: i < player.lives ? color : color.withValues(alpha: 0.2),
               ),
             ),
           ),

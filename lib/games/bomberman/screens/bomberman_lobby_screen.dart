@@ -78,7 +78,9 @@ class _BombermanLobbyPageState extends ConsumerState<BombermanLobbyPage>
     if (ip == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not get local IP. Are you on WiFi?')),
+          const SnackBar(
+            content: Text('Could not get local IP. Are you on WiFi?'),
+          ),
         );
       }
       return;
@@ -91,9 +93,9 @@ class _BombermanLobbyPageState extends ConsumerState<BombermanLobbyPage>
       await server.start(port);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to start server: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to start server: $e')));
       }
       return;
     }
@@ -158,11 +160,9 @@ class _BombermanLobbyPageState extends ConsumerState<BombermanLobbyPage>
         .map((p) => (id: p.id, name: p.displayName))
         .toList();
 
-    ref.read(bombermanProvider.notifier).startMultiplayerHost(
-          server: server,
-          client: client,
-          players: players,
-        );
+    ref
+        .read(bombermanProvider.notifier)
+        .startMultiplayerHost(server: server, client: client, players: players);
 
     // Notifier now owns server and client — clear local references
     _server = null;
@@ -216,10 +216,9 @@ class _BombermanLobbyPageState extends ConsumerState<BombermanLobbyPage>
           if (c == null) return;
           // Transfer ownership to notifier
           _client = null;
-          ref.read(bombermanProvider.notifier).connectAsGuest(
-                client: c,
-                localPlayerId: _myPlayerId,
-              );
+          ref
+              .read(bombermanProvider.notifier)
+              .connectAsGuest(client: c, localPlayerId: _myPlayerId);
           if (mounted) context.go(AppRoutes.game('bomberman'));
         default:
           break;
@@ -227,9 +226,9 @@ class _BombermanLobbyPageState extends ConsumerState<BombermanLobbyPage>
     };
     client.onDisconnected = () {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Host disconnected')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Host disconnected')));
         context.go(AppRoutes.home);
       }
     };
@@ -337,9 +336,8 @@ class _BombermanLobbyPageState extends ConsumerState<BombermanLobbyPage>
                       const SizedBox(width: 12),
                       IconButton(
                         icon: const Icon(Icons.copy, color: Colors.white54),
-                        onPressed: () => Clipboard.setData(
-                          ClipboardData(text: _hostCode),
-                        ),
+                        onPressed: () =>
+                            Clipboard.setData(ClipboardData(text: _hostCode)),
                         tooltip: 'Copy code',
                       ),
                     ],

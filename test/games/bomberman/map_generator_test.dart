@@ -21,19 +21,30 @@ void main() {
     test('outer border is all permanent walls', () {
       for (int c = 0; c < kGridW; c++) {
         expect(grid[0][c], CellType.wall, reason: 'top border at col $c');
-        expect(grid[kGridH - 1][c], CellType.wall, reason: 'bottom border at col $c');
+        expect(
+          grid[kGridH - 1][c],
+          CellType.wall,
+          reason: 'bottom border at col $c',
+        );
       }
       for (int r = 0; r < kGridH; r++) {
         expect(grid[r][0], CellType.wall, reason: 'left border at row $r');
-        expect(grid[r][kGridW - 1], CellType.wall, reason: 'right border at row $r');
+        expect(
+          grid[r][kGridW - 1],
+          CellType.wall,
+          reason: 'right border at row $r',
+        );
       }
     });
 
     test('interior pillars at even-row, even-col are walls', () {
       for (int r = 2; r < kGridH - 1; r += 2) {
         for (int c = 2; c < kGridW - 1; c += 2) {
-          expect(grid[r][c], CellType.wall,
-              reason: 'pillar at ($r, $c) should be wall');
+          expect(
+            grid[r][c],
+            CellType.wall,
+            reason: 'pillar at ($r, $c) should be wall',
+          );
         }
       }
     });

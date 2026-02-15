@@ -18,15 +18,9 @@ BombGameState _testState() {
       BombPlayer(id: 0, x: 1.5, y: 1.5, displayName: 'Alice'),
       BombPlayer(id: 1, x: 13.5, y: 1.5, displayName: 'Bob'),
     ],
-    bombs: const [
-      Bomb(id: 0, x: 3, y: 3, ownerId: 0, range: 2, fuseMs: 2000),
-    ],
-    explosions: const [
-      ExplosionTile(x: 2, y: 2, remainingMs: 200),
-    ],
-    powerups: const [
-      PowerupCell(x: 5, y: 5, type: PowerupType.speed),
-    ],
+    bombs: const [Bomb(id: 0, x: 3, y: 3, ownerId: 0, range: 2, fuseMs: 2000)],
+    explosions: const [ExplosionTile(x: 2, y: 2, remainingMs: 200)],
+    powerups: const [PowerupCell(x: 5, y: 5, type: PowerupType.speed)],
     phase: GamePhase.playing,
     countdown: 0,
     roundTimeSeconds: 120,
@@ -54,8 +48,10 @@ void main() {
       expect(restored.bombs[0].fuseMs, original.bombs[0].fuseMs);
 
       expect(restored.explosions.length, original.explosions.length);
-      expect(restored.explosions[0].remainingMs,
-          original.explosions[0].remainingMs);
+      expect(
+        restored.explosions[0].remainingMs,
+        original.explosions[0].remainingMs,
+      );
 
       expect(restored.powerups.length, original.powerups.length);
       expect(restored.powerups[0].type, original.powerups[0].type);
@@ -72,8 +68,10 @@ void main() {
     test('applyFrameSync preserves the original grid', () {
       final original = _testState();
       // Make a different state with a different phase
-      final hostState = original.copyWith(phase: GamePhase.roundOver,
-          roundOverMessage: 'Alice wins!');
+      final hostState = original.copyWith(
+        phase: GamePhase.roundOver,
+        roundOverMessage: 'Alice wins!',
+      );
       final frame = hostState.toFrameJson();
 
       final guestRestored = original.applyFrameSync(frame);
@@ -93,8 +91,11 @@ void main() {
 
       for (int row = 0; row < kGridH; row++) {
         for (int col = 0; col < kGridW; col++) {
-          expect(restored.grid[row][col], original.grid[row][col],
-              reason: 'grid[$row][$col] mismatch');
+          expect(
+            restored.grid[row][col],
+            original.grid[row][col],
+            reason: 'grid[$row][$col] mismatch',
+          );
         }
       }
       expect(restored.players.length, original.players.length);
@@ -103,10 +104,9 @@ void main() {
 
     test('winnerId null is preserved through applyFrameSync', () {
       final original = _testState();
-      final frame = original.copyWith(
-        clearWinner: true,
-        clearRoundOverMessage: true,
-      ).toFrameJson();
+      final frame = original
+          .copyWith(clearWinner: true, clearRoundOverMessage: true)
+          .toFrameJson();
 
       final restored = original.copyWith(winnerId: 99).applyFrameSync(frame);
       expect(restored.winnerId, isNull);
@@ -174,8 +174,8 @@ void main() {
       expect(decoded, isNotNull);
       expect(decoded!.type, BombMessageType.gridUpdate);
 
-      final cellList =
-          (decoded.payload['cells'] as List).cast<Map<String, dynamic>>();
+      final cellList = (decoded.payload['cells'] as List)
+          .cast<Map<String, dynamic>>();
       expect(cellList.length, 2);
       expect(cellList[0]['x'], 3);
       expect(cellList[0]['y'], 4);

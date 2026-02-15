@@ -24,7 +24,9 @@ class BombRoom {
   bool get isFull => players.length >= maxPlayers;
   bool get allReady => players.isNotEmpty && players.every((p) => p.isReady);
 
-  int get nextId => players.isEmpty ? 0 : players.map((p) => p.id).reduce((a, b) => a > b ? a : b) + 1;
+  int get nextId => players.isEmpty
+      ? 0
+      : players.map((p) => p.id).reduce((a, b) => a > b ? a : b) + 1;
 
   BombRoomPlayer? findById(int id) =>
       players.where((p) => p.id == id).firstOrNull;

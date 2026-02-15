@@ -54,7 +54,11 @@ void main() {
       for (final msg in messages) {
         final decoded = BombMessage.tryDecode(msg.encode());
         expect(decoded, isNotNull, reason: '${msg.type} should decode');
-        expect(decoded!.type, msg.type, reason: '${msg.type} type should match');
+        expect(
+          decoded!.type,
+          msg.type,
+          reason: '${msg.type} type should match',
+        );
       }
     });
   });

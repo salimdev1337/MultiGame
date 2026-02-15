@@ -7,9 +7,9 @@ import 'package:multigame/games/bomberman/models/explosion_tile.dart';
 // ─── Difficulty ───────────────────────────────────────────────────────────────
 
 enum BotDifficulty {
-  easy,   // reactive only, rare bombing
+  easy, // reactive only, rare bombing
   medium, // balanced
-  hard,   // aggressive, always chases, always bombs
+  hard, // aggressive, always chases, always bombs
 }
 
 // ─── Decision ─────────────────────────────────────────────────────────────────
@@ -98,12 +98,17 @@ class BotAI {
 
   /// Whether the bot should place a bomb at this position.
   static bool _shouldPlaceBomb(
-    int bx, int by, int botId, BombGameState state, BotDifficulty difficulty,
+    int bx,
+    int by,
+    int botId,
+    BombGameState state,
+    BotDifficulty difficulty,
   ) {
     switch (difficulty) {
       case BotDifficulty.easy:
         // Rarely bomb — only 15% chance when adjacent to a block
-        return _hasAdjacentBlock(bx, by, state.grid) && _rng.nextDouble() < 0.15;
+        return _hasAdjacentBlock(bx, by, state.grid) &&
+            _rng.nextDouble() < 0.15;
 
       case BotDifficulty.medium:
         return _hasAdjacentBlock(bx, by, state.grid);
@@ -119,7 +124,8 @@ class BotAI {
   }
 
   static bool _inDanger(
-    int x, int y,
+    int x,
+    int y,
     List<Bomb> bombs,
     List<ExplosionTile> explosions,
     int fuseThreshold,
@@ -163,14 +169,28 @@ class BotAI {
     return false;
   }
 
-  static _Dir? _toward(int fromX, int fromY, int toX, int toY, BombGameState state) {
-    return _bfsFirstStep(fromX, fromY, state, (nx, ny) => nx == toX && ny == toY);
+  static _Dir? _toward(
+    int fromX,
+    int fromY,
+    int toX,
+    int toY,
+    BombGameState state,
+  ) {
+    return _bfsFirstStep(
+      fromX,
+      fromY,
+      state,
+      (nx, ny) => nx == toX && ny == toY,
+    );
   }
 
   /// BFS from (startX,startY) — returns the first step direction toward a cell
   /// satisfying [goal]. Returns null if unreachable.
   static _Dir? _bfsFirstStep(
-    int startX, int startY, BombGameState state, bool Function(int, int) goal,
+    int startX,
+    int startY,
+    BombGameState state,
+    bool Function(int, int) goal,
   ) {
     final grid = state.grid;
     final bombPositions = {for (final b in state.bombs) (b.x, b.y)};

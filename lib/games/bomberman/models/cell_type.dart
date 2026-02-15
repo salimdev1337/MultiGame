@@ -1,8 +1,8 @@
 enum CellType {
   empty,
-  wall,       // permanent (indestructible)
-  block,      // destructible
-  powerup,    // has a powerup hidden (revealed after block destroyed)
+  wall, // permanent (indestructible)
+  block, // destructible
+  powerup, // has a powerup hidden (revealed after block destroyed)
 }
 
 extension CellTypeJson on CellType {

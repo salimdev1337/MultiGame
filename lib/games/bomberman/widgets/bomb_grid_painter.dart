@@ -35,10 +35,7 @@ class BombGridPainter extends CustomPainter {
   final BombGameState gameState;
   final double animValue; // drives fuse shrink + explosion pulse
 
-  const BombGridPainter({
-    required this.gameState,
-    required this.animValue,
-  });
+  const BombGridPainter({required this.gameState, required this.animValue});
 
   @override
   bool shouldRepaint(BombGridPainter old) =>
@@ -84,7 +81,9 @@ class BombGridPainter extends CustomPainter {
           canvas.drawLine(
             rect.topLeft + const Offset(1, 1),
             rect.topRight + const Offset(-1, 1),
-            Paint()..color = const Color(0xFF3d4460).withValues(alpha: 0.6)..strokeWidth = 1,
+            Paint()
+              ..color = const Color(0xFF3d4460).withValues(alpha: 0.6)
+              ..strokeWidth = 1,
           );
         } else if (cell == CellType.block) {
           canvas.drawRect(rect, Paint()..color = _kBlock);
@@ -112,7 +111,8 @@ class BombGridPainter extends CustomPainter {
       final alpha = e.alpha;
       final cx = e.x * cellW + cellW / 2;
       final cy = e.y * cellH + cellH / 2;
-      final radius = min(cellW, cellH) * 0.5 * (0.8 + 0.2 * sin(animValue * pi * 4));
+      final radius =
+          min(cellW, cellH) * 0.5 * (0.8 + 0.2 * sin(animValue * pi * 4));
 
       final paint = Paint()
         ..shader = RadialGradient(
@@ -142,16 +142,15 @@ class BombGridPainter extends CustomPainter {
       final r = min(cellW, cellH) * 0.38;
 
       // Body
-      canvas.drawCircle(
-        Offset(cx, cy),
-        r,
-        Paint()..color = _kBomb,
-      );
+      canvas.drawCircle(Offset(cx, cy), r, Paint()..color = _kBomb);
 
       // Fuse (shrinking arc based on bomb progress)
       final fuseProgress = b.fuseProgress;
       final fuseAngle = pi * (1.0 - fuseProgress) * 1.5;
-      final rect = Rect.fromCircle(center: Offset(cx, cy - r * 0.9), radius: r * 0.4);
+      final rect = Rect.fromCircle(
+        center: Offset(cx, cy - r * 0.9),
+        radius: r * 0.4,
+      );
       canvas.drawArc(
         rect,
         -pi / 2,
@@ -203,7 +202,10 @@ class BombGridPainter extends CustomPainter {
 
       // Shield ring — pulsing cyan outline
       if (p.hasShield) {
-        final shieldAlpha = (sin(animValue * pi * 4) * 0.3 + 0.7).clamp(0.0, 1.0);
+        final shieldAlpha = (sin(animValue * pi * 4) * 0.3 + 0.7).clamp(
+          0.0,
+          1.0,
+        );
         canvas.drawCircle(
           Offset(cx, cy),
           r * 1.2,
@@ -246,10 +248,7 @@ class BombGridPainter extends CustomPainter {
           ),
           textDirection: TextDirection.ltr,
         )..layout();
-        tp.paint(
-          canvas,
-          Offset(cx - tp.width / 2, cy - tp.height / 2),
-        );
+        tp.paint(canvas, Offset(cx - tp.width / 2, cy - tp.height / 2));
       }
     }
   }
@@ -291,4 +290,3 @@ class BombGridPainter extends CustomPainter {
     }
   }
 }
-

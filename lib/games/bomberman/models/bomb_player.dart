@@ -3,17 +3,18 @@ import 'package:multigame/games/bomberman/models/powerup_type.dart';
 
 @immutable
 class BombPlayer {
-  final int id;          // 0–3
-  final double x;        // grid column (pixel-level smooth position)
-  final double y;        // grid row
+  final int id; // 0–3
+  final double x; // grid column (pixel-level smooth position)
+  final double y; // grid row
   final int lives;
-  final int maxBombs;    // max simultaneous bombs
+  final int maxBombs; // max simultaneous bombs
   final int activeBombs; // currently placed bombs
-  final int range;       // explosion tiles in each direction
-  final double speed;    // cells per second
+  final int range; // explosion tiles in each direction
+  final double speed; // cells per second
   final bool isAlive;
-  final bool isGhost;    // died but still plays — walks through walls, bombs reshape map only
-  final bool hasShield;  // absorbs next explosion hit
+  final bool
+  isGhost; // died but still plays — walks through walls, bombs reshape map only
+  final bool hasShield; // absorbs next explosion hit
   final bool isBot;
   final List<PowerupType> powerups;
   final String displayName;
@@ -40,8 +41,8 @@ class BombPlayer {
     this.displayName = '',
     double? targetX,
     double? targetY,
-  })  : targetX = targetX ?? x,
-        targetY = targetY ?? y;
+  }) : targetX = targetX ?? x,
+       targetY = targetY ?? y;
 
   /// True if this player can act (alive or ghost)
   bool get canAct => isAlive;
@@ -96,48 +97,47 @@ class BombPlayer {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'x': x,
-        'y': y,
-        'lives': lives,
-        'maxBombs': maxBombs,
-        'activeBombs': activeBombs,
-        'range': range,
-        'speed': speed,
-        'isAlive': isAlive,
-        'isGhost': isGhost,
-        'hasShield': hasShield,
-        'isBot': isBot,
-        'powerups': powerups.map((p) => p.toJson()).toList(),
-        'displayName': displayName,
-        'targetX': targetX,
-        'targetY': targetY,
-      };
+    'id': id,
+    'x': x,
+    'y': y,
+    'lives': lives,
+    'maxBombs': maxBombs,
+    'activeBombs': activeBombs,
+    'range': range,
+    'speed': speed,
+    'isAlive': isAlive,
+    'isGhost': isGhost,
+    'hasShield': hasShield,
+    'isBot': isBot,
+    'powerups': powerups.map((p) => p.toJson()).toList(),
+    'displayName': displayName,
+    'targetX': targetX,
+    'targetY': targetY,
+  };
 
   factory BombPlayer.fromJson(Map<String, dynamic> json) => BombPlayer(
-        id: json['id'] as int,
-        x: (json['x'] as num).toDouble(),
-        y: (json['y'] as num).toDouble(),
-        lives: json['lives'] as int,
-        maxBombs: json['maxBombs'] as int,
-        activeBombs: json['activeBombs'] as int,
-        range: json['range'] as int,
-        speed: (json['speed'] as num).toDouble(),
-        isAlive: json['isAlive'] as bool,
-        isGhost: json['isGhost'] as bool,
-        hasShield: json['hasShield'] as bool,
-        isBot: json['isBot'] as bool,
-        powerups: (json['powerups'] as List)
-            .map((p) => PowerupTypeJson.fromJson(p as int))
-            .toList(),
-        displayName: json['displayName'] as String,
-        targetX: (json['targetX'] as num).toDouble(),
-        targetY: (json['targetY'] as num).toDouble(),
-      );
+    id: json['id'] as int,
+    x: (json['x'] as num).toDouble(),
+    y: (json['y'] as num).toDouble(),
+    lives: json['lives'] as int,
+    maxBombs: json['maxBombs'] as int,
+    activeBombs: json['activeBombs'] as int,
+    range: json['range'] as int,
+    speed: (json['speed'] as num).toDouble(),
+    isAlive: json['isAlive'] as bool,
+    isGhost: json['isGhost'] as bool,
+    hasShield: json['hasShield'] as bool,
+    isBot: json['isBot'] as bool,
+    powerups: (json['powerups'] as List)
+        .map((p) => PowerupTypeJson.fromJson(p as int))
+        .toList(),
+    displayName: json['displayName'] as String,
+    targetX: (json['targetX'] as num).toDouble(),
+    targetY: (json['targetY'] as num).toDouble(),
+  );
 
   @override
-  bool operator ==(Object other) =>
-      other is BombPlayer && other.id == id;
+  bool operator ==(Object other) => other is BombPlayer && other.id == id;
 
   @override
   int get hashCode => id.hashCode;

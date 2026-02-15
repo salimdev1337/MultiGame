@@ -26,7 +26,14 @@ void main() {
   group('BombLogic.explode', () {
     test('center tile always becomes explosion', () {
       final grid = openGrid();
-      final bomb = const Bomb(id: 0, x: 5, y: 5, ownerId: 0, range: 2, fuseMs: 0);
+      final bomb = const Bomb(
+        id: 0,
+        x: 5,
+        y: 5,
+        ownerId: 0,
+        range: 2,
+        fuseMs: 0,
+      );
       final player = const BombPlayer(id: 0, x: 1, y: 1, activeBombs: 1);
 
       final result = BombLogic.explode(
@@ -42,7 +49,14 @@ void main() {
 
     test('blast propagates to range tiles in 4 directions', () {
       final grid = openGrid();
-      final bomb = const Bomb(id: 0, x: 5, y: 5, ownerId: 0, range: 3, fuseMs: 0);
+      final bomb = const Bomb(
+        id: 0,
+        x: 5,
+        y: 5,
+        ownerId: 0,
+        range: 3,
+        fuseMs: 0,
+      );
       final result = BombLogic.explode(
         bomb: bomb,
         grid: grid,
@@ -62,7 +76,14 @@ void main() {
       final grid = openGrid();
       // Place a wall directly to the right of the bomb
       grid[5][6] = CellType.wall;
-      final bomb = const Bomb(id: 0, x: 5, y: 5, ownerId: 0, range: 3, fuseMs: 0);
+      final bomb = const Bomb(
+        id: 0,
+        x: 5,
+        y: 5,
+        ownerId: 0,
+        range: 3,
+        fuseMs: 0,
+      );
       final result = BombLogic.explode(
         bomb: bomb,
         grid: grid,
@@ -79,7 +100,14 @@ void main() {
     test('destructible block is destroyed by blast', () {
       final grid = openGrid();
       grid[5][7] = CellType.block;
-      final bomb = const Bomb(id: 0, x: 5, y: 5, ownerId: 0, range: 3, fuseMs: 0);
+      final bomb = const Bomb(
+        id: 0,
+        x: 5,
+        y: 5,
+        ownerId: 0,
+        range: 3,
+        fuseMs: 0,
+      );
       final result = BombLogic.explode(
         bomb: bomb,
         grid: grid,
@@ -96,7 +124,14 @@ void main() {
 
     test('player in blast becomes a ghost (one-hit mode)', () {
       final grid = openGrid();
-      final bomb = const Bomb(id: 0, x: 5, y: 5, ownerId: 0, range: 2, fuseMs: 0);
+      final bomb = const Bomb(
+        id: 0,
+        x: 5,
+        y: 5,
+        ownerId: 0,
+        range: 2,
+        fuseMs: 0,
+      );
       final player = const BombPlayer(id: 1, x: 5, y: 6, activeBombs: 0);
       final result = BombLogic.explode(
         bomb: bomb,
@@ -114,8 +149,21 @@ void main() {
 
     test('player with 1 life in blast is killed', () {
       final grid = openGrid();
-      final bomb = const Bomb(id: 0, x: 5, y: 5, ownerId: 0, range: 2, fuseMs: 0);
-      final player = const BombPlayer(id: 1, x: 5, y: 6, lives: 1, activeBombs: 0);
+      final bomb = const Bomb(
+        id: 0,
+        x: 5,
+        y: 5,
+        ownerId: 0,
+        range: 2,
+        fuseMs: 0,
+      );
+      final player = const BombPlayer(
+        id: 1,
+        x: 5,
+        y: 6,
+        lives: 1,
+        activeBombs: 0,
+      );
       final result = BombLogic.explode(
         bomb: bomb,
         grid: grid,
@@ -131,7 +179,14 @@ void main() {
 
     test('owner activeBombs is decremented after explosion', () {
       final grid = openGrid();
-      final bomb = const Bomb(id: 0, x: 5, y: 5, ownerId: 0, range: 1, fuseMs: 0);
+      final bomb = const Bomb(
+        id: 0,
+        x: 5,
+        y: 5,
+        ownerId: 0,
+        range: 1,
+        fuseMs: 0,
+      );
       final owner = const BombPlayer(id: 0, x: 1, y: 1, activeBombs: 2);
       final result = BombLogic.explode(
         bomb: bomb,
@@ -147,8 +202,22 @@ void main() {
 
     test('chain bomb is detected', () {
       final grid = openGrid();
-      final bomb1 = const Bomb(id: 0, x: 5, y: 5, ownerId: 0, range: 2, fuseMs: 0);
-      final bomb2 = const Bomb(id: 1, x: 7, y: 5, ownerId: 0, range: 2, fuseMs: 5000);
+      final bomb1 = const Bomb(
+        id: 0,
+        x: 5,
+        y: 5,
+        ownerId: 0,
+        range: 2,
+        fuseMs: 0,
+      );
+      final bomb2 = const Bomb(
+        id: 1,
+        x: 7,
+        y: 5,
+        ownerId: 0,
+        range: 2,
+        fuseMs: 5000,
+      );
       final result = BombLogic.explode(
         bomb: bomb1,
         grid: grid,
@@ -162,7 +231,14 @@ void main() {
 
     test('bomb removed from remaining after explosion', () {
       final grid = openGrid();
-      final bomb = const Bomb(id: 0, x: 5, y: 5, ownerId: 0, range: 1, fuseMs: 0);
+      final bomb = const Bomb(
+        id: 0,
+        x: 5,
+        y: 5,
+        ownerId: 0,
+        range: 1,
+        fuseMs: 0,
+      );
       final result = BombLogic.explode(
         bomb: bomb,
         grid: grid,
@@ -225,9 +301,7 @@ void main() {
 
     test('speed powerup increases speed', () {
       final player = const BombPlayer(id: 0, x: 2, y: 2, speed: 3.5);
-      final powerups = [
-        const PowerupCell(x: 2, y: 2, type: PowerupType.speed),
-      ];
+      final powerups = [const PowerupCell(x: 2, y: 2, type: PowerupType.speed)];
 
       final result = BombLogic.collectPowerups(
         players: [player],
@@ -250,7 +324,10 @@ void main() {
       );
 
       expect(result.powerups, isNotEmpty); // not consumed
-      expect(result.players[0].maxBombs, equals(2)); // unchanged (default maxBombs=2)
+      expect(
+        result.players[0].maxBombs,
+        equals(2),
+      ); // unchanged (default maxBombs=2)
     });
 
     test('powerup not at player position is not consumed', () {

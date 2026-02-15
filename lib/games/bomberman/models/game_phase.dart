@@ -1,10 +1,4 @@
-enum GamePhase {
-  lobby,
-  countdown,
-  playing,
-  roundOver,
-  gameOver,
-}
+enum GamePhase { lobby, countdown, playing, roundOver, gameOver }
 
 extension GamePhaseJson on GamePhase {
   int toJson() => index;

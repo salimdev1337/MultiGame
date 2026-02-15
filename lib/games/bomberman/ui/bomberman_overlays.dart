@@ -31,14 +31,14 @@ class BombermanOverlay extends ConsumerWidget {
       GamePhase.countdown => _CountdownOverlay(count: countdown),
       GamePhase.roundOver => _RoundOverOverlay(message: msg ?? 'Round Over'),
       GamePhase.gameOver => _GameOverOverlay(
-          winnerId: winnerId,
-          wins: wins,
-          onPlayAgain: () => ref.read(bombermanProvider.notifier).startSolo(),
-          onHome: () {
-            ref.read(bombermanProvider.notifier).reset();
-            context.go(AppRoutes.home);
-          },
-        ),
+        winnerId: winnerId,
+        wins: wins,
+        onPlayAgain: () => ref.read(bombermanProvider.notifier).startSolo(),
+        onHome: () {
+          ref.read(bombermanProvider.notifier).reset();
+          context.go(AppRoutes.home);
+        },
+      ),
       _ => const SizedBox.shrink(),
     };
   }
@@ -60,9 +60,7 @@ class _CountdownOverlay extends StatelessWidget {
           fontSize: 80,
           fontWeight: FontWeight.w900,
           letterSpacing: 4,
-          shadows: [
-            Shadow(color: Color(0xFF00d4ff), blurRadius: 20),
-          ],
+          shadows: [Shadow(color: Color(0xFF00d4ff), blurRadius: 20)],
         ),
       ),
     );
@@ -188,7 +186,12 @@ class _GameOverOverlay extends StatelessWidget {
                 color: winnerColor,
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
-                shadows: [Shadow(color: winnerColor.withValues(alpha: 0.5), blurRadius: 10)],
+                shadows: [
+                  Shadow(
+                    color: winnerColor.withValues(alpha: 0.5),
+                    blurRadius: 10,
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 20),
@@ -247,7 +250,9 @@ class _GameOverOverlay extends StatelessWidget {
                     onPressed: onHome,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
-                      side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                      side: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.3),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),

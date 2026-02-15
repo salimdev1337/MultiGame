@@ -16,25 +16,24 @@ class ExplosionTile {
 
   double get alpha => (remainingMs / totalMs).clamp(0.0, 1.0);
 
-  ExplosionTile copyWith({int? remainingMs}) =>
-      ExplosionTile(
-        x: x,
-        y: y,
-        remainingMs: remainingMs ?? this.remainingMs,
-        totalMs: totalMs,
-      );
+  ExplosionTile copyWith({int? remainingMs}) => ExplosionTile(
+    x: x,
+    y: y,
+    remainingMs: remainingMs ?? this.remainingMs,
+    totalMs: totalMs,
+  );
 
   Map<String, dynamic> toJson() => {
-        'x': x,
-        'y': y,
-        'remainingMs': remainingMs,
-        'totalMs': totalMs,
-      };
+    'x': x,
+    'y': y,
+    'remainingMs': remainingMs,
+    'totalMs': totalMs,
+  };
 
   factory ExplosionTile.fromJson(Map<String, dynamic> json) => ExplosionTile(
-        x: json['x'] as int,
-        y: json['y'] as int,
-        remainingMs: json['remainingMs'] as int,
-        totalMs: json['totalMs'] as int,
-      );
+    x: json['x'] as int,
+    y: json['y'] as int,
+    remainingMs: json['remainingMs'] as int,
+    totalMs: json['totalMs'] as int,
+  );
 }

@@ -43,11 +43,7 @@ class BombServerIo implements BombServer {
     room.roomCode = BombRoom.generateCode();
 
     final handler = webSocketHandler(_handleConnection);
-    _httpServer = await shelf_io.serve(
-      handler,
-      InternetAddress.anyIPv4,
-      port,
-    );
+    _httpServer = await shelf_io.serve(handler, InternetAddress.anyIPv4, port);
   }
 
   @override
