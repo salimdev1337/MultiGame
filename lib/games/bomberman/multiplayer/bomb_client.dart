@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:web_socket_channel/web_socket_channel.dart';
+
 import 'package:multigame/games/bomberman/multiplayer/bomb_message.dart';
 import 'package:multigame/games/bomberman/multiplayer/bomb_room.dart';
 
@@ -34,6 +35,14 @@ class BombClient {
   Future<void> connect(int port) async {
     final uri = Uri.parse('ws://$hostIp:$port');
     _channel = WebSocketChannel.connect(uri);
+
+    // Verify the WebSocket handshake actually completes before proceeding.
+    // Without this, connect() returns immediately even if the host is
+    // unreachable, and the caller's try/catch never fires.
+    await _channel!.ready.timeout(
+      const Duration(seconds: 8),
+      onTimeout: () => throw TimeoutException('Connection timed out'),
+    );
 
     _channel!.stream.listen(
       (raw) {

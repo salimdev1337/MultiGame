@@ -194,18 +194,9 @@ class _BombermanLobbyPageState extends ConsumerState<BombermanLobbyPage>
     final room = BombRoom();
     final client = BombClient(hostIp: hostIp, displayName: name, room: room);
 
-    try {
-      await client.connect(port);
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _connecting = false;
-          _connectError = 'Could not connect: $e';
-        });
-      }
-      return;
-    }
-
+    // Wire handlers BEFORE connecting — the server's `joined` reply can arrive
+    // before connect() returns, so onMessage must be non-null already or the
+    // message is silently dropped and the lobby never updates.
     client.onMessage = (msg) {
       switch (msg.type) {
         case BombMessageType.joined:
@@ -232,6 +223,18 @@ class _BombermanLobbyPageState extends ConsumerState<BombermanLobbyPage>
         context.go(AppRoutes.home);
       }
     };
+
+    try {
+      await client.connect(port);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _connecting = false;
+          _connectError = 'Could not connect: $e';
+        });
+      }
+      return;
+    }
 
     setState(() {
       _client = client;

@@ -585,8 +585,8 @@ class _JoystickControls extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _Joystick(onMove: onMove, onRelease: onRelease),
           _XBombButton(onBomb: onBomb),
+          _Joystick(onMove: onMove, onRelease: onRelease),
         ],
       ),
     );

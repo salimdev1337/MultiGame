@@ -396,28 +396,52 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
     final p = s.players[playerId];
     if (!p.isAlive) return s;
 
-    // Normalise to 4-direction: keep only the dominant axis
     final adx = dx.abs(), ady = dy.abs();
-    final ndx = adx >= ady ? dx.sign : 0.0;
-    final ndy = adx >= ady ? 0.0 : dy.sign;
 
-    if (ndx == 0 && ndy == 0) return s;
+    // Total dead zone — ignore tiny stick drift
+    if (adx < 0.05 && ady < 0.05) return s;
 
     final step = p.speed * dt;
 
-    double nx, ny;
     // Alignment runs at 2× movement speed so the player centres in ~1 tick
     // when close, making direction changes feel immediate.
     final alignStep = step * 2.0;
 
-    if (ndx != 0) {
-      // Horizontal movement — slide X, align Y to cell centre
-      nx = _slideAxis(p.x, p.y, ndx, step, s, p, isHorizontal: true);
-      ny = _centerAlign(p.y, alignStep);
+    // Minimum secondary-axis input required to activate wall-slide fallback.
+    // Keeps diagonal stick from sliding unexpectedly on very slight tilts.
+    const kSlideThreshold = 0.3;
+
+    double nx, ny;
+
+    if (adx >= ady) {
+      // Primary: horizontal
+      final trialX = _slideAxis(p.x, p.y, dx.sign, step, s, p, isHorizontal: true);
+      // Detect wall block: if we barely moved, primary is obstructed
+      if ((trialX - p.x).abs() > step * 0.01) {
+        // Horizontal clear — move right/left, align Y
+        nx = trialX;
+        ny = _centerAlign(p.y, alignStep);
+      } else if (ady >= kSlideThreshold) {
+        // Horizontal blocked and enough vertical input — slide vertically
+        ny = _slideAxis(p.y, p.x, dy.sign, step, s, p, isHorizontal: false);
+        nx = _centerAlign(p.x, alignStep);
+      } else {
+        return s;
+      }
     } else {
-      // Vertical movement — slide Y, align X to cell centre
-      ny = _slideAxis(p.y, p.x, ndy, step, s, p, isHorizontal: false);
-      nx = _centerAlign(p.x, alignStep);
+      // Primary: vertical
+      final trialY = _slideAxis(p.y, p.x, dy.sign, step, s, p, isHorizontal: false);
+      if ((trialY - p.y).abs() > step * 0.01) {
+        // Vertical clear — move up/down, align X
+        ny = trialY;
+        nx = _centerAlign(p.x, alignStep);
+      } else if (adx >= kSlideThreshold) {
+        // Vertical blocked and enough horizontal input — slide horizontally
+        nx = _slideAxis(p.x, p.y, dx.sign, step, s, p, isHorizontal: true);
+        ny = _centerAlign(p.y, alignStep);
+      } else {
+        return s;
+      }
     }
 
     // Keep targetX/Y in sync — bombCellX/Y derive from them
