@@ -15,6 +15,7 @@ import 'package:multigame/games/puzzle/screens/puzzle_screen.dart';
 import 'package:multigame/games/game_2048/screens/game_2048_screen.dart';
 import 'package:multigame/games/snake/screens/snake_game_screen.dart';
 import 'package:multigame/games/infinite_runner/screens/infinite_runner_screen.dart';
+import 'package:multigame/games/memory/screens/memory_game_screen.dart';
 import 'package:multigame/games/sudoku/screens/modern_mode_difficulty_screen.dart';
 import 'package:multigame/games/sudoku/screens/sudoku_classic_screen.dart';
 import 'package:multigame/games/sudoku/screens/sudoku_rush_screen.dart';
@@ -105,6 +106,10 @@ GoRouter buildAppRouter(WidgetRef ref) {
                   GoRoute(
                     path: 'infinite_runner',
                     builder: (_, _) => const InfiniteRunnerPage(),
+                  ),
+                  GoRoute(
+                    path: 'memory_game',
+                    builder: (_, _) => const MemoryGamePage(),
                   ),
                   GoRoute(
                     path: 'sudoku',

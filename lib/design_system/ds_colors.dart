@@ -90,6 +90,10 @@ class DSColors {
   static const Color runnerPrimary = Color(0xFFf97316);
   static const Color runnerAccent = Color(0xFFeab308);
 
+  /// Memory Game colors
+  static const Color memoryPrimary = Color(0xFF7c4dff);
+  static const Color memoryAccent = Color(0xFFea80fc);
+
   // ==========================================
   // Gradient Definitions
   // ==========================================
@@ -172,6 +176,8 @@ class DSColors {
         return puzzlePrimary;
       case 'infinite_runner':
         return runnerPrimary;
+      case 'memory_game':
+        return memoryPrimary;
       default:
         return primary;
     }

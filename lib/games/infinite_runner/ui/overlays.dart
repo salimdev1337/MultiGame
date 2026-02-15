@@ -54,113 +54,124 @@ class IdleOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+    final spacing = isLandscape ? 16.0 : 40.0;
+    final titleSize = isLandscape ? 24.0 : 32.0;
+    final containerPadding = isLandscape ? 12.0 : 24.0;
+    final buttonTextSize = isLandscape ? 16.0 : 20.0;
+    final buttonVertPadding = isLandscape ? 10.0 : 16.0;
+
     return Material(
       color: Colors.black.withValues(alpha: 0.5),
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'INFINITE RUNNER',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 40),
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: const Color(0xFF21242b),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: const Color(0xFF00d4ff).withValues(alpha: 0.3),
-                  width: 2,
-                ),
-              ),
-              child: Column(
-                children: [
-                  _buildInstruction(
-                    const _BouncingIcon(
-                      icon: Icons.keyboard_arrow_up_rounded,
-                      direction: -1,
-                    ),
-                    'Swipe UP to jump',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInstruction(
-                    const _BouncingIcon(
-                      icon: Icons.keyboard_arrow_down_rounded,
-                      direction: 1,
-                    ),
-                    'Swipe DOWN to slide',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInstruction(
-                    const _PulsingWarning(),
-                    'Avoid obstacles!',
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 40),
-            // Solo run
-            ElevatedButton(
-              onPressed: () {
-                game.overlays.remove('idle');
-                game.startGame();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00d4ff),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 48,
-                  vertical: 16,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'SOLO RUN',
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(vertical: isLandscape ? 8 : 16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'INFINITE RUNNER',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: titleSize,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            // Race mode row — HOST RACE only available on native (dart:io required)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (!kIsWeb) ...[
+              SizedBox(height: spacing),
+              Container(
+                padding: EdgeInsets.all(containerPadding),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF21242b),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFF00d4ff).withValues(alpha: 0.3),
+                    width: 2,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    _buildInstruction(
+                      const _BouncingIcon(
+                        icon: Icons.keyboard_arrow_up_rounded,
+                        direction: -1,
+                      ),
+                      'Swipe UP to jump',
+                    ),
+                    const SizedBox(height: 12),
+                    _buildInstruction(
+                      const _BouncingIcon(
+                        icon: Icons.keyboard_arrow_down_rounded,
+                        direction: 1,
+                      ),
+                      'Swipe DOWN to slide',
+                    ),
+                    const SizedBox(height: 12),
+                    _buildInstruction(
+                      const _PulsingWarning(),
+                      'Avoid obstacles!',
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: spacing),
+              // Solo run
+              ElevatedButton(
+                onPressed: () {
+                  game.overlays.remove('idle');
+                  game.startGame();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00d4ff),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 48,
+                    vertical: buttonVertPadding,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'SOLO RUN',
+                  style: TextStyle(
+                    fontSize: buttonTextSize,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Race mode row — HOST RACE only available on native (dart:io required)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (!kIsWeb) ...[
+                    _RaceButton(
+                      label: 'HOST RACE',
+                      icon: Icons.wifi_tethering,
+                      color: const Color(0xFFffd700),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const RaceLobbyScreen(isHost: true),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
                   _RaceButton(
-                    label: 'HOST RACE',
-                    icon: Icons.wifi_tethering,
-                    color: const Color(0xFFffd700),
+                    label: 'JOIN RACE',
+                    icon: Icons.group,
+                    color: const Color(0xFF7c4dff),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const RaceLobbyScreen(isHost: true),
+                        builder: (_) => const RaceLobbyScreen(isHost: false),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
                 ],
-                _RaceButton(
-                  label: 'JOIN RACE',
-                  icon: Icons.group,
-                  color: const Color(0xFF7c4dff),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const RaceLobbyScreen(isHost: false),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );

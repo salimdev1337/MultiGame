@@ -53,9 +53,9 @@ class GameModel {
       GameModel(
         id: 'memory_game',
         name: 'Memory Game',
-        description: 'Match pairs to win',
+        description: 'Match pairs — wrong guess shuffles the board!',
         imagePath: 'assets/images/fallback_puzzle.jpg',
-        isAvailable: false,
+        isAvailable: true,
       ),
     ];
   }
