@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **ALWAYS run `flutter analyze` and `flutter test` across the full project before committing or pushing.** Never scope analyze to a single directory — the CI runs the full project. A scoped `flutter analyze lib/games/foo/` can pass while the full project fails.
 
+**NEVER push to remote unless the user explicitly says "push".** Commit only — stop there and wait.
+
 ## Project Overview
 
 MultiGame is a Flutter multi-platform gaming app with:
