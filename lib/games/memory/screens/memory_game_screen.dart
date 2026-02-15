@@ -142,6 +142,7 @@ class _MemoryGamePageState extends ConsumerState<MemoryGamePage> {
         primary: GameResultAction(
           label: 'Play Again',
           onTap: () {
+            Navigator.of(context).pop();
             _resultShowing = false;
             notifier.restart();
           },
@@ -149,8 +150,9 @@ class _MemoryGamePageState extends ConsumerState<MemoryGamePage> {
         secondary: GameResultAction(
           label: 'Home',
           onTap: () {
+            Navigator.of(context).pop();
             _resultShowing = false;
-            notifier.reset();
+            context.go(AppRoutes.home);
           },
           style: GameResultButtonStyle.outline,
         ),
@@ -812,16 +814,14 @@ class _CardGridState extends ConsumerState<_CardGrid>
           }
 
           final positioned = Positioned(
+            key: ValueKey(card.id),
             left: pos.dx,
             top: pos.dy,
             width: _cellSize,
             height: _cellSize,
             child: Transform.scale(
               scale: scale,
-              child: _MemoryCardTile(
-                key: ValueKey(card.id),
-                cardId: card.id,
-              ),
+              child: _MemoryCardTile(cardId: card.id),
             ),
           );
 
@@ -845,7 +845,7 @@ class _CardGridState extends ConsumerState<_CardGrid>
 // ── Card tile ─────────────────────────────────────────────────────────────────
 
 class _MemoryCardTile extends ConsumerStatefulWidget {
-  const _MemoryCardTile({required this.cardId, super.key});
+  const _MemoryCardTile({required this.cardId});
   final int cardId;
 
   @override
