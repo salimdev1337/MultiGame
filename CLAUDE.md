@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **NEVER add `Co-Authored-By: Claude` or any Claude/Anthropic authorship lines to commit messages.** Commits should only contain the user's authorship.
 
+**ALWAYS run `flutter analyze` and `flutter test` across the full project before committing or pushing.** Never scope analyze to a single directory — the CI runs the full project. A scoped `flutter analyze lib/games/foo/` can pass while the full project fails.
+
 ## Project Overview
 
 MultiGame is a Flutter multi-platform gaming app with:

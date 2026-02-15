@@ -199,7 +199,9 @@ class MemoryNotifier extends GameStatsNotifier<MemoryGameState> {
     final withFaceUp = List<MemoryCard>.of(shuffled);
     for (final wrongId in [wrongId1, wrongId2]) {
       final idx = withFaceUp.indexWhere((c) => c.id == wrongId);
-      if (idx != -1) withFaceUp[idx] = withFaceUp[idx].copyWith(isFlipped: true);
+      if (idx != -1) {
+        withFaceUp[idx] = withFaceUp[idx].copyWith(isFlipped: true);
+      }
     }
 
     state = state.copyWith(
