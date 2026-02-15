@@ -32,18 +32,6 @@ void main() {
       expect(find.byType(HomePagePremium), findsOneWidget);
     });
 
-    testWidgets('switches to Profile tab when tapped', (tester) async {
-      // TODO: Add Firebase mocking to properly test navigation with providers
-    }, skip: true);
-
-    testWidgets(
-      'shows no game selected view when Game tab tapped without selection',
-      (tester) async {
-        // TODO: Add Firebase mocking to properly test navigation with providers
-      },
-      skip: true,
-    );
-
     testWidgets('highlights active tab', (tester) async {
       await tester.pumpWidget(const MaterialApp(home: MainNavigation()));
       for (int i = 0; i < 5; i++) {
@@ -64,11 +52,5 @@ void main() {
       final indicators = find.byType(AnimatedContainer);
       expect(indicators, findsWidgets);
     });
-
-    testWidgets('Go to Home button works from no game selected view', (
-      tester,
-    ) async {
-      // TODO: Add Firebase mocking to properly test navigation with providers
-    }, skip: true);
   });
 }

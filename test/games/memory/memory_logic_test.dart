@@ -32,7 +32,6 @@ void main() {
     });
 
     test('cards are shuffled (not always in value order)', () {
-      // Run several seeds; at least one should differ from sorted order.
       bool foundUnsorted = false;
       for (int seed = 0; seed < 20; seed++) {
         final cards = generateCards(8, Random(seed));
@@ -55,64 +54,97 @@ void main() {
     });
   });
 
-  // ── shuffleFour ─────────────────────────────────────────────────────────────
+  // ── shuffleOnMismatch ────────────────────────────────────────────────────────
 
-  group('shuffleFour', () {
+  group('shuffleOnMismatch', () {
     List<MemoryCard> makeCards(int n) =>
         List.generate(n, (i) => MemoryCard(id: i, value: i ~/ 2));
 
     test('returns a list of the same length', () {
       final cards = makeCards(16);
-      final result = shuffleFour(cards, 0, 1, Random(0));
+      final (result, _) = shuffleOnMismatch(cards, 0, 1, Random(0));
       expect(result.length, 16);
+    });
+
+    test('returns swap pairs list', () {
+      final cards = makeCards(16);
+      final (_, swapPairs) = shuffleOnMismatch(cards, 0, 1, Random(0));
+      expect(swapPairs, isNotEmpty);
+    });
+
+    test('swap pairs contain card ids involved in the shuffle', () {
+      final cards = makeCards(16);
+      final (_, swapPairs) = shuffleOnMismatch(cards, 0, 1, Random(0));
+      // The wrong cards (id 0 and id 1) must appear in some swap pair.
+      final allIds = swapPairs.expand((p) => [p.$1, p.$2]).toSet();
+      expect(allIds.contains(0) || allIds.contains(1), isTrue);
     });
 
     test('moves the two designated cards to different positions', () {
       final cards = makeCards(16);
-      // Ensure cards at 0 and 1 are face-down unmatched (they already are)
-      final result = shuffleFour(cards, 0, 1, Random(0));
-      // Cards originally at 0 and 1 should now be somewhere else
-      // (their ids were 0 and 1)
+      final (result, _) = shuffleOnMismatch(cards, 0, 1, Random(0));
       final newPos0 = result.indexWhere((c) => c.id == 0);
       final newPos1 = result.indexWhere((c) => c.id == 1);
-      // At least one of them must have moved
       expect(newPos0 == 0 && newPos1 == 1, isFalse);
     });
 
     test('all original card ids are preserved', () {
       final cards = makeCards(16);
-      final result = shuffleFour(cards, 0, 1, Random(5));
+      final (result, _) = shuffleOnMismatch(cards, 0, 1, Random(5));
       final before = cards.map((c) => c.id).toSet();
       final after = result.map((c) => c.id).toSet();
       expect(after, before);
     });
 
     test('returns unchanged list when fewer than 2 eligible cards', () {
-      // Create 4 cards where 2 are matched and 2 are the swap targets
       final cards = [
         const MemoryCard(id: 0, value: 0),
         const MemoryCard(id: 1, value: 1),
         MemoryCard(id: 2, value: 2, isMatched: true),
         MemoryCard(id: 3, value: 3, isMatched: true),
       ];
-      // Only cards 0 and 1 are eligible, but they ARE i and j → 0 eligible others
-      final result = shuffleFour(cards, 0, 1, Random(0));
+      final (result, swapPairs) = shuffleOnMismatch(cards, 0, 1, Random(0));
       expect(result.map((c) => c.id).toList(), [0, 1, 2, 3]);
+      expect(swapPairs, isEmpty);
     });
 
     test('does not use matched or flipped cards as swap targets', () {
-      // Make a deck where all others are matched except two
       final cards = List.generate(10, (i) {
         if (i == 0 || i == 1) return MemoryCard(id: i, value: i ~/ 2);
         if (i == 8 || i == 9) return MemoryCard(id: i, value: i ~/ 2);
         return MemoryCard(id: i, value: i ~/ 2, isMatched: true);
       });
-      // i=0, j=1 — only 8 and 9 are eligible
-      final result = shuffleFour(cards, 0, 1, Random(0));
-      // Confirm matched cards didn't move
+      final (result, _) = shuffleOnMismatch(cards, 0, 1, Random(0));
+      // Matched cards at indices 2–7 must not have moved.
       for (int k = 2; k < 8; k++) {
         expect(result[k].id, k);
       }
+    });
+
+    test('medium difficulty produces more swap pairs than easy', () {
+      final cards = makeCards(24); // enough eligible cards
+      final (_, easyPairs) = shuffleOnMismatch(
+        cards, 0, 1, Random(0),
+        extraCount: MemoryDifficulty.easy.shuffleExtraCount,
+      );
+      final (_, mediumPairs) = shuffleOnMismatch(
+        cards, 0, 1, Random(0),
+        extraCount: MemoryDifficulty.medium.shuffleExtraCount,
+      );
+      expect(mediumPairs.length, greaterThan(easyPairs.length));
+    });
+
+    test('hard difficulty produces more swap pairs than medium', () {
+      final cards = makeCards(36);
+      final (_, mediumPairs) = shuffleOnMismatch(
+        cards, 0, 1, Random(0),
+        extraCount: MemoryDifficulty.medium.shuffleExtraCount,
+      );
+      final (_, hardPairs) = shuffleOnMismatch(
+        cards, 0, 1, Random(0),
+        extraCount: MemoryDifficulty.hard.shuffleExtraCount,
+      );
+      expect(hardPairs.length, greaterThan(mediumPairs.length));
     });
   });
 
@@ -146,6 +178,32 @@ void main() {
       expect(MemoryDifficulty.hard.cols, 6);
       expect(MemoryDifficulty.hard.rows, 6);
       expect(MemoryDifficulty.hard.totalPairs, 18);
+    });
+
+    test('shuffleDuration decreases with difficulty', () {
+      expect(
+        MemoryDifficulty.easy.shuffleDuration >
+            MemoryDifficulty.medium.shuffleDuration,
+        isTrue,
+      );
+      expect(
+        MemoryDifficulty.medium.shuffleDuration >
+            MemoryDifficulty.hard.shuffleDuration,
+        isTrue,
+      );
+    });
+
+    test('shuffleExtraCount increases with difficulty', () {
+      expect(
+        MemoryDifficulty.easy.shuffleExtraCount <
+            MemoryDifficulty.medium.shuffleExtraCount,
+        isTrue,
+      );
+      expect(
+        MemoryDifficulty.medium.shuffleExtraCount <
+            MemoryDifficulty.hard.shuffleExtraCount,
+        isTrue,
+      );
     });
   });
 
@@ -200,6 +258,57 @@ void main() {
       expect(s.firstIndex, 3);
       final cleared = s.copyWith(firstIndex: null);
       expect(cleared.firstIndex, isNull);
+    });
+
+    test('default playerScores are [0, 0]', () {
+      expect(const MemoryGameState().playerScores, [0, 0]);
+    });
+
+    test('default playerMatches are [0, 0]', () {
+      expect(const MemoryGameState().playerMatches, [0, 0]);
+    });
+
+    test('default playerStreaks are [0, 0]', () {
+      expect(const MemoryGameState().playerStreaks, [0, 0]);
+    });
+
+    test('default currentPlayer is 0', () {
+      expect(const MemoryGameState().currentPlayer, 0);
+    });
+
+    test('default winner is null', () {
+      expect(const MemoryGameState().winner, isNull);
+    });
+
+    test('copyWith sets winner explicitly to null', () {
+      final s = const MemoryGameState().copyWith(winner: 0);
+      expect(s.winner, 0);
+      final cleared = s.copyWith(winner: null);
+      expect(cleared.winner, isNull);
+    });
+
+    test('copyWith sets swapPairs explicitly to null', () {
+      final s = const MemoryGameState()
+          .copyWith(swapPairs: [(1, 2), (3, 4)]);
+      expect(s.swapPairs, isNotNull);
+      final cleared = s.copyWith(swapPairs: null);
+      expect(cleared.swapPairs, isNull);
+    });
+
+    test('currentScore returns active player score', () {
+      final s = const MemoryGameState(
+        currentPlayer: 1,
+        playerScores: [100, 300],
+      );
+      expect(s.currentScore, 300);
+    });
+
+    test('currentStreak returns active player streak', () {
+      final s = const MemoryGameState(
+        currentPlayer: 0,
+        playerStreaks: [3, 1],
+      );
+      expect(s.currentStreak, 3);
     });
   });
 }

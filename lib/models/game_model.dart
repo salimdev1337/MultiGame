@@ -57,6 +57,13 @@ class GameModel {
         imagePath: 'assets/images/fallback_puzzle.jpg',
         isAvailable: true,
       ),
+      GameModel(
+        id: 'bomberman',
+        name: 'Bomberman',
+        description: 'Drop bombs, destroy blocks, blast your opponents!',
+        imagePath: 'assets/images/fallback_puzzle.jpg',
+        isAvailable: true,
+      ),
     ];
   }
 }

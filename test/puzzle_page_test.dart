@@ -92,29 +92,4 @@ void main() {
       expect(game.correctCount, lessThanOrEqualTo(16));
     });
   });
-
-  group('PuzzlePage Widget Tests', () {
-    testWidgets('PuzzlePage loads and displays UI elements', (
-      WidgetTester tester,
-    ) async {
-      // TODO: Add Firebase mocking to properly test PuzzlePage with providers
-    }, skip: true);
-
-    testWidgets('Stats cards display', (WidgetTester tester) async {
-      // TODO: Add Firebase mocking to properly test PuzzlePage with providers
-    }, skip: true);
-
-    // Widget tests that require Firebase are skipped until Firebase mocking is properly set up
-    testWidgets('Puzzle grid renders', (WidgetTester tester) async {
-      // TODO: Add Firebase mocking packages to pubspec.yaml dev_dependencies:
-      // firebase_auth_mocks and fake_cloud_firestore
-      // Then uncomment this test
-    }, skip: true);
-
-    testWidgets('Control buttons are present', (WidgetTester tester) async {
-      // TODO: Add Firebase mocking packages to pubspec.yaml dev_dependencies:
-      // firebase_auth_mocks and fake_cloud_firestore
-      // Then uncomment this test
-    }, skip: true);
-  });
 }
