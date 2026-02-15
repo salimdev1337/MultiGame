@@ -8,6 +8,7 @@ import 'package:multigame/games/bomberman/multiplayer/bomb_client.dart';
 import 'package:multigame/games/bomberman/multiplayer/bomb_message.dart';
 import 'package:multigame/games/bomberman/multiplayer/bomb_room.dart';
 import 'package:multigame/games/bomberman/providers/bomberman_notifier.dart';
+import 'package:multigame/utils/extensions.dart';
 
 // Platform conditional import — web stub or native io version
 import 'package:multigame/games/bomberman/multiplayer/bomb_server_stub.dart'
@@ -598,7 +599,3 @@ class _PlayerRow extends StatelessWidget {
   }
 }
 
-extension<T> on List<T> {
-  List<R> mapIndexed<R>(R Function(int, T) f) =>
-      List.generate(length, (i) => f(i, this[i]));
-}

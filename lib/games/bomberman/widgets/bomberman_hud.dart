@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:multigame/games/bomberman/models/bomb_player.dart';
 import 'package:multigame/games/bomberman/providers/bomberman_notifier.dart';
+import 'package:multigame/utils/extensions.dart';
 
 // Colors matching the grid painter
 const _kPlayerColors = [
@@ -127,7 +128,3 @@ class _PlayerChip extends StatelessWidget {
   }
 }
 
-extension<T> on List<T> {
-  List<R> mapIndexed<R>(R Function(int, T) f) =>
-      List.generate(length, (i) => f(i, this[i]));
-}

@@ -16,6 +16,7 @@ import 'package:multigame/games/bomberman/multiplayer/bomb_server.dart';
 import 'package:multigame/providers/mixins/game_stats_notifier.dart';
 import 'package:multigame/providers/services_providers.dart';
 import 'package:multigame/services/data/firebase_stats_service.dart';
+import 'package:multigame/utils/extensions.dart';
 
 // ─── Player body half-size used for wall collision ────────────────────────────
 
@@ -74,6 +75,10 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
   int _localPlayerId = 0;
   bool _gridChangedThisTick = false;
   final _changedCells = <Map<String, dynamic>>[];
+
+  // Sequence numbers for frame sync — host increments, guest drops stale frames.
+  int _frameId = 0;
+  int _lastAppliedFrameId = -1;
 
   @override
   FirebaseStatsService get statsService =>
@@ -224,7 +229,13 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
       case BombMessageType.frameSync:
         if (_role == _MultiRole.guest) {
           final data = msg.payload['data'] as Map<String, dynamic>?;
-          if (data != null) state = state.applyFrameSync(data);
+          if (data != null) {
+            final incomingId = (data['frameId'] as int?) ?? 0;
+            if (incomingId > _lastAppliedFrameId) {
+              _lastAppliedFrameId = incomingId;
+              state = state.applyFrameSync(data);
+            }
+          }
         }
       case BombMessageType.gridUpdate:
         if (_role == _MultiRole.guest) {
@@ -241,7 +252,9 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
 
   void _broadcastIfHost() {
     if (_role != _MultiRole.host) return;
-    _netServer?.broadcast(BombMessage.frameSync(state.toFrameJson()).encode());
+    _netServer?.broadcast(
+      BombMessage.frameSync(state.toFrameJson(frameId: _frameId++)).encode(),
+    );
     if (_gridChangedThisTick && _changedCells.isNotEmpty) {
       _netServer?.broadcast(
         BombMessage.gridUpdate(List.from(_changedCells)).encode(),
@@ -710,7 +723,7 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
         phase: GamePhase.roundOver,
         roundOverMessage: msg,
       );
-      Timer(const Duration(seconds: 3), () {
+      _countdownTimer = Timer(const Duration(seconds: 3), () {
         if (state.phase == GamePhase.roundOver) _nextRound();
       });
     }
@@ -785,6 +798,8 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
     _netClient = null;
     _role = _MultiRole.solo;
     _localPlayerId = 0;
+    _frameId = 0;
+    _lastAppliedFrameId = -1;
   }
 
   static BombGameState _emptyState() {
@@ -797,10 +812,3 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
   }
 }
 
-// ─── Extension ───────────────────────────────────────────────────────────────
-
-extension<T> on List<T> {
-  List<R> mapIndexed<R>(R Function(int index, T item) f) {
-    return List.generate(length, (i) => f(i, this[i]));
-  }
-}

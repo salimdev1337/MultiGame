@@ -91,6 +91,10 @@ class SnakeNotifier extends GameStatsNotifier<SnakeState> {
   final Queue<Direction> _inputQueue = Queue();
   final Random _random = Random();
 
+  // Incrementally-maintained set of cells not occupied by snake or food.
+  // Avoids recomputing allCells.difference(occupied) on every food spawn.
+  final Set<Offset> _freeCells = {};
+
   @override
   FirebaseStatsService get statsService =>
       ref.read(firebaseStatsServiceProvider);
@@ -105,7 +109,11 @@ class SnakeNotifier extends GameStatsNotifier<SnakeState> {
     _timer?.cancel();
     _inputQueue.clear();
     const initialSnake = [Offset(10, 10)];
-    final food = _spawnFood(initialSnake.toSet());
+    _freeCells
+      ..clear()
+      ..addAll(SnakeState.allCells)
+      ..removeAll(initialSnake);
+    final food = _spawnFood();
     state = state.copyWith(
       snake: initialSnake,
       previousSnake: initialSnake,
@@ -154,10 +162,11 @@ class SnakeNotifier extends GameStatsNotifier<SnakeState> {
     });
   }
 
-  Offset _spawnFood(Set<Offset> occupied) {
-    final available = SnakeState.allCells.difference(occupied).toList();
-    if (available.isEmpty) return const Offset(0, 0); // board full = win
-    return available[_random.nextInt(available.length)];
+  Offset _spawnFood() {
+    if (_freeCells.isEmpty) return const Offset(0, 0); // board full = win
+    final food = _freeCells.elementAt(_random.nextInt(_freeCells.length));
+    _freeCells.remove(food);
+    return food;
   }
 
   void _tick() {
@@ -205,11 +214,16 @@ class SnakeNotifier extends GameStatsNotifier<SnakeState> {
     Offset newFood = state.food;
     final bool ate = next == state.food;
 
+    // Update _freeCells incrementally — new head is now occupied.
+    // (food cell was already removed from _freeCells when it was spawned)
+    _freeCells.remove(next);
+
     if (ate) {
       newScore += 10;
-      newFood = _spawnFood(newSnake.toSet());
+      newFood = _spawnFood(); // picks from _freeCells, removes chosen cell
     } else {
-      newSnake.removeLast();
+      final removedTail = newSnake.removeLast();
+      _freeCells.add(removedTail); // freed tail cell
     }
 
     state = state.copyWith(

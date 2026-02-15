@@ -29,6 +29,49 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
     super.dispose();
   }
 
+  void _showQuitConfirmation() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1a1d24),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        title: const Text(
+          'Quit game?',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          'Your progress will be lost.',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'RESUME',
+              style: TextStyle(
+                color: Color(0xFF55ff00),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.go(AppRoutes.home);
+            },
+            child: Text(
+              'QUIT',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showGameOverDialog(int score, bool isWin) {
     if (_gameOverDialogShowing) return;
     _gameOverDialogShowing = true;
@@ -237,9 +280,16 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
       return _buildStartScreen();
     }
 
-    return KeyboardListener(
-      focusNode: _focusNode..requestFocus(),
-      onKeyEvent: (event) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          _showQuitConfirmation();
+        }
+      },
+      child: KeyboardListener(
+        focusNode: _focusNode..requestFocus(),
+        onKeyEvent: (event) {
         if (event is KeyDownEvent) {
           final notifier = ref.read(snakeProvider.notifier);
           if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
@@ -299,7 +349,8 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }
 

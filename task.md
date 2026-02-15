@@ -1,0 +1,251 @@
+# MultiGame — Tech Debt & Audit Backlog
+
+> Generated from staff-engineer audit (2026-02-15).
+> Work through sprints in order. Each task has a checkbox, severity tag, and file reference.
+> Run `flutter analyze && flutter test` after every sprint before merging.
+
+---
+
+## Sprint 1 — Critical Bugs (fix before anything else, ~2 h total)
+
+These are actual bugs that can silently corrupt state, leak memory, or crash the app.
+
+- [x] **S1-1** 🔴 Fix `DSColors.withOpacity()` alpha formula
+  - File: `lib/design_system/ds_colors.dart:163`
+  - Change `color.withValues(alpha: opacity * 255)` → `color.withValues(alpha: opacity)`
+  - Verify no callers are compensating for the bug before fixing
+
+- [x] **S1-2** 🔴 Fix Bomberman orphan timer on round-over
+  - File: `lib/games/bomberman/providers/bomberman_notifier.dart:713`
+  - Change bare `Timer(Duration(seconds: 3), ...)` → `_countdownTimer = Timer(...)`
+  - The anonymous timer fires on a disposed notifier today
+
+- [x] **S1-3** 🔴 Await Firestore listener cancel in Sudoku Online
+  - File: `lib/games/sudoku/providers/sudoku_online_provider.dart:152`
+  - Change `_matchSubscription?.cancel()` → `await _matchSubscription?.cancel()`
+  - Same in `dispose()`. Old listener can fire between cancel and new subscription setup
+
+- [x] **S1-4** 🟠 Add `_isDisposed` guard to Memory game timer
+  - File: `lib/games/memory/providers/memory_notifier.dart:166`
+  - Add `bool _isDisposed = false;` flag, set it in `dispose()`, check it inside the 800 ms timer callback before calling `_doShuffle()`
+
+- [x] **S1-5** 🟠 Remove dead `provider` package from pubspec
+  - File: `pubspec.yaml:19`
+  - Remove `provider: ^6.1.2` — migration to Riverpod is complete, this is dead weight
+  - Run `flutter pub get` and verify nothing breaks
+
+- [x] **S1-6** 🟠 Fix stats stream silently swallowing Firestore errors
+  - File: `lib/repositories/stats_repository.dart:316-322` (and ~402-408)
+  - Replace `return null` inside `.handleError()` with `rethrow` (or propagate an error state)
+  - Callers must be updated to handle the error downstream
+
+---
+
+## Sprint 2 — High-Impact Fixes (~4 h total)
+
+- [x] **S2-1** 🟠 Add Firestore operation timeouts
+  - File: `lib/repositories/stats_repository.dart` — all `.get()` / `.set()` / `.update()` calls
+  - Wrap with `.timeout(const Duration(seconds: 8))` like `appInitProvider` already does
+  - Add catch for `TimeoutException` and surface a user-visible error
+
+- [x] **S2-2** 🟠 Add retry logic to `saveUserStats()` and other critical writes
+  - File: `lib/repositories/stats_repository.dart`
+  - `UnsplashService` has a 3-attempt retry loop — apply the same pattern to score saves
+  - Use exponential backoff: 0 ms, 500 ms, 1500 ms
+
+- [x] **S2-3** 🟠 Fix 2048 score: add overflow cap + persist best score
+  - File: `lib/games/game_2048/providers/game_2048_notifier.dart:158`
+  - Clamp score: `(state.score + totalDelta).clamp(0, 999_999_999)`
+  - Persist `bestScore` to SharedPreferences/SecureStorage on game over and load it on init
+
+- [x] **S2-4** 🟠 Fix static `FlutterSecureStorage` in feedback services
+  - Files: `lib/services/feedback/sound_service.dart:18`, `lib/services/feedback/haptic_feedback_service.dart:22`
+  - Remove `static const FlutterSecureStorage _storage` — inject via constructor instead
+  - Register the storage dependency through GetIt in `service_locator.dart`
+
+- [x] **S2-5** 🟠 Cache BombGridPainter Paint objects & TextPainter
+  - File: `lib/games/bomberman/widgets/bomb_grid_painter.dart`
+  - Promoted all fixed-color `Paint()` instances to `static final` class-level fields
+  - (TextPainter and RadialGradient shader still per-frame — require instance state, deferred)
+
+- [x] **S2-6** 🟠 Fix Obstacle pool hitbox leak on `reset()`
+  - File: `lib/games/infinite_runner/components/obstacle.dart:111-130`
+  - Guard was already in place in the codebase — verified correct
+
+- [x] **S2-7** 🟠 Migrate Puzzle provider from ChangeNotifier to Riverpod
+  - Riverpod `PuzzleNotifier` / `puzzleProvider` already existed and screens already used it
+  - Deleted dead `puzzle_game_provider.dart` (ChangeNotifier) and its test
+  - Updated barrel exports in `providers/index.dart` and `games/puzzle/index.dart`
+
+---
+
+## Sprint 3 — Tech Debt & Performance (~4 h total)
+
+- [x] **S3-1** 🟡 Move `mapIndexed` extension to shared utils
+  - Currently duplicated in: `bomberman_notifier.dart:802`, `bomberman_hud.dart:130`, `bomberman_lobby_screen.dart:598`
+  - Create `lib/utils/extensions.dart`, add `extension ListX<T> on List<T>` with `mapIndexed`
+  - Remove the 3 local copies and import from utils
+
+- [x] **S3-2** 🟡 Add snake food spawn incremental tracking
+  - File: `lib/games/snake/providers/snake_notifier.dart:157-160`
+  - Replace `SnakeState.allCells.difference(occupied).toList()` recomputed every spawn
+  - Maintain a `Set<Offset> _freeCells` updated incrementally as snake grows/shrinks
+
+- [x] **S3-3** 🟡 Cache puzzle images per session (don't re-fetch on grid size change)
+  - File: `lib/games/puzzle/providers/puzzle_notifier.dart:64-88`
+  - Keep a `_cachedImageUrl` or reuse the last loaded image when only grid size changes
+  - Only fetch a new image when explicitly "refresh" is requested
+
+- [x] **S3-4** 🟡 Add Bomberman frame-sync sequence numbers
+  - File: `lib/games/bomberman/providers/bomberman_notifier.dart` + `bomb_game_state.dart`
+  - Add `int frameId` to `toFrameJson()` payload, incremented by host each tick
+  - Guest tracks `_lastAppliedFrameId` and drops frames with `id <= _lastAppliedFrameId`
+
+- [x] **S3-5** 🟡 Standardize navigation to go_router project-wide
+  - Find all `Navigator.pop(context)` calls in game screens and replace with `context.go(AppRoutes.home)` or `context.pop()`
+  - Key files: `sudoku_classic_screen.dart`, `premium_game_carousel.dart`
+  - Do not change `Navigator.push` for dialogs — those are correct
+
+- [x] **S3-6** 🟡 Add back-button confirmation to game screens
+  - Wrap all game screens that currently navigate away without confirmation in `PopScope`
+  - Show a "Quit? Your progress will be lost" dialog
+  - Games needing this: Memory, Snake, Puzzle, Bomberman (solo)
+  - Pattern to follow: `lib/games/sudoku/screens/sudoku_classic_screen.dart`
+
+- [x] **S3-7** 🟡 Add Firestore operation timeouts to Sudoku Online
+  - File: `lib/games/sudoku/providers/sudoku_online_provider.dart`
+  - Same pattern as S2-1 but scoped to matchmaking and move-sync calls
+
+- [x] **S3-8** 🟡 Fix GetIt bypass — UnsplashService created inline
+  - File: `lib/games/puzzle/providers/puzzle_notifier.dart` (wherever `UnsplashService()` is `new`-ed)
+  - Replace with `getIt<UnsplashService>()` to respect DI contract
+
+---
+
+## Sprint 4 — Security & Robustness (~3 h total)
+
+- [ ] **S4-1** 🟡 Fix input validator regex (ReDoS risk + event handler bypass)
+  - File: `lib/utils/input_validator.dart:59`
+  - Replace `<script[^>]*>.*?</script>` (backtracking risk) with a character-whitelist approach
+  - Also strip `on*=` event handler attributes — current regex misses `<img onerror=alert(1)>`
+  - Consider adding the `sanitize_html` package or similar
+
+- [ ] **S4-2** 🟡 Add dispose to HapticFeedbackService
+  - File: `lib/services/feedback/haptic_feedback_service.dart`
+  - Add `Future<void> dispose()` that cancels any in-progress vibration and resets state
+  - Wire disposal in `service_locator.dart` via `getIt.registerSingleton(..., dispose: (s) => s.dispose())`
+
+- [ ] **S4-3** 🟡 Fix offline_indicator StreamSubscription leak
+  - File: `lib/widgets/offline_indicator.dart`
+  - Ensure `_connectivitySubscription.cancel()` is called in `dispose()`
+  - Verify the widget has a `StatefulWidget` with proper lifecycle — if it's stateless, convert it
+
+- [ ] **S4-4** 🟡 Add HTTP client pooling to UnsplashService
+  - File: `lib/services/game/unsplash_service.dart`
+  - Replace bare `http.get()` with a reused `http.Client` instance stored as a field
+  - Call `_client.close()` in `dispose()`
+
+- [ ] **S4-5** 🟡 Fix NicknameService migration retry on failure
+  - File: `lib/services/storage/nickname_service.dart:20-26`
+  - `_migrationChecked` flag prevents retry even if migration failed silently
+  - Add `_migrationSucceeded` boolean — only set true on confirmed completion, allow retry on next call if false
+
+---
+
+## Sprint 5 — Design System Cleanup (~3 h total)
+
+- [ ] **S5-1** 🔵 Replace bomb_grid_painter local color palette with DSColors
+  - File: `lib/games/bomberman/widgets/bomb_grid_painter.dart:9-30`
+  - Remove local color constants and import from `DSColors`
+  - Affected: player colors, explosion colors, wall/block colors, bomb color
+
+- [ ] **S5-2** 🔵 Replace hardcoded magic numbers in game_result_widget
+  - File: `lib/widgets/shared/game_result_widget.dart:287,435-449,456-458`
+  - `Color(0xFF1a1d24)` → `DSColors.surface` (or define `DSColors.cardBackground`)
+  - `BorderRadius.circular(16)` → `DSSpacing.borderRadiusMD`
+  - Hardcoded font sizes 15/16 → `DSTypography.bodyMedium` / `DSTypography.bodyLarge`
+
+- [ ] **S5-3** 🔵 Replace hardcoded values in ds_button and podium_display
+  - `lib/widgets/shared/ds_button.dart:179-196` — font sizes (14, 16, 18) and icon sizes (18, 20, 24) → DSTypography/DSSpacing constants
+  - `lib/widgets/shared/leaderboard/podium_display.dart:178-182` — medal hex colors → `DSColors.rarityLegendary`, `DSColors.rarityRare`, `DSColors.rarityCommon` (add if missing)
+
+- [ ] **S5-4** 🔵 Add keys to mapped list widgets
+  - `lib/widgets/shared/premium_game_carousel.dart:78-79` — add `key: ValueKey(game.id)` to carousel indicator widgets
+  - `lib/widgets/shared/game_result_widget.dart:439-486` — add `key: ValueKey(stat.label)` to stat row widgets
+
+- [ ] **S5-5** 🔵 Add Semantics labels to AnimatedPremiumGameCard
+  - File: `lib/widgets/shared/premium_game_carousel.dart:37-51`
+  - Wrap with `Semantics(label: '${game.name}, ${game.isAvailable ? "tap to play" : "coming soon"}', child: ...)`
+
+---
+
+## Sprint 6 — Testing (~4 h total)
+
+- [ ] **S6-1** 🔵 Replace Phase 6 no-op tests with real assertions
+  - File: `test/phase_6_services_test.dart`
+  - Replace all `expect(true, isTrue)` with actual state verification
+  - Mock `Vibration` and `AudioPlayer`; verify correct methods are called with correct args
+
+- [ ] **S6-2** 🔵 Add unit tests for FirebaseStatsService & StatsRepository
+  - Create `test/services/firebase_stats_service_test.dart`
+  - Mock Firestore with `fake_cloud_firestore` package
+  - Cover: save score, load stats, Firestore timeout, network error, schema mismatch
+
+- [ ] **S6-3** 🔵 Add tests for router redirect chains
+  - File: `lib/config/app_router.dart`
+  - Test: unauthenticated → splash → onboarding, authenticated → splash → home, mid-game deep-link handling
+
+- [ ] **S6-4** 🔵 Add integration test: game → score save → leaderboard update
+  - Create `integration_test/score_flow_test.dart`
+  - Use `fake_cloud_firestore` to verify end-to-end: play game → game over → score in Firestore → leaderboard reflects it
+
+- [ ] **S6-5** 🔵 Add Bomberman multiplayer unit tests
+  - File: `test/games/bomberman/multiplayer_test.dart`
+  - Cover: `applyFrameSync` drops stale frames (once S3-4 sequence numbers are added), `connect()` timeout surfaces correctly, `onMessage` handler race (wired before connect)
+
+---
+
+## Sprint 7 — UX Polish (~2 h total)
+
+- [ ] **S7-1** 🔵 Verify timer isolation on 2048 and Snake screens
+  - `lib/games/game_2048/screens/game_2048_screen.dart` — confirm elapsed time field is in an isolated `ConsumerWidget`, not watched by the board
+  - `lib/games/snake/screens/snake_game_screen.dart` — same check
+  - Fix any full-screen rebuild anti-patterns found (see CLAUDE.md performance pattern)
+
+- [ ] **S7-2** 🔵 Test Sudoku and Puzzle in landscape, fix overflow
+  - Run on a tablet emulator in landscape
+  - Sudoku: likely needs a two-column layout (grid left, controls right) for wide screens
+  - Puzzle: controls below the board get cut off — consider putting them in a side panel
+
+- [ ] **S7-3** 🔵 Add loading/error states to animated_stat_card
+  - File: `lib/widgets/profile/animated_stat_card.dart`
+  - Add shimmer skeleton while data loads
+  - Add error state with retry button when Firestore fetch fails
+
+---
+
+## Backlog (no sprint assigned — do when relevant)
+
+- [ ] **B-1** Add upper-bound version constraints to critical pubspec deps (`flutter_riverpod`, `go_router`, `firebase_*`)
+- [ ] **B-2** Add log-level control to SecureLogger (VERBOSE/DEBUG/INFO/WARN/ERROR) with remote config toggle for production debugging
+- [ ] **B-3** Add `///` documentation comments to all public repository and service methods
+- [ ] **B-4** Add `GameInitializer` edge-case tests (duplicate registration, unregistration cleanup)
+- [ ] **B-5** Evaluate adding `sanitize_html` or `html` package for robust HTML sanitization (replaces S4-1 regex fix)
+- [ ] **B-6** Add landscape orientation locks to all game screens that don't yet handle it (or implement responsive layout)
+
+---
+
+## Done
+
+- **Sprint 1** completed 2026-02-15 — S1-1 through S1-6 all fixed
+- **Sprint 2** completed 2026-02-15 — S2-1 through S2-7 (S2-6 was already fixed)
+- **Sprint 3** completed 2026-02-15 — S3-1 through S3-8 all done; fixed GetIt bypass in puzzle tests
+
+---
+
+## Notes
+
+- **Before every merge:** `flutter analyze && flutter test` (full project, not scoped)
+- **Never use `withOpacity()`** — always `withValues(alpha: ...)` (0.0–1.0 range)
+- **All flow control** must use curly braces (CI enforces `curly_braces_in_flow_control_structures`)
+- **Never push** unless explicitly requested

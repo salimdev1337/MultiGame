@@ -2,6 +2,7 @@
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../constants/sudoku_colors.dart';
 import '../logic/sudoku_generator.dart';
 import 'sudoku_classic_screen.dart';
@@ -140,7 +141,7 @@ class _ModernModeDifficultyScreenState extends State<ModernModeDifficultyScreen>
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
         title: const Text(
           'SUDOKU',

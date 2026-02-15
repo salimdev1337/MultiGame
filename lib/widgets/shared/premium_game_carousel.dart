@@ -5,6 +5,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:multigame/design_system/design_system.dart';
 import 'package:multigame/models/game_model.dart';
 import 'package:multigame/widgets/shared/ds_button.dart';
@@ -189,7 +190,7 @@ class _PremiumGameCarouselState extends State<PremiumGameCarousel> {
                           width: double.infinity,
                           child: DSButton.primary(
                             text: 'Got It',
-                            onPressed: () => Navigator.pop(context),
+                            onPressed: () => context.pop(),
                           ),
                         ),
                       ),

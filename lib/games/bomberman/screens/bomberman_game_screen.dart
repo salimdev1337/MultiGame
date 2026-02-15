@@ -82,6 +82,49 @@ class _BombermanGamePageState extends ConsumerState<BombermanGamePage>
     super.dispose();
   }
 
+  void _showQuitConfirmation() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1a1d24),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        title: const Text(
+          'Quit game?',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          'Your progress will be lost.',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'RESUME',
+              style: TextStyle(
+                color: Color(0xFF00d4ff),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.go(AppRoutes.home);
+            },
+            child: Text(
+              'QUIT',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _handleKey(KeyEvent event) {
     final k = event.logicalKey;
     if (event is KeyDownEvent || event is KeyRepeatEvent) {
@@ -130,8 +173,15 @@ class _BombermanGamePageState extends ConsumerState<BombermanGamePage>
       return _buildLobbyScreen();
     }
 
-    return KeyboardListener(
-      focusNode: _focusNode..requestFocus(),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          _showQuitConfirmation();
+        }
+      },
+      child: KeyboardListener(
+        focusNode: _focusNode..requestFocus(),
       onKeyEvent: _handleKey,
       child: Scaffold(
         backgroundColor: const Color(0xFF111520),
@@ -216,6 +266,7 @@ class _BombermanGamePageState extends ConsumerState<BombermanGamePage>
             ],
           ),
         ),
+      ),
       ),
     );
   }

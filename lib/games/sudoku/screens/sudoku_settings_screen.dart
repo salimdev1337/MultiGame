@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:multigame/games/sudoku/providers/sudoku_settings_notifier.dart';
 
 const _backgroundDark = Color(0xFF0f1115);
@@ -99,7 +100,7 @@ class SudokuSettingsScreen extends ConsumerWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: _textWhite),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
         title: const Text(
           'Settings',
