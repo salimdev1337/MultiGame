@@ -58,17 +58,17 @@ void main() {
   // ── shuffleFour ─────────────────────────────────────────────────────────────
 
   group('shuffleFour', () {
-    List<MemoryCard> _makeCards(int n) =>
+    List<MemoryCard> makeCards(int n) =>
         List.generate(n, (i) => MemoryCard(id: i, value: i ~/ 2));
 
     test('returns a list of the same length', () {
-      final cards = _makeCards(16);
+      final cards = makeCards(16);
       final result = shuffleFour(cards, 0, 1, Random(0));
       expect(result.length, 16);
     });
 
     test('moves the two designated cards to different positions', () {
-      final cards = _makeCards(16);
+      final cards = makeCards(16);
       // Ensure cards at 0 and 1 are face-down unmatched (they already are)
       final result = shuffleFour(cards, 0, 1, Random(0));
       // Cards originally at 0 and 1 should now be somewhere else
@@ -80,7 +80,7 @@ void main() {
     });
 
     test('all original card ids are preserved', () {
-      final cards = _makeCards(16);
+      final cards = makeCards(16);
       final result = shuffleFour(cards, 0, 1, Random(5));
       final before = cards.map((c) => c.id).toSet();
       final after = result.map((c) => c.id).toSet();
