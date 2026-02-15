@@ -248,4 +248,9 @@ class HapticFeedbackService {
       );
     }
   }
+
+  /// Dispose the service — cancels any in-progress vibration
+  Future<void> dispose() async {
+    await cancel();
+  }
 }

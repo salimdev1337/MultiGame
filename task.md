@@ -124,28 +124,28 @@ These are actual bugs that can silently corrupt state, leak memory, or crash the
 
 ## Sprint 4 — Security & Robustness (~3 h total)
 
-- [ ] **S4-1** 🟡 Fix input validator regex (ReDoS risk + event handler bypass)
+- [x] **S4-1** 🟡 Fix input validator regex (ReDoS risk + event handler bypass)
   - File: `lib/utils/input_validator.dart:59`
   - Replace `<script[^>]*>.*?</script>` (backtracking risk) with a character-whitelist approach
   - Also strip `on*=` event handler attributes — current regex misses `<img onerror=alert(1)>`
   - Consider adding the `sanitize_html` package or similar
 
-- [ ] **S4-2** 🟡 Add dispose to HapticFeedbackService
+- [x] **S4-2** 🟡 Add dispose to HapticFeedbackService
   - File: `lib/services/feedback/haptic_feedback_service.dart`
   - Add `Future<void> dispose()` that cancels any in-progress vibration and resets state
   - Wire disposal in `service_locator.dart` via `getIt.registerSingleton(..., dispose: (s) => s.dispose())`
 
-- [ ] **S4-3** 🟡 Fix offline_indicator StreamSubscription leak
+- [x] **S4-3** 🟡 Fix offline_indicator StreamSubscription leak
   - File: `lib/widgets/offline_indicator.dart`
   - Ensure `_connectivitySubscription.cancel()` is called in `dispose()`
   - Verify the widget has a `StatefulWidget` with proper lifecycle — if it's stateless, convert it
 
-- [ ] **S4-4** 🟡 Add HTTP client pooling to UnsplashService
+- [x] **S4-4** 🟡 Add HTTP client pooling to UnsplashService
   - File: `lib/services/game/unsplash_service.dart`
   - Replace bare `http.get()` with a reused `http.Client` instance stored as a field
   - Call `_client.close()` in `dispose()`
 
-- [ ] **S4-5** 🟡 Fix NicknameService migration retry on failure
+- [x] **S4-5** 🟡 Fix NicknameService migration retry on failure
   - File: `lib/services/storage/nickname_service.dart:20-26`
   - `_migrationChecked` flag prevents retry even if migration failed silently
   - Add `_migrationSucceeded` boolean — only set true on confirmed completion, allow retry on next call if false
@@ -240,6 +240,7 @@ These are actual bugs that can silently corrupt state, leak memory, or crash the
 - **Sprint 1** completed 2026-02-15 — S1-1 through S1-6 all fixed
 - **Sprint 2** completed 2026-02-15 — S2-1 through S2-7 (S2-6 was already fixed)
 - **Sprint 3** completed 2026-02-15 — S3-1 through S3-8 all done; fixed GetIt bypass in puzzle tests
+- **Sprint 4** completed 2026-02-16 — S4-1 through S4-5 all fixed (S4-3 was already correct)
 
 ---
 

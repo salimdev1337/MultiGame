@@ -54,12 +54,15 @@ class InputValidator {
     // Trim whitespace
     String sanitized = input.trim();
 
-    // Remove potential HTML/script tags AND their content
+    // Remove script blocks including their content.
+    // Uses [^<]* (character class) instead of .*? (dotAll + lazy quantifier) to
+    // avoid catastrophic backtracking / ReDoS on adversarial inputs.
     sanitized = sanitized.replaceAll(
-      RegExp(r'<script[^>]*>.*?</script>', caseSensitive: false, dotAll: true),
+      RegExp(r'<script\b[^>]*>[^<]*</script>', caseSensitive: false),
       '',
     );
-    sanitized = sanitized.replaceAll(RegExp(r'<[^>]*>'), '');
+    // Strip any remaining HTML/XML tags.
+    sanitized = sanitized.replaceAll(RegExp(r'<[^<>]*>'), '');
 
     // Replace multiple spaces with single space
     sanitized = sanitized.replaceAll(RegExp(r'\s+'), ' ');
@@ -108,9 +111,10 @@ class InputValidator {
 
   /// Check if string contains potentially dangerous characters
   static bool containsDangerousChars(String input) {
-    // Check for script tags, SQL injection patterns, etc.
+    // Check for script tags, event-handler attributes (on*=), javascript: URIs,
+    // SQL injection patterns, and path traversal.
     final dangerous = RegExp(
-      r"(<script|javascript:|onerror=|onclick=|<iframe|eval\(|\.\.\/|'|--|union\s+select)",
+      r"(<script|javascript:|on\w+=|<iframe|eval\(|\.\.\/|'|--|union\s+select)",
       caseSensitive: false,
     );
 

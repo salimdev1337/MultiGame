@@ -72,7 +72,10 @@ Future<void> setupServiceLocator() async {
     () => AchievementService(repository: getIt<AchievementRepository>()),
   );
 
-  getIt.registerLazySingleton<UnsplashService>(() => UnsplashService());
+  getIt.registerLazySingleton<UnsplashService>(
+    () => UnsplashService(),
+    dispose: (s) => s.dispose(),
+  );
 
   getIt.registerLazySingleton<NicknameService>(
     () => NicknameService(
@@ -110,6 +113,7 @@ Future<void> setupServiceLocator() async {
 
   getIt.registerLazySingleton<HapticFeedbackService>(
     () => HapticFeedbackService(storage: const FlutterSecureStorage()),
+    dispose: (s) => s.dispose(),
   );
 
   getIt.registerLazySingleton<SoundService>(
