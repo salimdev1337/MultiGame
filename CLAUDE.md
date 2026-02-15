@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Commit Rules
+
+**NEVER add `Co-Authored-By: Claude` or any Claude/Anthropic authorship lines to commit messages.** Commits should only contain the user's authorship.
+
 ## Project Overview
 
 MultiGame is a Flutter multi-platform gaming app with:
