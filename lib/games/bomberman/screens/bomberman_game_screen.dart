@@ -5,7 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:multigame/config/app_router.dart';
 import 'package:multigame/games/bomberman/logic/bot_ai.dart';
-import 'package:multigame/games/bomberman/models/bomb_game_state.dart' show kGridW, kGridH;
+import 'package:multigame/games/bomberman/models/bomb_game_state.dart'
+    show kGridW, kGridH;
 import 'package:multigame/games/bomberman/models/game_phase.dart';
 import 'package:multigame/games/bomberman/providers/bomberman_notifier.dart';
 import 'package:multigame/games/bomberman/ui/bomberman_overlays.dart';
@@ -36,10 +37,14 @@ class _BombermanGamePageState extends ConsumerState<BombermanGamePage>
   final _heldKeys = <LogicalKeyboardKey>{};
 
   static final _moveKeys = {
-    LogicalKeyboardKey.arrowUp,    LogicalKeyboardKey.keyW,
-    LogicalKeyboardKey.arrowDown,  LogicalKeyboardKey.keyS,
-    LogicalKeyboardKey.arrowLeft,  LogicalKeyboardKey.keyA,
-    LogicalKeyboardKey.arrowRight, LogicalKeyboardKey.keyD,
+    LogicalKeyboardKey.arrowUp,
+    LogicalKeyboardKey.keyW,
+    LogicalKeyboardKey.arrowDown,
+    LogicalKeyboardKey.keyS,
+    LogicalKeyboardKey.arrowLeft,
+    LogicalKeyboardKey.keyA,
+    LogicalKeyboardKey.arrowRight,
+    LogicalKeyboardKey.keyD,
   };
 
   @override
@@ -83,7 +88,8 @@ class _BombermanGamePageState extends ConsumerState<BombermanGamePage>
       if (_moveKeys.contains(k)) {
         _heldKeys.add(k);
         _flushKeyInput();
-      } else if (k == LogicalKeyboardKey.space || k == LogicalKeyboardKey.keyX) {
+      } else if (k == LogicalKeyboardKey.space ||
+          k == LogicalKeyboardKey.keyX) {
         ref.read(bombermanProvider.notifier).pressPlaceBomb();
       }
     } else if (event is KeyUpEvent) {
@@ -97,10 +103,22 @@ class _BombermanGamePageState extends ConsumerState<BombermanGamePage>
   /// so just pass the raw sum — it normalises to ±1 on the winning axis.
   void _flushKeyInput() {
     double dx = 0, dy = 0;
-    if (_heldKeys.contains(LogicalKeyboardKey.arrowLeft)  || _heldKeys.contains(LogicalKeyboardKey.keyA)) dx -= 1;
-    if (_heldKeys.contains(LogicalKeyboardKey.arrowRight) || _heldKeys.contains(LogicalKeyboardKey.keyD)) dx += 1;
-    if (_heldKeys.contains(LogicalKeyboardKey.arrowUp)    || _heldKeys.contains(LogicalKeyboardKey.keyW)) dy -= 1;
-    if (_heldKeys.contains(LogicalKeyboardKey.arrowDown)  || _heldKeys.contains(LogicalKeyboardKey.keyS)) dy += 1;
+    if (_heldKeys.contains(LogicalKeyboardKey.arrowLeft) ||
+        _heldKeys.contains(LogicalKeyboardKey.keyA)) {
+      dx -= 1;
+    }
+    if (_heldKeys.contains(LogicalKeyboardKey.arrowRight) ||
+        _heldKeys.contains(LogicalKeyboardKey.keyD)) {
+      dx += 1;
+    }
+    if (_heldKeys.contains(LogicalKeyboardKey.arrowUp) ||
+        _heldKeys.contains(LogicalKeyboardKey.keyW)) {
+      dy -= 1;
+    }
+    if (_heldKeys.contains(LogicalKeyboardKey.arrowDown) ||
+        _heldKeys.contains(LogicalKeyboardKey.keyS)) {
+      dy += 1;
+    }
     ref.read(bombermanProvider.notifier).setInput(dx: dx, dy: dy);
   }
 
@@ -172,8 +190,9 @@ class _BombermanGamePageState extends ConsumerState<BombermanGamePage>
                   defaultTargetPlatform == TargetPlatform.android ||
                   defaultTargetPlatform == TargetPlatform.iOS)
                 _JoystickControls(
-                  onMove: (dx, dy) =>
-                      ref.read(bombermanProvider.notifier).setInput(dx: dx, dy: dy),
+                  onMove: (dx, dy) => ref
+                      .read(bombermanProvider.notifier)
+                      .setInput(dx: dx, dy: dy),
                   onRelease: () =>
                       ref.read(bombermanProvider.notifier).setInput(),
                   onBomb: () =>
@@ -267,9 +286,7 @@ class _BombermanGamePageState extends ConsumerState<BombermanGamePage>
               onPressed: () => context.go(AppRoutes.home),
               child: Text(
                 'Back to Home',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.4),
-                ),
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
               ),
             ),
           ],
@@ -526,19 +543,18 @@ class _Joystick extends StatefulWidget {
 }
 
 class _JoystickState extends State<_Joystick> {
-  Offset _thumb = Offset.zero; // pixel offset from centre, clamped to outer radius
+  Offset _thumb =
+      Offset.zero; // pixel offset from centre, clamped to outer radius
 
   void _update(Offset localPos) {
     const centre = Offset(_kJoystickOuterR, _kJoystickOuterR);
     final delta = localPos - centre;
     final dist = delta.distance;
-    final clamped =
-        dist <= _kJoystickOuterR ? delta : delta / dist * _kJoystickOuterR;
+    final clamped = dist <= _kJoystickOuterR
+        ? delta
+        : delta / dist * _kJoystickOuterR;
     setState(() => _thumb = clamped);
-    widget.onMove(
-      _thumb.dx / _kJoystickOuterR,
-      _thumb.dy / _kJoystickOuterR,
-    );
+    widget.onMove(_thumb.dx / _kJoystickOuterR, _thumb.dy / _kJoystickOuterR);
   }
 
   void _release() {
@@ -556,9 +572,7 @@ class _JoystickState extends State<_Joystick> {
       child: SizedBox(
         width: size,
         height: size,
-        child: CustomPaint(
-          painter: _JoystickPainter(thumb: _thumb),
-        ),
+        child: CustomPaint(painter: _JoystickPainter(thumb: _thumb)),
       ),
     );
   }

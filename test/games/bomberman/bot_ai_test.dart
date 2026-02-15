@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:multigame/games/bomberman/logic/bot_ai.dart';
-import 'package:multigame/games/bomberman/logic/map_generator.dart';
 import 'package:multigame/games/bomberman/models/bomb.dart';
 import 'package:multigame/games/bomberman/models/bomb_game_state.dart';
 import 'package:multigame/games/bomberman/models/bomb_player.dart';
@@ -37,10 +36,12 @@ BombGameState makeState({
 void main() {
   group('BotAI.decide', () {
     test('returns no-op for dead bot', () {
-      final state = makeState(players: [
-        const BombPlayer(id: 0, x: 5, y: 5, isBot: true, isAlive: false),
-        const BombPlayer(id: 1, x: 1, y: 1),
-      ]);
+      final state = makeState(
+        players: [
+          const BombPlayer(id: 0, x: 5, y: 5, isBot: true, isAlive: false),
+          const BombPlayer(id: 1, x: 1, y: 1),
+        ],
+      );
 
       final decision = BotAI.decide(botId: 0, state: state);
       expect(decision.dx, 0);
@@ -70,10 +71,12 @@ void main() {
     test('bot chases human player when no danger', () {
       // Human is far right; bot should move right (dx = 1) or generally
       // toward the human.
-      final state = makeState(players: [
-        const BombPlayer(id: 0, x: 2, y: 1, isBot: true),
-        const BombPlayer(id: 1, x: 10, y: 1),
-      ]);
+      final state = makeState(
+        players: [
+          const BombPlayer(id: 0, x: 2, y: 1, isBot: true),
+          const BombPlayer(id: 1, x: 10, y: 1),
+        ],
+      );
 
       final decision = BotAI.decide(botId: 0, state: state);
       // BFS path from (2,1) to (10,1) should move right
@@ -87,7 +90,14 @@ void main() {
       final state = makeState(
         grid: grid,
         players: [
-          const BombPlayer(id: 0, x: 3, y: 1, isBot: true, maxBombs: 1, activeBombs: 0),
+          const BombPlayer(
+            id: 0,
+            x: 3,
+            y: 1,
+            isBot: true,
+            maxBombs: 1,
+            activeBombs: 0,
+          ),
           const BombPlayer(id: 1, x: 10, y: 10),
         ],
       );
