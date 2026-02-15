@@ -94,6 +94,19 @@ class DSColors {
   static const Color memoryPrimary = Color(0xFF7c4dff);
   static const Color memoryAccent = Color(0xFFea80fc);
 
+  /// Bomberman game colors
+  static const Color bombermanBg = Color(0xFF111520);
+  static const Color bombermanWall = Color(0xFF2d3142);
+  static const Color bombermanWallBevel = Color(0xFF3d4460);
+  static const Color bombermanBlock = Color(0xFF6B3A2A);
+  static const Color bombermanBlockHighlight = Color(0xFF8B5035);
+  static const Color bombermanFuse = Color(0xFFff8c00);
+  static const Color bombermanExplosionCenter = Color(0xFFff4500);
+  static const Color bombermanExplosionOuter = Color(0xFFffd700);
+  // Player colours — P1/P3 reuse DSColors.primary/memoryPrimary; P2/P4 are unique
+  static const Color bombermanP2 = Color(0xFFffd700);
+  static const Color bombermanP4 = Color(0xFFff6b35);
+
   // ==========================================
   // Gradient Definitions
   // ==========================================

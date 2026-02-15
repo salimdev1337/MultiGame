@@ -175,11 +175,11 @@ class _PodiumItemState extends State<_PodiumItem>
   Color _getPodiumColor() {
     switch (widget.rank) {
       case 1:
-        return const Color(0xFFFFD700); // Gold
+        return DSColors.rarityLegendary;
       case 2:
-        return const Color(0xFFC0C0C0); // Silver
+        return DSColors.rarityRare;
       case 3:
-        return const Color(0xFFCD7F32); // Bronze
+        return DSColors.rarityCommon;
       default:
         return DSColors.surface;
     }

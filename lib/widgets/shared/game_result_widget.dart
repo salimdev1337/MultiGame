@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:multigame/design_system/design_system.dart';
 
 // ─── Data types ──────────────────────────────────────────────────────────────
 
@@ -284,7 +285,7 @@ class _GameResultWidgetState extends State<GameResultWidget>
     final borderRadius = isBottomSheet
         ? BorderRadius.vertical(top: Radius.circular(radius))
         : BorderRadius.circular(radius);
-    final bgColor = config.containerColor ?? const Color(0xFF1a1d24);
+    final bgColor = config.containerColor ?? DSColors.shimmerBase;
     final padding =
         config.contentPadding ??
         (isBottomSheet
@@ -432,7 +433,7 @@ class _GameResultWidgetState extends State<GameResultWidget>
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: DSSpacing.borderRadiusLG,
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Column(
@@ -440,6 +441,7 @@ class _GameResultWidgetState extends State<GameResultWidget>
           final i = entry.key;
           final stat = entry.value;
           return Column(
+            key: ValueKey(stat.label),
             children: [
               if (i > 0)
                 Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
@@ -453,15 +455,13 @@ class _GameResultWidgetState extends State<GameResultWidget>
                   children: [
                     Text(
                       stat.label,
-                      style: TextStyle(
-                        fontSize: 15,
+                      style: DSTypography.bodyMedium.copyWith(
                         color: Colors.white.withValues(alpha: 0.6),
                       ),
                     ),
                     Text(
                       stat.value,
-                      style: TextStyle(
-                        fontSize: 16,
+                      style: DSTypography.bodyLarge.copyWith(
                         fontWeight: FontWeight.w700,
                         color: stat.isHighlighted
                             ? config.accentColor

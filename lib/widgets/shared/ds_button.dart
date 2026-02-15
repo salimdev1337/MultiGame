@@ -176,22 +176,22 @@ class _DSButtonState extends State<DSButton>
   double get _fontSize {
     switch (widget.size) {
       case DSButtonSize.small:
-        return 14;
+        return DSTypography.buttonSmall.fontSize!;
       case DSButtonSize.medium:
-        return 16;
+        return DSTypography.buttonMedium.fontSize!;
       case DSButtonSize.large:
-        return 18;
+        return DSTypography.buttonLarge.fontSize!;
     }
   }
 
   double get _iconSize {
     switch (widget.size) {
       case DSButtonSize.small:
-        return 18;
+        return DSSpacing.iconXSmall;
       case DSButtonSize.medium:
-        return 20;
+        return DSSpacing.iconSmall;
       case DSButtonSize.large:
-        return 24;
+        return DSSpacing.iconMedium;
     }
   }
 

@@ -70,6 +70,9 @@ class DSSpacing {
   /// Button padding (vertical)
   static const double buttonVertical = xs;
 
+  /// Icon size (extra small) — used by small buttons
+  static const double iconXSmall = 18.0;
+
   /// Icon size (small)
   static const double iconSmall = 20.0;
 

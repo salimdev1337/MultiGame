@@ -175,6 +175,33 @@ class DSTypography {
     color: DSColors.textTertiary,
   );
 
+  /// Button text — small (14sp)
+  static TextStyle buttonSmall = GoogleFonts.inter(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.1,
+    height: 1.43,
+    color: DSColors.textPrimary,
+  );
+
+  /// Button text — medium (16sp)
+  static TextStyle buttonMedium = GoogleFonts.inter(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.1,
+    height: 1.5,
+    color: DSColors.textPrimary,
+  );
+
+  /// Button text — large (18sp)
+  static TextStyle buttonLarge = GoogleFonts.inter(
+    fontSize: 18,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0,
+    height: 1.44,
+    color: DSColors.textPrimary,
+  );
+
   // ==========================================
   // Specialized Styles
   // ==========================================
