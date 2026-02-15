@@ -253,6 +253,69 @@ class _BombermanGamePageState extends ConsumerState<BombermanGamePage>
             ),
             const SizedBox(height: 40),
 
+            // Local multiplayer entry point
+            GestureDetector(
+              onTap: () => context.go(AppRoutes.bombermanLobby),
+              child: Container(
+                width: 260,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  color: const Color(0xFFffd700).withValues(alpha: 0.1),
+                  border: Border.all(
+                    color: const Color(0xFFffd700).withValues(alpha: 0.4),
+                    width: 1.5,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color(0xFFffd700),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'LOCAL MULTIPLAYER',
+                            style: TextStyle(
+                              color: Color(0xFFffd700),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Host or join a WiFi game',
+                            style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Color(0xFFffd700),
+                      size: 14,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
             // Difficulty buttons
             _DifficultyButton(
               label: 'EASY',
