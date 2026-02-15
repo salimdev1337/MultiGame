@@ -85,7 +85,9 @@ class PuzzleNotifier extends GameStatsNotifier<PuzzleState> {
   Future<void> changeGridSize(int newSize) async {
     if (newSize == state.gridSize) return;
     _cancelTimer();
-    final game = PuzzleGame(gridSize: newSize);
+    // Reuse the cached image URL so no extra network fetch is needed.
+    final cachedUrl = state.game?.currentImageUrl;
+    final game = PuzzleGame(gridSize: newSize, initialImageUrl: cachedUrl);
     await game.loadPuzzleImages();
     state = state.copyWith(
       game: game,

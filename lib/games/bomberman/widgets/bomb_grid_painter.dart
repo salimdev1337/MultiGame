@@ -37,6 +37,25 @@ class BombGridPainter extends CustomPainter {
 
   const BombGridPainter({required this.gameState, required this.animValue});
 
+  // ─── Cached static Paint objects (fixed colors, allocated once) ───────────
+
+  static final _bgPaint = Paint()..color = _kBg;
+  static final _wallPaint = Paint()..color = _kWall;
+  static final _wallBevelPaint = Paint()
+    ..color = const Color(0xFF3d4460).withValues(alpha: 0.6)
+    ..strokeWidth = 1;
+  static final _blockPaint = Paint()..color = _kBlock;
+  static final _blockGrainPaint = Paint()
+    ..color = _kBlockHighlight.withValues(alpha: 0.4)
+    ..strokeWidth = 1;
+  static final _bombBodyPaint = Paint()..color = _kBomb;
+  static final _fusePaint = Paint()
+    ..color = _kFuse
+    ..strokeWidth = 2
+    ..style = PaintingStyle.stroke;
+  static final _directionDotPaint = Paint()
+    ..color = const Color(0xFFFFFFFF).withValues(alpha: 0.8);
+
   @override
   bool shouldRepaint(BombGridPainter old) =>
       old.animValue != animValue ||
@@ -62,7 +81,7 @@ class BombGridPainter extends CustomPainter {
   void _drawBackground(Canvas canvas, Size size) {
     canvas.drawRect(
       Rect.fromLTWH(0, 0, size.width, size.height),
-      Paint()..color = _kBg,
+      _bgPaint,
     );
   }
 
@@ -76,30 +95,25 @@ class BombGridPainter extends CustomPainter {
         final rect = Rect.fromLTWH(c * cellW, r * cellH, cellW, cellH);
 
         if (cell == CellType.wall) {
-          canvas.drawRect(rect, Paint()..color = _kWall);
+          canvas.drawRect(rect, _wallPaint);
           // Subtle top/left highlight bevel
           canvas.drawLine(
             rect.topLeft + const Offset(1, 1),
             rect.topRight + const Offset(-1, 1),
-            Paint()
-              ..color = const Color(0xFF3d4460).withValues(alpha: 0.6)
-              ..strokeWidth = 1,
+            _wallBevelPaint,
           );
         } else if (cell == CellType.block) {
-          canvas.drawRect(rect, Paint()..color = _kBlock);
+          canvas.drawRect(rect, _blockPaint);
           // Wood-grain lines
-          final grainPaint = Paint()
-            ..color = _kBlockHighlight.withValues(alpha: 0.4)
-            ..strokeWidth = 1;
           canvas.drawLine(
             Offset(c * cellW + 3, r * cellH + cellH * 0.3),
             Offset(c * cellW + cellW - 3, r * cellH + cellH * 0.3),
-            grainPaint,
+            _blockGrainPaint,
           );
           canvas.drawLine(
             Offset(c * cellW + 3, r * cellH + cellH * 0.65),
             Offset(c * cellW + cellW - 3, r * cellH + cellH * 0.65),
-            grainPaint,
+            _blockGrainPaint,
           );
         }
       }
@@ -142,7 +156,7 @@ class BombGridPainter extends CustomPainter {
       final r = min(cellW, cellH) * 0.38;
 
       // Body
-      canvas.drawCircle(Offset(cx, cy), r, Paint()..color = _kBomb);
+      canvas.drawCircle(Offset(cx, cy), r, _bombBodyPaint);
 
       // Fuse (shrinking arc based on bomb progress)
       final fuseProgress = b.fuseProgress;
@@ -151,16 +165,7 @@ class BombGridPainter extends CustomPainter {
         center: Offset(cx, cy - r * 0.9),
         radius: r * 0.4,
       );
-      canvas.drawArc(
-        rect,
-        -pi / 2,
-        fuseAngle,
-        false,
-        Paint()
-          ..color = _kFuse
-          ..strokeWidth = 2
-          ..style = PaintingStyle.stroke,
-      );
+      canvas.drawArc(rect, -pi / 2, fuseAngle, false, _fusePaint);
 
       // Spark at fuse tip (pulsing)
       if (fuseProgress > 0.6) {
@@ -221,7 +226,7 @@ class BombGridPainter extends CustomPainter {
         canvas.drawCircle(
           Offset(cx, cy - r * 0.5),
           r * 0.2,
-          Paint()..color = const Color(0xFFFFFFFF).withValues(alpha: 0.8),
+          _directionDotPaint,
         );
       }
 

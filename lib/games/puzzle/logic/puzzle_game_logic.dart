@@ -8,12 +8,19 @@ class PuzzleGame {
   final int totalPieces;
   final ImagePuzzleGenerator puzzleGenerator;
 
-  PuzzleGame({required this.gridSize})
+  PuzzleGame({required this.gridSize, String? initialImageUrl})
     : totalPieces = gridSize * gridSize,
       emptyPosition = gridSize * gridSize - 1,
-      puzzleGenerator = ImagePuzzleGenerator(gridSize: gridSize) {
+      puzzleGenerator = ImagePuzzleGenerator(
+        gridSize: gridSize,
+        initialImageUrl: initialImageUrl,
+      ) {
     _initializeEmptyPuzzle();
   }
+
+  /// The URL of the image currently used by this puzzle (may be null before
+  /// [loadPuzzleImages] has been called).
+  String? get currentImageUrl => puzzleGenerator.currentImageUrl;
 
   void _initializeEmptyPuzzle() {
     pieces = List.generate(totalPieces, (index) {

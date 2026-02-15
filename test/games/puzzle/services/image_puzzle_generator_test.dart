@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get_it/get_it.dart';
 import 'package:multigame/games/puzzle/models/puzzle_piece.dart';
 import 'package:multigame/games/puzzle/services/image_puzzle_generator.dart';
 import 'package:multigame/services/game/unsplash_service.dart';
@@ -35,6 +36,20 @@ class FakeUnsplashService extends UnsplashService {
 }
 
 void main() {
+  // Register a FakeUnsplashService with GetIt so ImagePuzzleGenerator can
+  // resolve its dependency without needing network access.
+  setUp(() {
+    if (!GetIt.instance.isRegistered<UnsplashService>()) {
+      GetIt.instance.registerLazySingleton<UnsplashService>(
+        () => FakeUnsplashService(),
+      );
+    }
+  });
+
+  tearDown(() async {
+    await GetIt.instance.reset();
+  });
+
   group('ImagePuzzleGenerator', () {
     group('Constructor', () {
       test('should initialize with provided grid size', () {

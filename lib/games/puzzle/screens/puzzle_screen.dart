@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:multigame/config/app_router.dart';
 import 'package:multigame/games/puzzle/providers/puzzle_notifier.dart';
 import 'package:multigame/games/puzzle/providers/puzzle_ui_notifier.dart';
 import 'package:multigame/games/puzzle/screens/puzzle_controls.dart';
@@ -55,6 +57,49 @@ class _PuzzlePageState extends ConsumerState<PuzzlePage>
     super.dispose();
   }
 
+  void _showQuitConfirmation() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1a1d24),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        title: const Text(
+          'Quit game?',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          'Your progress will be lost.',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'RESUME',
+              style: TextStyle(
+                color: Color(0xFF9B59B6),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.go(AppRoutes.home);
+            },
+            child: Text(
+              'QUIT',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showImagePreviewAnimation() {
     final uiNotifier = ref.read(puzzleUIProvider.notifier);
     uiNotifier.setShowImagePreview(true);
@@ -104,8 +149,15 @@ class _PuzzlePageState extends ConsumerState<PuzzlePage>
   Widget build(BuildContext context) {
     final uiState = ref.watch(puzzleUIProvider);
 
-    return Scaffold(
-      body: SafeArea(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          _showQuitConfirmation();
+        }
+      },
+      child: Scaffold(
+        body: SafeArea(
         child: Stack(
           children: [
             Column(
@@ -147,9 +199,7 @@ class _PuzzlePageState extends ConsumerState<PuzzlePage>
                                 const SizedBox(height: 24),
                                 PuzzleFooterControls(
                                   onReset: () {
-                                    Navigator.of(
-                                      context,
-                                    ).popUntil((route) => route.isFirst);
+                                    context.go(AppRoutes.home);
                                   },
                                   onPlayAgain: () {
                                     ref
@@ -188,6 +238,7 @@ class _PuzzlePageState extends ConsumerState<PuzzlePage>
               ),
           ],
         ),
+      ),
       ),
     );
   }
