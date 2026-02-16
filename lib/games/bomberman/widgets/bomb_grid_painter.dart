@@ -414,35 +414,43 @@ class BombGridPainter extends CustomPainter {
   }
 
   void _drawPowerups(Canvas canvas, double cellW, double cellH) {
+    final cs = min(cellW, cellH);
+
     for (final pw in gameState.powerups) {
       final cx = pw.x * cellW + cellW / 2;
       final cy = pw.y * cellH + cellH / 2;
-      final r = min(cellW, cellH) * 0.3;
       final color = _kPowerupColors[pw.type] ?? const Color(0xFFffffff);
 
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(center: Offset(cx, cy), width: r * 2, height: r * 2),
-          const Radius.circular(4),
-        ),
-        Paint()..color = color.withValues(alpha: 0.9),
+      // Pulsing glow ring — draws attention to the pickup
+      final glowAlpha = (sin(animValue * pi * 2) * 0.25 + 0.45).clamp(0.0, 1.0);
+      canvas.drawCircle(
+        Offset(cx, cy),
+        cs * 0.46,
+        Paint()
+          ..color = color.withValues(alpha: glowAlpha)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
       );
 
-      // Small icon text
-      final icon = switch (pw.type) {
-        PowerupType.extraBomb => '+B',
-        PowerupType.blastRange => '+R',
-        PowerupType.speed => '+S',
-        PowerupType.shield => '+SH',
+      // Dark pill background so the emoji pops on the floor
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(center: Offset(cx, cy), width: cs * 0.7, height: cs * 0.7),
+          Radius.circular(cs * 0.16),
+        ),
+        Paint()..color = const Color(0xCC0a0c12),
+      );
+
+      // Emoji icon — fills the cell naturally, no text label needed
+      final emoji = switch (pw.type) {
+        PowerupType.extraBomb  => '💣',
+        PowerupType.blastRange => '🔥',
+        PowerupType.speed      => '⚡',
+        PowerupType.shield     => '🛡️',
       };
       final tp = TextPainter(
         text: TextSpan(
-          text: icon,
-          style: TextStyle(
-            color: const Color(0xFFFFFFFF),
-            fontSize: r * 0.7,
-            fontWeight: FontWeight.bold,
-          ),
+          text: emoji,
+          style: TextStyle(fontSize: cs * 0.44),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
