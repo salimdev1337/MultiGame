@@ -1,3 +1,6 @@
+import 'dart:math' show cos, sin, pi;
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -250,21 +253,18 @@ class _BombermanGamePageState extends ConsumerState<BombermanGamePage>
                 ),
               ),
 
-              // Controls — D-pad on all platforms
-              _MobileControls(
-                onUp: () =>
-                    ref.read(bombermanProvider.notifier).setInput(dy: -1),
-                onDown: () =>
-                    ref.read(bombermanProvider.notifier).setInput(dy: 1),
-                onLeft: () =>
-                    ref.read(bombermanProvider.notifier).setInput(dx: -1),
-                onRight: () =>
-                    ref.read(bombermanProvider.notifier).setInput(dx: 1),
-                onRelease: () =>
-                    ref.read(bombermanProvider.notifier).setInput(),
-                onBomb: () =>
-                    ref.read(bombermanProvider.notifier).pressPlaceBomb(),
-              ),
+              // Controls — analog stick on mobile/web, keyboard hint on desktop
+              if (_useTouchControls(context))
+                _TouchControls(
+                  onInput: (dx, dy) =>
+                      ref.read(bombermanProvider.notifier).setInput(dx: dx, dy: dy),
+                  onRelease: () =>
+                      ref.read(bombermanProvider.notifier).setInput(),
+                  onBomb: () =>
+                      ref.read(bombermanProvider.notifier).pressPlaceBomb(),
+                )
+              else
+                const _DesktopHint(),
             ],
           ),
         ),
@@ -438,16 +438,25 @@ class _AnimatedBoard extends ConsumerWidget {
   }
 }
 
-// ─── Mobile controls ─────────────────────────────────────────────────────────
+// ─── Platform helper ──────────────────────────────────────────────────────────
 
-class _MobileControls extends StatelessWidget {
-  final VoidCallback onUp, onDown, onLeft, onRight, onRelease, onBomb;
+bool _useTouchControls(BuildContext context) {
+  if (kIsWeb) {
+    return true;
+  }
+  final p = Theme.of(context).platform;
+  return p == TargetPlatform.android || p == TargetPlatform.iOS;
+}
 
-  const _MobileControls({
-    required this.onUp,
-    required this.onDown,
-    required this.onLeft,
-    required this.onRight,
+// ─── Touch controls (mobile + web) ───────────────────────────────────────────
+
+class _TouchControls extends StatelessWidget {
+  final void Function(double dx, double dy) onInput;
+  final VoidCallback onRelease;
+  final VoidCallback onBomb;
+
+  const _TouchControls({
+    required this.onInput,
     required this.onRelease,
     required this.onBomb,
   });
@@ -455,118 +464,288 @@ class _MobileControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF080b14),
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+      color: const Color(0xFF070910),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // D-pad — 4 rounded-square buttons in a cross layout
-          SizedBox(
-            width: 156,
-            height: 156,
-            child: Stack(
-              children: [
-                Positioned(
-                  top: 0,
-                  left: 52,
-                  child: _Btn(Icons.keyboard_arrow_up_rounded, onUp, onRelease),
-                ),
-                Positioned(
-                  top: 52,
-                  left: 0,
-                  child: _Btn(Icons.keyboard_arrow_left_rounded, onLeft, onRelease),
-                ),
-                Positioned(
-                  top: 52,
-                  left: 52,
-                  child: _Btn(Icons.keyboard_arrow_down_rounded, onDown, onRelease),
-                ),
-                Positioned(
-                  top: 52,
-                  left: 104,
-                  child: _Btn(Icons.keyboard_arrow_right_rounded, onRight, onRelease),
-                ),
-              ],
-            ),
-          ),
+          // ── Analog joystick ───────────────────────────────────────────────
+          _AnalogStick(onInput: onInput, onRelease: onRelease),
 
-          // Bomb button — orange gradient circle with flame icon + label
-          Listener(
-            onPointerDown: (_) => onBomb(),
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const RadialGradient(
-                  colors: [Color(0xFFff6d00), Color(0xFFbf360c)],
-                  radius: 0.85,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFff6d00).withValues(alpha: 0.5),
-                    blurRadius: 16,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.local_fire_department_rounded,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                  Text(
-                    'BOMB',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          // ── BOMB button ───────────────────────────────────────────────────
+          _BombBtn(onBomb: onBomb),
         ],
       ),
     );
   }
 }
 
-class _Btn extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onPress;
+// ─── Analog joystick ──────────────────────────────────────────────────────────
+
+class _AnalogStick extends StatefulWidget {
+  final void Function(double dx, double dy) onInput;
   final VoidCallback onRelease;
 
-  const _Btn(this.icon, this.onPress, this.onRelease);
+  const _AnalogStick({required this.onInput, required this.onRelease});
+
+  @override
+  State<_AnalogStick> createState() => _AnalogStickState();
+}
+
+class _AnalogStickState extends State<_AnalogStick> {
+  // Knob offset from the stick centre (canvas coords, clamped to base radius)
+  Offset _knob = Offset.zero;
+
+  static const double _baseR = 58.0; // outer ring radius
+  static const double _knobR = 24.0; // draggable thumb radius
+  static const double _size = (_baseR + _knobR) * 2;
+
+  Offset get _centre => const Offset(_size / 2, _size / 2);
+
+  void _update(Offset localPos) {
+    final delta = localPos - _centre;
+    final dist = delta.distance;
+    final clamped = dist > _baseR ? delta / dist * _baseR : delta;
+    setState(() => _knob = clamped);
+    widget.onInput(
+      (clamped.dx / _baseR).clamp(-1.0, 1.0),
+      (clamped.dy / _baseR).clamp(-1.0, 1.0),
+    );
+  }
+
+  void _reset() {
+    setState(() => _knob = Offset.zero);
+    widget.onRelease();
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Listener keeps the pointer assigned to this widget from pointerDown to
-    // pointerUp regardless of finger movement, so onRelease never fires early
-    // due to slight wobble (unlike GestureDetector's onTapCancel).
+    return GestureDetector(
+      onPanStart: (d) => _update(d.localPosition),
+      onPanUpdate: (d) => _update(d.localPosition),
+      onPanEnd: (_) => _reset(),
+      onPanCancel: _reset,
+      child: SizedBox(
+        width: _size,
+        height: _size,
+        child: CustomPaint(
+          painter: _JoystickPainter(knob: _knob, baseR: _baseR, knobR: _knobR),
+        ),
+      ),
+    );
+  }
+}
+
+class _JoystickPainter extends CustomPainter {
+  final Offset knob;
+  final double baseR;
+  final double knobR;
+
+  const _JoystickPainter({
+    required this.knob,
+    required this.baseR,
+    required this.knobR,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = Offset(size.width / 2, size.height / 2);
+    final active = knob != Offset.zero;
+
+    // ── Outer ring ────────────────────────────────────────────────────────
+    canvas.drawCircle(
+      c,
+      baseR,
+      Paint()..color = const Color(0x1AFFFFFF), // fill — very subtle
+    );
+    canvas.drawCircle(
+      c,
+      baseR,
+      Paint()
+        ..color = active
+            ? const Color(0x66FFFFFF)
+            : const Color(0x33FFFFFF)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+
+    // ── Cardinal tick marks (subtle orientation guides) ───────────────────
+    const tickLen = 6.0;
+    final tickPaint = Paint()
+      ..color = const Color(0x26FFFFFF)
+      ..strokeWidth = 1.5
+      ..strokeCap = StrokeCap.round;
+    for (final angle in [0.0, pi / 2, pi, 3 * pi / 2]) {
+      final outer = c + Offset(baseR * cos(angle), baseR * sin(angle));
+      final inner = c + Offset((baseR - tickLen) * cos(angle), (baseR - tickLen) * sin(angle));
+      canvas.drawLine(inner, outer, tickPaint);
+    }
+
+    // ── Knob shadow ───────────────────────────────────────────────────────
+    canvas.drawCircle(
+      c + knob + const Offset(0, 2),
+      knobR,
+      Paint()..color = const Color(0x33000000),
+    );
+
+    // ── Knob body ─────────────────────────────────────────────────────────
+    canvas.drawCircle(
+      c + knob,
+      knobR,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            active ? const Color(0xFF475569) : const Color(0xFF334155),
+            const Color(0xFF1e293b),
+          ],
+          stops: const [0.0, 1.0],
+        ).createShader(
+          Rect.fromCircle(center: c + knob, radius: knobR),
+        ),
+    );
+
+    // Knob rim highlight
+    canvas.drawCircle(
+      c + knob,
+      knobR,
+      Paint()
+        ..color = const Color(0x33FFFFFF)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+
+    // Inner dot
+    canvas.drawCircle(
+      c + knob,
+      knobR * 0.28,
+      Paint()..color = const Color(0x80FFFFFF),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_JoystickPainter old) => old.knob != knob;
+}
+
+// ─── Bomb button (stateful for press feedback) ────────────────────────────────
+
+class _BombBtn extends StatefulWidget {
+  final VoidCallback onBomb;
+
+  const _BombBtn({required this.onBomb});
+
+  @override
+  State<_BombBtn> createState() => _BombBtnState();
+}
+
+class _BombBtnState extends State<_BombBtn> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
     return Listener(
-      onPointerDown: (_) => onPress(),
-      onPointerUp: (_) => onRelease(),
-      onPointerCancel: (_) => onRelease(),
-      child: Container(
-        width: 52,
-        height: 52,
+      onPointerDown: (_) {
+        setState(() => _pressed = true);
+        widget.onBomb();
+      },
+      onPointerUp: (_) => setState(() => _pressed = false),
+      onPointerCancel: (_) => setState(() => _pressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 70),
+        width: 72,
+        height: 72,
         decoration: BoxDecoration(
-          color: const Color(0xFF1a1e2e),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.12),
-            width: 1,
+          shape: BoxShape.circle,
+          color: _pressed ? const Color(0xFF991b1b) : const Color(0xFFdc2626),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFdc2626).withValues(alpha: _pressed ? 0.3 : 0.55),
+              blurRadius: _pressed ? 8 : 16,
+              spreadRadius: _pressed ? 0 : 2,
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            'BOMB',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: _pressed ? 0.75 : 1.0),
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.5,
+            ),
           ),
         ),
-        child: Icon(icon, color: Colors.white.withValues(alpha: 0.85), size: 30),
       ),
+    );
+  }
+}
+
+// ─── Desktop keyboard hint ────────────────────────────────────────────────────
+
+class _DesktopHint extends StatelessWidget {
+  const _DesktopHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFF070910),
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        spacing: 24,
+        children: [
+          _KeyHint(keys: const ['W', 'A', 'S', 'D'], label: 'Move'),
+          _KeyHint(keys: const ['↑', '↓', '←', '→'], label: 'Move'),
+          _KeyHint(keys: const ['Space', 'X'], label: 'Bomb'),
+        ],
+      ),
+    );
+  }
+}
+
+class _KeyHint extends StatelessWidget {
+  final List<String> keys;
+  final String label;
+
+  const _KeyHint({required this.keys, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      spacing: 4,
+      children: [
+        ...keys.map(
+          (k) => Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1e293b),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.15),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              k,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 2),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.35),
+            fontSize: 11,
+          ),
+        ),
+      ],
     );
   }
 }

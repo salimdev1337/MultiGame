@@ -105,11 +105,18 @@ class DSColors {
   static const Color connectFourPlayer2 = Color(0xFFE53935); // red
 
   /// Bomberman game colors
-  static const Color bombermanBg = Color(0xFF111520);
-  static const Color bombermanWall = Color(0xFF2d3142);
-  static const Color bombermanWallBevel = Color(0xFF3d4460);
-  static const Color bombermanBlock = Color(0xFF6B3A2A);
-  static const Color bombermanBlockHighlight = Color(0xFF8B5035);
+  // Floor — near-black stone tiles
+  static const Color bombermanBg        = Color(0xFF08090d); // overall canvas fill
+  static const Color bombermanFloorA    = Color(0xFF0d1018); // tile shade A
+  static const Color bombermanFloorB    = Color(0xFF0a0d14); // tile shade B (checker)
+  static const Color bombermanGrout     = Color(0xFF050608); // grout line between tiles
+  // Walls — concrete/stone blocks, clearly lighter than floor
+  static const Color bombermanWall      = Color(0xFF52606e); // wall face (mid stone-gray)
+  static const Color bombermanWallTop   = Color(0xFF8fa0b0); // top-left bevel (lit face)
+  static const Color bombermanWallBevel = Color(0xFF38454f); // bottom-right shadow edge
+  // Destructible blocks — wood/brick (unchanged hue, slightly warmer)
+  static const Color bombermanBlock          = Color(0xFF7a3e28);
+  static const Color bombermanBlockHighlight = Color(0xFF9c5235);
   static const Color bombermanFuse = Color(0xFFff8c00);
   static const Color bombermanExplosionCenter = Color(0xFFff4500);
   static const Color bombermanExplosionOuter = Color(0xFFffd700);

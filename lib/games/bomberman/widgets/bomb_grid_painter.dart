@@ -31,12 +31,17 @@ class BombGridPainter extends CustomPainter {
 
   // ─── Cached static Paint objects (fixed colors, allocated once) ───────────
 
-  static final _bgPaint = Paint()..color = DSColors.bombermanBg;
-  static final _checkerPaint = Paint()..color = const Color(0xFF1a1e2e);
-  static final _wallPaint = Paint()..color = DSColors.bombermanWall;
-  static final _wallBevelPaint = Paint()
-    ..color = DSColors.bombermanWallBevel.withValues(alpha: 0.6)
-    ..strokeWidth = 1;
+  static final _bgPaint       = Paint()..color = DSColors.bombermanBg;
+  static final _floorAPaint   = Paint()..color = DSColors.bombermanFloorA;
+  static final _floorBPaint   = Paint()..color = DSColors.bombermanFloorB;
+  static final _groutPaint    = Paint()..color = DSColors.bombermanGrout;
+  static final _wallPaint     = Paint()..color = DSColors.bombermanWall;
+  static final _wallTopPaint  = Paint()
+    ..color = DSColors.bombermanWallTop
+    ..strokeWidth = 2;
+  static final _wallShadePaint = Paint()
+    ..color = DSColors.bombermanWallBevel
+    ..strokeWidth = 2;
   static final _blockPaint = Paint()..color = DSColors.bombermanBlock;
   static final _blockGrainPaint = Paint()
     ..color = DSColors.bombermanBlockHighlight.withValues(alpha: 0.4)
@@ -46,8 +51,18 @@ class BombGridPainter extends CustomPainter {
     ..color = DSColors.bombermanFuse
     ..strokeWidth = 2
     ..style = PaintingStyle.stroke;
-  static final _directionDotPaint = Paint()
-    ..color = const Color(0xFFFFFFFF).withValues(alpha: 0.8);
+
+  // ─── Player character paints ──────────────────────────────────────────────
+  static final _skinPaint = Paint()..color = const Color(0xFFFFCC99);
+  static final _eyeWhitePaint = Paint()..color = const Color(0xFFFFFFFF);
+  static final _pupilPaint = Paint()..color = const Color(0xFF1a1a1a);
+  static final _shadowPaint = Paint()..color = const Color(0x4D000000);
+  static final _bodyHighlightPaint = Paint()
+    ..color = const Color(0x33FFFFFF);
+  static final _shieldPaint = Paint()
+    ..color = const Color(0xFF00d4ff)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2;
 
   @override
   bool shouldRepaint(BombGridPainter old) =>
@@ -72,23 +87,47 @@ class BombGridPainter extends CustomPainter {
   }
 
   void _drawBackground(Canvas canvas, Size size) {
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      _bgPaint,
-    );
+    // Overall fill
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), _bgPaint);
 
-    // Checkerboard — odd cells get a slightly lighter shade
     final cellW = size.width / kGridW;
     final cellH = size.height / kGridH;
+    const grout = 1.5; // grout line width in px
+
     for (int r = 0; r < kGridH; r++) {
       for (int c = 0; c < kGridW; c++) {
-        if ((r + c).isOdd) {
-          canvas.drawRect(
-            Rect.fromLTWH(c * cellW, r * cellH, cellW, cellH),
-            _checkerPaint,
-          );
-        }
+        // Only draw floor tiles on empty/walkable cells — walls are drawn later
+        final left   = c * cellW + grout;
+        final top    = r * cellH + grout;
+        final width  = cellW - grout * 2;
+        final height = cellH - grout * 2;
+
+        if (width <= 0 || height <= 0) continue;
+
+        // Checker — two very close dark shades give depth without noise
+        canvas.drawRect(
+          Rect.fromLTWH(left, top, width, height),
+          (r + c).isEven ? _floorAPaint : _floorBPaint,
+        );
       }
+    }
+
+    // Grout lines — draw a thin grid over everything
+    _groutPaint.style = PaintingStyle.stroke;
+    _groutPaint.strokeWidth = grout;
+    for (int r = 0; r <= kGridH; r++) {
+      canvas.drawLine(
+        Offset(0, r * cellH),
+        Offset(size.width, r * cellH),
+        _groutPaint,
+      );
+    }
+    for (int c = 0; c <= kGridW; c++) {
+      canvas.drawLine(
+        Offset(c * cellW, 0),
+        Offset(c * cellW, size.height),
+        _groutPaint,
+      );
     }
   }
 
@@ -102,12 +141,35 @@ class BombGridPainter extends CustomPainter {
         final rect = Rect.fromLTWH(c * cellW, r * cellH, cellW, cellH);
 
         if (cell == CellType.wall) {
+          // ── Wall face (main body) ─────────────────────────────────────
           canvas.drawRect(rect, _wallPaint);
-          // Subtle top/left highlight bevel
-          canvas.drawLine(
-            rect.topLeft + const Offset(1, 1),
-            rect.topRight + const Offset(-1, 1),
-            _wallBevelPaint,
+
+          const bevel = 3.0;
+
+          // Top-left lit faces — simulates light from top-left
+          _wallTopPaint.style = PaintingStyle.fill;
+          // Top strip
+          canvas.drawRect(
+            Rect.fromLTWH(rect.left, rect.top, rect.width, bevel),
+            _wallTopPaint,
+          );
+          // Left strip
+          canvas.drawRect(
+            Rect.fromLTWH(rect.left, rect.top, bevel, rect.height),
+            _wallTopPaint,
+          );
+
+          // Bottom-right shadow faces — simulates shadow/depth
+          _wallShadePaint.style = PaintingStyle.fill;
+          // Bottom strip
+          canvas.drawRect(
+            Rect.fromLTWH(rect.left, rect.bottom - bevel, rect.width, bevel),
+            _wallShadePaint,
+          );
+          // Right strip
+          canvas.drawRect(
+            Rect.fromLTWH(rect.right - bevel, rect.top, bevel, rect.height),
+            _wallShadePaint,
           );
         } else if (cell == CellType.block) {
           canvas.drawRect(rect, _blockPaint);
@@ -188,79 +250,165 @@ class BombGridPainter extends CustomPainter {
 
   void _drawPlayers(Canvas canvas, double cellW, double cellH) {
     for (final p in gameState.players) {
-      if (!p.isAlive) continue;
+      if (!p.isAlive && !p.isGhost) continue;
 
-      // p.x/p.y are cell-centre coords (e.g. 1.5 = centre of cell 1)
+      // p.x/p.y are smooth cell-centre coords (e.g. 1.5 = centre of cell 1)
       final cx = p.x * cellW;
       final cy = p.y * cellH;
-      final r = min(cellW, cellH) * 0.42;
-      final baseColor = _kPlayerColors[p.id % _kPlayerColors.length];
+      final cs = min(cellW, cellH); // reference cell size
 
-      // Ghost: render at 35% opacity with a washed-out hue
+      final baseColor = _kPlayerColors[p.id % _kPlayerColors.length];
       final alpha = p.isGhost ? 0.35 : 1.0;
       final color = baseColor.withValues(alpha: alpha);
 
-      // Glow (dimmer for ghosts)
-      canvas.drawCircle(
-        Offset(cx, cy),
-        r * 1.4,
-        Paint()
-          ..color = color.withValues(alpha: p.isGhost ? 0.08 : 0.25)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
-      );
-
-      // Body circle
-      canvas.drawCircle(Offset(cx, cy), r, Paint()..color = color);
-
-      // Shield ring — pulsing cyan outline
-      if (p.hasShield) {
-        final shieldAlpha = (sin(animValue * pi * 4) * 0.3 + 0.7).clamp(
-          0.0,
-          1.0,
-        );
-        canvas.drawCircle(
-          Offset(cx, cy),
-          r * 1.2,
-          Paint()
-            ..color = const Color(0xFF00d4ff).withValues(alpha: shieldAlpha)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 2,
-        );
-      }
-
-      // Direction indicator (small dot on top for "face") — hidden when ghost
-      if (!p.isGhost) {
-        canvas.drawCircle(
-          Offset(cx, cy - r * 0.5),
-          r * 0.2,
-          _directionDotPaint,
-        );
-      }
-
-      // Ghost indicator (👻 label)
+      // ── Ghost short-circuit ──────────────────────────────────────────────
       if (p.isGhost) {
         final tp = TextPainter(
-          text: TextSpan(
-            text: '👻',
-            style: TextStyle(fontSize: r * 0.7),
-          ),
+          text: TextSpan(text: '👻', style: TextStyle(fontSize: cs * 0.55)),
           textDirection: TextDirection.ltr,
         )..layout();
         tp.paint(canvas, Offset(cx - tp.width / 2, cy - tp.height / 2));
-      } else if (p.id > 0) {
-        // ID badge for non-local players
+        continue;
+      }
+
+      // ── 1. Soft glow (underneath everything) ────────────────────────────
+      canvas.drawCircle(
+        Offset(cx, cy),
+        cs * 0.55,
+        Paint()
+          ..color = color.withValues(alpha: 0.22)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+      );
+
+      // ── 2. Ground shadow (subtle oval below feet) ────────────────────────
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: Offset(cx, cy + cs * 0.38),
+          width: cs * 0.55,
+          height: cs * 0.14,
+        ),
+        _shadowPaint,
+      );
+
+      // ── 3. Legs (two rounded rects, slightly below body centre) ──────────
+      final legW = cs * 0.17;
+      final legH = cs * 0.2;
+      final legY = cy + cs * 0.22;
+      for (final dx in [-cs * 0.13, cs * 0.13]) {
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromCenter(
+              center: Offset(cx + dx, legY),
+              width: legW,
+              height: legH,
+            ),
+            Radius.circular(legW * 0.45),
+          ),
+          Paint()..color = color.withValues(alpha: 0.8),
+        );
+      }
+
+      // ── 4. Body / overalls ───────────────────────────────────────────────
+      final bodyRect = RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: Offset(cx, cy + cs * 0.04),
+          width: cs * 0.58,
+          height: cs * 0.46,
+        ),
+        Radius.circular(cs * 0.12),
+      );
+      canvas.drawRRect(bodyRect, Paint()..color = color);
+
+      // Chest highlight (top strip — gives slight 3-D roundness)
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: Offset(cx, cy - cs * 0.06),
+            width: cs * 0.42,
+            height: cs * 0.12,
+          ),
+          Radius.circular(cs * 0.06),
+        ),
+        _bodyHighlightPaint,
+      );
+
+      // ── 5. Head (skin-toned circle) ──────────────────────────────────────
+      final headR = cs * 0.21;
+      final headCy = cy - cs * 0.19;
+      _skinPaint.color = const Color(0xFFFFCC99).withValues(alpha: alpha);
+      canvas.drawCircle(Offset(cx, headCy), headR, _skinPaint);
+
+      // ── 6. Helmet (top half of head, player colour) ──────────────────────
+      canvas.drawArc(
+        Rect.fromCircle(center: Offset(cx, headCy), radius: headR * 1.06),
+        pi,     // startAngle: left side
+        pi,     // sweepAngle: top semicircle
+        true,
+        Paint()..color = color,
+      );
+
+      // Helmet brim — thin horizontal bar at head equator
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: Offset(cx, headCy),
+            width: headR * 2.3,
+            height: headR * 0.28,
+          ),
+          Radius.circular(headR * 0.14),
+        ),
+        Paint()..color = color.withValues(alpha: 0.9),
+      );
+
+      // ── 7. Eyes ──────────────────────────────────────────────────────────
+      final eyeY = headCy + headR * 0.18;
+      final eyeR = headR * 0.22;
+      for (final ex in [-headR * 0.38, headR * 0.38]) {
+        _eyeWhitePaint.color =
+            const Color(0xFFFFFFFF).withValues(alpha: alpha);
+        canvas.drawCircle(Offset(cx + ex, eyeY), eyeR, _eyeWhitePaint);
+        _pupilPaint.color =
+            const Color(0xFF1a1a1a).withValues(alpha: alpha);
+        canvas.drawCircle(
+          Offset(cx + ex, eyeY + eyeR * 0.2),
+          eyeR * 0.55,
+          _pupilPaint,
+        );
+      }
+
+      // ── 8. Shield ring (pulsing cyan outline) ────────────────────────────
+      if (p.hasShield) {
+        final shieldAlpha =
+            (sin(animValue * pi * 4) * 0.3 + 0.7).clamp(0.0, 1.0);
+        _shieldPaint.color =
+            const Color(0xFF00d4ff).withValues(alpha: shieldAlpha);
+        canvas.drawCircle(Offset(cx, cy), cs * 0.5, _shieldPaint);
+      }
+
+      // ── 9. Multiplayer ID badge ───────────────────────────────────────────
+      if (p.id > 0) {
+        final badgeCx = cx + cs * 0.26;
+        final badgeCy = cy - cs * 0.26;
+        canvas.drawCircle(
+          Offset(badgeCx, badgeCy),
+          cs * 0.13,
+          Paint()..color = const Color(0xCC111111),
+        );
         final tp = TextPainter(
           text: TextSpan(
             text: '${p.id + 1}',
             style: TextStyle(
               color: const Color(0xFFFFFFFF),
-              fontSize: r * 0.7,
+              fontSize: cs * 0.16,
               fontWeight: FontWeight.bold,
             ),
           ),
           textDirection: TextDirection.ltr,
         )..layout();
-        tp.paint(canvas, Offset(cx - tp.width / 2, cy - tp.height / 2));
+        tp.paint(
+          canvas,
+          Offset(badgeCx - tp.width / 2, badgeCy - tp.height / 2),
+        );
       }
     }
   }

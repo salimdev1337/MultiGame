@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:multigame/games/bomberman/providers/bomberman_notifier.dart';
 
-/// Top HUD bar: score (left) + timer (right) with icon accents.
+/// Top HUD bar: lives ❤️ | bombs 💣 | range 🔥 | timer.
+/// All values are read from the local player (index 0).
 class BombermanHud extends ConsumerWidget {
   const BombermanHud({super.key});
 
@@ -10,102 +11,245 @@ class BombermanHud extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(
       bombermanProvider.select(
-        (s) => (
-          time: s.roundTimeSeconds,
-          wins: s.roundWins,
-        ),
+        (gs) {
+          final p = gs.players.isNotEmpty ? gs.players[0] : null;
+          return (
+            lives: p?.lives ?? 0,
+            maxBombs: p?.maxBombs ?? 1,
+            activeBombs: p?.activeBombs ?? 0,
+            range: p?.range ?? 1,
+            time: gs.roundTimeSeconds,
+          );
+        },
       ),
     );
 
+    final availableBombs = (s.maxBombs - s.activeBombs).clamp(0, s.maxBombs);
+    final danger = s.time <= 30;
     final mins = s.time ~/ 60;
     final secs = s.time % 60;
     final timeStr =
-        '${mins.toString().padLeft(2, '0')} : ${secs.toString().padLeft(2, '0')}';
-    final danger = s.time <= 30;
-    final score = s.wins.isNotEmpty ? s.wins[0] * 500 : 0;
+        '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
 
     return Container(
-      color: const Color(0xFF0a0c14),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      color: const Color(0xFF070910),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Score — gem icon + label + value
-          _HudMetric(
-            icon: Icons.diamond_outlined,
-            iconColor: const Color(0xFF00b4ff),
-            label: 'SCORE',
-            value: score.toString(),
-            valueColor: Colors.white,
+          // ── Lives ────────────────────────────────────────────────────────
+          _IconPips(
+            filledIcon: Icons.favorite_rounded,
+            emptyIcon: Icons.favorite_border_rounded,
+            filledColor: const Color(0xFFef4444),
+            emptyColor: const Color(0xFF4b1010),
+            count: s.lives,
+            max: 3,
+            label: 'HP',
           ),
 
-          // Timer — value + flame icon
-          _HudMetric(
-            icon: Icons.local_fire_department_rounded,
-            iconColor: danger ? const Color(0xFFff4444) : const Color(0xFFff7043),
-            label: 'TIME',
-            value: timeStr,
-            valueColor: danger ? const Color(0xFFff4444) : Colors.white,
-            iconOnRight: true,
+          _kDivider,
+
+          // ── Bombs available ───────────────────────────────────────────────
+          _IconPips(
+            filledIcon: Icons.circle_rounded,
+            emptyIcon: Icons.circle_outlined,
+            filledColor: const Color(0xFFf59e0b),
+            emptyColor: const Color(0xFF3d2a06),
+            count: availableBombs,
+            max: s.maxBombs.clamp(1, 5),
+            label: 'BOMB',
           ),
+
+          _kDivider,
+
+          // ── Blast range ───────────────────────────────────────────────────
+          _RangePips(range: s.range),
+
+          const Spacer(),
+
+          // ── Timer ─────────────────────────────────────────────────────────
+          _TimerChip(timeStr: timeStr, danger: danger),
         ],
       ),
     );
   }
+
+  static const _kDivider = SizedBox(width: 14);
 }
 
-class _HudMetric extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String label;
-  final String value;
-  final Color valueColor;
-  final bool iconOnRight;
+// ─── Individual icon pips (lives / bombs) ────────────────────────────────────
 
-  const _HudMetric({
-    required this.icon,
-    required this.iconColor,
+class _IconPips extends StatelessWidget {
+  final IconData filledIcon;
+  final IconData emptyIcon;
+  final Color filledColor;
+  final Color emptyColor;
+  final int count;
+  final int max;
+  final String label;
+
+  const _IconPips({
+    required this.filledIcon,
+    required this.emptyIcon,
+    required this.filledColor,
+    required this.emptyColor,
+    required this.count,
+    required this.max,
     required this.label,
-    required this.value,
-    required this.valueColor,
-    this.iconOnRight = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final iconWidget = Icon(icon, color: iconColor, size: 20);
-    final textWidget = Column(
-      crossAxisAlignment:
-          iconOnRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+    return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1.5,
+          style: const TextStyle(
+            color: Color(0x73FFFFFF),
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.4,
           ),
         ),
-        Text(
-          value,
-          style: TextStyle(
-            color: valueColor,
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1,
-            height: 1.1,
-          ),
+        const SizedBox(height: 3),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 3,
+          children: List.generate(max, (i) {
+            final filled = i < count;
+            return Icon(
+              filled ? filledIcon : emptyIcon,
+              color: filled ? filledColor : emptyColor,
+              size: 16,
+            );
+          }),
         ),
       ],
     );
+  }
+}
 
-    return Row(
+// ─── Blast range pips (horizontal colour-coded bars) ─────────────────────────
+
+class _RangePips extends StatelessWidget {
+  final int range;
+
+  const _RangePips({required this.range});
+
+  static const _kMaxDisplay = 6;
+
+  // Colour shifts from orange → red as range grows
+  static Color _pipColor(int i, int range) {
+    final t = (i / (_kMaxDisplay - 1)).clamp(0.0, 1.0);
+    return Color.lerp(
+      const Color(0xFFf97316),
+      const Color(0xFFef4444),
+      t,
+    )!;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final display = range.clamp(1, _kMaxDisplay);
+
+    return Column(
       mainAxisSize: MainAxisSize.min,
-      children: iconOnRight
-          ? [textWidget, const SizedBox(width: 8), iconWidget]
-          : [iconWidget, const SizedBox(width: 8), textWidget],
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'RANGE',
+          style: TextStyle(
+            color: Color(0x73FFFFFF),
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.4,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 3,
+          children: List.generate(_kMaxDisplay, (i) {
+            final active = i < display;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: active
+                    ? _pipColor(i, display)
+                    : const Color(0xFF1e2030),
+                borderRadius: BorderRadius.circular(3),
+                boxShadow: active
+                    ? [
+                        BoxShadow(
+                          color: _pipColor(i, display).withValues(alpha: 0.5),
+                          blurRadius: 4,
+                          spreadRadius: 0,
+                        ),
+                      ]
+                    : null,
+              ),
+            );
+          }),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Timer chip ───────────────────────────────────────────────────────────────
+
+class _TimerChip extends StatelessWidget {
+  final String timeStr;
+  final bool danger;
+
+  const _TimerChip({required this.timeStr, required this.danger});
+
+  @override
+  Widget build(BuildContext context) {
+    final fgColor =
+        danger ? const Color(0xFFef4444) : const Color(0xFFFFFFFF);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: danger
+            ? const Color(0xFF2d0a0a)
+            : const Color(0xFF111827),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: danger
+              ? const Color(0xFFef4444).withValues(alpha: 0.5)
+              : const Color(0xFF374151),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 5,
+        children: [
+          Icon(
+            Icons.timer_rounded,
+            color: fgColor.withValues(alpha: 0.8),
+            size: 14,
+          ),
+          Text(
+            timeStr,
+            style: TextStyle(
+              color: fgColor,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.5,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
