@@ -118,7 +118,7 @@ class _SubmittedRowState extends State<_SubmittedRow>
                 alignment: Alignment.center,
                 transform: Matrix4.identity()
                   ..setEntry(3, 2, 0.001)
-                  ..rotateX((showFront ? (t - 0.5) : (0.5 - t)) * 3.14159),
+                  ..rotateX((showFront ? (1 - t) : t) * 3.14159),
                 child: _Tile(
                   letter: widget.guess.word[i].toUpperCase(),
                   state: showFront

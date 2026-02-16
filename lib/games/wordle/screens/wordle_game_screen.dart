@@ -108,7 +108,7 @@ class _WordleGamePageState extends ConsumerState<WordleGamePage> {
   void _confirmQuit() {
     showDialog<void>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         backgroundColor: _kCard,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -120,12 +120,12 @@ class _WordleGamePageState extends ConsumerState<WordleGamePage> {
             style: TextStyle(color: Colors.white54)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogCtx).pop(),
             child: const Text('Stay', style: TextStyle(color: Colors.white38)),
           ),
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop();
+              Navigator.of(dialogCtx).pop();
               context.go(AppRoutes.home);
             },
             child: const Text('Quit', style: TextStyle(color: _kCyan)),
