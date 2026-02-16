@@ -61,15 +61,22 @@ class _MemoryGamePageState extends ConsumerState<MemoryGamePage> {
 
     final phase = ref.watch(memoryProvider.select((s) => s.phase));
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF060612),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0A0A1F),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white70),
-          onPressed: () => context.go(AppRoutes.home),
-        ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          _showQuitConfirmation();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF060612),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF0A0A1F),
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white70),
+            onPressed: _showQuitConfirmation,
+          ),
         title: ShaderMask(
           shaderCallback: (bounds) => const LinearGradient(
             colors: [_kP1, _kAccent],
@@ -99,6 +106,52 @@ class _MemoryGamePageState extends ConsumerState<MemoryGamePage> {
       body: phase == MemoryGamePhase.idle
           ? const _IdleScreen()
           : const _GameBody(),
+      ),
+    );
+  }
+
+  void _showQuitConfirmation() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1a1d24),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: Colors.white.withValues(alpha: 0.1),
+          ),
+        ),
+        title: const Text(
+          'Quit game?',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          'Your progress will be lost.',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'RESUME',
+              style: TextStyle(
+                color: _kAccent,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.go(AppRoutes.home);
+            },
+            child: Text(
+              'QUIT',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

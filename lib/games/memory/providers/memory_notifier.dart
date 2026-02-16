@@ -13,6 +13,7 @@ import '../models/memory_game_state.dart';
 class MemoryNotifier extends GameStatsNotifier<MemoryGameState> {
   final Random _rng = Random();
   Timer? _checkTimer;
+  bool _isDisposed = false;
 
   @override
   FirebaseStatsService get statsService =>
@@ -169,6 +170,7 @@ class MemoryNotifier extends GameStatsNotifier<MemoryGameState> {
 
   void _doShuffle() {
     _checkTimer = null;
+    if (_isDisposed) return;
     final first = state.firstIndex!;
     final second = state.secondIndex!;
 
@@ -215,6 +217,7 @@ class MemoryNotifier extends GameStatsNotifier<MemoryGameState> {
   }
 
   void _cancelTimers() {
+    _isDisposed = true;
     _checkTimer?.cancel();
     _checkTimer = null;
   }

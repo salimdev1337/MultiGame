@@ -50,6 +50,8 @@ class SudokuOnlineProvider with ChangeNotifier {
 
   bool _isDisposed = false;
 
+  static const Duration _timeout = Duration(seconds: 8);
+
   SudokuOnlineProvider({
     required MatchmakingService matchmakingService,
     required this.userId,
@@ -105,11 +107,13 @@ class SudokuOnlineProvider with ChangeNotifier {
 
   Future<void> createMatch(String difficulty) async {
     try {
-      final matchId = await _matchmakingService.createMatch(
-        userId: userId,
-        displayName: displayName,
-        difficulty: difficulty,
-      );
+      final matchId = await _matchmakingService
+          .createMatch(
+            userId: userId,
+            displayName: displayName,
+            difficulty: difficulty,
+          )
+          .timeout(_timeout);
 
       await _listenToMatch(matchId);
     } catch (e) {
@@ -120,11 +124,13 @@ class SudokuOnlineProvider with ChangeNotifier {
 
   Future<void> joinMatch(String difficulty) async {
     try {
-      final matchId = await _matchmakingService.quickMatch(
-        userId: userId,
-        displayName: displayName,
-        difficulty: difficulty,
-      );
+      final matchId = await _matchmakingService
+          .quickMatch(
+            userId: userId,
+            displayName: displayName,
+            difficulty: difficulty,
+          )
+          .timeout(_timeout);
 
       await _listenToMatch(matchId);
     } catch (e) {
@@ -135,11 +141,13 @@ class SudokuOnlineProvider with ChangeNotifier {
 
   Future<void> joinByRoomCode(String roomCode) async {
     try {
-      final matchId = await _matchmakingService.joinByRoomCode(
-        roomCode: roomCode,
-        userId: userId,
-        displayName: displayName,
-      );
+      final matchId = await _matchmakingService
+          .joinByRoomCode(
+            roomCode: roomCode,
+            userId: userId,
+            displayName: displayName,
+          )
+          .timeout(_timeout);
 
       await _listenToMatch(matchId);
     } catch (e) {
@@ -149,7 +157,7 @@ class SudokuOnlineProvider with ChangeNotifier {
   }
 
   Future<void> _listenToMatch(String matchId) async {
-    _matchSubscription?.cancel();
+    await _matchSubscription?.cancel();
 
     _matchSubscription = _matchmakingService
         .watchMatch(matchId)
@@ -395,12 +403,14 @@ class SudokuOnlineProvider with ChangeNotifier {
     if (_board == null || _currentMatch == null) return;
 
     try {
-      await _matchmakingService.updatePlayerBoard(
-        matchId: _currentMatch!.matchId,
-        userId: userId,
-        board: _board!,
-        isCompleted: isCompleted,
-      );
+      await _matchmakingService
+          .updatePlayerBoard(
+            matchId: _currentMatch!.matchId,
+            userId: userId,
+            board: _board!,
+            isCompleted: isCompleted,
+          )
+          .timeout(_timeout);
     } catch (e) {
       SecureLogger.error('Failed to sync board state', error: e);
     }
@@ -419,12 +429,14 @@ class SudokuOnlineProvider with ChangeNotifier {
 
     _statsSyncDebouncer.run(() async {
       try {
-        await _matchmakingService.updatePlayerStats(
-          matchId: _currentMatch!.matchId,
-          userId: userId,
-          mistakeCount: _mistakes,
-          hintsUsed: _hintsUsed,
-        );
+        await _matchmakingService
+            .updatePlayerStats(
+              matchId: _currentMatch!.matchId,
+              userId: userId,
+              mistakeCount: _mistakes,
+              hintsUsed: _hintsUsed,
+            )
+            .timeout(_timeout);
       } catch (e) {
         SecureLogger.error('Failed to sync player stats', error: e);
       }
@@ -529,7 +541,9 @@ class SudokuOnlineProvider with ChangeNotifier {
     if (_currentMatch == null) return;
 
     try {
-      await _matchmakingService.leaveMatch(_currentMatch!.matchId, userId);
+      await _matchmakingService
+          .leaveMatch(_currentMatch!.matchId, userId)
+          .timeout(_timeout);
       await _cleanup();
     } catch (e) {
       SecureLogger.error('Failed to leave match', error: e);
@@ -585,11 +599,13 @@ class SudokuOnlineProvider with ChangeNotifier {
     if (_currentMatch == null) return;
 
     try {
-      await _matchmakingService.updateConnectionState(
-        matchId: _currentMatch!.matchId,
-        userId: userId,
-        isConnected: true,
-      );
+      await _matchmakingService
+          .updateConnectionState(
+            matchId: _currentMatch!.matchId,
+            userId: userId,
+            isConnected: true,
+          )
+          .timeout(_timeout);
 
       if (_connectionState == ConnectionState.reconnecting) {
         _updateConnectionState(ConnectionState.online);
@@ -640,11 +656,13 @@ class SudokuOnlineProvider with ChangeNotifier {
         );
 
         try {
-          await _matchmakingService.updateConnectionState(
-            matchId: _currentMatch!.matchId,
-            userId: userId,
-            isConnected: false,
-          );
+          await _matchmakingService
+              .updateConnectionState(
+                matchId: _currentMatch!.matchId,
+                userId: userId,
+                isConnected: false,
+              )
+              .timeout(_timeout);
         } catch (firestoreError) {
           SecureLogger.error(
             'Failed to update disconnected state',
@@ -665,11 +683,13 @@ class SudokuOnlineProvider with ChangeNotifier {
 
     if (_currentMatch != null && _connectionState != ConnectionState.offline) {
       try {
-        await _matchmakingService.updateConnectionState(
-          matchId: _currentMatch!.matchId,
-          userId: userId,
-          isConnected: false,
-        );
+        await _matchmakingService
+            .updateConnectionState(
+              matchId: _currentMatch!.matchId,
+              userId: userId,
+              isConnected: false,
+            )
+            .timeout(_timeout);
       } catch (e) {
         SecureLogger.error(
           'Failed to update connection state on cleanup',

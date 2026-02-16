@@ -1,10 +1,29 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get_it/get_it.dart';
 import 'package:multigame/games/puzzle/index.dart';
+import 'package:multigame/services/game/unsplash_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class _FakeUnsplashService extends UnsplashService {
+  @override
+  Future<String> getRandomImage() async => 'https://example.com/image.jpg';
+
+  @override
+  void clearCache() {}
+}
 
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+    if (!GetIt.instance.isRegistered<UnsplashService>()) {
+      GetIt.instance.registerLazySingleton<UnsplashService>(
+        () => _FakeUnsplashService(),
+      );
+    }
+  });
+
+  tearDown(() async {
+    await GetIt.instance.reset();
   });
 
   group('PuzzlePiece Model Tests', () {

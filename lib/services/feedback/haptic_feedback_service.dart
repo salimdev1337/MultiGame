@@ -19,7 +19,11 @@ import 'package:multigame/utils/secure_logger.dart';
 class HapticFeedbackService {
   static const String _storageKey = 'app_haptics_enabled';
   static const String _hapticFailed = 'Haptic feedback failed';
-  static const FlutterSecureStorage _storage = FlutterSecureStorage();
+
+  final FlutterSecureStorage _storage;
+
+  HapticFeedbackService({FlutterSecureStorage? storage})
+    : _storage = storage ?? const FlutterSecureStorage();
 
   bool? _hasVibrator;
   bool _hapticsEnabled = true;
@@ -243,5 +247,10 @@ class HapticFeedbackService {
         tag: 'Haptics',
       );
     }
+  }
+
+  /// Dispose the service — cancels any in-progress vibration
+  Future<void> dispose() async {
+    await cancel();
   }
 }

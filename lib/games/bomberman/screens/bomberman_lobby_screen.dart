@@ -8,6 +8,7 @@ import 'package:multigame/games/bomberman/multiplayer/bomb_client.dart';
 import 'package:multigame/games/bomberman/multiplayer/bomb_message.dart';
 import 'package:multigame/games/bomberman/multiplayer/bomb_room.dart';
 import 'package:multigame/games/bomberman/providers/bomberman_notifier.dart';
+import 'package:multigame/utils/extensions.dart';
 
 // Platform conditional import — web stub or native io version
 import 'package:multigame/games/bomberman/multiplayer/bomb_server_stub.dart'
@@ -194,18 +195,9 @@ class _BombermanLobbyPageState extends ConsumerState<BombermanLobbyPage>
     final room = BombRoom();
     final client = BombClient(hostIp: hostIp, displayName: name, room: room);
 
-    try {
-      await client.connect(port);
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _connecting = false;
-          _connectError = 'Could not connect: $e';
-        });
-      }
-      return;
-    }
-
+    // Wire handlers BEFORE connecting — the server's `joined` reply can arrive
+    // before connect() returns, so onMessage must be non-null already or the
+    // message is silently dropped and the lobby never updates.
     client.onMessage = (msg) {
       switch (msg.type) {
         case BombMessageType.joined:
@@ -232,6 +224,18 @@ class _BombermanLobbyPageState extends ConsumerState<BombermanLobbyPage>
         context.go(AppRoutes.home);
       }
     };
+
+    try {
+      await client.connect(port);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _connecting = false;
+          _connectError = 'Could not connect: $e';
+        });
+      }
+      return;
+    }
 
     setState(() {
       _client = client;
@@ -595,7 +599,3 @@ class _PlayerRow extends StatelessWidget {
   }
 }
 
-extension<T> on List<T> {
-  List<R> mapIndexed<R>(R Function(int, T) f) =>
-      List.generate(length, (i) => f(i, this[i]));
-}

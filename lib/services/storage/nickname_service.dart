@@ -10,19 +10,27 @@ class NicknameService {
   final UserRepository _userRepository;
   final StorageMigrator _migrator;
 
-  bool _migrationChecked = false;
+  bool _migrationSucceeded = false;
 
   NicknameService({UserRepository? userRepository, StorageMigrator? migrator})
     : _userRepository = userRepository ?? SecureUserRepository(),
       _migrator = migrator ?? StorageMigrator(SecureStorageRepository());
 
-  /// Ensure migration is performed before any operation
+  /// Ensure migration is performed before any operation.
+  ///
+  /// Retries on subsequent calls if a previous attempt failed, so transient
+  /// errors (e.g. device storage unavailable at startup) do not permanently
+  /// block the migration within a session.
   Future<void> _ensureMigration() async {
-    if (_migrationChecked) return;
+    if (_migrationSucceeded) return;
 
-    // Perform migration from SharedPreferences to SecureStorage
-    await _migrator.migrateSensitiveData();
-    _migrationChecked = true;
+    // Perform migration from SharedPreferences to SecureStorage.
+    // Only mark succeeded when the migrator confirms completion; leave false
+    // on failure so the next call retries.
+    final success = await _migrator.migrateSensitiveData();
+    if (success) {
+      _migrationSucceeded = true;
+    }
   }
 
   /// Get saved nickname

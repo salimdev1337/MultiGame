@@ -1,3 +1,4 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:multigame/repositories/secure_storage_repository.dart';
 import 'package:multigame/repositories/user_repository.dart';
@@ -71,7 +72,10 @@ Future<void> setupServiceLocator() async {
     () => AchievementService(repository: getIt<AchievementRepository>()),
   );
 
-  getIt.registerLazySingleton<UnsplashService>(() => UnsplashService());
+  getIt.registerLazySingleton<UnsplashService>(
+    () => UnsplashService(),
+    dispose: (s) => s.dispose(),
+  );
 
   getIt.registerLazySingleton<NicknameService>(
     () => NicknameService(
@@ -108,10 +112,13 @@ Future<void> setupServiceLocator() async {
   // These provide haptic and sound feedback across the entire app
 
   getIt.registerLazySingleton<HapticFeedbackService>(
-    () => HapticFeedbackService(),
+    () => HapticFeedbackService(storage: const FlutterSecureStorage()),
+    dispose: (s) => s.dispose(),
   );
 
-  getIt.registerLazySingleton<SoundService>(() => SoundService());
+  getIt.registerLazySingleton<SoundService>(
+    () => SoundService(storage: const FlutterSecureStorage()),
+  );
 
   // ========== Onboarding Service (Phase 7) ==========
   // Tracks onboarding completion and tutorial states

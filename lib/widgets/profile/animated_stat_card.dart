@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:multigame/design_system/design_system.dart';
 
-/// Animated stat card with entrance animation and comparison indicators
+/// Animated stat card with entrance animation and comparison indicators.
+///
+/// Supports three display states:
+/// - **Loading** (`isLoading: true`) — shows a shimmer skeleton.
+/// - **Error** (`errorMessage` non-null) — shows an error banner with a retry
+///   button when [onRetry] is provided.
+/// - **Normal** — shows the stat value with optional improvement indicator.
 class AnimatedStatCard extends StatefulWidget {
   const AnimatedStatCard({
     super.key,
@@ -12,6 +18,9 @@ class AnimatedStatCard extends StatefulWidget {
     this.color,
     this.improvementPercent,
     this.delay = Duration.zero,
+    this.isLoading = false,
+    this.errorMessage,
+    this.onRetry,
   });
 
   final String title;
@@ -21,6 +30,15 @@ class AnimatedStatCard extends StatefulWidget {
   final Color? color;
   final double? improvementPercent; // Positive = improved, Negative = decreased
   final Duration delay;
+
+  /// When true the card renders a shimmer placeholder instead of [value].
+  final bool isLoading;
+
+  /// Non-null when the upstream data fetch failed. Displayed inside the card.
+  final String? errorMessage;
+
+  /// Called when the user taps the retry button in the error state.
+  final VoidCallback? onRetry;
 
   @override
   State<AnimatedStatCard> createState() => _AnimatedStatCardState();
@@ -72,8 +90,12 @@ class _AnimatedStatCardState extends State<AnimatedStatCard>
       },
       child: Semantics(
         label:
-            '${widget.title}: ${widget.value}'
-            '${widget.subtitle != null ? ", ${widget.subtitle}" : ""}',
+            widget.isLoading
+                ? '${widget.title}: loading'
+                : widget.errorMessage != null
+                ? '${widget.title}: error, ${widget.errorMessage}'
+                : '${widget.title}: ${widget.value}'
+                    '${widget.subtitle != null ? ", ${widget.subtitle}" : ""}',
         excludeSemantics: true,
         child: Container(
           padding: EdgeInsets.all(DSSpacing.md),
@@ -89,48 +111,60 @@ class _AnimatedStatCardState extends State<AnimatedStatCard>
               ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Icon and improvement indicator
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(DSSpacing.sm),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(DSSpacing.sm),
+          child: widget.isLoading
+              ? _StatCardShimmer(color: color)
+              : widget.errorMessage != null
+              ? _StatCardError(
+                  title: widget.title,
+                  icon: widget.icon,
+                  color: color,
+                  message: widget.errorMessage!,
+                  onRetry: widget.onRetry,
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Icon and improvement indicator
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(DSSpacing.sm),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(DSSpacing.sm),
+                          ),
+                          child: Icon(widget.icon, color: color, size: 24),
+                        ),
+                        if (widget.improvementPercent != null)
+                          _ImprovementIndicator(
+                            percent: widget.improvementPercent!,
+                          ),
+                      ],
                     ),
-                    child: Icon(widget.icon, color: color, size: 24),
-                  ),
-                  if (widget.improvementPercent != null)
-                    _ImprovementIndicator(percent: widget.improvementPercent!),
-                ],
-              ),
-              SizedBox(height: DSSpacing.md),
+                    SizedBox(height: DSSpacing.md),
 
-              // Title
-              Text(
-                widget.title,
-                style: DSTypography.labelMedium.copyWith(
-                  color: DSColors.textSecondary,
-                ),
-              ),
-              SizedBox(height: DSSpacing.xs),
+                    // Title
+                    Text(
+                      widget.title,
+                      style: DSTypography.labelMedium.copyWith(
+                        color: DSColors.textSecondary,
+                      ),
+                    ),
+                    SizedBox(height: DSSpacing.xs),
 
-              // Value
-              Text(
-                widget.value,
-                style: DSTypography.headlineLarge.copyWith(
-                  color: DSColors.textPrimary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+                    // Value
+                    Text(
+                      widget.value,
+                      style: DSTypography.headlineLarge.copyWith(
+                        color: DSColors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
 
-              // Subtitle
-              if (widget.subtitle != null) ...[
-                SizedBox(height: DSSpacing.xxs),
+                    // Subtitle
+                    if (widget.subtitle != null) ...[
+                      SizedBox(height: DSSpacing.xxs),
                 Text(
                   widget.subtitle!,
                   style: DSTypography.labelSmall.copyWith(
@@ -142,6 +176,123 @@ class _AnimatedStatCardState extends State<AnimatedStatCard>
           ),
         ),
       ),
+    );
+  }
+}
+
+// ─── Shimmer skeleton shown while stat data is loading ───────────────────────
+
+class _StatCardShimmer extends StatelessWidget {
+  const _StatCardShimmer({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Icon placeholder
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: DSColors.shimmerBase,
+            borderRadius: BorderRadius.circular(DSSpacing.sm),
+          ),
+        ),
+        SizedBox(height: DSSpacing.md),
+        // Title placeholder
+        Container(
+          width: 80,
+          height: 10,
+          decoration: BoxDecoration(
+            color: DSColors.shimmerBase,
+            borderRadius: DSSpacing.borderRadiusXS,
+          ),
+        ),
+        SizedBox(height: DSSpacing.xs),
+        // Value placeholder
+        Container(
+          width: 120,
+          height: 28,
+          decoration: BoxDecoration(
+            color: DSColors.shimmerHighlight,
+            borderRadius: DSSpacing.borderRadiusXS,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Error state with optional retry button ───────────────────────────────────
+
+class _StatCardError extends StatelessWidget {
+  const _StatCardError({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.message,
+    this.onRetry,
+  });
+
+  final String title;
+  final IconData icon;
+  final Color color;
+  final String message;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Icon row
+        Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(DSSpacing.sm),
+              decoration: BoxDecoration(
+                color: DSColors.error.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(DSSpacing.sm),
+              ),
+              child: Icon(icon, color: DSColors.error, size: 24),
+            ),
+          ],
+        ),
+        SizedBox(height: DSSpacing.sm),
+        Text(
+          title,
+          style: DSTypography.labelMedium.copyWith(
+            color: DSColors.textSecondary,
+          ),
+        ),
+        SizedBox(height: DSSpacing.xxs),
+        Text(
+          message,
+          style: DSTypography.bodySmall.copyWith(color: DSColors.error),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        if (onRetry != null) ...[
+          SizedBox(height: DSSpacing.sm),
+          GestureDetector(
+            onTap: onRetry,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.refresh, color: color, size: 14),
+                SizedBox(width: DSSpacing.xxs),
+                Text(
+                  'Retry',
+                  style: DSTypography.labelSmall.copyWith(color: color),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

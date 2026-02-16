@@ -15,7 +15,11 @@ import 'package:multigame/utils/secure_logger.dart';
 /// - Game sounds: move, collect, achievement
 class SoundService {
   static const String _storageKey = 'app_sound_enabled';
-  static const FlutterSecureStorage _storage = FlutterSecureStorage();
+
+  final FlutterSecureStorage _storage;
+
+  SoundService({FlutterSecureStorage? storage})
+    : _storage = storage ?? const FlutterSecureStorage();
 
   AudioPlayer? _player;
   bool _soundEnabled = true;

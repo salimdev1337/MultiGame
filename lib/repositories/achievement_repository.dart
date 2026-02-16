@@ -5,32 +5,72 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// This repository handles local storage of achievements, best scores,
 /// and other game-specific statistics using SharedPreferences.
 abstract class AchievementRepository {
-  // Puzzle game stats
+  // ── Puzzle game stats ──────────────────────────────────────────────────────
+
+  /// Returns the total number of puzzle games completed by the user.
   Future<int> getTotalCompleted();
+
+  /// Increments the total-completed counter by one.
   Future<void> incrementTotalCompleted();
+
+  /// Records [moves] as the best (lowest) move count for a puzzle of [gridSize]
+  /// if it is better than the previously stored best.
   Future<void> updateBestMoves(int gridSize, int moves);
+
+  /// Returns the best (lowest) move count for a puzzle of [gridSize], or
+  /// `null` if no record exists yet.
   Future<int?> getBestMoves(int gridSize);
+
+  /// Records [seconds] as the best (lowest) completion time for a puzzle of
+  /// [gridSize] if it is better than the previously stored best.
   Future<void> updateBestTime(int gridSize, int seconds);
+
+  /// Returns the best (lowest) completion time in seconds for a puzzle of
+  /// [gridSize], or `null` if no record exists yet.
   Future<int?> getBestTime(int gridSize);
+
+  /// Returns the best completion time across all grid sizes, or `null` if the
+  /// user has never completed a puzzle.
   Future<int?> getBestOverallTime();
 
-  // Achievement management
+  // ── Achievement management ─────────────────────────────────────────────────
+
+  /// Returns `true` if the achievement identified by [achievementId] has been
+  /// unlocked for this user.
   Future<bool> isAchievementUnlocked(String achievementId);
+
+  /// Marks the achievement identified by [achievementId] as unlocked.
+  /// Subsequent calls with the same ID are idempotent.
   Future<void> unlockAchievement(String achievementId);
+
+  /// Returns a map of achievement IDs → unlocked status for each ID in
+  /// [achievementIds].
   Future<Map<String, bool>> getAllAchievements(List<String> achievementIds);
 
-  // 2048 game stats
+  // ── 2048 game stats ────────────────────────────────────────────────────────
+
+  /// Persists a completed 2048 game session.
+  ///
+  /// [score] is the final score, [highestTile] is the largest tile reached,
+  /// and [levelPassed] is a string label for the milestone (e.g. `"2048"`).
   Future<void> save2048Stats({
     required int score,
     required int highestTile,
     required String levelPassed,
   });
+
+  /// Returns persisted 2048 statistics as a raw map.
   Future<Map<String, dynamic>> get2048Stats();
 
-  // General stats
+  // ── General stats ──────────────────────────────────────────────────────────
+
+  /// Returns a combined map of all stored statistics across all games.
   Future<Map<String, dynamic>> getAllStats();
 
-  // Utility
+  // ── Utility ───────────────────────────────────────────────────────────────
+
+  /// Clears all stored achievements and statistics.  Primarily used in tests
+  /// and for a "reset progress" user action.
   Future<void> resetAll();
 }
 

@@ -4,6 +4,8 @@ import 'package:multigame/providers/mixins/game_stats_notifier.dart';
 import 'package:multigame/providers/services_providers.dart';
 import 'package:multigame/services/data/achievement_service.dart';
 import 'package:multigame/services/data/firebase_stats_service.dart';
+import 'package:multigame/utils/secure_logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Game2048State {
   final List<List<int>> grid;
@@ -87,6 +89,8 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
   late AchievementService _achievementService;
   final Random _random = Random();
 
+  static const String _bestScoreKey = '2048_best_score';
+
   @override
   FirebaseStatsService get statsService =>
       ref.read(firebaseStatsServiceProvider);
@@ -94,9 +98,39 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
   @override
   Game2048State build() {
     _achievementService = ref.read(achievementServiceProvider);
+    _loadBestScore();
     return _newGame(
       Game2048State(grid: List.generate(4, (_) => List.filled(4, 0))),
     );
+  }
+
+  Future<void> _loadBestScore() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getInt(_bestScoreKey) ?? 0;
+      if (saved > 0) {
+        state = state.copyWith(bestScore: saved);
+      }
+    } catch (e) {
+      SecureLogger.error(
+        'Failed to load 2048 best score',
+        error: e,
+        tag: '2048',
+      );
+    }
+  }
+
+  Future<void> _saveBestScore(int score) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_bestScoreKey, score);
+    } catch (e) {
+      SecureLogger.error(
+        'Failed to save 2048 best score',
+        error: e,
+        tag: '2048',
+      );
+    }
   }
 
   Game2048State _newGame(Game2048State base) {
@@ -155,7 +189,7 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
         ? (scoreDelta * (mergeCount - 1)) ~/ 10
         : 0;
     final totalDelta = scoreDelta + comboBonus;
-    final newScore = state.score + totalDelta;
+    final newScore = (state.score + totalDelta).clamp(0, 999999999);
     final newBest = newScore > state.bestScore ? newScore : state.bestScore;
     final gameOver = !_canMove(grid);
 
@@ -175,7 +209,10 @@ class Game2048Notifier extends GameStatsNotifier<Game2048State> {
       lastComboBonus: comboBonus,
     );
 
-    if (gameOver) saveScore('2048', newScore);
+    if (gameOver) {
+      saveScore('2048', newScore);
+      _saveBestScore(newBest);
+    }
     return true;
   }
 

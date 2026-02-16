@@ -1,32 +1,24 @@
 import 'dart:math';
 import 'package:flutter/rendering.dart';
+import 'package:multigame/design_system/ds_colors.dart';
 import 'package:multigame/games/bomberman/models/bomb_game_state.dart';
 import 'package:multigame/games/bomberman/models/cell_type.dart';
 import 'package:multigame/games/bomberman/models/powerup_type.dart';
 
-// ─── Color palette ────────────────────────────────────────────────────────────
-
-const _kBg = Color(0xFF111520);
-const _kWall = Color(0xFF2d3142);
-const _kBlock = Color(0xFF6B3A2A);
-const _kBlockHighlight = Color(0xFF8B5035);
-const _kBomb = Color(0xFF1a1a1a);
-const _kFuse = Color(0xFFff8c00);
-const _kExplosionCenter = Color(0xFFff4500);
-const _kExplosionOuter = Color(0xFFffd700);
+// ─── Color palette — sourced from DSColors ───────────────────────────────────
 
 const _kPlayerColors = [
-  Color(0xFF00d4ff), // cyan    — P1 / host
-  Color(0xFFffd700), // gold    — P2
-  Color(0xFF7c4dff), // purple  — P3
-  Color(0xFFff6b35), // orange  — P4
+  DSColors.primary,          // cyan    — P1 / host
+  DSColors.bombermanP2,      // gold    — P2
+  DSColors.memoryPrimary,    // purple  — P3
+  DSColors.bombermanP4,      // orange  — P4
 ];
 
 const _kPowerupColors = {
-  PowerupType.extraBomb: Color(0xFF19e6a2),
-  PowerupType.blastRange: Color(0xFFff5c00),
-  PowerupType.speed: Color(0xFF7c4dff),
-  PowerupType.shield: Color(0xFF00d4ff),
+  PowerupType.extraBomb: DSColors.success,
+  PowerupType.blastRange: DSColors.secondary,
+  PowerupType.speed: DSColors.memoryPrimary,
+  PowerupType.shield: DSColors.primary,
 };
 
 /// Stateless CustomPainter that renders the full Bomberman grid each frame.
@@ -36,6 +28,25 @@ class BombGridPainter extends CustomPainter {
   final double animValue; // drives fuse shrink + explosion pulse
 
   const BombGridPainter({required this.gameState, required this.animValue});
+
+  // ─── Cached static Paint objects (fixed colors, allocated once) ───────────
+
+  static final _bgPaint = Paint()..color = DSColors.bombermanBg;
+  static final _wallPaint = Paint()..color = DSColors.bombermanWall;
+  static final _wallBevelPaint = Paint()
+    ..color = DSColors.bombermanWallBevel.withValues(alpha: 0.6)
+    ..strokeWidth = 1;
+  static final _blockPaint = Paint()..color = DSColors.bombermanBlock;
+  static final _blockGrainPaint = Paint()
+    ..color = DSColors.bombermanBlockHighlight.withValues(alpha: 0.4)
+    ..strokeWidth = 1;
+  static final _bombBodyPaint = Paint()..color = DSColors.highContrastSurface;
+  static final _fusePaint = Paint()
+    ..color = DSColors.bombermanFuse
+    ..strokeWidth = 2
+    ..style = PaintingStyle.stroke;
+  static final _directionDotPaint = Paint()
+    ..color = const Color(0xFFFFFFFF).withValues(alpha: 0.8);
 
   @override
   bool shouldRepaint(BombGridPainter old) =>
@@ -62,7 +73,7 @@ class BombGridPainter extends CustomPainter {
   void _drawBackground(Canvas canvas, Size size) {
     canvas.drawRect(
       Rect.fromLTWH(0, 0, size.width, size.height),
-      Paint()..color = _kBg,
+      _bgPaint,
     );
   }
 
@@ -76,30 +87,25 @@ class BombGridPainter extends CustomPainter {
         final rect = Rect.fromLTWH(c * cellW, r * cellH, cellW, cellH);
 
         if (cell == CellType.wall) {
-          canvas.drawRect(rect, Paint()..color = _kWall);
+          canvas.drawRect(rect, _wallPaint);
           // Subtle top/left highlight bevel
           canvas.drawLine(
             rect.topLeft + const Offset(1, 1),
             rect.topRight + const Offset(-1, 1),
-            Paint()
-              ..color = const Color(0xFF3d4460).withValues(alpha: 0.6)
-              ..strokeWidth = 1,
+            _wallBevelPaint,
           );
         } else if (cell == CellType.block) {
-          canvas.drawRect(rect, Paint()..color = _kBlock);
+          canvas.drawRect(rect, _blockPaint);
           // Wood-grain lines
-          final grainPaint = Paint()
-            ..color = _kBlockHighlight.withValues(alpha: 0.4)
-            ..strokeWidth = 1;
           canvas.drawLine(
             Offset(c * cellW + 3, r * cellH + cellH * 0.3),
             Offset(c * cellW + cellW - 3, r * cellH + cellH * 0.3),
-            grainPaint,
+            _blockGrainPaint,
           );
           canvas.drawLine(
             Offset(c * cellW + 3, r * cellH + cellH * 0.65),
             Offset(c * cellW + cellW - 3, r * cellH + cellH * 0.65),
-            grainPaint,
+            _blockGrainPaint,
           );
         }
       }
@@ -117,8 +123,8 @@ class BombGridPainter extends CustomPainter {
       final paint = Paint()
         ..shader = RadialGradient(
           colors: [
-            _kExplosionCenter.withValues(alpha: alpha),
-            _kExplosionOuter.withValues(alpha: alpha * 0.5),
+            DSColors.bombermanExplosionCenter.withValues(alpha: alpha),
+            DSColors.bombermanExplosionOuter.withValues(alpha: alpha * 0.5),
           ],
         ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: radius));
 
@@ -129,7 +135,7 @@ class BombGridPainter extends CustomPainter {
         Offset(cx, cy),
         radius * 1.3,
         Paint()
-          ..color = _kExplosionCenter.withValues(alpha: alpha * 0.2)
+          ..color = DSColors.bombermanExplosionCenter.withValues(alpha: alpha * 0.2)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
       );
     }
@@ -142,7 +148,7 @@ class BombGridPainter extends CustomPainter {
       final r = min(cellW, cellH) * 0.38;
 
       // Body
-      canvas.drawCircle(Offset(cx, cy), r, Paint()..color = _kBomb);
+      canvas.drawCircle(Offset(cx, cy), r, _bombBodyPaint);
 
       // Fuse (shrinking arc based on bomb progress)
       final fuseProgress = b.fuseProgress;
@@ -151,16 +157,7 @@ class BombGridPainter extends CustomPainter {
         center: Offset(cx, cy - r * 0.9),
         radius: r * 0.4,
       );
-      canvas.drawArc(
-        rect,
-        -pi / 2,
-        fuseAngle,
-        false,
-        Paint()
-          ..color = _kFuse
-          ..strokeWidth = 2
-          ..style = PaintingStyle.stroke,
-      );
+      canvas.drawArc(rect, -pi / 2, fuseAngle, false, _fusePaint);
 
       // Spark at fuse tip (pulsing)
       if (fuseProgress > 0.6) {
@@ -168,7 +165,7 @@ class BombGridPainter extends CustomPainter {
         canvas.drawCircle(
           Offset(cx, cy - r * 1.3),
           r * 0.15,
-          Paint()..color = _kFuse.withValues(alpha: sparkAlpha.clamp(0.0, 1.0)),
+          Paint()..color = DSColors.bombermanFuse.withValues(alpha: sparkAlpha.clamp(0.0, 1.0)),
         );
       }
     }
@@ -221,7 +218,7 @@ class BombGridPainter extends CustomPainter {
         canvas.drawCircle(
           Offset(cx, cy - r * 0.5),
           r * 0.2,
-          Paint()..color = const Color(0xFFFFFFFF).withValues(alpha: 0.8),
+          _directionDotPaint,
         );
       }
 

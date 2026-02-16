@@ -91,7 +91,10 @@ class BombGameState {
   // ─── Serialization ─────────────────────────────────────────────────────────
 
   /// Frame slice sent every tick (~60fps). Does NOT include the grid.
-  Map<String, dynamic> toFrameJson() => {
+  /// [frameId] is set by the host and incremented each tick so guests can
+  /// detect and drop out-of-order / duplicate frames.
+  Map<String, dynamic> toFrameJson({int frameId = 0}) => {
+    'frameId': frameId,
     'players': players.map((p) => p.toJson()).toList(),
     'bombs': bombs.map((b) => b.toJson()).toList(),
     'explosions': explosions.map((e) => e.toJson()).toList(),

@@ -5,6 +5,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:multigame/design_system/design_system.dart';
 import 'package:multigame/models/game_model.dart';
 import 'package:multigame/widgets/shared/ds_button.dart';
@@ -76,9 +77,11 @@ class _PremiumGameCarouselState extends State<PremiumGameCarousel> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: _games.asMap().entries.map((entry) {
+        final game = _games[entry.key];
         final isCurrent = entry.key == _currentIndex;
 
         return AnimatedContainer(
+          key: ValueKey(game.id),
           duration: DSAnimations.fast,
           curve: DSAnimations.easeOutCubic,
           width: isCurrent ? 32 : 8,
@@ -189,7 +192,7 @@ class _PremiumGameCarouselState extends State<PremiumGameCarousel> {
                           width: double.infinity,
                           child: DSButton.primary(
                             text: 'Got It',
-                            onPressed: () => Navigator.pop(context),
+                            onPressed: () => context.pop(),
                           ),
                         ),
                       ),
@@ -285,13 +288,18 @@ class _AnimatedPremiumGameCardState extends State<AnimatedPremiumGameCard>
   Widget build(BuildContext context) {
     final gameColor = DSColors.getGameColor(widget.game.id);
 
-    return GestureDetector(
-      onPanUpdate: _handlePanUpdate,
-      onPanEnd: _handlePanEnd,
-      onTapDown: _handleTapDown,
-      onTapUp: _handleTapUp,
-      onTapCancel: _handleTapCancel,
-      child: AnimatedScale(
+    return Semantics(
+      label:
+          '${widget.game.name}, '
+          '${widget.game.isAvailable ? "tap to play" : "coming soon"}',
+      button: widget.game.isAvailable,
+      child: GestureDetector(
+        onPanUpdate: _handlePanUpdate,
+        onPanEnd: _handlePanEnd,
+        onTapDown: _handleTapDown,
+        onTapUp: _handleTapUp,
+        onTapCancel: _handleTapCancel,
+        child: AnimatedScale(
         scale: _isPressed ? 0.95 : 1.0,
         duration: DSAnimations.fast,
         curve: DSAnimations.easeOutCubic,
@@ -445,7 +453,8 @@ class _AnimatedPremiumGameCardState extends State<AnimatedPremiumGameCard>
           ),
         ),
       ),
-    );
+    ),  // closes GestureDetector
+    ); // closes Semantics
   }
 
   Widget _buildBackground() {

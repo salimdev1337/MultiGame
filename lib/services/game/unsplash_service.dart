@@ -33,6 +33,10 @@ class UnsplashService {
   static const Duration _retryDelay = Duration(seconds: 2);
   static const Duration _requestTimeout = Duration(seconds: 10);
 
+  final http.Client _client;
+
+  UnsplashService({http.Client? client}) : _client = client ?? http.Client();
+
   static String? _cachedImageUrl;
   static DateTime? _cacheTime;
 
@@ -120,7 +124,7 @@ class UnsplashService {
     final url = Uri.parse('$_baseUrl/photos/random');
 
     try {
-      final response = await http
+      final response = await _client
           .get(url, headers: {'Authorization': 'Client-ID $apiKey'})
           .timeout(
             _requestTimeout,
@@ -237,5 +241,10 @@ class UnsplashService {
   void clearCache() {
     _cachedImageUrl = null;
     _cacheTime = null;
+  }
+
+  /// Dispose the service — closes the reusable HTTP client
+  void dispose() {
+    _client.close();
   }
 }

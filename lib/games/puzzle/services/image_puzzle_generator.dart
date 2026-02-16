@@ -1,13 +1,26 @@
 import 'dart:math';
 import '../models/puzzle_piece.dart';
+import 'package:multigame/config/service_locator.dart';
 import 'package:multigame/services/game/unsplash_service.dart';
 
 class ImagePuzzleGenerator {
-  final UnsplashService unsplashService = UnsplashService();
+  final UnsplashService unsplashService;
   final int gridSize;
   String? _currentImageUrl;
 
-  ImagePuzzleGenerator({required this.gridSize});
+  /// [initialImageUrl] lets callers reuse an already-fetched image (e.g. after
+  /// a grid-size change) so no extra network request is needed.
+  /// [unsplashService] may be injected directly (e.g. in tests); omit to use
+  /// the GetIt-registered singleton.
+  ImagePuzzleGenerator({
+    required this.gridSize,
+    String? initialImageUrl,
+    UnsplashService? unsplashService,
+  }) : unsplashService = unsplashService ?? getIt<UnsplashService>(),
+       _currentImageUrl = initialImageUrl;
+
+  /// The URL of the image currently loaded (null until [generatePuzzle] runs).
+  String? get currentImageUrl => _currentImageUrl;
 
   Future<List<PuzzlePiece>> generatePuzzle() async {
     // debug: 'PUZZLE GENERATOR: Generating puzzle (${gridSize}x$gridSize)'

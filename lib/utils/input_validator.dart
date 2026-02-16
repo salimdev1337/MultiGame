@@ -1,6 +1,19 @@
-/// Utility for validating and sanitizing user input
+/// Utility for validating and sanitizing user input.
 ///
-/// Prevents injection attacks, XSS, and other security issues
+/// Prevents injection attacks, XSS, and other security issues.
+///
+/// ## Why no `sanitize_html` package?
+///
+/// The app does **not** render user-generated HTML in a `WebView` or via
+/// `flutter_html`; user data is stored in Firestore as plain text and
+/// displayed with standard Flutter `Text` widgets.  A heavyweight HTML
+/// sanitisation library would add unnecessary build size and complexity with
+/// no security benefit for this use case.
+///
+/// The current [sanitizeForFirestore] approach — strip `<script>` blocks,
+/// strip remaining tags, reject event-handler attributes — is sufficient for
+/// Firestore string validation (see B-5 in task.md).  Re-evaluate if the app
+/// ever introduces a rich-text / HTML rendering feature.
 class InputValidator {
   /// Validate nickname input
   ///
@@ -54,12 +67,15 @@ class InputValidator {
     // Trim whitespace
     String sanitized = input.trim();
 
-    // Remove potential HTML/script tags AND their content
+    // Remove script blocks including their content.
+    // Uses [^<]* (character class) instead of .*? (dotAll + lazy quantifier) to
+    // avoid catastrophic backtracking / ReDoS on adversarial inputs.
     sanitized = sanitized.replaceAll(
-      RegExp(r'<script[^>]*>.*?</script>', caseSensitive: false, dotAll: true),
+      RegExp(r'<script\b[^>]*>[^<]*</script>', caseSensitive: false),
       '',
     );
-    sanitized = sanitized.replaceAll(RegExp(r'<[^>]*>'), '');
+    // Strip any remaining HTML/XML tags.
+    sanitized = sanitized.replaceAll(RegExp(r'<[^<>]*>'), '');
 
     // Replace multiple spaces with single space
     sanitized = sanitized.replaceAll(RegExp(r'\s+'), ' ');
@@ -108,9 +124,10 @@ class InputValidator {
 
   /// Check if string contains potentially dangerous characters
   static bool containsDangerousChars(String input) {
-    // Check for script tags, SQL injection patterns, etc.
+    // Check for script tags, event-handler attributes (on*=), javascript: URIs,
+    // SQL injection patterns, and path traversal.
     final dangerous = RegExp(
-      r"(<script|javascript:|onerror=|onclick=|<iframe|eval\(|\.\.\/|'|--|union\s+select)",
+      r"(<script|javascript:|on\w+=|<iframe|eval\(|\.\.\/|'|--|union\s+select)",
       caseSensitive: false,
     );
 

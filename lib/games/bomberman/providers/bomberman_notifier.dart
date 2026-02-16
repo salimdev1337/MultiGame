@@ -16,6 +16,7 @@ import 'package:multigame/games/bomberman/multiplayer/bomb_server.dart';
 import 'package:multigame/providers/mixins/game_stats_notifier.dart';
 import 'package:multigame/providers/services_providers.dart';
 import 'package:multigame/services/data/firebase_stats_service.dart';
+import 'package:multigame/utils/extensions.dart';
 
 // ─── Player body half-size used for wall collision ────────────────────────────
 
@@ -74,6 +75,10 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
   int _localPlayerId = 0;
   bool _gridChangedThisTick = false;
   final _changedCells = <Map<String, dynamic>>[];
+
+  // Sequence numbers for frame sync — host increments, guest drops stale frames.
+  int _frameId = 0;
+  int _lastAppliedFrameId = -1;
 
   @override
   FirebaseStatsService get statsService =>
@@ -224,7 +229,13 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
       case BombMessageType.frameSync:
         if (_role == _MultiRole.guest) {
           final data = msg.payload['data'] as Map<String, dynamic>?;
-          if (data != null) state = state.applyFrameSync(data);
+          if (data != null) {
+            final incomingId = (data['frameId'] as int?) ?? 0;
+            if (incomingId > _lastAppliedFrameId) {
+              _lastAppliedFrameId = incomingId;
+              state = state.applyFrameSync(data);
+            }
+          }
         }
       case BombMessageType.gridUpdate:
         if (_role == _MultiRole.guest) {
@@ -241,7 +252,9 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
 
   void _broadcastIfHost() {
     if (_role != _MultiRole.host) return;
-    _netServer?.broadcast(BombMessage.frameSync(state.toFrameJson()).encode());
+    _netServer?.broadcast(
+      BombMessage.frameSync(state.toFrameJson(frameId: _frameId++)).encode(),
+    );
     if (_gridChangedThisTick && _changedCells.isNotEmpty) {
       _netServer?.broadcast(
         BombMessage.gridUpdate(List.from(_changedCells)).encode(),
@@ -396,28 +409,52 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
     final p = s.players[playerId];
     if (!p.isAlive) return s;
 
-    // Normalise to 4-direction: keep only the dominant axis
     final adx = dx.abs(), ady = dy.abs();
-    final ndx = adx >= ady ? dx.sign : 0.0;
-    final ndy = adx >= ady ? 0.0 : dy.sign;
 
-    if (ndx == 0 && ndy == 0) return s;
+    // Total dead zone — ignore tiny stick drift
+    if (adx < 0.05 && ady < 0.05) return s;
 
     final step = p.speed * dt;
 
-    double nx, ny;
     // Alignment runs at 2× movement speed so the player centres in ~1 tick
     // when close, making direction changes feel immediate.
     final alignStep = step * 2.0;
 
-    if (ndx != 0) {
-      // Horizontal movement — slide X, align Y to cell centre
-      nx = _slideAxis(p.x, p.y, ndx, step, s, p, isHorizontal: true);
-      ny = _centerAlign(p.y, alignStep);
+    // Minimum secondary-axis input required to activate wall-slide fallback.
+    // Keeps diagonal stick from sliding unexpectedly on very slight tilts.
+    const kSlideThreshold = 0.3;
+
+    double nx, ny;
+
+    if (adx >= ady) {
+      // Primary: horizontal
+      final trialX = _slideAxis(p.x, p.y, dx.sign, step, s, p, isHorizontal: true);
+      // Detect wall block: if we barely moved, primary is obstructed
+      if ((trialX - p.x).abs() > step * 0.01) {
+        // Horizontal clear — move right/left, align Y
+        nx = trialX;
+        ny = _centerAlign(p.y, alignStep);
+      } else if (ady >= kSlideThreshold) {
+        // Horizontal blocked and enough vertical input — slide vertically
+        ny = _slideAxis(p.y, p.x, dy.sign, step, s, p, isHorizontal: false);
+        nx = _centerAlign(p.x, alignStep);
+      } else {
+        return s;
+      }
     } else {
-      // Vertical movement — slide Y, align X to cell centre
-      ny = _slideAxis(p.y, p.x, ndy, step, s, p, isHorizontal: false);
-      nx = _centerAlign(p.x, alignStep);
+      // Primary: vertical
+      final trialY = _slideAxis(p.y, p.x, dy.sign, step, s, p, isHorizontal: false);
+      if ((trialY - p.y).abs() > step * 0.01) {
+        // Vertical clear — move up/down, align X
+        ny = trialY;
+        nx = _centerAlign(p.x, alignStep);
+      } else if (adx >= kSlideThreshold) {
+        // Vertical blocked and enough horizontal input — slide horizontally
+        nx = _slideAxis(p.x, p.y, dx.sign, step, s, p, isHorizontal: true);
+        ny = _centerAlign(p.y, alignStep);
+      } else {
+        return s;
+      }
     }
 
     // Keep targetX/Y in sync — bombCellX/Y derive from them
@@ -686,7 +723,7 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
         phase: GamePhase.roundOver,
         roundOverMessage: msg,
       );
-      Timer(const Duration(seconds: 3), () {
+      _countdownTimer = Timer(const Duration(seconds: 3), () {
         if (state.phase == GamePhase.roundOver) _nextRound();
       });
     }
@@ -761,6 +798,8 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
     _netClient = null;
     _role = _MultiRole.solo;
     _localPlayerId = 0;
+    _frameId = 0;
+    _lastAppliedFrameId = -1;
   }
 
   static BombGameState _emptyState() {
@@ -773,10 +812,3 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
   }
 }
 
-// ─── Extension ───────────────────────────────────────────────────────────────
-
-extension<T> on List<T> {
-  List<R> mapIndexed<R>(R Function(int index, T item) f) {
-    return List.generate(length, (i) => f(i, this[i]));
-  }
-}

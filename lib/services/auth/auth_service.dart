@@ -7,6 +7,10 @@ class AuthService {
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
+  /// Signs the user in anonymously via Firebase Auth.
+  ///
+  /// Returns the [UserCredential] on success, or `null` if sign-in fails
+  /// (e.g. network unavailable, Firebase project misconfigured).
   Future<UserCredential?> signInAnonymously() async {
     try {
       final credential = await _auth.signInAnonymously();

@@ -54,8 +54,8 @@ void main() {
         await hapticService.longPressStart();
         await hapticService.celebration();
 
-        // Should complete without throwing
-        expect(true, isTrue);
+        // Service state must not have been corrupted by calling these methods
+        expect(hapticService.isEnabled, isTrue);
       });
 
       test('should handle custom patterns', () async {
@@ -63,8 +63,8 @@ void main() {
 
         await hapticService.customPattern([0, 100, 50, 100]);
 
-        // Should complete without throwing
-        expect(true, isTrue);
+        // Service state must not have been corrupted by calling customPattern
+        expect(hapticService.isEnabled, isTrue);
       });
 
       test('should cancel vibration', () async {
@@ -72,8 +72,8 @@ void main() {
 
         await hapticService.cancel();
 
-        // Should complete without throwing
-        expect(true, isTrue);
+        // cancel() must not disable the service
+        expect(hapticService.isEnabled, isTrue);
       });
     });
 
@@ -100,8 +100,8 @@ void main() {
         await soundService.setVolume(1.0);
         await soundService.setVolume(0.0);
 
-        // Should complete without throwing
-        expect(true, isTrue);
+        // Changing volume must not disable the service
+        expect(soundService.isEnabled, isTrue);
       });
 
       test('should call all UI sound methods without errors', () async {
@@ -114,8 +114,8 @@ void main() {
         await soundService.dismiss();
         await soundService.pageTransition();
 
-        // Should complete without throwing
-        expect(true, isTrue);
+        // Service state must not have been corrupted
+        expect(soundService.isEnabled, isTrue);
       });
 
       test('should call all feedback sound methods without errors', () async {
@@ -126,8 +126,8 @@ void main() {
         await soundService.warning();
         await soundService.notification();
 
-        // Should complete without throwing
-        expect(true, isTrue);
+        // Service state must not have been corrupted
+        expect(soundService.isEnabled, isTrue);
       });
 
       test('should call all game sound methods without errors', () async {
@@ -144,8 +144,8 @@ void main() {
         await soundService.tick();
         await soundService.urgentTick();
 
-        // Should complete without throwing
-        expect(true, isTrue);
+        // Service state must not have been corrupted
+        expect(soundService.isEnabled, isTrue);
       });
 
       test('should stop sound playback', () async {
@@ -153,16 +153,16 @@ void main() {
 
         await soundService.stop();
 
-        // Should complete without throwing
-        expect(true, isTrue);
+        // stop() must not disable the service
+        expect(soundService.isEnabled, isTrue);
       });
 
       test('should dispose without errors', () async {
         await soundService.initialize();
 
+        // dispose() has no observable public boolean to assert after the call —
+        // _isInitialized is private. We verify only that dispose() does not throw.
         await soundService.dispose();
-
-        // Should complete without throwing
         expect(true, isTrue);
       });
     });
@@ -175,8 +175,9 @@ void main() {
         // Simulate a success action with both feedback types
         await Future.wait([hapticService.success(), soundService.success()]);
 
-        // Should complete without throwing
-        expect(true, isTrue);
+        // Both services must still be enabled after concurrent calls
+        expect(hapticService.isEnabled, isTrue);
+        expect(soundService.isEnabled, isTrue);
       });
 
       test('should handle disabled states gracefully', () async {
@@ -190,8 +191,9 @@ void main() {
         await hapticService.success();
         await soundService.success();
 
-        // Should complete without throwing
-        expect(true, isTrue);
+        // Both services must report disabled after explicit setEnabled(false)
+        expect(hapticService.isEnabled, isFalse);
+        expect(soundService.isEnabled, isFalse);
       });
     });
   });
