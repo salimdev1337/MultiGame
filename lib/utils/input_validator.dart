@@ -1,6 +1,19 @@
-/// Utility for validating and sanitizing user input
+/// Utility for validating and sanitizing user input.
 ///
-/// Prevents injection attacks, XSS, and other security issues
+/// Prevents injection attacks, XSS, and other security issues.
+///
+/// ## Why no `sanitize_html` package?
+///
+/// The app does **not** render user-generated HTML in a `WebView` or via
+/// `flutter_html`; user data is stored in Firestore as plain text and
+/// displayed with standard Flutter `Text` widgets.  A heavyweight HTML
+/// sanitisation library would add unnecessary build size and complexity with
+/// no security benefit for this use case.
+///
+/// The current [sanitizeForFirestore] approach — strip `<script>` blocks,
+/// strip remaining tags, reject event-handler attributes — is sufficient for
+/// Firestore string validation (see B-5 in task.md).  Re-evaluate if the app
+/// ever introduces a rich-text / HTML rendering feature.
 class InputValidator {
   /// Validate nickname input
   ///

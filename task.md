@@ -188,11 +188,15 @@ These are actual bugs that can silently corrupt state, leak memory, or crash the
   - Added `fake_cloud_firestore: ^4.0.1` to dev_dependencies
   - Covers: GameStats/UserStats serialization round-trip, null displayName, score tracking, stream emission, leaderboard, anonymous fallback
 
-- [ ] **S6-3** 🔵 Add tests for router redirect chains
-  - File: `lib/config/app_router.dart` — requires GoRouter + appInitProvider + OnboardingService mocks; deferred to backlog
+- [x] **S6-3** 🔵 Add tests for router redirect chains
+  - Created `test/config/app_router_redirect_test.dart` (10 tests)
+  - Uses a minimal inline GoRouter to test the redirect logic without the full widget tree
+  - Covers: loading→splash, error→splash, not-onboarded→onboarding, already-on-onboarding→no-redirect, onboarded+splash→home, onboarded+onboarding→home, no-redirect for /home /leaderboard /profile
 
-- [ ] **S6-4** 🔵 Add integration test: game → score save → leaderboard update
-  - Requires full Firebase test harness; deferred to backlog
+- [x] **S6-4** 🔵 Add integration test: game → score save → leaderboard update
+  - Created `test/services/stats_integration_test.dart` (14 tests)
+  - Uses `FakeFirebaseFirestore` (already in dev_dependencies)
+  - Covers: first save, accumulation, high-score preservation, multi-game, leaderboard ordering, leaderboard stream, userStatsStream, getUserRank
 
 - [x] **S6-5** 🔵 Add Bomberman multiplayer unit tests
   - Created `test/games/bomberman/multiplayer_test.dart` (15 tests)
@@ -218,11 +222,11 @@ These are actual bugs that can silently corrupt state, leak memory, or crash the
 
 ## Backlog (no sprint assigned — do when relevant)
 
-- [ ] **B-1** Add upper-bound version constraints to critical pubspec deps (`flutter_riverpod`, `go_router`, `firebase_*`)
-- [ ] **B-2** Add log-level control to SecureLogger (VERBOSE/DEBUG/INFO/WARN/ERROR) with remote config toggle for production debugging
-- [ ] **B-3** Add `///` documentation comments to all public repository and service methods
-- [ ] **B-4** Add `GameInitializer` edge-case tests (duplicate registration, unregistration cleanup)
-- [ ] **B-5** Evaluate adding `sanitize_html` or `html` package for robust HTML sanitization (replaces S4-1 regex fix)
+- [x] **B-1** Add upper-bound version constraints to critical pubspec deps — all 30+ deps now use `'>=X.Y.Z <(X+1).0.0'` format
+- [x] **B-2** Add log-level control to SecureLogger — added `LogLevel` enum (verbose/debug/info/warn/error), `SecureLogger.level` static field, `forceInRelease` flag; existing methods gated by level
+- [x] **B-3** Add `///` documentation comments to all public repository and service methods — added to `AchievementRepository` interface, `AuthService.signInAnonymously`, `InputValidator` class doc
+- [x] **B-4** `GameRegistry` edge-case tests already existed in `test/core/game_registry_test.dart` — duplicate registration, unregistration cleanup, clear, order all covered
+- [x] **B-5** Evaluated `sanitize_html` — not needed: app renders user data via Flutter `Text` widgets (no HTML renderer). Decision documented in `InputValidator` class doc.
 - [ ] **B-6** Add landscape orientation locks to all game screens that don't yet handle it (or implement responsive layout)
 
 ---
@@ -236,6 +240,7 @@ These are actual bugs that can silently corrupt state, leak memory, or crash the
 - **Sprint 5** completed 2026-02-16 — S5-1 through S5-5 all done; added Bomberman colors to DSColors, new DSTypography button styles, DSSpacing.iconXSmall
 - **Sprint 6** completed 2026-02-16 — S6-1, S6-2, S6-5 done; S6-3 and S6-4 deferred (need GoRouter/Firebase harness)
 - **Sprint 7** completed 2026-02-16 — S7-1 verified (no issue found), S7-3 done; S7-2 deferred (needs device testing)
+- **Backlog** completed 2026-02-16 — B-1 through B-5 done; B-6 deferred (needs device testing)
 
 ---
 
