@@ -32,6 +32,7 @@ class BombGridPainter extends CustomPainter {
   // ─── Cached static Paint objects (fixed colors, allocated once) ───────────
 
   static final _bgPaint = Paint()..color = DSColors.bombermanBg;
+  static final _checkerPaint = Paint()..color = const Color(0xFF1a1e2e);
   static final _wallPaint = Paint()..color = DSColors.bombermanWall;
   static final _wallBevelPaint = Paint()
     ..color = DSColors.bombermanWallBevel.withValues(alpha: 0.6)
@@ -75,6 +76,20 @@ class BombGridPainter extends CustomPainter {
       Rect.fromLTWH(0, 0, size.width, size.height),
       _bgPaint,
     );
+
+    // Checkerboard — odd cells get a slightly lighter shade
+    final cellW = size.width / kGridW;
+    final cellH = size.height / kGridH;
+    for (int r = 0; r < kGridH; r++) {
+      for (int c = 0; c < kGridW; c++) {
+        if ((r + c).isOdd) {
+          canvas.drawRect(
+            Rect.fromLTWH(c * cellW, r * cellH, cellW, cellH),
+            _checkerPaint,
+          );
+        }
+      }
+    }
   }
 
   void _drawGrid(Canvas canvas, Size size, double cellW, double cellH) {

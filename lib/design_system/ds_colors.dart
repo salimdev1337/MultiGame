@@ -94,6 +94,16 @@ class DSColors {
   static const Color memoryPrimary = Color(0xFF7c4dff);
   static const Color memoryAccent = Color(0xFFea80fc);
 
+  /// Wordle game colors
+  static const Color wordlePrimary = Color(0xFF538D4E);
+  static const Color wordleAccent = Color(0xFFB59F3B);
+
+  /// Connect Four colors
+  static const Color connectFourPrimary = Color(0xFF1565C0); // board blue
+  static const Color connectFourAccent = Color(0xFFFFD700);  // player 1 yellow
+  static const Color connectFourPlayer1 = Color(0xFFFFD700); // yellow
+  static const Color connectFourPlayer2 = Color(0xFFE53935); // red
+
   /// Bomberman game colors
   static const Color bombermanBg = Color(0xFF111520);
   static const Color bombermanWall = Color(0xFF2d3142);
@@ -191,6 +201,10 @@ class DSColors {
         return runnerPrimary;
       case 'memory_game':
         return memoryPrimary;
+      case 'wordle':
+        return wordlePrimary;
+      case 'connect_four':
+        return connectFourPrimary;
       default:
         return primary;
     }

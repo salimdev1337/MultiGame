@@ -401,33 +401,37 @@ class _BombermanLobbyPageState extends ConsumerState<BombermanLobbyPage>
   // ─── Join tab ─────────────────────────────────────────────────────────────
 
   Widget _buildJoinTab() {
+    if (kIsWeb) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.wifi_off, color: Colors.white38, size: 48),
+              SizedBox(height: 16),
+              Text(
+                'Local WiFi multiplayer is not available in the browser.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white70, fontSize: 16),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Use the Android or Windows app to play multiplayer.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white38, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (kIsWeb)
-            Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1a1e2e),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.info_outline, color: Colors.amber, size: 16),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Web: join only. To host, use the desktop or mobile app.',
-                      style: TextStyle(color: Colors.amber, fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           _SectionTitle('Host IP address'),
           const SizedBox(height: 8),
           _TextField(controller: _nameController, hint: 'e.g. 192.168.1.100'),

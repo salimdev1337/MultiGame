@@ -1,18 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:multigame/games/bomberman/models/bomb_player.dart';
 import 'package:multigame/games/bomberman/providers/bomberman_notifier.dart';
-import 'package:multigame/utils/extensions.dart';
 
-// Colors matching the grid painter
-const _kPlayerColors = [
-  Color(0xFF00d4ff),
-  Color(0xFFffd700),
-  Color(0xFF7c4dff),
-  Color(0xFFff6b35),
-];
-
-/// Top HUD bar: timer, round wins, round number.
+/// Top HUD bar: score (left) + timer (right) with icon accents.
 class BombermanHud extends ConsumerWidget {
   const BombermanHud({super.key});
 
@@ -21,56 +11,42 @@ class BombermanHud extends ConsumerWidget {
     final s = ref.watch(
       bombermanProvider.select(
         (s) => (
-          round: s.round,
           time: s.roundTimeSeconds,
           wins: s.roundWins,
-          players: s.players,
         ),
       ),
     );
 
     final mins = s.time ~/ 60;
     final secs = s.time % 60;
-    final timeStr = '$mins:${secs.toString().padLeft(2, '0')}';
+    final timeStr =
+        '${mins.toString().padLeft(2, '0')} : ${secs.toString().padLeft(2, '0')}';
     final danger = s.time <= 30;
+    final score = s.wins.isNotEmpty ? s.wins[0] * 500 : 0;
 
     return Container(
-      color: const Color(0xFF0d1018),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      color: const Color(0xFF0a0c14),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Player status indicators
-          Row(
-            children: s.players
-                .mapIndexed(
-                  (i, p) => _PlayerChip(
-                    player: p,
-                    wins: i < s.wins.length ? s.wins[i] : 0,
-                  ),
-                )
-                .toList(),
+          // Score — gem icon + label + value
+          _HudMetric(
+            icon: Icons.diamond_outlined,
+            iconColor: const Color(0xFF00b4ff),
+            label: 'SCORE',
+            value: score.toString(),
+            valueColor: Colors.white,
           ),
 
-          // Timer
-          Text(
-            timeStr,
-            style: TextStyle(
-              color: danger ? const Color(0xFFff4444) : Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 2,
-            ),
-          ),
-
-          // Round indicator
-          Text(
-            'Round ${s.round}',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.6),
-              fontSize: 13,
-              letterSpacing: 1,
-            ),
+          // Timer — value + flame icon
+          _HudMetric(
+            icon: Icons.local_fire_department_rounded,
+            iconColor: danger ? const Color(0xFFff4444) : const Color(0xFFff7043),
+            label: 'TIME',
+            value: timeStr,
+            valueColor: danger ? const Color(0xFFff4444) : Colors.white,
+            iconOnRight: true,
           ),
         ],
       ),
@@ -78,53 +54,58 @@ class BombermanHud extends ConsumerWidget {
   }
 }
 
-class _PlayerChip extends StatelessWidget {
-  final BombPlayer player;
-  final int wins;
+class _HudMetric extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final String value;
+  final Color valueColor;
+  final bool iconOnRight;
 
-  const _PlayerChip({required this.player, required this.wins});
+  const _HudMetric({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.value,
+    required this.valueColor,
+    this.iconOnRight = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final color = _kPlayerColors[player.id % _kPlayerColors.length];
-    return Padding(
-      padding: const EdgeInsets.only(right: 10),
-      child: Row(
-        children: [
-          // Colored circle
-          Container(
-            width: 16,
-            height: 16,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: player.isAlive ? color : color.withValues(alpha: 0.3),
-            ),
+    final iconWidget = Icon(icon, color: iconColor, size: 20);
+    final textWidget = Column(
+      crossAxisAlignment:
+          iconOnRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.45),
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.5,
           ),
-          const SizedBox(width: 4),
-          // Lives
-          Row(
-            children: List.generate(
-              3,
-              (i) => Icon(
-                Icons.favorite,
-                size: 10,
-                color: i < player.lives ? color : color.withValues(alpha: 0.2),
-              ),
-            ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: valueColor,
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1,
+            height: 1.1,
           ),
-          const SizedBox(width: 4),
-          // Round wins
-          Text(
-            '[$wins]',
-            style: TextStyle(
-              color: color.withValues(alpha: 0.8),
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
+    );
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: iconOnRight
+          ? [textWidget, const SizedBox(width: 8), iconWidget]
+          : [iconWidget, const SizedBox(width: 8), textWidget],
     );
   }
 }
-

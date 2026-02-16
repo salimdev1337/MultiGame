@@ -64,6 +64,20 @@ class GameModel {
         imagePath: 'assets/images/fallback_puzzle.jpg',
         isAvailable: true,
       ),
+      GameModel(
+        id: 'wordle',
+        name: 'Wordle Duel',
+        description: 'Solo or 2-player head-to-head word guessing duel',
+        imagePath: 'assets/images/fallback_puzzle.jpg',
+        isAvailable: true,
+      ),
+      GameModel(
+        id: 'connect_four',
+        name: 'Connect Four',
+        description: 'Drop pieces and connect 4 in a row — solo vs AI or pass-and-play',
+        imagePath: 'assets/images/fallback_puzzle.jpg',
+        isAvailable: true,
+      ),
     ];
   }
 }
