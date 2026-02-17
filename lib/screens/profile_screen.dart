@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
+import 'package:multigame/design_system/design_system.dart';
+import 'package:multigame/models/achievement_model.dart';
+import 'package:multigame/repositories/stats_repository.dart';
 import 'package:multigame/services/data/achievement_service.dart';
+import 'package:multigame/services/data/streak_service.dart';
 import 'package:multigame/services/storage/nickname_service.dart';
+import 'package:multigame/widgets/profile/achievement_gallery.dart';
+import 'package:multigame/widgets/profile/animated_profile_header.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -13,38 +20,131 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final AchievementService _achievementService = AchievementService();
   final NicknameService _nicknameService = NicknameService();
-  Map<String, dynamic> _stats = {};
+  final StreakService _streakService = StreakService();
+  // Lazy so tests don't need GetIt set up unless Firebase is exercised.
+  StatsRepository? _statsRepository;
+
+  // Profile state
+  String _nickname = 'Game Master';
+  int _level = 1;
+  int _currentXP = 0;
+  int _xpToNextLevel = 500;
+  String _rankLabel = 'Novice';
+  int _currentStreak = 0;
+
+  // Stats state
+  Map<String, dynamic> _localStats = {};
   Map<String, dynamic> _stats2048 = {};
+  Map<String, GameStats> _allGameStats = {};
+
+  // Achievements
+  List<AchievementModel> _achievements = [];
+
   bool _isLoading = true;
-  String _nickname = 'Puzzle Master';
 
   @override
   void initState() {
     super.initState();
-    _loadStats();
-    _loadNickname();
+    _loadAll();
   }
 
-  Future<void> _loadNickname() async {
-    final nickname = await _nicknameService.getNickname();
-    setState(() {
-      _nickname = nickname ?? 'Puzzle Master';
-    });
-  }
-
-  Future<void> _loadStats() async {
+  Future<void> _loadAll() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
     });
 
-    final stats = await _achievementService.getAllStats();
-    final stats2048 = await _achievementService.get2048Stats();
-
-    setState(() {
-      _stats = stats;
-      _stats2048 = stats2048;
-      _isLoading = false;
+    // Nickname uses SecureStorage which may be slow — load independently
+    // so it never blocks the page from finishing the loading state.
+    _fetchNickname().catchError((_) {}).then((_) {
+      if (mounted) setState(() {});
     });
+
+    await Future.wait([
+      _fetchStreakAndLevel().catchError((_) {}),
+      _fetchLocalStats().catchError((_) {}),
+      _fetchAllGameStats().catchError((_) {}),
+    ]);
+
+    // achievements depend on the other data, so run after
+    try {
+      await _fetchAchievements();
+    } catch (_) {}
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _fetchNickname() async {
+    final nickname = await _nicknameService.getNickname();
+    _nickname = nickname ?? 'Game Master';
+  }
+
+  Future<void> _fetchStreakAndLevel() async {
+    final streakData = await _streakService.getStreakData();
+    _currentStreak = streakData.currentStreak;
+
+    final totalCompleted = await _achievementService.getTotalCompleted();
+    _level = (totalCompleted ~/ 5) + 1;
+    _currentXP = totalCompleted * 100;
+    _xpToNextLevel = ((totalCompleted ~/ 5) + 1) * 500;
+
+    if (_level >= 20) {
+      _rankLabel = 'Legend';
+    } else if (_level >= 10) {
+      _rankLabel = 'Master';
+    } else if (_level >= 5) {
+      _rankLabel = 'Pro';
+    } else {
+      _rankLabel = 'Novice';
+    }
+  }
+
+  Future<void> _fetchLocalStats() async {
+    _localStats = await _achievementService.getAllStats();
+    _stats2048 = await _achievementService.get2048Stats();
+  }
+
+  Future<void> _fetchAllGameStats() async {
+    try {
+      _statsRepository ??= GetIt.instance<StatsRepository>();
+      final userId = await _nicknameService.getUserId();
+      if (userId != null) {
+        final userStats = await _statsRepository!.getUserStats(userId);
+        if (userStats != null) {
+          _allGameStats = userStats.gameStats;
+        }
+      }
+    } catch (_) {
+      // Firebase unavailable or GetIt not set up — continue with empty stats
+    }
+  }
+
+  Future<void> _fetchAchievements() async {
+    final gamePlayCounts = <String, int>{};
+    for (final entry in _allGameStats.entries) {
+      gamePlayCounts[entry.key] = entry.value.gamesPlayed;
+    }
+
+    final unlockedStatus = await _achievementService.checkAllAchievements(
+      currentStreak: _currentStreak,
+      highestTile2048: _stats2048['highestTile'] as int? ?? 0,
+      gamePlayCounts: gamePlayCounts,
+    );
+
+    _achievements = AchievementModel.getAllAchievements(
+      unlockedStatus: unlockedStatus,
+      totalCompleted: _localStats['totalCompleted'] as int? ?? 0,
+      best3x3Moves: _localStats['best3x3Moves'] as int?,
+      best4x4Moves: _localStats['best4x4Moves'] as int?,
+      bestTime: _localStats['bestOverallTime'] as int?,
+      currentStreak: _currentStreak,
+      highestTile2048: _stats2048['highestTile'] as int? ?? 0,
+      gamePlayCounts: gamePlayCounts,
+    );
   }
 
   String _formatTime(int? seconds) {
@@ -54,394 +154,64 @@ class _ProfilePageState extends State<ProfilePage> {
     return '${minutes}m ${remainingSeconds}s';
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _loadStats,
-          color: Theme.of(context).colorScheme.primary,
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    // Profile Header
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          children: [
-                            Container(
-                              width: 120,
-                              height: 120,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Theme.of(context).colorScheme.primary,
-                                    Theme.of(context).colorScheme.secondary,
-                                  ],
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Theme.of(context).colorScheme.primary
-                                        .withValues(alpha: (0.3 * 255)),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 5),
-                                  ),
-                                ],
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  '\ud83c\udfae',
-                                  style: TextStyle(fontSize: 60),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            Text(
-                              _nickname,
-                              style: const TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.emoji_events,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '${_stats['totalCompleted'] ?? 0} Puzzles Completed',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    // 2048 Game Stats Section
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              '2048 Game Stats',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            _build2048StatCard(
-                              title: '2048 Achievements',
-                              icon: Icons.stars,
-                              stats: [
-                                _StatItem(
-                                  label: 'Best Score',
-                                  value: '${_stats2048['bestScore'] ?? 0}',
-                                ),
-                                _StatItem(
-                                  label: 'Highest Tile',
-                                  value: '${_stats2048['highestTile'] ?? 0}',
-                                ),
-                                _StatItem(
-                                  label: 'Games Played',
-                                  value: '${_stats2048['gamesPlayed'] ?? 0}',
-                                ),
-                                _StatItem(
-                                  label: 'Last Level',
-                                  value:
-                                      _stats2048['lastLevelPassed']
-                                          ?.toString() ??
-                                      'None',
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 8)),
-                    // Achievements Badges
-                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                    // Statistics Section
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-                        child: Text(
-                          'Puzzle Game Stats',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Best Times
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: _buildStatCard(
-                          title: 'Best Times',
-                          icon: Icons.timer,
-                          stats: [
-                            _StatItem(
-                              label: '3x3 Grid',
-                              value: _formatTime(_stats['best3x3Time']),
-                            ),
-                            _StatItem(
-                              label: '4x4 Grid',
-                              value: _formatTime(_stats['best4x4Time']),
-                            ),
-                            _StatItem(
-                              label: '5x5 Grid',
-                              value: _formatTime(_stats['best5x5Time']),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                    // Best Moves
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: _buildStatCard(
-                          title: 'Best Moves',
-                          icon: Icons.trending_up,
-                          stats: [
-                            _StatItem(
-                              label: '3x3 Grid',
-                              value: _stats['best3x3Moves']?.toString() ?? '--',
-                            ),
-                            _StatItem(
-                              label: '4x4 Grid',
-                              value: _stats['best4x4Moves']?.toString() ?? '--',
-                            ),
-                            _StatItem(
-                              label: '5x5 Grid',
-                              value: _stats['best5x5Moves']?.toString() ?? '--',
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                    // Legal Information
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Legal & Privacy',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            _buildLegalButton(
-                              context,
-                              icon: Icons.privacy_tip_outlined,
-                              label: 'Privacy Policy',
-                              url:
-                                  'https://salimdev1337.github.io/MultiGame/privacy.html',
-                            ),
-                            const SizedBox(height: 8),
-                            _buildLegalButton(
-                              context,
-                              icon: Icons.description_outlined,
-                              label: 'Terms of Service',
-                              url:
-                                  'https://salimdev1337.github.io/MultiGame/terms.html',
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 24)),
-                  ],
-                ),
+  void _showNicknameDialog() {
+    final controller = TextEditingController(text: _nickname);
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: DSColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(DSSpacing.lg),
         ),
-      ),
-    );
-  }
-
-  Widget _buildLegalButton(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required String url,
-  }) {
-    return InkWell(
-      onTap: () async {
-        try {
-          final uri = Uri.parse(url);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-          } else {
-            // Fallback: show URL in dialog if can't launch
-            if (context.mounted) {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text(label),
-                  content: SelectableText(
-                    url,
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Close'),
-                    ),
-                  ],
-                ),
-              );
-            }
-          }
-        } catch (e) {
-          // Show error message
-          if (context.mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text('Could not open $label')));
-          }
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Theme.of(
-              context,
-            ).colorScheme.primary.withValues(alpha: (0.2 * 255)),
-            width: 1,
+        title: Text(
+          'Edit Display Name',
+          style: DSTypography.titleLarge.copyWith(color: DSColors.textPrimary),
+        ),
+        content: TextField(
+          controller: controller,
+          style: DSTypography.bodyMedium.copyWith(color: DSColors.textPrimary),
+          decoration: InputDecoration(
+            hintText: 'Enter nickname',
+            hintStyle: DSTypography.bodyMedium.copyWith(
+              color: DSColors.textTertiary,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(DSSpacing.sm),
+              borderSide: BorderSide(color: DSColors.primary.withValues(alpha: 0.3)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(DSSpacing.sm),
+              borderSide: BorderSide(color: DSColors.primary),
+            ),
           ),
+          maxLength: 20,
         ),
-        child: Row(
-          children: [
-            Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
-            const SizedBox(width: 12),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: DSTypography.labelLarge.copyWith(
+                color: DSColors.textSecondary,
               ),
             ),
-            const Spacer(),
-            Icon(
-              Icons.open_in_new,
-              color: Colors.white.withValues(alpha: (0.5 * 255)),
-              size: 16,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatCard({
-    required String title,
-    required IconData icon,
-    required List<_StatItem> stats,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(
-            context,
-          ).colorScheme.primary.withValues(alpha: (0.3 * 255)),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                icon,
-                color: Theme.of(context).colorScheme.primary,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ],
           ),
-          const SizedBox(height: 16),
-          ...stats.map(
-            (stat) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    stat.label,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: (0.7 * 255)),
-                    ),
-                  ),
-                  Text(
-                    stat.value,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ),
+          TextButton(
+            onPressed: () async {
+              final newName = controller.text.trim();
+              if (newName.isNotEmpty) {
+                await _nicknameService.saveNickname(newName);
+                if (mounted && ctx.mounted) {
+                  setState(() {
+                    _nickname = newName;
+                  });
+                  Navigator.pop(ctx);
+                }
+              }
+            },
+            child: Text(
+              'Save',
+              style: DSTypography.labelLarge.copyWith(color: DSColors.primary),
             ),
           ),
         ],
@@ -449,18 +219,355 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _build2048StatCard({
-    required String title,
-    required IconData icon,
-    required List<_StatItem> stats,
-  }) {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: DSColors.backgroundPrimary,
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _loadAll,
+          color: DSColors.primary,
+          backgroundColor: DSColors.surface,
+          child: _isLoading
+              ? const _ProfileSkeleton()
+              : CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    // Animated profile header
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.all(DSSpacing.lg),
+                        child: AnimatedProfileHeader(
+                          displayName: _nickname,
+                          level: _level,
+                          currentXP: _currentXP,
+                          xpToNextLevel: _xpToNextLevel,
+                          rank: _rankLabel,
+                          onEditProfile: _showNicknameDialog,
+                        ),
+                      ),
+                    ),
+
+                    // Stats section
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: DSSpacing.lg),
+                        child: _StatsSection(
+                          localStats: _localStats,
+                          stats2048: _stats2048,
+                          allGameStats: _allGameStats,
+                          formatTime: _formatTime,
+                        ),
+                      ),
+                    ),
+
+                    SliverToBoxAdapter(child: SizedBox(height: DSSpacing.xl)),
+
+                    // Achievement gallery section
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: DSSpacing.lg),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _SectionHeader(
+                              icon: Icons.emoji_events_rounded,
+                              title: 'Achievements',
+                              subtitle:
+                                  '${_achievements.where((a) => a.isUnlocked).length}/${_achievements.length} unlocked',
+                            ),
+                            SizedBox(height: DSSpacing.md),
+                            AchievementGallery(
+                              achievements: _achievements,
+                              onAchievementTap: (achievement) {
+                                showDialog<void>(
+                                  context: context,
+                                  builder: (_) => AchievementDetailModal(
+                                    achievement: achievement,
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    SliverToBoxAdapter(child: SizedBox(height: DSSpacing.xl)),
+
+                    // Legal section
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: DSSpacing.lg),
+                        child: const _LegalSection(),
+                      ),
+                    ),
+
+                    SliverToBoxAdapter(child: SizedBox(height: DSSpacing.xxl)),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Skeleton loading ──────────────────────────────────────────────────────────
+
+class _ProfileSkeleton extends StatelessWidget {
+  const _ProfileSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(DSSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header skeleton
+          Container(
+            height: 260,
+            decoration: BoxDecoration(
+              color: DSColors.surface,
+              borderRadius: BorderRadius.circular(DSSpacing.lg),
+            ),
+          ),
+          SizedBox(height: DSSpacing.lg),
+          // Stats grid skeleton
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            crossAxisSpacing: DSSpacing.md,
+            mainAxisSpacing: DSSpacing.md,
+            childAspectRatio: 1.4,
+            children: List.generate(
+              6,
+              (_) => Container(
+                decoration: BoxDecoration(
+                  color: DSColors.surface,
+                  borderRadius: BorderRadius.circular(DSSpacing.md),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Section header ────────────────────────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: EdgeInsets.all(DSSpacing.xs),
+          decoration: BoxDecoration(
+            color: DSColors.primary.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(DSSpacing.xs),
+          ),
+          child: Icon(icon, color: DSColors.primary, size: 20),
+        ),
+        SizedBox(width: DSSpacing.sm),
+        Text(
+          title,
+          style: DSTypography.titleLarge.copyWith(
+            color: DSColors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        if (subtitle != null) ...[
+          const Spacer(),
+          Text(
+            subtitle!,
+            style: DSTypography.labelMedium.copyWith(
+              color: DSColors.textSecondary,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// ── Stats section ─────────────────────────────────────────────────────────────
+
+class _StatsSection extends StatelessWidget {
+  const _StatsSection({
+    required this.localStats,
+    required this.stats2048,
+    required this.allGameStats,
+    required this.formatTime,
+  });
+
+  final Map<String, dynamic> localStats;
+  final Map<String, dynamic> stats2048;
+  final Map<String, GameStats> allGameStats;
+  final String Function(int?) formatTime;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(
+          icon: Icons.bar_chart_rounded,
+          title: 'Game Stats',
+        ),
+        SizedBox(height: DSSpacing.md),
+        _StatsGrid(
+          localStats: localStats,
+          stats2048: stats2048,
+          allGameStats: allGameStats,
+          formatTime: formatTime,
+        ),
+      ],
+    );
+  }
+}
+
+class _StatsGrid extends StatelessWidget {
+  const _StatsGrid({
+    required this.localStats,
+    required this.stats2048,
+    required this.allGameStats,
+    required this.formatTime,
+  });
+
+  final Map<String, dynamic> localStats;
+  final Map<String, dynamic> stats2048;
+  final Map<String, GameStats> allGameStats;
+  final String Function(int?) formatTime;
+
+  @override
+  Widget build(BuildContext context) {
+    final cards = <Widget>[
+      _GameStatCard(
+        icon: '🧩',
+        title: 'Image Puzzle',
+        color: DSColors.primary,
+        stats: [
+          _StatRow(
+            label: 'Completed',
+            value: '${localStats['totalCompleted'] ?? 0}',
+          ),
+          _StatRow(
+            label: 'Best 3x3',
+            value: formatTime(localStats['best3x3Time'] as int?),
+          ),
+          _StatRow(
+            label: 'Best 3x3 Moves',
+            value: localStats['best3x3Moves']?.toString() ?? '--',
+          ),
+        ],
+      ),
+      _GameStatCard(
+        icon: '🔢',
+        title: '2048',
+        color: DSColors.success,
+        stats: [
+          _StatRow(
+            label: 'Best Score',
+            value: '${stats2048['bestScore'] ?? 0}',
+          ),
+          _StatRow(
+            label: 'Highest Tile',
+            value: '${stats2048['highestTile'] ?? 0}',
+          ),
+          _StatRow(
+            label: 'Games Played',
+            value: '${stats2048['gamesPlayed'] ?? 0}',
+          ),
+        ],
+      ),
+    ];
+
+    // Firebase-tracked games
+    final firebaseGames = <({String key, String label, String icon, Color color})>[
+      (key: 'sudoku', label: 'Sudoku', icon: '🔢', color: DSColors.secondary),
+      (key: 'snake', label: 'Snake', icon: '🐍', color: const Color(0xFF4CAF50)),
+      (key: 'runner', label: 'Infinite Runner', icon: '🏃', color: const Color(0xFF9C27B0)),
+      (key: 'bomberman', label: 'Bomberman', icon: '💣', color: const Color(0xFFFF5722)),
+      (key: 'memory', label: 'Memory', icon: '🃏', color: const Color(0xFF2196F3)),
+      (key: 'wordle', label: 'Wordle Duel', icon: '📝', color: const Color(0xFF795548)),
+      (key: 'connect_four', label: 'Connect Four', icon: '🔴', color: const Color(0xFFF44336)),
+    ];
+
+    for (final game in firebaseGames) {
+      final stats = allGameStats[game.key];
+      cards.add(
+        _GameStatCard(
+          icon: game.icon,
+          title: game.label,
+          color: game.color,
+          stats: [
+            _StatRow(
+              label: 'Games Played',
+              value: stats != null ? '${stats.gamesPlayed}' : 'N/A',
+            ),
+            _StatRow(
+              label: 'High Score',
+              value: stats != null ? '${stats.highScore}' : 'N/A',
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      crossAxisSpacing: DSSpacing.md,
+      mainAxisSpacing: DSSpacing.md,
+      childAspectRatio: 0.95,
+      children: cards,
+    );
+  }
+}
+
+class _StatRow {
+  final String label;
+  final String value;
+  const _StatRow({required this.label, required this.value});
+}
+
+class _GameStatCard extends StatelessWidget {
+  const _GameStatCard({
+    required this.icon,
+    required this.title,
+    required this.color,
+    required this.stats,
+  });
+
+  final String icon;
+  final String title;
+  final Color color;
+  final List<_StatRow> stats;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(DSSpacing.md),
       decoration: BoxDecoration(
-        color: const Color(0xFF1a1e26),
-        borderRadius: BorderRadius.circular(16),
+        color: DSColors.surface,
+        borderRadius: BorderRadius.circular(DSSpacing.md),
         border: Border.all(
-          color: const Color(0xFF19e6a2).withValues(alpha: (0.3 * 255)),
+          color: color.withValues(alpha: 0.25),
           width: 1,
         ),
       ),
@@ -469,38 +576,43 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           Row(
             children: [
-              Icon(icon, color: const Color(0xFF19e6a2), size: 24),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              Text(icon, style: const TextStyle(fontSize: 18)),
+              SizedBox(width: DSSpacing.xs),
+              Expanded(
+                child: Text(
+                  title,
+                  style: DSTypography.labelMedium.copyWith(
+                    color: DSColors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: DSSpacing.sm),
           ...stats.map(
-            (stat) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+            (s) => Padding(
+              padding: EdgeInsets.only(bottom: DSSpacing.xxs),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    stat.label,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: (0.7 * 255)),
+                  Flexible(
+                    child: Text(
+                      s.label,
+                      style: DSTypography.labelSmall.copyWith(
+                        color: DSColors.textSecondary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  SizedBox(width: DSSpacing.xs),
                   Text(
-                    stat.value,
-                    style: const TextStyle(
-                      fontSize: 16,
+                    s.value,
+                    style: DSTypography.labelSmall.copyWith(
+                      color: color,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF19e6a2),
                     ),
                   ),
                 ],
@@ -513,9 +625,137 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 }
 
-class _StatItem {
-  final String label;
-  final String value;
+// ── Legal section ─────────────────────────────────────────────────────────────
 
-  _StatItem({required this.label, required this.value});
+class _LegalSection extends StatelessWidget {
+  const _LegalSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(
+          icon: Icons.gavel_rounded,
+          title: 'Legal & Privacy',
+        ),
+        SizedBox(height: DSSpacing.md),
+        _LegalButton(
+          icon: Icons.privacy_tip_outlined,
+          label: 'Privacy Policy',
+          url: 'https://salimdev1337.github.io/MultiGame/privacy.html',
+        ),
+        SizedBox(height: DSSpacing.sm),
+        _LegalButton(
+          icon: Icons.description_outlined,
+          label: 'Terms of Service',
+          url: 'https://salimdev1337.github.io/MultiGame/terms.html',
+        ),
+      ],
+    );
+  }
+}
+
+class _LegalButton extends StatelessWidget {
+  const _LegalButton({
+    required this.icon,
+    required this.label,
+    required this.url,
+  });
+
+  final IconData icon;
+  final String label;
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () async {
+          try {
+            final uri = Uri.parse(url);
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            } else {
+              if (context.mounted) {
+                showDialog<void>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    backgroundColor: DSColors.surface,
+                    title: Text(
+                      label,
+                      style: DSTypography.titleMedium.copyWith(
+                        color: DSColors.textPrimary,
+                      ),
+                    ),
+                    content: SelectableText(
+                      url,
+                      style: DSTypography.bodySmall.copyWith(
+                        color: DSColors.textSecondary,
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: Text(
+                          'Close',
+                          style: DSTypography.labelLarge.copyWith(
+                            color: DSColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+            }
+          } catch (_) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Could not open $label'),
+                  backgroundColor: DSColors.surface,
+                ),
+              );
+            }
+          }
+        },
+        borderRadius: BorderRadius.circular(DSSpacing.sm),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            vertical: DSSpacing.sm,
+            horizontal: DSSpacing.md,
+          ),
+          decoration: BoxDecoration(
+            color: DSColors.surface,
+            borderRadius: BorderRadius.circular(DSSpacing.sm),
+            border: Border.all(
+              color: DSColors.primary.withValues(alpha: 0.2),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: DSColors.primary, size: 20),
+              SizedBox(width: DSSpacing.sm),
+              Text(
+                label,
+                style: DSTypography.labelLarge.copyWith(
+                  color: DSColors.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Spacer(),
+              Icon(
+                Icons.open_in_new_rounded,
+                color: DSColors.textTertiary,
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

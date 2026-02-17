@@ -49,7 +49,8 @@ class AchievementService {
 
   // ========== Achievement Methods ==========
 
-  /// Check and unlock achievements based on current stats
+  /// Check and unlock puzzle + 2048 achievements based on current local stats.
+  /// Use [checkAllAchievements] for the full set including streak and per-game.
   Future<Map<String, bool>> checkAchievements() async {
     final totalCompleted = await getTotalCompleted();
     final best3x3Moves = await getBestMoves(3);
@@ -108,6 +109,98 @@ class AchievementService {
       allAchievementIds,
     );
     for (final entry in previousAchievements.entries) {
+      if (!achievements.containsKey(entry.key)) {
+        achievements[entry.key] = entry.value;
+      }
+    }
+
+    return achievements;
+  }
+
+  /// Check and unlock ALL achievements including streak and per-game ones.
+  ///
+  /// Call this on profile load. Pass [currentStreak] from StreakService and
+  /// [gamePlayCounts] (gameType → gamesPlayed) from Firebase stats.
+  /// [highestTile2048] comes from local 2048 stats.
+  Future<Map<String, bool>> checkAllAchievements({
+    int currentStreak = 0,
+    int highestTile2048 = 0,
+    Map<String, int> gamePlayCounts = const {},
+  }) async {
+    // Run base puzzle checks first
+    final achievements = await checkAchievements();
+
+    // ── 2048 tile achievements ────────────────────────────────────────────
+    if (highestTile2048 >= 2048) {
+      achievements['score_2048'] = true;
+      await _repository.unlockAchievement('score_2048');
+    }
+    if (highestTile2048 >= 4096) {
+      achievements['score_4096'] = true;
+      await _repository.unlockAchievement('score_4096');
+    }
+
+    // ── Streak achievements ───────────────────────────────────────────────
+    if (currentStreak >= 3) {
+      achievements['streak_3'] = true;
+      await _repository.unlockAchievement('streak_3');
+    }
+    if (currentStreak >= 7) {
+      achievements['streak_7'] = true;
+      await _repository.unlockAchievement('streak_7');
+    }
+    if (currentStreak >= 30) {
+      achievements['streak_30'] = true;
+      await _repository.unlockAchievement('streak_30');
+    }
+
+    // ── Per-game first-play achievements ─────────────────────────────────
+    Future<void> checkFirstPlay(String gameKey, String achievementId) async {
+      if ((gamePlayCounts[gameKey] ?? 0) >= 1) {
+        achievements[achievementId] = true;
+        await _repository.unlockAchievement(achievementId);
+      }
+    }
+
+    await checkFirstPlay('sudoku', 'sudoku_first');
+    await checkFirstPlay('memory', 'memory_first');
+    await checkFirstPlay('snake', 'snake_first');
+    await checkFirstPlay('runner', 'runner_first');
+    await checkFirstPlay('bomberman', 'bomberman_first');
+    await checkFirstPlay('wordle', 'wordle_first');
+    await checkFirstPlay('connect_four', 'connect_four_first');
+
+    // ── Multitasker: all 9 games played ─────────────────────────────────
+    final totalCompleted = await getTotalCompleted();
+    int gamesPlayedCount = 0;
+    if (totalCompleted > 0) gamesPlayedCount++;
+    if (highestTile2048 > 0) gamesPlayedCount++;
+    for (final count in gamePlayCounts.values) {
+      if (count > 0) gamesPlayedCount++;
+    }
+    if (gamesPlayedCount >= 9) {
+      achievements['all_games'] = true;
+      await _repository.unlockAchievement('all_games');
+    }
+
+    // Merge in previously stored status for all new achievement IDs
+    final newIds = [
+      'score_2048',
+      'score_4096',
+      'streak_3',
+      'streak_7',
+      'streak_30',
+      'sudoku_first',
+      'memory_first',
+      'snake_first',
+      'runner_first',
+      'bomberman_first',
+      'wordle_first',
+      'connect_four_first',
+      'all_games',
+    ];
+    final stored = await _repository.getAllAchievements(newIds);
+    for (final entry in stored.entries) {
       if (!achievements.containsKey(entry.key)) {
         achievements[entry.key] = entry.value;
       }
