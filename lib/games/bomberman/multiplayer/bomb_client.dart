@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'package:multigame/games/bomberman/multiplayer/bomb_message.dart';
@@ -24,8 +25,11 @@ class BombClient {
 
   bool get isConnected => _connected;
 
-  /// Fired when a message arrives from the server.
+  /// Fired when a JSON message arrives from the server.
   void Function(BombMessage msg)? onMessage;
+
+  /// Fired when a binary frame arrives from the server (frameSync).
+  void Function(Uint8List bytes)? onBinaryFrame;
 
   /// Fired when the connection drops unexpectedly.
   void Function()? onDisconnected;
@@ -46,6 +50,10 @@ class BombClient {
 
     _channel!.stream.listen(
       (raw) {
+        if (raw is Uint8List) {
+          onBinaryFrame?.call(raw);
+          return;
+        }
         if (raw is! String) return;
         final msg = BombMessage.tryDecode(raw);
         if (msg != null) onMessage?.call(msg);

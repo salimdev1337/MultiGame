@@ -2,6 +2,7 @@
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_web_socket/shelf_web_socket.dart';
@@ -51,6 +52,15 @@ class BombServerIo implements BombServer {
     for (final ch in _connections.values) {
       try {
         ch.sink.add(message);
+      } catch (_) {}
+    }
+  }
+
+  @override
+  void broadcastBytes(Uint8List bytes) {
+    for (final ch in _connections.values) {
+      try {
+        ch.sink.add(bytes);
       } catch (_) {}
     }
   }

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:multigame/games/bomberman/multiplayer/bomb_message.dart';
 import 'package:multigame/games/bomberman/multiplayer/bomb_room.dart';
 import 'package:multigame/games/bomberman/multiplayer/bomb_server.dart';
@@ -25,6 +27,9 @@ class BombServerIo implements BombServer {
 
   @override
   void broadcast(String message) {}
+
+  @override
+  void broadcastBytes(Uint8List bytes) {}
 
   @override
   void stop() {}

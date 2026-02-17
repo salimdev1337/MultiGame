@@ -5,6 +5,7 @@ import 'package:multigame/games/bomberman/models/cell_type.dart';
 import 'package:multigame/games/bomberman/models/explosion_tile.dart';
 import 'package:multigame/games/bomberman/models/game_phase.dart';
 import 'package:multigame/games/bomberman/models/powerup_cell.dart';
+import 'package:multigame/games/bomberman/multiplayer/bomb_frame_codec.dart';
 
 const kGridW = 15;
 const kGridH = 13;
@@ -142,6 +143,18 @@ class BombGameState {
     winnerId: json['winnerId'] as int?,
     roundOverMessage: json['roundOverMessage'] as String?,
   );
+
+  // ─── Binary frame serialization ────────────────────────────────────────────
+
+  /// Encode this state into a compact binary frame for network broadcast.
+  /// Delegates to [BombFrameCodec.encode].
+  Uint8List toFrameBytes({int frameId = 0}) =>
+      BombFrameCodec.encode(this, frameId);
+
+  /// Guest-side: apply a binary frameSync frame onto this state, keeping the
+  /// grid intact. Delegates to [BombFrameCodec.applyTo].
+  BombGameState applyFrameSyncBytes(Uint8List bytes) =>
+      BombFrameCodec.applyTo(bytes, this);
 
   /// Guest-side: apply a frameSync payload onto current state, keeping the
   /// grid intact (grid is only updated via gridUpdate messages).
