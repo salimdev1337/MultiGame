@@ -6,6 +6,8 @@ import 'package:multigame/games/sudoku/sudoku_game_definition.dart';
 import 'package:multigame/games/infinite_runner/infinite_runner_definition.dart';
 import 'package:multigame/games/memory/memory_game_definition.dart';
 import 'package:multigame/games/bomberman/bomberman_definition.dart';
+import 'package:multigame/games/wordle/wordle_game_definition.dart';
+import 'package:multigame/games/connect_four/connect_four_game_definition.dart';
 
 /// Initialize and register all games
 /// Should be called once during app startup
@@ -20,4 +22,6 @@ void initializeGames() {
   registry.register(InfiniteRunnerDefinition());
   registry.register(MemoryGameDefinition());
   registry.register(BombermanDefinition());
+  registry.register(WordleGameDefinition());
+  registry.register(ConnectFourGameDefinition());
 }

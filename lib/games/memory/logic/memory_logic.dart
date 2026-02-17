@@ -13,13 +13,17 @@ List<MemoryCard> generateCards(int totalPairs, Random rng) {
   return cards;
 }
 
-/// Shuffles the two mismatched cards ([i] and [j]) with [extraCount] randomly
-/// chosen face-down unmatched cards. [extraCount] must be even and ≥ 2.
+/// Shuffles the two mismatched cards ([i] and [j]).
+///
+/// When [extraCount] is 0 (easy mode), the two wrong cards simply swap
+/// positions with each other — no random cards are involved.
+///
+/// When [extraCount] ≥ 2 (medium/hard), [extraCount] randomly chosen
+/// face-down unmatched cards are added to the pool; [extraCount] must
+/// be even. Gracefully skips if fewer than 2 eligible cards are available.
 ///
 /// Returns the updated card list and a list of swap pairs as
 /// (cardId_a, cardId_b) for the UI arc animation to consume.
-///
-/// Gracefully skips if fewer than 2 eligible cards are available.
 (List<MemoryCard>, List<(int, int)>) shuffleOnMismatch(
   List<MemoryCard> cards,
   int i,
@@ -27,6 +31,15 @@ List<MemoryCard> generateCards(int totalPairs, Random rng) {
   Random rng, {
   int extraCount = 2,
 }) {
+  // Easy mode: just swap the two wrong cards with each other.
+  if (extraCount == 0) {
+    final result = List<MemoryCard>.of(cards);
+    final tmp = result[i];
+    result[i] = result[j];
+    result[j] = tmp;
+    return (result, [(cards[i].id, cards[j].id)]);
+  }
+
   // Collect eligible targets: face-down, unmatched, not i or j.
   final eligible = <int>[];
   for (int k = 0; k < cards.length; k++) {

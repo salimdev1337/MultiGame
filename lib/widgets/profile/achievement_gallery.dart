@@ -46,7 +46,7 @@ class _AchievementGalleryState extends State<AchievementGallery>
   }
 
   List<String> _getCategories() {
-    return ['All', 'Completion', 'Efficiency', 'Speed'];
+    return ['All', 'Completion', 'Efficiency', 'Speed', 'Score', 'Streak'];
   }
 
   List<AchievementModel> _getFilteredAchievements() {
@@ -58,11 +58,17 @@ class _AchievementGalleryState extends State<AchievementGallery>
       if (_selectedCategory == 'Completion') {
         return a.id.contains('win') ||
             a.id.contains('fan') ||
-            a.id.contains('master');
+            a.id.contains('master') ||
+            a.id.endsWith('_first') ||
+            a.id == 'all_games';
       } else if (_selectedCategory == 'Efficiency') {
         return a.id.contains('efficient');
       } else if (_selectedCategory == 'Speed') {
         return a.id.contains('speed');
+      } else if (_selectedCategory == 'Score') {
+        return a.id.startsWith('score_');
+      } else if (_selectedCategory == 'Streak') {
+        return a.id.startsWith('streak_');
       }
       return true;
     }).toList();

@@ -52,7 +52,8 @@ void main() {
         bestTime: 45,
       );
 
-      expect(achievements.length, 6);
+      // 10 completion + 2 efficiency + 1 speed + 2 score + 3 streak + 1 mastery
+      expect(achievements.length, 19);
       expect(achievements[0].id, 'first_win');
       expect(achievements[0].isUnlocked, true);
       expect(achievements[1].id, 'puzzle_fan');

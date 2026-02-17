@@ -48,6 +48,15 @@ class RaceClient {
     final uri = Uri.parse('ws://$hostIp:$kRaceServerPort');
     _channel = WebSocketChannel.connect(uri);
 
+    // Verify the WebSocket handshake actually completes before proceeding.
+    // Without this, connect() returns immediately even if the host is
+    // unreachable or the browser blocks ws:// from an HTTPS page — and the
+    // caller's try/catch never fires.
+    await _channel!.ready.timeout(
+      const Duration(seconds: 8),
+      onTimeout: () => throw TimeoutException('Connection timed out'),
+    );
+
     _channel!.stream.listen(
       _handleMessage,
       onDone: _handleDisconnect,

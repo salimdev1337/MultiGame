@@ -21,7 +21,10 @@ class MemoryNotifier extends GameStatsNotifier<MemoryGameState> {
 
   @override
   MemoryGameState build() {
-    ref.onDispose(_cancelTimers);
+    ref.onDispose(() {
+      _isDisposed = true;
+      _cancelTimers();
+    });
     return const MemoryGameState();
   }
 
@@ -74,11 +77,16 @@ class MemoryNotifier extends GameStatsNotifier<MemoryGameState> {
   void onShuffleAnimationComplete() {
     if (state.phase != MemoryGamePhase.shuffling) return;
 
-    // Wrong card IDs are the first element of the first two swap pairs.
+    // Determine which card IDs to flip back face-down.
+    // Easy (1 pair): both wrong cards are the two IDs in that single pair.
+    // Medium/Hard (2+ pairs): each pair's first ID is a wrong card.
     final updatedCards = List<MemoryCard>.of(state.cards);
     final pairs = state.swapPairs;
-    if (pairs != null && pairs.length >= 2) {
-      for (final wrongId in [pairs[0].$1, pairs[1].$1]) {
+    if (pairs != null && pairs.isNotEmpty) {
+      final wrongIds = pairs.length == 1
+          ? [pairs[0].$1, pairs[0].$2]
+          : [pairs[0].$1, pairs[1].$1];
+      for (final wrongId in wrongIds) {
         final idx = updatedCards.indexWhere((c) => c.id == wrongId);
         if (idx != -1) {
           updatedCards[idx] = updatedCards[idx].copyWith(isFlipped: false);
@@ -217,7 +225,6 @@ class MemoryNotifier extends GameStatsNotifier<MemoryGameState> {
   }
 
   void _cancelTimers() {
-    _isDisposed = true;
     _checkTimer?.cancel();
     _checkTimer = null;
   }

@@ -1,8 +1,18 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:multigame/config/app_router.dart';
 import '../infinite_runner_game.dart';
+
+void _exitToHome(BuildContext context) {
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  context.go(AppRoutes.home);
+}
 
 /// Animated 3-2-1-GO! countdown shown before the race starts
 class CountdownOverlay extends StatefulWidget {
@@ -241,7 +251,7 @@ class _SoloFinish extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
-                  onPressed: () => context.go(AppRoutes.home),
+                  onPressed: () => _exitToHome(context),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFF00d4ff), width: 2),
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -504,7 +514,7 @@ class _MultiplayerFinishState extends State<_MultiplayerFinish> {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                    onPressed: () => context.go(AppRoutes.home),
+                    onPressed: () => _exitToHome(context),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(
                         color: Color(0xFF00d4ff),
@@ -587,7 +597,7 @@ class HostLeftOverlay extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => context.go(AppRoutes.home),
+                  onPressed: () => _exitToHome(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF00d4ff),
                     padding: const EdgeInsets.symmetric(vertical: 14),
