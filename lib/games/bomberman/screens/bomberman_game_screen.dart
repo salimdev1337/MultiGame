@@ -233,6 +233,12 @@ class _BombermanGamePageState extends ConsumerState<BombermanGamePage>
                         ),
                         // Overlay (countdown, round over, game over)
                         const BombermanOverlay(),
+                        // Return button — top-left corner of board
+                        Positioned(
+                          top: 6,
+                          left: 6,
+                          child: _ReturnButton(onTap: _showQuitConfirmation),
+                        ),
                         // Debug FPS counter
                         Positioned(
                           top: 4,
@@ -746,6 +752,38 @@ class _KeyHint extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─── Return button ────────────────────────────────────────────────────────────
+
+class _ReturnButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _ReturnButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          color: const Color(0xCC070910),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.12),
+            width: 1,
+          ),
+        ),
+        child: const Icon(
+          Icons.arrow_back_ios_new_rounded,
+          color: Colors.white70,
+          size: 16,
+        ),
+      ),
     );
   }
 }
