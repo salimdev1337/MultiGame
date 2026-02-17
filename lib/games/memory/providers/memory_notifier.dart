@@ -21,7 +21,10 @@ class MemoryNotifier extends GameStatsNotifier<MemoryGameState> {
 
   @override
   MemoryGameState build() {
-    ref.onDispose(_cancelTimers);
+    ref.onDispose(() {
+      _isDisposed = true;
+      _cancelTimers();
+    });
     return const MemoryGameState();
   }
 
@@ -217,7 +220,6 @@ class MemoryNotifier extends GameStatsNotifier<MemoryGameState> {
   }
 
   void _cancelTimers() {
-    _isDisposed = true;
     _checkTimer?.cancel();
     _checkTimer = null;
   }
