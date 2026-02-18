@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flame/game.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:multigame/games/rpg/components/arena_component.dart';
 import 'package:multigame/games/rpg/components/attack_component.dart';
 import 'package:multigame/games/rpg/components/boss_component.dart';
@@ -13,7 +13,13 @@ import 'package:multigame/games/rpg/models/boss_config.dart';
 import 'package:multigame/games/rpg/models/player_stats.dart';
 import 'package:multigame/games/rpg/models/rpg_enums.dart';
 
-enum RpgEvent { bossPhaseChange, playerDeath, bossDefeated, bossDamaged, playerDamaged }
+enum RpgEvent {
+  bossPhaseChange,
+  playerDeath,
+  bossDefeated,
+  bossDamaged,
+  playerDamaged,
+}
 
 class RpgFlameGame extends FlameGame with HasCollisionDetection {
   RpgFlameGame({
@@ -34,11 +40,16 @@ class RpgFlameGame extends FlameGame with HasCollisionDetection {
   double timeScale = 1.0;
   double _timeSlowTimer = 0;
 
+  // Keyboard state — tracked via onKeyDown/onKeyUp from the screen widget
+  final Set<LogicalKeyboardKey> _pressedKeys = {};
+  final Set<LogicalKeyboardKey> _justPressedKeys = {};
+
   late PlayerComponent _player;
   late BossComponent _boss;
   late ArenaComponent _arena;
 
   final List<AttackComponent> _attacks = [];
+  final List<Rect> _platformRects = [];
 
   final _eventController = StreamController<RpgEvent>.broadcast();
   Stream<RpgEvent> get events => _eventController.stream;
@@ -56,8 +67,11 @@ class RpgFlameGame extends FlameGame with HasCollisionDetection {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    _arena = ArenaComponent(bossId: bossId == BossId.golem ? 'golem' : 'wraith');
+    _arena = ArenaComponent(bossId: bossId);
     await add(_arena);
+
+    _platformRects.clear();
+    _platformRects.addAll(_arena.platforms.map((p) => p.rect));
 
     final config = BossConfig.forId(bossId);
     final ai = bossId == BossId.golem ? GolemAI() : WraithAI();
@@ -95,6 +109,19 @@ class RpgFlameGame extends FlameGame with HasCollisionDetection {
     _inputDy = dy;
   }
 
+  /// Called by the screen's keyboard handler on key-down events.
+  void onKeyDown(LogicalKeyboardKey key) {
+    if (!_pressedKeys.contains(key)) {
+      _justPressedKeys.add(key);
+    }
+    _pressedKeys.add(key);
+  }
+
+  /// Called by the screen's keyboard handler on key-up events.
+  void onKeyUp(LogicalKeyboardKey key) {
+    _pressedKeys.remove(key);
+  }
+
   void triggerAttack() {
     if (_phase != RpgGamePhase.playing) {
       return;
@@ -129,6 +156,13 @@ class RpgFlameGame extends FlameGame with HasCollisionDetection {
     _timeSlowTimer = 3.0;
   }
 
+  void triggerDodge() {
+    if (_phase != RpgGamePhase.playing) {
+      return;
+    }
+    _player.triggerDodge();
+  }
+
   void _spawnAttack(AttackComponent atk) {
     _attacks.add(atk);
     add(atk);
@@ -147,14 +181,42 @@ class RpgFlameGame extends FlameGame with HasCollisionDetection {
     }
 
     if (_phase != RpgGamePhase.playing) {
+      _justPressedKeys.clear();
       return;
     }
 
-    // Build platform rects from arena
-    final platformRects = _arena.platforms.map((p) => p.rect).toList();
+    // --- Keyboard input processing ---
+    double effectiveDx = _inputDx;
+    double effectiveDy = _inputDy;
 
-    // Move player
-    _player.applyMovement(_inputDx, _inputDy, scaledDt, platformRects);
+    if (_pressedKeys.contains(LogicalKeyboardKey.arrowLeft)) {
+      effectiveDx = -1.0;
+    }
+    if (_pressedKeys.contains(LogicalKeyboardKey.arrowRight)) {
+      effectiveDx = 1.0;
+    }
+    if (_justPressedKeys.contains(LogicalKeyboardKey.arrowUp)) {
+      effectiveDy = -1.0;
+    }
+
+    // One-shot keyboard actions
+    if (_justPressedKeys.contains(LogicalKeyboardKey.keyX)) {
+      triggerAttack();
+    }
+    if (_justPressedKeys.contains(LogicalKeyboardKey.keyC)) {
+      triggerFireball();
+    }
+    if (_justPressedKeys.contains(LogicalKeyboardKey.keyZ) ||
+        _justPressedKeys.contains(LogicalKeyboardKey.space)) {
+      triggerDodge();
+    }
+    if (_justPressedKeys.contains(LogicalKeyboardKey.keyV)) {
+      triggerTimeSlow();
+    }
+    _justPressedKeys.clear();
+
+    // Move player (keyboard + joystick merged)
+    _player.applyMovement(effectiveDx, effectiveDy, scaledDt, _platformRects);
 
     // Boss AI tick
     final bossCmd = _boss.update2(scaledDt, _player.position);
@@ -169,10 +231,16 @@ class RpgFlameGame extends FlameGame with HasCollisionDetection {
     for (final atk in List.of(_attacks)) {
       if (atk.owner == 'player' && !atk.consumed) {
         final atkRect = Rect.fromLTWH(
-          atk.position.x, atk.position.y, atk.size.x, atk.size.y,
+          atk.position.x,
+          atk.position.y,
+          atk.size.x,
+          atk.size.y,
         );
         final bossRect = Rect.fromLTWH(
-          _boss.position.x, _boss.position.y, _boss.size.x, _boss.size.y,
+          _boss.position.x,
+          _boss.position.y,
+          _boss.size.x,
+          _boss.size.y,
         );
         if (atkRect.overlaps(bossRect)) {
           atk.consumed = true;
@@ -186,10 +254,16 @@ class RpgFlameGame extends FlameGame with HasCollisionDetection {
     for (final atk in List.of(_attacks)) {
       if (atk.owner == 'boss' && !atk.consumed) {
         final atkRect = Rect.fromLTWH(
-          atk.position.x, atk.position.y, atk.size.x, atk.size.y,
+          atk.position.x,
+          atk.position.y,
+          atk.size.x,
+          atk.size.y,
         );
         final playerRect = Rect.fromLTWH(
-          _player.position.x, _player.position.y, _player.size.x, _player.size.y,
+          _player.position.x,
+          _player.position.y,
+          _player.size.x,
+          _player.size.y,
         );
         if (atkRect.overlaps(playerRect)) {
           atk.consumed = true;

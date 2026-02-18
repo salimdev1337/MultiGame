@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:multigame/design_system/ds_colors.dart';
 import 'package:multigame/design_system/ds_typography.dart';
 import 'package:multigame/games/rpg/models/boss_config.dart';
+import 'package:multigame/games/rpg/models/player_stats.dart';
 import 'package:multigame/games/rpg/models/rpg_enums.dart';
 import 'package:multigame/games/rpg/providers/rpg_notifier.dart';
 
@@ -30,7 +31,10 @@ class BossSelectPage extends ConsumerWidget {
           children: [
             if (state.cycle > 0)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
                   color: const Color(0x33FFD700),
@@ -93,7 +97,7 @@ class BossSelectPage extends ConsumerWidget {
 
 class _StatsRow extends StatelessWidget {
   const _StatsRow({required this.stats});
-  final dynamic stats;
+  final PlayerStats stats;
 
   @override
   Widget build(BuildContext context) {
@@ -129,7 +133,10 @@ class _StatChip extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(label, style: const TextStyle(color: Colors.white54, fontSize: 10)),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white54, fontSize: 10),
+          ),
           Text(
             value,
             style: const TextStyle(
@@ -188,9 +195,7 @@ class _BossCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
-                bossId == BossId.golem
-                    ? Icons.engineering
-                    : Icons.dark_mode,
+                bossId == BossId.golem ? Icons.engineering : Icons.dark_mode,
                 color: bossColor,
                 size: 32,
               ),
@@ -228,10 +233,7 @@ class _BossCard extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              color: bossColor.withValues(alpha: 0.7),
-            ),
+            Icon(Icons.chevron_right, color: bossColor.withValues(alpha: 0.7)),
           ],
         ),
       ),

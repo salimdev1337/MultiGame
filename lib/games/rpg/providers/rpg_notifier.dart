@@ -7,6 +7,7 @@ import 'package:multigame/games/rpg/models/rpg_enums.dart';
 import 'package:multigame/providers/mixins/game_stats_notifier.dart';
 import 'package:multigame/providers/services_providers.dart';
 import 'package:multigame/services/data/firebase_stats_service.dart';
+import 'package:multigame/utils/secure_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class RpgState {
@@ -43,7 +44,9 @@ class RpgState {
       playerStats: playerStats ?? this.playerStats,
       defeatedBosses: defeatedBosses ?? this.defeatedBosses,
       cycle: cycle ?? this.cycle,
-      selectedBoss: clearSelectedBoss ? null : selectedBoss ?? this.selectedBoss,
+      selectedBoss: clearSelectedBoss
+          ? null
+          : selectedBoss ?? this.selectedBoss,
       lastReward: clearLastReward ? null : lastReward ?? this.lastReward,
     );
   }
@@ -55,10 +58,20 @@ class RpgState {
   };
 
   factory RpgState.fromJson(Map<String, dynamic> json) => RpgState(
-    playerStats: PlayerStats.fromJson(json['playerStats'] as Map<String, dynamic>? ?? {}),
-    defeatedBosses: (json['defeatedBosses'] as List?)
-        ?.map((i) => BossId.values[i as int])
-        .toList() ?? [],
+    playerStats: PlayerStats.fromJson(
+      json['playerStats'] as Map<String, dynamic>? ?? {},
+    ),
+    defeatedBosses:
+        (json['defeatedBosses'] as List?)
+            ?.map((i) {
+              final idx = i as int;
+              return (idx >= 0 && idx < BossId.values.length)
+                  ? BossId.values[idx]
+                  : null;
+            })
+            .whereType<BossId>()
+            .toList() ??
+        [],
     cycle: (json['cycle'] as int?) ?? 0,
   );
 }
@@ -71,11 +84,13 @@ class RpgNotifier extends GameStatsNotifier<RpgState> {
   static const _saveKey = 'rpg_save';
 
   @override
-  FirebaseStatsService get statsService => ref.read(firebaseStatsServiceProvider);
+  FirebaseStatsService get statsService =>
+      ref.read(firebaseStatsServiceProvider);
 
   @override
   RpgState build() {
-    _loadProgress();
+    // Load progress asynchronously but don't block build
+    Future.microtask(_loadProgress);
     return const RpgState();
   }
 
@@ -87,8 +102,12 @@ class RpgNotifier extends GameStatsNotifier<RpgState> {
         final json = jsonDecode(raw) as Map<String, dynamic>;
         state = RpgState.fromJson(json);
       }
-    } catch (_) {
-      // Corrupted save — start fresh
+    } catch (error, stackTrace) {
+      SecureLogger.error(
+        'Error loading RPG progress from SharedPreferences key $_saveKey',
+        error: error,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -96,7 +115,13 @@ class RpgNotifier extends GameStatsNotifier<RpgState> {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_saveKey, jsonEncode(state.toJson()));
-    } catch (_) {}
+    } catch (error, stackTrace) {
+      SecureLogger.error(
+        'Error saving RPG progress in _saveProgress',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   void selectBoss(BossId id) {
@@ -115,7 +140,9 @@ class RpgNotifier extends GameStatsNotifier<RpgState> {
     if (newDefeated.length >= BossId.values.length &&
         newDefeated.length > state.defeatedBosses.length) {
       // Check if this completes a full cycle
-      final hadAll = BossId.values.every((b) => state.defeatedBosses.contains(b));
+      final hadAll = BossId.values.every(
+        (b) => state.defeatedBosses.contains(b),
+      );
       if (!hadAll) {
         final nowAll = BossId.values.every((b) => newDefeated.contains(b));
         if (nowAll) {

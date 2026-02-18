@@ -46,10 +46,7 @@ class PixelSprite {
 
 /// A sequence of [PixelSprite] frames played at [frameDuration] seconds/frame.
 class PixelAnimation {
-  const PixelAnimation({
-    required this.frames,
-    required this.frameDuration,
-  });
+  const PixelAnimation({required this.frames, required this.frameDuration});
 
   final List<PixelSprite> frames;
   final double frameDuration;
@@ -58,7 +55,7 @@ class PixelAnimation {
 
   PixelSprite frameAt(double elapsedSeconds) {
     if (frames.isEmpty) {
-      return frames.first;
+      throw RangeError('PixelSprite.frames is empty');
     }
     final totalDuration = frameDuration * frames.length;
     final looped = elapsedSeconds % totalDuration;

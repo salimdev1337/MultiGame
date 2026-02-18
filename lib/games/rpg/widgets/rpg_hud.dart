@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:multigame/games/rpg/game/rpg_flame_game.dart';
+import 'package:multigame/games/rpg/models/boss_config.dart';
 
 class RpgHud extends StatelessWidget {
   const RpgHud({super.key, required this.game});
@@ -37,7 +38,10 @@ class RpgHud extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   child: Container(
                     margin: const EdgeInsets.only(top: 4, right: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xAACC0000),
                       borderRadius: BorderRadius.circular(4),
@@ -61,7 +65,8 @@ class RpgHud extends StatelessWidget {
   }
 
   Color _playerHpColor(int hp, int maxHp) {
-    final ratio = hp / maxHp;
+    final safeMaxHp = maxHp > 0 ? maxHp : 1;
+    final ratio = (hp / safeMaxHp).clamp(0.0, 1.0);
     if (ratio > 0.5) {
       return const Color(0xFF19e6a2);
     }
@@ -72,7 +77,7 @@ class RpgHud extends StatelessWidget {
   }
 
   String _bossLabel(RpgFlameGame game) {
-    return game.bossId == game.bossId ? 'BOSS' : 'BOSS';
+    return BossConfig.forId(game.bossId).displayName.toUpperCase();
   }
 }
 
@@ -97,8 +102,9 @@ class _HpBar extends StatelessWidget {
     return SizedBox(
       width: 160,
       child: Column(
-        crossAxisAlignment:
-            reversed ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: reversed
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           Text(
             label,
@@ -119,7 +125,9 @@ class _HpBar extends StatelessWidget {
                   Container(color: const Color(0x88000000)),
                   FractionallySizedBox(
                     widthFactor: ratio,
-                    alignment: reversed ? Alignment.centerRight : Alignment.centerLeft,
+                    alignment: reversed
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
                     child: Container(color: color),
                   ),
                 ],
