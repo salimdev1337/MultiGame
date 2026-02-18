@@ -74,10 +74,24 @@ class GameModel {
         isAvailable: true,
       ),
       GameModel(
+        id: 'ludo',
+        name: 'Ludo',
+        description: 'Race tokens home — roll, capture, and use powerups!',
+        imagePath: 'assets/images/ludo.png',
+        isAvailable: true,
+      ),
+      GameModel(
         id: 'image_puzzle',
         name: 'Puzzle',
         description: 'Slide tiles to complete the picture',
         imagePath: 'assets/images/puzzle.png',
+        isAvailable: true,
+      ),
+      GameModel(
+        id: 'rpg',
+        name: 'Shadowfall Chronicles',
+        description: 'Fight pixel-art bosses, grow stronger, conquer New Game+',
+        imagePath: 'assets/images/rpg.png',
         isAvailable: true,
       ),
     ];

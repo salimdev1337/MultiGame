@@ -104,6 +104,18 @@ class DSColors {
   static const Color connectFourPlayer1 = Color(0xFFFFD700); // yellow
   static const Color connectFourPlayer2 = Color(0xFFE53935); // red
 
+  /// Ludo colors
+  static const Color ludoPrimary      = Color(0xFFE91E63);
+  static const Color ludoAccent       = Color(0xFFFFEB3B);
+  static const Color ludoPlayerRed    = Color(0xFFE53935);
+  static const Color ludoPlayerBlue   = Color(0xFF2196F3);
+  static const Color ludoPlayerGreen  = Color(0xFF43A047);
+  static const Color ludoPlayerYellow = Color(0xFFFFD700);
+
+  /// RPG — Shadowfall Chronicles colors
+  static const Color rpgPrimary = Color(0xFFCC2200); // blood red
+  static const Color rpgAccent  = Color(0xFFFFD700);  // gold
+
   /// Bomberman game colors
   // Floor — near-black stone tiles
   static const Color bombermanBg        = Color(0xFF08090d); // overall canvas fill
@@ -212,6 +224,8 @@ class DSColors {
         return wordlePrimary;
       case 'connect_four':
         return connectFourPrimary;
+      case 'ludo':
+        return ludoPrimary;
       default:
         return primary;
     }
