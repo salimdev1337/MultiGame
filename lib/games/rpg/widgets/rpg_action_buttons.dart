@@ -8,6 +8,7 @@ class RpgActionButtons extends StatelessWidget {
     required this.onAttack,
     required this.onFireball,
     required this.onTimeSlow,
+    required this.onDodge,
     this.fireballCooldownPct = 0,
     this.timeSlowCooldownPct = 0,
   });
@@ -16,6 +17,7 @@ class RpgActionButtons extends StatelessWidget {
   final VoidCallback onAttack;
   final VoidCallback onFireball;
   final VoidCallback onTimeSlow;
+  final VoidCallback onDodge;
   final double fireballCooldownPct;
   final double timeSlowCooldownPct;
 
@@ -25,7 +27,15 @@ class RpgActionButtons extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         _ActionButton(
+          label: 'D',
+          sublabel: 'Z',
+          color: const Color(0xFFAAFFCC),
+          onTap: onDodge,
+        ),
+        const SizedBox(width: 8),
+        _ActionButton(
           label: 'A',
+          sublabel: 'X',
           color: const Color(0xFFFFD700),
           onTap: onAttack,
         ),
@@ -33,6 +43,7 @@ class RpgActionButtons extends StatelessWidget {
         if (unlockedAbilities.contains(AbilityType.fireball))
           _ActionButton(
             label: 'F',
+            sublabel: 'C',
             color: const Color(0xFFFF4400),
             onTap: onFireball,
             cooldownPct: fireballCooldownPct,
@@ -42,6 +53,7 @@ class RpgActionButtons extends StatelessWidget {
         if (unlockedAbilities.contains(AbilityType.timeSlow))
           _ActionButton(
             label: 'T',
+            sublabel: 'V',
             color: const Color(0xFF00AAFF),
             onTap: onTimeSlow,
             cooldownPct: timeSlowCooldownPct,
@@ -56,10 +68,12 @@ class _ActionButton extends StatelessWidget {
     required this.label,
     required this.color,
     required this.onTap,
+    this.sublabel,
     this.cooldownPct = 0,
   });
 
   final String label;
+  final String? sublabel;
   final Color color;
   final VoidCallback onTap;
   final double cooldownPct;
@@ -88,13 +102,26 @@ class _ActionButton extends StatelessWidget {
                 color: Colors.white.withValues(alpha: 0.5),
                 backgroundColor: Colors.transparent,
               ),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (sublabel != null)
+                  Text(
+                    sublabel!,
+                    style: TextStyle(
+                      color: color.withValues(alpha: 0.55),
+                      fontSize: 9,
+                    ),
+                  ),
+              ],
             ),
           ],
         ),

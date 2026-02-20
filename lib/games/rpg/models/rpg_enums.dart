@@ -23,6 +23,6 @@ enum BossAiState {
 
 enum AttackType { meleeSlash, rockProjectile, groundStomp, shadowBolt, dashAttack, fireOrb, aoe }
 
-enum PlayerAnimState { idle, walk, attack, hurt, die }
+enum PlayerAnimState { idle, walk, attack, hurt, dodge, die }
 
 enum BossAnimState { idle, attack, hurt, die, enrage }

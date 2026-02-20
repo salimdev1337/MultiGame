@@ -35,9 +35,12 @@ class BossComponent extends PositionComponent with CollisionCallbacks {
   bool _isDead = false;
   bool facingLeft = true;
 
-  double _moveTimer = 0;
   double _animTime = 0;
   BossAnimState _animState = BossAnimState.idle;
+
+  // Wraith vertical float
+  double _floatTime = 0;
+  double _baseY = 0;
 
   ui.Image? _idleImg;
   ui.Image? _attackImg;
@@ -50,6 +53,7 @@ class BossComponent extends PositionComponent with CollisionCallbacks {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+    _baseY = position.y;
     add(RectangleHitbox(
       size: Vector2(size.x * 0.8, size.y * 0.9),
       position: Vector2(size.x * 0.1, size.y * 0.05),
@@ -65,14 +69,13 @@ class BossComponent extends PositionComponent with CollisionCallbacks {
 
   AttackCommand? update2(double dt, Vector2 playerPos) {
     _animTime += dt;
-    _moveTimer -= dt;
 
     if (_isDead) {
       return null;
     }
 
     // Phase check
-    final hpRatio = currentHp / maxHp;
+    final hpRatio = maxHp > 0 ? currentHp / maxHp : 0.0;
     final phases = config.phases;
     int newPhase = 0;
     for (int i = phases.length - 1; i >= 0; i--) {
@@ -87,13 +90,31 @@ class BossComponent extends PositionComponent with CollisionCallbacks {
       onPhaseChange?.call(_currentPhase);
     }
 
-    // Patrol movement
-    if (_moveTimer <= 0) {
-      _moveTimer = 1.5;
-      final dx = playerPos.x - position.x;
-      facingLeft = dx > 0;
-      final speed = config.phases[_currentPhase].moveSpeed;
-      position.x += (dx > 0 ? 1 : -1) * speed * 0.016;
+    final speed = config.phases[_currentPhase].moveSpeed;
+    final centerX = position.x + size.x / 2;
+    final playerCenterX = playerPos.x + 24;
+    final dx = playerCenterX - centerX;
+    facingLeft = dx > 0;
+
+    // Continuous pursuit — maintain a fighting distance
+    final dist = dx.abs();
+    const closeDist = 80.0;
+    const chaseDist = 220.0;
+    if (dist > chaseDist) {
+      // Chase aggressively
+      position.x += (dx > 0 ? 1.0 : -1.0) * speed * dt;
+    } else if (dist > closeDist) {
+      // Close in at moderate pace
+      position.x += (dx > 0 ? 1.0 : -1.0) * speed * 0.6 * dt;
+    } else if (dist < 40) {
+      // Too close — back off slightly
+      position.x -= (dx > 0 ? 1.0 : -1.0) * speed * 0.3 * dt;
+    }
+
+    // Wraith vertical float — sinusoidal hover
+    if (config.id == BossId.wraith) {
+      _floatTime += dt;
+      position.y = _baseY + math.sin(_floatTime * 1.4) * 22;
     }
 
     // Clamp position to game bounds
@@ -105,7 +126,6 @@ class BossComponent extends PositionComponent with CollisionCallbacks {
   @override
   void update(double dt) {
     super.update(dt);
-    // Movement and AI are driven via update2; this handles only animations.
     if (_animState == BossAnimState.attack && _animTime > 0.3) {
       _animState = BossAnimState.idle;
       _animTime = 0;
@@ -120,10 +140,13 @@ class BossComponent extends PositionComponent with CollisionCallbacks {
     if (currentHp <= 0) {
       currentHp = 0;
       _isDead = true;
+      _animState = BossAnimState.die;
+      _animTime = 0;
       onDeath?.call();
+    } else {
+      _animState = BossAnimState.hurt;
+      _animTime = 0;
     }
-    _animState = BossAnimState.hurt;
-    _animTime = 0;
   }
 
   bool get isDead => _isDead;
@@ -149,11 +172,11 @@ class BossComponent extends PositionComponent with CollisionCallbacks {
   double _speedForType(AttackType type) {
     switch (type) {
       case AttackType.rockProjectile:
-        return 180;
+        return 220;
       case AttackType.shadowBolt:
-        return 240;
+        return 300;
       case AttackType.dashAttack:
-        return 400;
+        return 480;
       default:
         return 0;
     }

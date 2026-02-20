@@ -12,8 +12,8 @@ class GolemAI implements BossAI {
   int _phase = 0;
   double _stateTimer = 0;
   double _cooldownTimer = 0;
-  static const double _cooldownBase = 1.5;
-  static const double _cooldownEnraged = 0.8;
+  static const double _cooldownBase = 0.85;
+  static const double _cooldownEnraged = 0.38;
   final Random _rand = Random();
 
   BossAiState get currentState => _state;
@@ -31,7 +31,7 @@ class GolemAI implements BossAI {
     _phase = newPhase;
     if (newPhase >= 1) {
       _state = BossAiState.enrage;
-      _stateTimer = 1.2;
+      _stateTimer = 0.8;
     }
   }
 
@@ -109,24 +109,26 @@ class GolemAI implements BossAI {
 
   void _pickAttack() {
     if (_phase >= 1) {
+      // Enraged: equal distribution across 3 attacks, fast wind-up
       final roll = _rand.nextInt(3);
       if (roll == 0) {
         _state = BossAiState.stomp;
-        _stateTimer = 0.4;
+        _stateTimer = 0.18;
       } else if (roll == 1) {
         _state = BossAiState.rockThrow;
-        _stateTimer = 0.5;
+        _stateTimer = 0.22;
       } else {
         _state = BossAiState.spin;
-        _stateTimer = 0.6;
+        _stateTimer = 0.28;
       }
     } else {
+      // Phase 0: stomp/rockThrow mix with shorter wind-ups
       if (_rand.nextBool()) {
         _state = BossAiState.stomp;
-        _stateTimer = 0.5;
+        _stateTimer = 0.25;
       } else {
         _state = BossAiState.rockThrow;
-        _stateTimer = 0.6;
+        _stateTimer = 0.3;
       }
     }
   }

@@ -28,7 +28,7 @@ class WraithAI implements BossAI {
   void onPhaseChange(int newPhase) {
     _phase = newPhase;
     _state = BossAiState.teleport;
-    _stateTimer = 0.8;
+    _stateTimer = 0.5;
   }
 
   @override
@@ -46,14 +46,17 @@ class WraithAI implements BossAI {
       case BossAiState.shadowBolt:
         if (_stateTimer <= 0) {
           _state = BossAiState.float;
-          _cooldownTimer = _phase >= 2 ? 0.4 : _phase == 1 ? 0.8 : 1.2;
+          // Phase-scaled cooldown — phase 2 fires almost constantly
+          _cooldownTimer = _phase >= 2
+              ? 0.15
+              : _phase == 1
+              ? 0.35
+              : 0.6;
           final dir = (playerPos - bossPos)..normalize();
-          if (_phase >= 1) {
-            return AttackCommand(
-              type: AttackType.shadowBolt,
-              direction: dir,
-              targetPosition: playerPos.clone(),
-            );
+          // Phase 1+: chance of burst (fire again quickly)
+          if (_phase >= 1 && _rand.nextDouble() < 0.45) {
+            _state = BossAiState.shadowBolt;
+            _stateTimer = _phase >= 2 ? 0.12 : 0.2;
           }
           return AttackCommand(
             type: AttackType.shadowBolt,
@@ -66,7 +69,7 @@ class WraithAI implements BossAI {
       case BossAiState.dash:
         if (_stateTimer <= 0) {
           _state = BossAiState.float;
-          _cooldownTimer = _phase >= 1 ? 0.9 : 1.4;
+          _cooldownTimer = _phase >= 1 ? 0.5 : 0.8;
           final dir = (playerPos - bossPos)..normalize();
           return AttackCommand(
             type: AttackType.dashAttack,
@@ -79,7 +82,7 @@ class WraithAI implements BossAI {
       case BossAiState.desperation:
         if (_stateTimer <= 0) {
           _state = BossAiState.float;
-          _cooldownTimer = 0.3;
+          _cooldownTimer = 0.12;
           final dir = (playerPos - bossPos)..normalize();
           return AttackCommand(
             type: AttackType.shadowBolt,
@@ -108,24 +111,32 @@ class WraithAI implements BossAI {
 
   void _pickAttack() {
     if (_phase >= 2) {
-      _state = BossAiState.desperation;
-      _stateTimer = 0.3;
+      // Desperation: constant shadow bolts, occasional dash
+      if (_rand.nextDouble() < 0.25) {
+        _state = BossAiState.dash;
+        _stateTimer = 0.15;
+      } else {
+        _state = BossAiState.desperation;
+        _stateTimer = 0.12;
+      }
     } else if (_phase == 1) {
-      final roll = _rand.nextInt(3);
-      if (roll <= 1) {
+      // Aggressive mix: 55% bolt, 30% dash, 15% burst
+      final roll = _rand.nextDouble();
+      if (roll < 0.55) {
         _state = BossAiState.shadowBolt;
-        _stateTimer = 0.4;
+        _stateTimer = 0.18;
       } else {
         _state = BossAiState.dash;
-        _stateTimer = 0.5;
+        _stateTimer = 0.22;
       }
     } else {
+      // Phase 0: 50/50 but with proper wind-up
       if (_rand.nextBool()) {
         _state = BossAiState.shadowBolt;
-        _stateTimer = 0.5;
+        _stateTimer = 0.28;
       } else {
         _state = BossAiState.dash;
-        _stateTimer = 0.6;
+        _stateTimer = 0.32;
       }
     }
   }

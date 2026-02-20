@@ -139,4 +139,28 @@ class PlayerSprites {
     frames: [hurt0],
     frameDuration: 0.3,
   );
+
+  // Dodge — player crouching low, lunging forward with sword extended
+  static const PixelSprite dodge0 = PixelSprite(
+    width: 8, height: 12,
+    pixels: [
+      [_t, _t, _t, _t, _t, _t, _t, _t],
+      [_t, _t, _t, _h, _h, _t, _t, _t],
+      [_t, _t, _h, _e, _e, _h, _t, _t],
+      [_t, _k, _b, _b, _b, _b, _k, _k],
+      [_k, _b, _b, _b, _b, _b, _b, _k],
+      [_t, _k, _b, _b, _b, _b, _s, _s],
+      [_t, _t, _b, _b, _b, _t, _t, _t],
+      [_t, _b, _b, _t, _b, _t, _t, _t],
+      [_b, _h, _t, _t, _b, _h, _t, _t],
+      [_t, _t, _t, _t, _t, _t, _t, _t],
+      [_t, _t, _t, _t, _t, _t, _t, _t],
+      [_t, _t, _t, _t, _t, _t, _t, _t],
+    ],
+  );
+
+  static const PixelAnimation dodgeAnim = PixelAnimation(
+    frames: [dodge0],
+    frameDuration: 0.35,
+  );
 }
