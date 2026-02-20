@@ -20,7 +20,13 @@ class ConnectFourNotifier extends GameStatsNotifier<ConnectFourState> {
       ref.read(firebaseStatsServiceProvider);
 
   @override
-  ConnectFourState build() => const ConnectFourState();
+  ConnectFourState build() {
+    ref.onDispose(() {
+      _botTimer?.cancel();
+      _botTimer = null;
+    });
+    return const ConnectFourState();
+  }
 
   Timer? _botTimer;
 

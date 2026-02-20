@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:multigame/utils/secure_logger.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -39,16 +40,21 @@ class WordleServerIo implements WordleServer {
     room.roomCode = WordleRoom.generateCode();
 
     final handler = webSocketHandler(_handleConnection);
-    _httpServer =
-        await shelf_io.serve(handler, InternetAddress.anyIPv4, port);
+    _httpServer = await shelf_io.serve(handler, InternetAddress.anyIPv4, port);
   }
 
   @override
   void broadcast(String message) {
-    for (final ch in _connections.values) {
+    for (final entry in _connections.entries) {
       try {
-        ch.sink.add(message);
-      } catch (_) {}
+        entry.value.sink.add(message);
+      } catch (e, st) {
+        SecureLogger.error(
+          'WordleServer broadcast failed for connection id ${entry.key}',
+          error: e,
+          stackTrace: st,
+        );
+      }
     }
   }
 
@@ -56,7 +62,13 @@ class WordleServerIo implements WordleServer {
   void sendTo(int playerId, String message) {
     try {
       _connections[playerId]?.sink.add(message);
-    } catch (_) {}
+    } catch (e, st) {
+      SecureLogger.error(
+        'WordleServer sendTo failed for playerId $playerId',
+        error: e,
+        stackTrace: st,
+      );
+    }
   }
 
   @override
@@ -86,8 +98,7 @@ class WordleServerIo implements WordleServer {
         }
 
         if (msg.type == WordleMessageType.join) {
-          final name =
-              (msg.payload['name'] as String?) ?? 'Player $id';
+          final name = (msg.payload['name'] as String?) ?? 'Player $id';
           room.addPlayer(name);
           channel.sink.add(WordleMessage.joined(id, name).encode());
           _onMessage?.call(msg, id);
@@ -101,8 +112,16 @@ class WordleServerIo implements WordleServer {
         broadcast(WordleMessage.disconnect.encode());
         _onMessage?.call(WordleMessage.disconnect, id);
       },
-      onError: (_) {
+      onError: (error, stackTrace) {
+        SecureLogger.error(
+          'WordleServer connection error for id $id',
+          error: error,
+          stackTrace: stackTrace,
+        );
         _connections.remove(id);
+        room.removePlayer(id);
+        broadcast(WordleMessage.disconnect.encode());
+        _onMessage?.call(WordleMessage.disconnect, id);
       },
     );
   }

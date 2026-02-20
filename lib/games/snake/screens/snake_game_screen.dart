@@ -290,67 +290,99 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
       child: KeyboardListener(
         focusNode: _focusNode..requestFocus(),
         onKeyEvent: (event) {
-        if (event is KeyDownEvent) {
-          final notifier = ref.read(snakeProvider.notifier);
-          if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-            notifier.changeDirection(Direction.up);
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-            notifier.changeDirection(Direction.down);
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-            notifier.changeDirection(Direction.left);
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-            notifier.changeDirection(Direction.right);
+          if (event is KeyDownEvent) {
+            final notifier = ref.read(snakeProvider.notifier);
+            if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+              notifier.changeDirection(Direction.up);
+            } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+              notifier.changeDirection(Direction.down);
+            } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+              notifier.changeDirection(Direction.left);
+            } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+              notifier.changeDirection(Direction.right);
+            }
           }
-        }
-      },
-      child: Scaffold(
-        backgroundColor: const Color(0xFF111317),
-        appBar: AppBar(
+        },
+        child: Scaffold(
           backgroundColor: const Color(0xFF111317),
-          title: const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                _kGameTitle,
-                style: TextStyle(color: Color(0xFF55ff00), letterSpacing: 2),
-              ),
-              // Isolated widget — only rebuilds when score changes.
-              _SnakeScoreDisplay(),
-            ],
-          ),
-          actions: [
-            PopupMenuButton<GameMode>(
-              icon: const Icon(Icons.settings),
-              onSelected: (m) {
-                ref.read(snakeProvider.notifier).setGameMode(m);
-              },
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: GameMode.classic, child: Text('Classic')),
-                PopupMenuItem(value: GameMode.wrap, child: Text('Wrap Around')),
-                PopupMenuItem(value: GameMode.speed, child: Text('Speed Mode')),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF111317),
+            title: const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _kGameTitle,
+                  style: TextStyle(color: Color(0xFF55ff00), letterSpacing: 2),
+                ),
+                // Isolated widget — only rebuilds when score changes.
+                _SnakeScoreDisplay(),
               ],
             ),
-          ],
-        ),
-        body: SnakeBackgroundAnimation(
-          child: Column(
-            children: [
-              // ─── GAME BOARD ───────────────────────────────────────────
-              Expanded(
-                flex: 3,
-                child: _SnakeBoardContainer(isDead: initialized && !playing),
+            actions: [
+              PopupMenuButton<GameMode>(
+                icon: const Icon(Icons.settings),
+                onSelected: (m) {
+                  ref.read(snakeProvider.notifier).setGameMode(m);
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(
+                    value: GameMode.classic,
+                    child: Text('Classic'),
+                  ),
+                  PopupMenuItem(
+                    value: GameMode.wrap,
+                    child: Text('Wrap Around'),
+                  ),
+                  PopupMenuItem(
+                    value: GameMode.speed,
+                    child: Text('Speed Mode'),
+                  ),
+                ],
               ),
-
-              const SizedBox(height: 8),
-
-              // ─── D-PAD CONTROLS ───────────────────────────────────────
-              const Expanded(flex: 2, child: _SnakeDPad()),
             ],
+          ),
+          body: SnakeBackgroundAnimation(
+            child: Column(
+              children: [
+                // ─── GAME BOARD ───────────────────────────────────────────
+                Expanded(
+                  flex: 3,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onPanEnd: (details) {
+                      final vel = details.velocity.pixelsPerSecond;
+                      final absX = vel.dx.abs();
+                      final absY = vel.dy.abs();
+                      if (absX < 100 && absY < 100) {
+                        return;
+                      } // ignore micro-swipes
+                      final notifier = ref.read(snakeProvider.notifier);
+                      if (absX > absY) {
+                        notifier.changeDirection(
+                          vel.dx > 0 ? Direction.right : Direction.left,
+                        );
+                      } else {
+                        notifier.changeDirection(
+                          vel.dy > 0 ? Direction.down : Direction.up,
+                        );
+                      }
+                    },
+                    child: _SnakeBoardContainer(
+                      isDead: initialized && !playing,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // ─── D-PAD CONTROLS ───────────────────────────────────────
+                const Expanded(flex: 2, child: _SnakeDPad()),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
   }
 }
 
@@ -428,20 +460,20 @@ class _SnakeDPad extends ConsumerWidget {
     final notifier = ref.read(snakeProvider.notifier);
     return Center(
       child: SizedBox(
-        width: 220,
-        height: 220,
+        width: 240,
+        height: 240,
         child: Stack(
           children: [
             Positioned(
               top: 0,
-              left: 80,
+              left: 82,
               child: _Arrow(
                 Icons.keyboard_arrow_up,
                 () => notifier.changeDirection(Direction.up),
               ),
             ),
             Positioned(
-              top: 80,
+              top: 82,
               left: 0,
               child: _Arrow(
                 Icons.keyboard_arrow_left,
@@ -449,16 +481,16 @@ class _SnakeDPad extends ConsumerWidget {
               ),
             ),
             Positioned(
-              top: 80,
-              left: 80,
+              top: 164,
+              left: 82,
               child: _Arrow(
                 Icons.keyboard_arrow_down,
                 () => notifier.changeDirection(Direction.down),
               ),
             ),
             Positioned(
-              top: 80,
-              left: 160,
+              top: 82,
+              left: 164,
               child: _Arrow(
                 Icons.keyboard_arrow_right,
                 () => notifier.changeDirection(Direction.right),
@@ -530,10 +562,11 @@ class _Arrow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTapDown: (_) => onTap(),
       child: Container(
-        width: 60,
-        height: 60,
+        width: 76,
+        height: 76,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: Colors.white.withAlpha((0.08 * 255).toInt()),

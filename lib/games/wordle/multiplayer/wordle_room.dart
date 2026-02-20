@@ -20,6 +20,9 @@ class WordleRoom {
   bool get isFull => players.length >= maxPlayers;
 
   WordleRoomPlayer addPlayer(String name, {bool isHost = false}) {
+    if (isFull) {
+      throw StateError('Room is full');
+    }
     final id = isHost ? 0 : (players.isEmpty ? 1 : players.last.id + 1);
     final player = WordleRoomPlayer(id: id, displayName: name, isHost: isHost);
     players.add(player);

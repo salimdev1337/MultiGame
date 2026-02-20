@@ -357,6 +357,8 @@ class _DeathAnimationState extends State<DeathAnimation>
     super.didUpdateWidget(oldWidget);
     if (widget.trigger && !oldWidget.trigger) {
       _controller.forward(from: 0);
+    } else if (!widget.trigger && oldWidget.trigger) {
+      _controller.reset(); // Restore full opacity when game restarts
     }
   }
 

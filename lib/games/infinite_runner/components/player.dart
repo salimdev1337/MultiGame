@@ -230,11 +230,6 @@ class Player extends SpriteAnimationGroupComponent<PlayerState>
     }
   }
 
-  /// Slide (disabled as per requirements)
-  void slide() {
-    // Slide mechanic removed
-  }
-
   /// Fast drop when in air
   void fastDrop() {
     if (!_isOnGround && _currentState != PlayerState.dead) {

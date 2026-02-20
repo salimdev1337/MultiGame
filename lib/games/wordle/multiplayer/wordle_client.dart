@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:multigame/utils/secure_logger.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'wordle_message.dart';
@@ -79,6 +80,12 @@ class WordleClient {
   void _send(String message) {
     try {
       _channel?.sink.add(message);
-    } catch (_) {}
+    } catch (e, st) {
+      SecureLogger.error(
+        'WordleClient failed to send message',
+        error: e,
+        stackTrace: st,
+      );
+    }
   }
 }

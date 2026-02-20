@@ -226,6 +226,8 @@ class DSColors {
         return connectFourPrimary;
       case 'ludo':
         return ludoPrimary;
+      case 'rpg':
+        return rpgPrimary;
       default:
         return primary;
     }

@@ -34,7 +34,10 @@ class BombGridPainter extends CustomPainter {
   static final _bgPaint       = Paint()..color = DSColors.bombermanBg;
   static final _floorAPaint   = Paint()..color = DSColors.bombermanFloorA;
   static final _floorBPaint   = Paint()..color = DSColors.bombermanFloorB;
-  static final _groutPaint    = Paint()..color = DSColors.bombermanGrout;
+  static final _groutStrokePaint = Paint()
+    ..color = DSColors.bombermanGrout
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.5;
   static final _wallPaint     = Paint()..color = DSColors.bombermanWall;
   static final _wallTopPaint  = Paint()
     ..color = DSColors.bombermanWallTop
@@ -113,20 +116,18 @@ class BombGridPainter extends CustomPainter {
     }
 
     // Grout lines — draw a thin grid over everything
-    _groutPaint.style = PaintingStyle.stroke;
-    _groutPaint.strokeWidth = grout;
     for (int r = 0; r <= kGridH; r++) {
       canvas.drawLine(
         Offset(0, r * cellH),
         Offset(size.width, r * cellH),
-        _groutPaint,
+        _groutStrokePaint,
       );
     }
     for (int c = 0; c <= kGridW; c++) {
       canvas.drawLine(
         Offset(c * cellW, 0),
         Offset(c * cellW, size.height),
-        _groutPaint,
+        _groutStrokePaint,
       );
     }
   }

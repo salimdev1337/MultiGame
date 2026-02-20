@@ -97,10 +97,16 @@ class BombFrameCodec {
       w.u8(state.winnerId!);
     }
     if (hasMsg) {
-      final msgBytes = utf8.encode(state.roundOverMessage!);
-      final truncated = msgBytes.length > 255
-          ? msgBytes.sublist(0, 255)
-          : msgBytes;
+      // Truncate at character boundaries
+      final truncated = <int>[];
+      var byteCount = 0;
+      for (final rune in state.roundOverMessage!.runes) {
+        final char = String.fromCharCode(rune);
+        final charBytes = utf8.encode(char);
+        if (byteCount + charBytes.length > 255) break;
+        truncated.addAll(charBytes);
+        byteCount += charBytes.length;
+      }
       w.u8(truncated.length);
       w.bytes(truncated);
     }
@@ -124,10 +130,16 @@ class BombFrameCodec {
             (p.hasShield ? 0x04 : 0) |
             (p.isBot ? 0x08 : 0),
       );
-      final nameBytes = utf8.encode(p.displayName);
-      final nameTruncated = nameBytes.length > 255
-          ? nameBytes.sublist(0, 255)
-          : nameBytes;
+      // Truncate at character boundaries
+      final nameTruncated = <int>[];
+      var byteCount = 0;
+      for (final rune in p.displayName.runes) {
+        final char = String.fromCharCode(rune);
+        final charBytes = utf8.encode(char);
+        if (byteCount + charBytes.length > 255) break;
+        nameTruncated.addAll(charBytes);
+        byteCount += charBytes.length;
+      }
       w.u8(nameTruncated.length);
       w.bytes(nameTruncated);
       w.u8(p.powerups.length.clamp(0, 255));
@@ -181,7 +193,10 @@ class BombFrameCodec {
     // ── Header ──────────────────────────────────────────────────────────────
     r.skip(1); // version
     r.skip(4); // frameId (already consumed by readFrameId if needed)
-    final phase = GamePhase.values[r.u8()];
+    final phaseIdx = r.u8();
+    final phase = (phaseIdx >= 0 && phaseIdx < GamePhase.values.length)
+        ? GamePhase.values[phaseIdx]
+        : GamePhase.lobby;
     final countdown = r.u8();
     final roundTimeSeconds = r.u8();
     final round = r.u8();
@@ -226,7 +241,12 @@ class BombFrameCodec {
       final powerupCount = r.u8();
       final powerups = List.generate(
         powerupCount,
-        (_) => PowerupType.values[r.u8()],
+        (_) {
+          final idx = r.u8();
+          return (idx >= 0 && idx < PowerupType.values.length)
+              ? PowerupType.values[idx]
+              : PowerupType.extraBomb;
+        },
       );
       return BombPlayer(
         id: id,
@@ -289,7 +309,10 @@ class BombFrameCodec {
     final powerups = List.generate(powerupCellCount, (_) {
       final x = r.u8();
       final y = r.u8();
-      final type = PowerupType.values[r.u8()];
+      final idx = r.u8();
+      final type = (idx >= 0 && idx < PowerupType.values.length)
+          ? PowerupType.values[idx]
+          : PowerupType.extraBomb;
       return PowerupCell(x: x, y: y, type: type);
     });
 
@@ -330,7 +353,7 @@ class _Writer {
     _buf.addByte(v & 0xFF);
   }
 
-  void bytes(Uint8List data) => _buf.add(data);
+  void bytes(List<int> data) => _buf.add(data);
 
   Uint8List toBytes() => _buf.toBytes();
 }

@@ -173,10 +173,16 @@ class AchievementService {
     // ── Multitasker: all 9 games played ─────────────────────────────────
     final totalCompleted = await getTotalCompleted();
     int gamesPlayedCount = 0;
-    if (totalCompleted > 0) gamesPlayedCount++;
-    if (highestTile2048 > 0) gamesPlayedCount++;
+    if (totalCompleted > 0) {
+      gamesPlayedCount++;
+    }
+    if (highestTile2048 > 0) {
+      gamesPlayedCount++;
+    }
     for (final count in gamePlayCounts.values) {
-      if (count > 0) gamesPlayedCount++;
+      if (count > 0) {
+        gamesPlayedCount++;
+      }
     }
     if (gamesPlayedCount >= 9) {
       achievements['all_games'] = true;

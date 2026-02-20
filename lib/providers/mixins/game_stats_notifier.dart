@@ -5,6 +5,7 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:multigame/providers/user_auth_notifier.dart';
 import 'package:multigame/services/data/firebase_stats_service.dart';
 import 'package:multigame/services/data/streak_service.dart';
 import 'package:multigame/utils/secure_logger.dart';
@@ -35,6 +36,17 @@ abstract class GameStatsNotifier<T> extends AutoDisposeNotifier<T> {
       'Score save initiated: $gameType (score: $score)',
       tag: 'GameStats',
     );
+
+    // Lazily resolve user info from the auth provider if not explicitly set.
+    if (_userId == null) {
+      try {
+        final authState = ref.read(userAuthProvider);
+        _userId = authState.userId;
+        _displayName = authState.displayName;
+      } catch (_) {
+        // Auth provider unavailable (e.g., in unit tests) — stay null.
+      }
+    }
 
     if (_userId == null || score <= 0) {
       final reason = _userId == null ? 'no userId' : 'zero score';
