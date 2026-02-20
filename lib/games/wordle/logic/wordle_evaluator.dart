@@ -17,6 +17,17 @@ List<TileState> evaluateGuess(String guess, String answer) {
   final g = guess.toLowerCase();
   final a = answer.toLowerCase();
 
+  // Validate that both strings contain only lowercase letters
+  for (var i = 0; i < g.length; i++) {
+    final gCode = g.codeUnitAt(i);
+    final aCode = a.codeUnitAt(i);
+    if (gCode < 97 || gCode > 122 || aCode < 97 || aCode > 122) {
+      throw ArgumentError(
+        'evaluateGuess requires lowercase alphabetic strings (a-z)',
+      );
+    }
+  }
+
   final result = List<TileState>.filled(kWordleWordLength, TileState.absent);
 
   // Remaining answer letter counts for yellow matching
@@ -57,7 +68,8 @@ bool isCorrectGuess(List<TileState> evaluation) =>
 ///
 /// Priority: correct > present > absent > empty (untried).
 Map<String, TileState> computeKeyboardState(
-    List<({String word, List<TileState> evaluation})> guesses) {
+  List<({String word, List<TileState> evaluation})> guesses,
+) {
   final best = <String, TileState>{};
 
   for (final g in guesses) {

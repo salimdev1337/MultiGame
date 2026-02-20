@@ -1,21 +1,20 @@
 import 'dart:convert';
 
+import 'package:multigame/utils/secure_logger.dart';
+
 /// All message types exchanged between host and guests.
 enum WordleMessageType {
   // Lobby lifecycle
-  join,    // guest → host: {name}
-  joined,  // host → guest: {playerId, name}
-  start,   // host → all: match is starting
-
+  join, // guest → host: {name}
+  joined, // host → guest: {playerId, name}
+  start, // host → all: match is starting
   // Gameplay: guest → host
   submitGuess, // {playerId, guess}
-
   // Gameplay: host → player(s)
-  guessResult,    // {playerId, valid, evaluation?, attemptsUsed, isSolved}
+  guessResult, // {playerId, valid, evaluation?, attemptsUsed, isSolved}
   opponentUpdate, // {attemptsUsed} sent to the OTHER player
-  roundWin,       // {winnerId, word} broadcast to all
-  matchWin,       // {winnerId, myScore, opponentScore} broadcast to all
-
+  roundWin, // {winnerId, word} broadcast to all
+  matchWin, // {winnerId, myScore, opponentScore} broadcast to all
   // Connection
   disconnect,
 }
@@ -32,17 +31,18 @@ class WordleMessage {
       WordleMessage(type: WordleMessageType.join, payload: {'name': name});
 
   static WordleMessage joined(int playerId, String name) => WordleMessage(
-        type: WordleMessageType.joined,
-        payload: {'playerId': playerId, 'name': name},
-      );
+    type: WordleMessageType.joined,
+    payload: {'playerId': playerId, 'name': name},
+  );
 
-  static const WordleMessage start =
-      WordleMessage(type: WordleMessageType.start);
+  static const WordleMessage start = WordleMessage(
+    type: WordleMessageType.start,
+  );
 
   static WordleMessage submitGuess(int playerId, String guess) => WordleMessage(
-        type: WordleMessageType.submitGuess,
-        payload: {'playerId': playerId, 'guess': guess},
-      );
+    type: WordleMessageType.submitGuess,
+    payload: {'playerId': playerId, 'guess': guess},
+  );
 
   static WordleMessage guessResult({
     required int playerId,
@@ -50,44 +50,43 @@ class WordleMessage {
     List<String>? evaluation,
     required int attemptsUsed,
     required bool isSolved,
-  }) =>
-      WordleMessage(
-        type: WordleMessageType.guessResult,
-        payload: {
-          'playerId': playerId,
-          'valid': valid,
-          if (evaluation != null) 'evaluation': evaluation,
-          'attemptsUsed': attemptsUsed,
-          'isSolved': isSolved,
-        },
-      );
+  }) => WordleMessage(
+    type: WordleMessageType.guessResult,
+    payload: {
+      'playerId': playerId,
+      'valid': valid,
+      if (evaluation != null) 'evaluation': evaluation,
+      'attemptsUsed': attemptsUsed,
+      'isSolved': isSolved,
+    },
+  );
 
   static WordleMessage opponentUpdate(int attemptsUsed) => WordleMessage(
-        type: WordleMessageType.opponentUpdate,
-        payload: {'attemptsUsed': attemptsUsed},
-      );
+    type: WordleMessageType.opponentUpdate,
+    payload: {'attemptsUsed': attemptsUsed},
+  );
 
   static WordleMessage roundWin(int winnerId, String word) => WordleMessage(
-        type: WordleMessageType.roundWin,
-        payload: {'winnerId': winnerId, 'word': word},
-      );
+    type: WordleMessageType.roundWin,
+    payload: {'winnerId': winnerId, 'word': word},
+  );
 
   static WordleMessage matchWin({
     required int winnerId,
     required int player0Score,
     required int player1Score,
-  }) =>
-      WordleMessage(
-        type: WordleMessageType.matchWin,
-        payload: {
-          'winnerId': winnerId,
-          'player0Score': player0Score,
-          'player1Score': player1Score,
-        },
-      );
+  }) => WordleMessage(
+    type: WordleMessageType.matchWin,
+    payload: {
+      'winnerId': winnerId,
+      'player0Score': player0Score,
+      'player1Score': player1Score,
+    },
+  );
 
-  static const WordleMessage disconnect =
-      WordleMessage(type: WordleMessageType.disconnect);
+  static const WordleMessage disconnect = WordleMessage(
+    type: WordleMessageType.disconnect,
+  );
 
   // ── Serialisation ──────────────────────────────────────────────────────────
 
@@ -96,12 +95,15 @@ class WordleMessage {
   static WordleMessage? tryDecode(String raw) {
     try {
       final map = jsonDecode(raw) as Map<String, dynamic>;
-      final type =
-          WordleMessageType.values.byName(map['type'] as String);
-      final payload =
-          (map['payload'] as Map<String, dynamic>?) ?? {};
+      final type = WordleMessageType.values.byName(map['type'] as String);
+      final payload = (map['payload'] as Map<String, dynamic>?) ?? {};
       return WordleMessage(type: type, payload: payload);
-    } catch (_) {
+    } catch (e, st) {
+      SecureLogger.error(
+        'WordleMessage.tryDecode failed to parse message',
+        error: e,
+        stackTrace: st,
+      );
       return null;
     }
   }

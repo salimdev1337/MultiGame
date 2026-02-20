@@ -34,9 +34,9 @@ extension MemoryDifficultyX on MemoryDifficulty {
       };
 
   /// Shuffle intensity on mismatch.
-  /// Easy: 0 — the two wrong cards simply swap with each other.
-  /// Medium: 2 random extra cards join (4 cards total, 2 swaps).
-  /// Hard: 4 random extra cards join (6 cards total, 3 swaps).
+  /// Easy: 0 extra cards — the two wrong cards simply swap with each other (1 pair).
+  /// Medium: 4 extra cards join the two mismatched cards (6 total, 3 swap pairs).
+  /// Hard: 6 extra cards join (8 total, 4 swap pairs).
   int get shuffleExtraCount => switch (this) {
         MemoryDifficulty.easy => 0,
         MemoryDifficulty.medium => 4,

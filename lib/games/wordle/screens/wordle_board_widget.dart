@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../models/wordle_enums.dart';
@@ -33,10 +35,7 @@ class WordleBoardWidget extends StatelessWidget {
           );
         } else if (row == round.guesses.length && !round.isFinished) {
           // Active input row
-          return _ActiveRow(
-            input: currentInput,
-            shake: shake,
-          );
+          return _ActiveRow(input: currentInput, shake: shake);
         } else {
           // Empty future row
           return _EmptyRow();
@@ -49,11 +48,7 @@ class WordleBoardWidget extends StatelessWidget {
 // ── Submitted row ─────────────────────────────────────────────────────────────
 
 class _SubmittedRow extends StatefulWidget {
-  const _SubmittedRow({
-    super.key,
-    required this.guess,
-    required this.rowIndex,
-  });
+  const _SubmittedRow({super.key, required this.guess, required this.rowIndex});
 
   final WordleGuess guess;
   final int rowIndex;
@@ -66,6 +61,7 @@ class _SubmittedRowState extends State<_SubmittedRow>
     with TickerProviderStateMixin {
   late final List<AnimationController> _controllers;
   late final List<Animation<double>> _flips;
+  final List<Timer> _flipTimers = [];
 
   @override
   void initState() {
@@ -78,23 +74,30 @@ class _SubmittedRowState extends State<_SubmittedRow>
       ),
     );
     _flips = _controllers
-        .map((c) => Tween<double>(begin: 0, end: 1).animate(
-              CurvedAnimation(parent: c, curve: Curves.easeInOut),
-            ))
+        .map(
+          (c) => Tween<double>(
+            begin: 0,
+            end: 1,
+          ).animate(CurvedAnimation(parent: c, curve: Curves.easeInOut)),
+        )
         .toList();
 
     // Stagger tile flips by 80 ms per column
     for (var i = 0; i < kWordleWordLength; i++) {
-      Future.delayed(Duration(milliseconds: 80 * i), () {
+      final timer = Timer(Duration(milliseconds: 80 * i), () {
         if (mounted) {
           _controllers[i].forward();
         }
       });
+      _flipTimers.add(timer);
     }
   }
 
   @override
   void dispose() {
+    for (final timer in _flipTimers) {
+      timer.cancel();
+    }
     for (final c in _controllers) {
       c.dispose();
     }
@@ -186,8 +189,10 @@ class _ActiveRowState extends State<_ActiveRow>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _shakeAnim,
-      builder: (_, child) =>
-          Transform.translate(offset: Offset(_shakeAnim.value, 0), child: child),
+      builder: (_, child) => Transform.translate(
+        offset: Offset(_shakeAnim.value, 0),
+        child: child,
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
@@ -217,7 +222,8 @@ class _EmptyRow extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: List.generate(
           kWordleWordLength,
-          (_) => const _Tile(letter: '', state: TileState.empty, submitted: false),
+          (_) =>
+              const _Tile(letter: '', state: TileState.empty, submitted: false),
         ),
       ),
     );

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:multigame/config/app_router.dart';
+import 'package:multigame/utils/secure_logger.dart';
 
 import '../multiplayer/wordle_client.dart';
 import '../multiplayer/wordle_message.dart';
@@ -15,12 +16,12 @@ import 'package:multigame/games/wordle/multiplayer/wordle_server_stub.dart'
     if (dart.library.io) 'package:multigame/games/wordle/multiplayer/wordle_server_io.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
-const _kBg     = Color(0xFF0D1117);
-const _kCard   = Color(0xFF161B22);
+const _kBg = Color(0xFF0D1117);
+const _kCard = Color(0xFF161B22);
 const _kBorder = Color(0xFF30363D);
-const _kCyan   = Color(0xFF58A6FF);
+const _kCyan = Color(0xFF58A6FF);
 const _kPurple = Color(0xFF8B5CF6);
-const _kGreen  = Color(0xFF3FB950);
+const _kGreen = Color(0xFF3FB950);
 
 enum _LobbyView { home, hosting, joining }
 
@@ -79,7 +80,8 @@ class _WordleLobbyPageState extends ConsumerState<WordleLobbyPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Could not get local IP. Are you on WiFi?')),
+            content: Text('Could not get local IP. Are you on WiFi?'),
+          ),
         );
       }
       return;
@@ -90,10 +92,12 @@ class _WordleLobbyPageState extends ConsumerState<WordleLobbyPage> {
 
     try {
       await server.start(port);
-    } catch (e) {
+    } catch (e, st) {
+      SecureLogger.error('Failed to start server', error: e, stackTrace: st);
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Failed to start server: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to start server: $e')));
       }
       return;
     }
@@ -155,11 +159,9 @@ class _WordleLobbyPageState extends ConsumerState<WordleLobbyPage> {
         .map((p) => (id: p.id, name: p.displayName))
         .toList();
 
-    await ref.read(wordleProvider.notifier).startMultiplayerHost(
-          server: server,
-          client: client,
-          players: players,
-        );
+    await ref
+        .read(wordleProvider.notifier)
+        .startMultiplayerHost(server: server, client: client, players: players);
 
     _server = null;
     _client = null;
@@ -212,10 +214,9 @@ class _WordleLobbyPageState extends ConsumerState<WordleLobbyPage> {
             return;
           }
           _client = null;
-          ref.read(wordleProvider.notifier).connectAsGuest(
-                client: c,
-                localPlayerId: _myPlayerId,
-              );
+          ref
+              .read(wordleProvider.notifier)
+              .connectAsGuest(client: c, localPlayerId: _myPlayerId);
           if (mounted) {
             context.go(AppRoutes.game('wordle'));
           }
@@ -226,9 +227,9 @@ class _WordleLobbyPageState extends ConsumerState<WordleLobbyPage> {
 
     client.onDisconnected = () {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Host disconnected')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Host disconnected')));
         context.go(AppRoutes.home);
       }
     };
@@ -276,29 +277,41 @@ class _WordleLobbyPageState extends ConsumerState<WordleLobbyPage> {
       case _LobbyView.joining:
         title = 'JOIN GAME';
         onBack = () => setState(() {
-              _view = _LobbyView.home;
-              _joined = false;
-              _connectError = null;
-            });
+          _view = _LobbyView.home;
+          _joined = false;
+          _connectError = null;
+        });
     }
 
     return AppBar(
       backgroundColor: _kBg,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white70, size: 20),
+        icon: const Icon(
+          Icons.arrow_back_ios_new,
+          color: Colors.white70,
+          size: 20,
+        ),
         onPressed: onBack,
       ),
       title: _view == _LobbyView.home
-          ? _GradientText(title, style: const TextStyle(
-              fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 3))
-          : Text(title,
+          ? _GradientText(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 3,
+              ),
+            )
+          : Text(
+              title,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 2,
-              )),
+              ),
+            ),
       centerTitle: true,
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(1),
@@ -353,10 +366,12 @@ class _WordleLobbyPageState extends ConsumerState<WordleLobbyPage> {
               subtitle: 'Create a new lobby',
               icon: Icons.add_circle_outline,
               gradientColors: const [Color(0xFF0099CC), _kCyan],
-              onTap: kIsWeb ? null : () {
-                setState(() => _view = _LobbyView.hosting);
-                _startHosting();
-              },
+              onTap: kIsWeb
+                  ? null
+                  : () {
+                      setState(() => _view = _LobbyView.hosting);
+                      _startHosting();
+                    },
             ),
             const SizedBox(height: 16),
             _GradientButton(
@@ -364,12 +379,17 @@ class _WordleLobbyPageState extends ConsumerState<WordleLobbyPage> {
               subtitle: kIsWeb ? 'Not available on web' : 'Enter code to join',
               icon: Icons.login,
               gradientColors: const [_kPurple, Color(0xFFA855F7)],
-              onTap: kIsWeb ? null : () => setState(() => _view = _LobbyView.joining),
+              onTap: kIsWeb
+                  ? null
+                  : () => setState(() => _view = _LobbyView.joining),
             ),
             if (kIsWeb) ...[
               const SizedBox(height: 24),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: _kCard,
                   borderRadius: BorderRadius.circular(10),
@@ -440,8 +460,11 @@ class _WordleLobbyPageState extends ConsumerState<WordleLobbyPage> {
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: const Icon(Icons.copy_rounded,
-                          color: Colors.white38, size: 20),
+                      icon: const Icon(
+                        Icons.copy_rounded,
+                        color: Colors.white38,
+                        size: 20,
+                      ),
                       onPressed: () =>
                           Clipboard.setData(ClipboardData(text: _hostCode)),
                       tooltip: 'Copy code',
@@ -649,7 +672,9 @@ class _PlayerSlotCard extends StatelessWidget {
             height: 52,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isEmpty ? Colors.transparent : _kGreen.withValues(alpha: 0.15),
+              color: isEmpty
+                  ? Colors.transparent
+                  : _kGreen.withValues(alpha: 0.15),
               border: Border.all(
                 color: isEmpty ? _kBorder : _kGreen,
                 width: isEmpty ? 1 : 2,
@@ -657,7 +682,11 @@ class _PlayerSlotCard extends StatelessWidget {
               ),
             ),
             child: isEmpty
-                ? const Icon(Icons.person_outline, color: Colors.white24, size: 24)
+                ? const Icon(
+                    Icons.person_outline,
+                    color: Colors.white24,
+                    size: 24,
+                  )
                 : Center(
                     child: Text(
                       (name!.isNotEmpty ? name![0] : '?').toUpperCase(),
@@ -697,8 +726,8 @@ class _PlayerSlotCard extends StatelessWidget {
               isHost
                   ? 'HOST'
                   : isEmpty
-                      ? 'NOT READY'
-                      : 'READY',
+                  ? 'NOT READY'
+                  : 'READY',
               style: TextStyle(
                 color: isReady ? _kGreen : Colors.white24,
                 fontSize: 10,
@@ -780,7 +809,9 @@ class _GradientButton extends StatelessWidget {
                     Text(
                       subtitle!,
                       style: const TextStyle(
-                          color: Colors.white70, fontSize: 12),
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ],
@@ -796,11 +827,7 @@ class _GradientButton extends StatelessWidget {
 // ── _GradientText ─────────────────────────────────────────────────────────────
 
 class _GradientText extends StatelessWidget {
-  const _GradientText(
-    this.text, {
-    required this.style,
-    this.textAlign,
-  });
+  const _GradientText(this.text, {required this.style, this.textAlign});
 
   final String text;
   final TextStyle style;

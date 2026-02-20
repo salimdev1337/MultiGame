@@ -6,6 +6,7 @@ import 'package:multigame/repositories/stats_repository.dart';
 import 'package:multigame/services/data/achievement_service.dart';
 import 'package:multigame/services/data/streak_service.dart';
 import 'package:multigame/services/storage/nickname_service.dart';
+import 'package:multigame/utils/secure_logger.dart';
 import 'package:multigame/widgets/profile/achievement_gallery.dart';
 import 'package:multigame/widgets/profile/animated_profile_header.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -18,9 +19,9 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final AchievementService _achievementService = AchievementService();
-  final NicknameService _nicknameService = NicknameService();
-  final StreakService _streakService = StreakService();
+  late final AchievementService _achievementService;
+  late final NicknameService _nicknameService;
+  late final StreakService _streakService;
   // Lazy so tests don't need GetIt set up unless Firebase is exercised.
   StatsRepository? _statsRepository;
 
@@ -45,6 +46,9 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
+    _achievementService = GetIt.instance<AchievementService>();
+    _nicknameService = GetIt.instance<NicknameService>();
+    _streakService = GetIt.instance<StreakService>();
     _loadAll();
   }
 
@@ -56,20 +60,52 @@ class _ProfilePageState extends State<ProfilePage> {
 
     // Nickname uses SecureStorage which may be slow — load independently
     // so it never blocks the page from finishing the loading state.
-    _fetchNickname().catchError((_) {}).then((_) {
-      if (mounted) setState(() {});
-    });
+    _fetchNickname()
+        .catchError((e, st) {
+          SecureLogger.error(
+            'Failed to fetch nickname',
+            error: e,
+            stackTrace: st,
+          );
+        })
+        .then((_) {
+          if (mounted) setState(() {});
+        });
 
     await Future.wait([
-      _fetchStreakAndLevel().catchError((_) {}),
-      _fetchLocalStats().catchError((_) {}),
-      _fetchAllGameStats().catchError((_) {}),
+      _fetchStreakAndLevel().catchError((e, st) {
+        SecureLogger.error(
+          'Failed to fetch streak/level',
+          error: e,
+          stackTrace: st,
+        );
+      }),
+      _fetchLocalStats().catchError((e, st) {
+        SecureLogger.error(
+          'Failed to fetch local stats',
+          error: e,
+          stackTrace: st,
+        );
+      }),
+      _fetchAllGameStats().catchError((e, st) {
+        SecureLogger.error(
+          'Failed to fetch all game stats',
+          error: e,
+          stackTrace: st,
+        );
+      }),
     ]);
 
     // achievements depend on the other data, so run after
     try {
       await _fetchAchievements();
-    } catch (_) {}
+    } catch (e, st) {
+      SecureLogger.error(
+        'Failed to fetch achievements',
+        error: e,
+        stackTrace: st,
+      );
+    }
 
     if (mounted) {
       setState(() {
@@ -118,8 +154,12 @@ class _ProfilePageState extends State<ProfilePage> {
           _allGameStats = userStats.gameStats;
         }
       }
-    } catch (_) {
-      // Firebase unavailable or GetIt not set up — continue with empty stats
+    } catch (e, st) {
+      SecureLogger.error(
+        'Firebase unavailable or GetIt not set up in _fetchAllGameStats',
+        error: e,
+        stackTrace: st,
+      );
     }
   }
 
@@ -177,7 +217,9 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(DSSpacing.sm),
-              borderSide: BorderSide(color: DSColors.primary.withValues(alpha: 0.3)),
+              borderSide: BorderSide(
+                color: DSColors.primary.withValues(alpha: 0.3),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(DSSpacing.sm),
@@ -424,10 +466,7 @@ class _StatsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeader(
-          icon: Icons.bar_chart_rounded,
-          title: 'Game Stats',
-        ),
+        _SectionHeader(icon: Icons.bar_chart_rounded, title: 'Game Stats'),
         SizedBox(height: DSSpacing.md),
         _StatsGrid(
           localStats: localStats,
@@ -497,15 +536,51 @@ class _StatsGrid extends StatelessWidget {
     ];
 
     // Firebase-tracked games
-    final firebaseGames = <({String key, String label, String icon, Color color})>[
-      (key: 'sudoku', label: 'Sudoku', icon: '🔢', color: DSColors.secondary),
-      (key: 'snake', label: 'Snake', icon: '🐍', color: const Color(0xFF4CAF50)),
-      (key: 'runner', label: 'Infinite Runner', icon: '🏃', color: const Color(0xFF9C27B0)),
-      (key: 'bomberman', label: 'Bomberman', icon: '💣', color: const Color(0xFFFF5722)),
-      (key: 'memory', label: 'Memory', icon: '🃏', color: const Color(0xFF2196F3)),
-      (key: 'wordle', label: 'Wordle Duel', icon: '📝', color: const Color(0xFF795548)),
-      (key: 'connect_four', label: 'Connect Four', icon: '🔴', color: const Color(0xFFF44336)),
-    ];
+    final firebaseGames =
+        <({String key, String label, String icon, Color color})>[
+          (
+            key: 'sudoku',
+            label: 'Sudoku',
+            icon: '🔢',
+            color: DSColors.secondary,
+          ),
+          (
+            key: 'snake',
+            label: 'Snake',
+            icon: '🐍',
+            color: const Color(0xFF4CAF50),
+          ),
+          (
+            key: 'runner',
+            label: 'Infinite Runner',
+            icon: '🏃',
+            color: const Color(0xFF9C27B0),
+          ),
+          (
+            key: 'bomberman',
+            label: 'Bomberman',
+            icon: '💣',
+            color: const Color(0xFFFF5722),
+          ),
+          (
+            key: 'memory',
+            label: 'Memory',
+            icon: '🃏',
+            color: const Color(0xFF2196F3),
+          ),
+          (
+            key: 'wordle',
+            label: 'Wordle Duel',
+            icon: '📝',
+            color: const Color(0xFF795548),
+          ),
+          (
+            key: 'connect_four',
+            label: 'Connect Four',
+            icon: '🔴',
+            color: const Color(0xFFF44336),
+          ),
+        ];
 
     for (final game in firebaseGames) {
       final stats = allGameStats[game.key];
@@ -566,10 +641,7 @@ class _GameStatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: DSColors.surface,
         borderRadius: BorderRadius.circular(DSSpacing.md),
-        border: Border.all(
-          color: color.withValues(alpha: 0.25),
-          width: 1,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -635,10 +707,7 @@ class _LegalSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeader(
-          icon: Icons.gavel_rounded,
-          title: 'Legal & Privacy',
-        ),
+        _SectionHeader(icon: Icons.gavel_rounded, title: 'Legal & Privacy'),
         SizedBox(height: DSSpacing.md),
         _LegalButton(
           icon: Icons.privacy_tip_outlined,

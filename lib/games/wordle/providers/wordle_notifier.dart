@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:multigame/providers/services_providers.dart';
 import 'package:multigame/providers/mixins/game_stats_notifier.dart';
 import 'package:multigame/services/data/firebase_stats_service.dart';
+import 'package:multigame/utils/secure_logger.dart';
 
 import '../logic/word_database.dart';
 import '../logic/wordle_evaluator.dart';
@@ -17,8 +18,8 @@ import '../multiplayer/wordle_server.dart';
 
 final wordleProvider =
     NotifierProvider.autoDispose<WordleNotifier, WordleGameState>(
-  WordleNotifier.new,
-);
+      WordleNotifier.new,
+    );
 
 class WordleNotifier extends GameStatsNotifier<WordleGameState> {
   @override
@@ -47,7 +48,20 @@ class WordleNotifier extends GameStatsNotifier<WordleGameState> {
 
   /// Starts a solo (single-player) match.
   Future<void> startSolo() async {
-    await WordDatabase.initialize();
+    try {
+      await WordDatabase.initialize();
+    } catch (e, st) {
+      SecureLogger.error(
+        'Failed to initialize WordDatabase in startSolo',
+        error: e,
+        stackTrace: st,
+      );
+      state = const WordleGameState().copyWith(
+        phase: WordlePhase.error,
+        role: WordleRole.solo,
+      );
+      return;
+    }
     final seed = Random().nextInt(1 << 30);
     final words = WordDatabase.selectWords(seed, kWordleRounds);
 
@@ -65,7 +79,17 @@ class WordleNotifier extends GameStatsNotifier<WordleGameState> {
     required WordleClient client,
     required List<({int id, String name})> players,
   }) async {
-    await WordDatabase.initialize();
+    try {
+      await WordDatabase.initialize();
+    } catch (e, st) {
+      SecureLogger.error(
+        'Failed to initialize WordDatabase in startMultiplayerHost',
+        error: e,
+        stackTrace: st,
+      );
+      state = const WordleGameState().copyWith(phase: WordlePhase.error);
+      return;
+    }
     _server = server;
     _client = client;
 
@@ -80,8 +104,10 @@ class WordleNotifier extends GameStatsNotifier<WordleGameState> {
       role: WordleRole.host,
       words: words,
       myPlayerId: 0,
-      opponentName:
-          players.where((p) => p.id != 0).map((p) => p.name).firstOrNull,
+      opponentName: players
+          .where((p) => p.id != 0)
+          .map((p) => p.name)
+          .firstOrNull,
     );
 
     _startCountdown();
@@ -131,8 +157,10 @@ class WordleNotifier extends GameStatsNotifier<WordleGameState> {
       return;
     }
     state = state.copyWith(
-      currentInput:
-          state.currentInput.substring(0, state.currentInput.length - 1),
+      currentInput: state.currentInput.substring(
+        0,
+        state.currentInput.length - 1,
+      ),
       invalidWordMessage: null,
     );
   }
@@ -150,10 +178,9 @@ class WordleNotifier extends GameStatsNotifier<WordleGameState> {
     }
 
     if (state.role == WordleRole.guest) {
-      // Save the word before clearing input — needed when guessResult arrives
+      // Save the word before sending — clear input only when guessResult arrives
       _pendingGuessWord = guess;
       _client?.sendGuess(state.myPlayerId, guess);
-      state = state.copyWith(currentInput: '');
       return;
     }
 
@@ -192,18 +219,12 @@ class WordleNotifier extends GameStatsNotifier<WordleGameState> {
 
     final evaluation = evaluateGuess(guess, word);
     final solved = isCorrectGuess(evaluation);
-    final wordleGuess = WordleGuess(
-      word: guess,
-      evaluation: evaluation,
-    );
+    final wordleGuess = WordleGuess(word: guess, evaluation: evaluation);
 
     if (isMyGuess) {
       // Update local state
       final newRound = state.myRound.addGuess(wordleGuess, solved: solved);
-      state = state.copyWith(
-        myRound: newRound,
-        currentInput: '',
-      );
+      state = state.copyWith(myRound: newRound, currentInput: '');
 
       // In multiplayer, tell the opponent how many guesses we've used
       if (!state.isSolo) {
@@ -220,8 +241,7 @@ class WordleNotifier extends GameStatsNotifier<WordleGameState> {
     } else {
       // Guest's guess received at host — track opponent progress
       // Track opponent's guess count via opponentAttemptsUsed
-      final newOpponentAttempts =
-          (state.opponentAttemptsUsed ?? 0) + 1;
+      final newOpponentAttempts = (state.opponentAttemptsUsed ?? 0) + 1;
 
       // Send result back to guest
       _server?.sendTo(
@@ -241,9 +261,7 @@ class WordleNotifier extends GameStatsNotifier<WordleGameState> {
         WordleMessage.opponentUpdate(newOpponentAttempts).encode(),
       );
 
-      state = state.copyWith(
-        opponentAttemptsUsed: newOpponentAttempts,
-      );
+      state = state.copyWith(opponentAttemptsUsed: newOpponentAttempts);
 
       if (solved || newOpponentAttempts >= kWordleMaxGuesses) {
         _checkRoundOver(opponentSolvedId: solved ? playerId : null);
@@ -265,7 +283,8 @@ class WordleNotifier extends GameStatsNotifier<WordleGameState> {
     }
 
     // Multiplayer: round ends when either player finishes or both exhaust
-    final roundDone = mySolved ||
+    final roundDone =
+        mySolved ||
         opponentSolvedId != null ||
         (myExhausted && opponentExhausted);
 
@@ -312,7 +331,8 @@ class WordleNotifier extends GameStatsNotifier<WordleGameState> {
     }
 
     // Check match end
-    final matchOver = newMyScore >= kWordlePointsToWin ||
+    final matchOver =
+        newMyScore >= kWordlePointsToWin ||
         newOpponentScore >= kWordlePointsToWin ||
         state.roundIndex >= kWordleRounds - 1;
 
@@ -324,8 +344,8 @@ class WordleNotifier extends GameStatsNotifier<WordleGameState> {
         final matchWinnerId = newMyScore > newOpponentScore
             ? state.myPlayerId
             : newMyScore < newOpponentScore
-                ? (state.myPlayerId == 0 ? 1 : 0)
-                : null;
+            ? (state.myPlayerId == 0 ? 1 : 0)
+            : null;
 
         state = state.copyWith(
           phase: WordlePhase.matchEnd,
@@ -336,8 +356,12 @@ class WordleNotifier extends GameStatsNotifier<WordleGameState> {
           _server?.broadcast(
             WordleMessage.matchWin(
               winnerId: matchWinnerId ?? -1,
-              player0Score: state.myPlayerId == 0 ? newMyScore : newOpponentScore,
-              player1Score: state.myPlayerId == 0 ? newOpponentScore : newMyScore,
+              player0Score: state.myPlayerId == 0
+                  ? newMyScore
+                  : newOpponentScore,
+              player1Score: state.myPlayerId == 0
+                  ? newOpponentScore
+                  : newMyScore,
             ).encode(),
           );
         }
@@ -460,10 +484,8 @@ class WordleNotifier extends GameStatsNotifier<WordleGameState> {
         final winnerId = msg.payload['winnerId'] as int?;
         final p0Score = msg.payload['player0Score'] as int? ?? 0;
         final p1Score = msg.payload['player1Score'] as int? ?? 0;
-        final myScore =
-            state.myPlayerId == 0 ? p0Score : p1Score;
-        final opponentScore =
-            state.myPlayerId == 0 ? p1Score : p0Score;
+        final myScore = state.myPlayerId == 0 ? p0Score : p1Score;
+        final opponentScore = state.myPlayerId == 0 ? p1Score : p0Score;
         _roundEndTimer?.cancel(); // cancel round-advance timer if match is over
         state = state.copyWith(
           phase: WordlePhase.matchEnd,
@@ -494,9 +516,17 @@ class WordleNotifier extends GameStatsNotifier<WordleGameState> {
       return;
     }
 
-    final evaluation = evaluationRaw
-        .map((t) => TileState.values.byName(t as String))
-        .toList();
+    final evaluation = evaluationRaw.map((t) {
+      try {
+        return TileState.values.byName(t as String);
+      } catch (e) {
+        SecureLogger.error(
+          'Invalid TileState name in guessResult: $t',
+          error: e,
+        );
+        return TileState.absent;
+      }
+    }).toList();
 
     final guess = WordleGuess(
       word: _pendingGuessWord.isNotEmpty

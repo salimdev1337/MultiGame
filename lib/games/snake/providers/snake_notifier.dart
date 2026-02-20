@@ -51,9 +51,10 @@ class SnakeState {
     this.highScore = 0,
   });
 
-  Duration get tickRate => gameMode == GameMode.speed
-      ? const Duration(milliseconds: 120)
-      : const Duration(milliseconds: 200);
+  Duration get tickRate => switch (gameMode) {
+    GameMode.speed => const Duration(milliseconds: 80),
+    _ => const Duration(milliseconds: 150),
+  };
 
   SnakeState copyWith({
     List<Offset>? snake,
@@ -89,6 +90,10 @@ class SnakeState {
 class SnakeNotifier extends GameStatsNotifier<SnakeState> {
   Timer? _timer;
   final Queue<Direction> _inputQueue = Queue();
+
+  // Accumulator for the 16 ms polling game loop.
+  Duration _accumulated = Duration.zero;
+  DateTime _lastTimerFire = DateTime.now();
   final Random _random = Random();
 
   // Incrementally-maintained set of cells not occupied by snake or food.
@@ -108,6 +113,8 @@ class SnakeNotifier extends GameStatsNotifier<SnakeState> {
   void startGame() {
     _timer?.cancel();
     _inputQueue.clear();
+    _accumulated = Duration.zero;
+    _lastTimerFire = DateTime.now();
     const initialSnake = [Offset(10, 10)];
     _freeCells
       ..clear()
@@ -139,15 +146,23 @@ class SnakeNotifier extends GameStatsNotifier<SnakeState> {
   }
 
   void changeDirection(Direction d) {
-    // Use last queued direction as effective current to allow rapid double-tap
+    // Use last queued direction as effective current to allow rapid double-tap.
     final effectiveCurrent = _inputQueue.isNotEmpty
         ? _inputQueue.last
         : state.currentDirection;
-    if (_isReverse(effectiveCurrent, d)) return;
-    // Cap at 2 to avoid stale inputs accumulating
-    if (_inputQueue.length < 2) {
-      _inputQueue.addLast(d);
+    if (_isReverse(effectiveCurrent, d)) {
+      return;
     }
+
+    if (_inputQueue.length >= 2) {
+      // Replace the stale future direction instead of silently dropping the
+      // new input. Guard against creating a [A, reverse(A)] death sequence.
+      if (_isReverse(_inputQueue.first, d)) {
+        return;
+      }
+      _inputQueue.removeLast();
+    }
+    _inputQueue.addLast(d);
   }
 
   bool _isReverse(Direction a, Direction b) =>
@@ -157,8 +172,19 @@ class SnakeNotifier extends GameStatsNotifier<SnakeState> {
       (a == Direction.right && b == Direction.left);
 
   void _startTimer() {
-    _timer = Timer.periodic(state.tickRate, (_) {
-      if (state.playing) _tick();
+    _accumulated = Duration.zero;
+    _lastTimerFire = DateTime.now();
+    _timer = Timer.periodic(const Duration(milliseconds: 16), (_) {
+      if (!state.playing) {
+        return;
+      }
+      final now = DateTime.now();
+      _accumulated += now.difference(_lastTimerFire);
+      _lastTimerFire = now;
+      while (_accumulated >= state.tickRate) {
+        _accumulated -= state.tickRate;
+        _tick();
+      }
     });
   }
 

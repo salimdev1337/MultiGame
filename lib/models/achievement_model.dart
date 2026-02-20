@@ -58,15 +58,33 @@ class AchievementModel {
     // Count how many of the 9 games have been played at least once.
     // Puzzle (totalCompleted>0) + 2048 (highestTile2048>0) + Firebase games.
     int gamesPlayedCount = 0;
-    if (totalCompleted > 0) gamesPlayedCount++;
-    if (highestTile2048 > 0) gamesPlayedCount++;
-    if (sudokuPlayed > 0) gamesPlayedCount++;
-    if (memoryPlayed > 0) gamesPlayedCount++;
-    if (snakePlayed > 0) gamesPlayedCount++;
-    if (runnerPlayed > 0) gamesPlayedCount++;
-    if (bombermanPlayed > 0) gamesPlayedCount++;
-    if (wordlePlayed > 0) gamesPlayedCount++;
-    if (connectFourPlayed > 0) gamesPlayedCount++;
+    if (totalCompleted > 0) {
+      gamesPlayedCount++;
+    }
+    if (highestTile2048 > 0) {
+      gamesPlayedCount++;
+    }
+    if (sudokuPlayed > 0) {
+      gamesPlayedCount++;
+    }
+    if (memoryPlayed > 0) {
+      gamesPlayedCount++;
+    }
+    if (snakePlayed > 0) {
+      gamesPlayedCount++;
+    }
+    if (runnerPlayed > 0) {
+      gamesPlayedCount++;
+    }
+    if (bombermanPlayed > 0) {
+      gamesPlayedCount++;
+    }
+    if (wordlePlayed > 0) {
+      gamesPlayedCount++;
+    }
+    if (connectFourPlayed > 0) {
+      gamesPlayedCount++;
+    }
 
     return [
       // ── Completion ─────────────────────────────────────────────────────────

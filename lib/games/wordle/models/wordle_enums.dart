@@ -20,6 +20,7 @@ enum WordlePhase {
   roundActive,
   roundEnd,
   matchEnd,
+  error,
 }
 
 /// Role of this device in a multiplayer match.

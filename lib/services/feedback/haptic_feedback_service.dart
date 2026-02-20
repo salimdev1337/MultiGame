@@ -31,13 +31,9 @@ class HapticFeedbackService {
   /// Initialize the service
   Future<void> initialize() async {
     try {
-      // Check device capability
       _hasVibrator = await Vibration.hasVibrator();
-
-      // Load user preference
       final stored = await _storage.read(key: _storageKey);
-      _hapticsEnabled = stored != 'false'; // Default to true
-
+      _hapticsEnabled = stored != 'false';
       SecureLogger.log(
         'Haptic service initialized (enabled: $_hapticsEnabled, capable: $_hasVibrator)',
         tag: 'Haptics',
@@ -52,15 +48,9 @@ class HapticFeedbackService {
     }
   }
 
-  /// Check if haptics can be triggered
-  bool get _canVibrate {
-    return _hapticsEnabled && (_hasVibrator ?? false);
-  }
-
-  /// Get current enabled state
+  bool get _canVibrate => _hapticsEnabled && (_hasVibrator ?? false);
   bool get isEnabled => _hapticsEnabled;
 
-  /// Enable or disable haptics
   Future<void> setEnabled(bool enabled) async {
     _hapticsEnabled = enabled;
     try {
@@ -74,167 +64,71 @@ class HapticFeedbackService {
     }
   }
 
+  Future<void> _safeVibrate({int? duration, List<int>? pattern}) async {
+    if (!_canVibrate) return;
+    try {
+      if (pattern != null) {
+        await Vibration.vibrate(pattern: pattern);
+      } else {
+        await Vibration.vibrate(duration: duration ?? 10);
+      }
+    } catch (e) {
+      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
+    }
+  }
+
   // ==========================================
   // Basic Feedback Patterns
   // ==========================================
 
   /// Light tap (10ms) - For button presses, selections
-  Future<void> lightTap() async {
-    if (!_canVibrate) return;
-
-    try {
-      await Vibration.vibrate(duration: 10);
-    } catch (e) {
-      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
-    }
-  }
+  Future<void> lightTap() => _safeVibrate(duration: 10);
 
   /// Medium tap (20ms) - For important actions
-  Future<void> mediumTap() async {
-    if (!_canVibrate) return;
-
-    try {
-      await Vibration.vibrate(duration: 20);
-    } catch (e) {
-      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
-    }
-  }
+  Future<void> mediumTap() => _safeVibrate(duration: 20);
 
   /// Strong tap (40ms) - For critical actions
-  Future<void> strongTap() async {
-    if (!_canVibrate) return;
-
-    try {
-      await Vibration.vibrate(duration: 40);
-    } catch (e) {
-      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
-    }
-  }
+  Future<void> strongTap() => _safeVibrate(duration: 40);
 
   /// Double tap pattern - For toggle actions
-  Future<void> doubleTap() async {
-    if (!_canVibrate) return;
-
-    try {
-      await Vibration.vibrate(pattern: [0, 15, 50, 15]);
-    } catch (e) {
-      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
-    }
-  }
+  Future<void> doubleTap() => _safeVibrate(pattern: [0, 15, 50, 15]);
 
   // ==========================================
   // Semantic Feedback Patterns
   // ==========================================
 
   /// Success pattern - For achievements, completions
-  /// Pattern: short - pause - medium - pause - long
-  Future<void> success() async {
-    if (!_canVibrate) return;
-
-    try {
-      await Vibration.vibrate(pattern: [0, 30, 100, 40, 100, 50]);
-    } catch (e) {
-      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
-    }
-  }
+  Future<void> success() => _safeVibrate(pattern: [0, 30, 100, 40, 100, 50]);
 
   /// Error pattern - For mistakes, invalid actions
-  /// Pattern: three quick vibrations (shake)
-  Future<void> error() async {
-    if (!_canVibrate) return;
-
-    try {
-      await Vibration.vibrate(pattern: [0, 50, 50, 50, 50, 50]);
-    } catch (e) {
-      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
-    }
-  }
+  Future<void> error() => _safeVibrate(pattern: [0, 50, 50, 50, 50, 50]);
 
   /// Warning pattern - For alerts, important notifications
-  /// Pattern: two medium vibrations
-  Future<void> warning() async {
-    if (!_canVibrate) return;
-
-    try {
-      await Vibration.vibrate(pattern: [0, 40, 80, 40]);
-    } catch (e) {
-      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
-    }
-  }
+  Future<void> warning() => _safeVibrate(pattern: [0, 40, 80, 40]);
 
   /// Notification pattern - For new messages, updates
-  /// Pattern: single medium vibration
-  Future<void> notification() async {
-    if (!_canVibrate) return;
-
-    try {
-      await Vibration.vibrate(duration: 30);
-    } catch (e) {
-      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
-    }
-  }
+  Future<void> notification() => _safeVibrate(duration: 30);
 
   /// Selection change - For picker scrolls, list selections
-  Future<void> selectionChanged() async {
-    if (!_canVibrate) return;
-
-    try {
-      await Vibration.vibrate(duration: 5);
-    } catch (e) {
-      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
-    }
-  }
+  Future<void> selectionChanged() => _safeVibrate(duration: 5);
 
   /// Impact - For collisions, game events
-  /// Pattern: strong single impact
-  Future<void> impact() async {
-    if (!_canVibrate) return;
-
-    try {
-      await Vibration.vibrate(duration: 50);
-    } catch (e) {
-      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
-    }
-  }
+  Future<void> impact() => _safeVibrate(duration: 50);
 
   // ==========================================
   // Advanced Patterns
   // ==========================================
 
   /// Long press start - For long-press interactions
-  Future<void> longPressStart() async {
-    if (!_canVibrate) return;
-
-    try {
-      await Vibration.vibrate(duration: 25);
-    } catch (e) {
-      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
-    }
-  }
+  Future<void> longPressStart() => _safeVibrate(duration: 25);
 
   /// Celebration pattern - For major achievements
-  /// Pattern: Three ascending vibrations
-  Future<void> celebration() async {
-    if (!_canVibrate) return;
-
-    try {
-      await Vibration.vibrate(pattern: [0, 30, 50, 40, 50, 50, 50, 60]);
-    } catch (e) {
-      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
-    }
-  }
+  Future<void> celebration() =>
+      _safeVibrate(pattern: [0, 30, 50, 40, 50, 50, 50, 60]);
 
   /// Custom pattern
-  /// Pass your own vibration pattern
-  Future<void> customPattern(List<int> pattern) async {
-    if (!_canVibrate) return;
-
-    try {
-      await Vibration.vibrate(pattern: pattern);
-    } catch (e) {
-      SecureLogger.error(_hapticFailed, error: e, tag: 'Haptics');
-    }
-  }
+  Future<void> customPattern(List<int> pattern) =>
+      _safeVibrate(pattern: pattern);
 
   /// Cancel any ongoing vibration
   Future<void> cancel() async {

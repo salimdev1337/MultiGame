@@ -1,7 +1,65 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get_it/get_it.dart';
+import 'package:multigame/repositories/user_repository.dart';
 import 'package:multigame/screens/profile_screen.dart';
+import 'package:multigame/services/data/achievement_service.dart';
+import 'package:multigame/services/data/streak_service.dart';
+import 'package:multigame/services/storage/nickname_service.dart';
+import 'package:multigame/utils/storage_migrator.dart';
+import 'package:multigame/repositories/secure_storage_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+// Fake UserRepository — no SecureStorage, no platform channels needed.
+class _FakeUserRepository implements UserRepository {
+  @override
+  Future<String?> getUserId() async => null;
+  @override
+  Future<bool> saveUserId(String userId) async => true;
+  @override
+  Future<bool> hasUserId() async => false;
+  @override
+  Future<bool> clearUserId() async => true;
+  @override
+  Future<String?> getDisplayName() async => null;
+  @override
+  Future<bool> saveDisplayName(String displayName) async => true;
+  @override
+  Future<bool> hasDisplayName() async => false;
+  @override
+  Future<bool> clearDisplayName() async => true;
+  @override
+  Future<bool> clearAll() async => true;
+}
+
+// Fake SecureStorageRepository — in-memory, no platform channels.
+class _FakeSecureStorageRepository implements SecureStorageRepository {
+  final Map<String, String> _store = {};
+
+  @override
+  Future<String?> read(String key) async => _store[key];
+  @override
+  Future<bool> write(String key, String value) async {
+    _store[key] = value;
+    return true;
+  }
+
+  @override
+  Future<bool> delete(String key) async {
+    _store.remove(key);
+    return true;
+  }
+
+  @override
+  Future<bool> deleteAll() async {
+    _store.clear();
+    return true;
+  }
+  @override
+  Future<Map<String, String>> readAll() async => Map.unmodifiable(_store);
+  @override
+  Future<bool> containsKey(String key) async => _store.containsKey(key);
+}
 
 /// Pump enough frames to:
 /// 1. Flush SharedPreferences microtasks so _isLoading becomes false.
@@ -27,6 +85,28 @@ void main() {
         'best_4x4_time': 90,
         'best_5x5_time': 180,
       });
+
+      final getIt = GetIt.instance;
+      if (!getIt.isRegistered<AchievementService>()) {
+        getIt.registerLazySingleton<AchievementService>(
+          () => AchievementService(),
+        );
+      }
+      if (!getIt.isRegistered<NicknameService>()) {
+        getIt.registerLazySingleton<NicknameService>(
+          () => NicknameService(
+            userRepository: _FakeUserRepository(),
+            migrator: StorageMigrator(_FakeSecureStorageRepository()),
+          ),
+        );
+      }
+      if (!getIt.isRegistered<StreakService>()) {
+        getIt.registerLazySingleton<StreakService>(() => StreakService());
+      }
+    });
+
+    tearDown(() async {
+      await GetIt.instance.reset();
     });
 
     testWidgets('renders profile page widget', (tester) async {

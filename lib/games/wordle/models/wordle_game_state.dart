@@ -78,10 +78,13 @@ class WordleGameState {
   bool get isSolo => role == WordleRole.solo;
   bool get isHost => role == WordleRole.host;
 
-  String get currentWord => (words.isNotEmpty && roundIndex < words.length)
-      ? words[roundIndex]
-      : '';
+  String get currentWord =>
+      (words.isNotEmpty && roundIndex < words.length) ? words[roundIndex] : '';
 
+  /// Creates a copy with updated values.
+  ///
+  /// Uses sentinel pattern for all nullable fields so they can be explicitly
+  /// cleared to null by passing null.
   WordleGameState copyWith({
     WordlePhase? phase,
     WordleRole? role,
@@ -90,12 +93,12 @@ class WordleGameState {
     WordlePlayerRound? myRound,
     int? myScore,
     int? opponentScore,
-    int? opponentAttemptsUsed,
+    Object? opponentAttemptsUsed = _sentinel,
     String? currentInput,
     Object? invalidWordMessage = _sentinel,
-    int? roundWinnerId,
+    Object? roundWinnerId = _sentinel,
     Object? matchWinnerId = _sentinel,
-    int? countdownValue,
+    Object? countdownValue = _sentinel,
     Object? revealedWord = _sentinel,
     int? myPlayerId,
     Object? opponentName = _sentinel,
@@ -108,18 +111,25 @@ class WordleGameState {
       myRound: myRound ?? this.myRound,
       myScore: myScore ?? this.myScore,
       opponentScore: opponentScore ?? this.opponentScore,
-      opponentAttemptsUsed: opponentAttemptsUsed ?? this.opponentAttemptsUsed,
+      opponentAttemptsUsed: opponentAttemptsUsed == _sentinel
+          ? this.opponentAttemptsUsed
+          : opponentAttemptsUsed as int?,
       currentInput: currentInput ?? this.currentInput,
       invalidWordMessage: invalidWordMessage == _sentinel
           ? this.invalidWordMessage
           : invalidWordMessage as String?,
-      roundWinnerId: roundWinnerId ?? this.roundWinnerId,
+      roundWinnerId: roundWinnerId == _sentinel
+          ? this.roundWinnerId
+          : roundWinnerId as int?,
       matchWinnerId: matchWinnerId == _sentinel
           ? this.matchWinnerId
           : matchWinnerId as int?,
-      countdownValue: countdownValue ?? this.countdownValue,
-      revealedWord:
-          revealedWord == _sentinel ? this.revealedWord : revealedWord as String?,
+      countdownValue: countdownValue == _sentinel
+          ? this.countdownValue
+          : countdownValue as int?,
+      revealedWord: revealedWord == _sentinel
+          ? this.revealedWord
+          : revealedWord as String?,
       myPlayerId: myPlayerId ?? this.myPlayerId,
       opponentName: opponentName == _sentinel
           ? this.opponentName
@@ -128,8 +138,7 @@ class WordleGameState {
   }
 
   WordleGameState clearInvalidWord() => copyWith(invalidWordMessage: null);
-  WordleGameState clearCountdown() =>
-      copyWith(countdownValue: null);
+  WordleGameState clearCountdown() => copyWith(countdownValue: null);
 }
 
 const Object _sentinel = Object();

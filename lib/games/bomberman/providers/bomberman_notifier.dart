@@ -230,9 +230,6 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
           final id = msg.payload['id'] as int? ?? 0;
           pressPlaceBomb(playerId: id);
         }
-      case BombMessageType.frameSync:
-        // frameSync is now sent as binary — this JSON branch is unused.
-        break;
       case BombMessageType.gridUpdate:
         if (_role == _MultiRole.guest) {
           final cells = (msg.payload['cells'] as List?)
