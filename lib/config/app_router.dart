@@ -18,6 +18,12 @@ import 'package:multigame/games/infinite_runner/screens/infinite_runner_screen.d
 import 'package:multigame/games/memory/screens/memory_game_screen.dart';
 import 'package:multigame/games/bomberman/screens/bomberman_game_screen.dart';
 import 'package:multigame/games/bomberman/screens/bomberman_lobby_screen.dart';
+import 'package:multigame/games/wordle/screens/wordle_game_screen.dart';
+import 'package:multigame/games/wordle/screens/wordle_lobby_screen.dart';
+import 'package:multigame/games/connect_four/screens/connect_four_screen.dart';
+import 'package:multigame/games/ludo/screens/ludo_game_screen.dart';
+import 'package:multigame/games/rpg/screens/boss_select_screen.dart';
+import 'package:multigame/games/rpg/screens/rpg_game_screen.dart';
 import 'package:multigame/games/sudoku/screens/modern_mode_difficulty_screen.dart';
 import 'package:multigame/games/sudoku/screens/sudoku_classic_screen.dart';
 import 'package:multigame/games/sudoku/screens/sudoku_rush_screen.dart';
@@ -36,6 +42,8 @@ abstract class AppRoutes {
   static String game(String gameId) => '/play/$gameId';
   static String sudokuMode(String mode) => '/play/sudoku/$mode';
   static const bombermanLobby = '/play/bomberman/lobby';
+  static const wordleLobby = '/play/wordle/lobby';
+  static const rpgBossSelect = '/play/rpg/boss_select';
 }
 
 GoRouter buildAppRouter(WidgetRef ref) {
@@ -121,6 +129,34 @@ GoRouter buildAppRouter(WidgetRef ref) {
                       GoRoute(
                         path: 'lobby',
                         builder: (_, _) => const BombermanLobbyPage(),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'wordle',
+                    builder: (_, _) => const WordleGamePage(),
+                    routes: [
+                      GoRoute(
+                        path: 'lobby',
+                        builder: (_, _) => const WordleLobbyPage(),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'connect_four',
+                    builder: (_, _) => const ConnectFourScreen(),
+                  ),
+                  GoRoute(
+                    path: 'ludo',
+                    builder: (_, _) => const LudoGamePage(),
+                  ),
+                  GoRoute(
+                    path: 'rpg',
+                    builder: (_, _) => const RpgGamePage(),
+                    routes: [
+                      GoRoute(
+                        path: 'boss_select',
+                        builder: (_, _) => const BossSelectPage(),
                       ),
                     ],
                   ),

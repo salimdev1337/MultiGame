@@ -1,9 +1,21 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:multigame/config/app_router.dart';
 import '../infinite_runner_game.dart';
 import '../screens/race_lobby_screen.dart';
+
+/// Restores portrait orientation and system UI, then navigates home.
+/// Must be called BEFORE context.go() so the home screen renders in portrait.
+void _exitToHome(BuildContext context) {
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  context.go(AppRoutes.home);
+}
 
 /// Overlay shown when game is loading
 class LoadingOverlay extends StatelessWidget {
@@ -407,7 +419,7 @@ class PausedOverlay extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               OutlinedButton(
-                onPressed: () => context.go(AppRoutes.home),
+                onPressed: () => _exitToHome(context),
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(
                     color: Colors.white.withValues(alpha: 0.4),
@@ -586,7 +598,7 @@ class GameOverOverlay extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                    onPressed: () => context.go(AppRoutes.home),
+                    onPressed: () => _exitToHome(context),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(
                         color: Color(0xFF00d4ff),

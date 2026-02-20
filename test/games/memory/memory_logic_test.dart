@@ -121,15 +121,30 @@ void main() {
       }
     });
 
+    test('easy mode (extraCount=0) swaps the two wrong cards with each other', () {
+      final cards = makeCards(16);
+      final (result, swapPairs) = shuffleOnMismatch(
+        cards, 0, 1, Random(0),
+        extraCount: 0,
+      );
+      // Exactly 1 swap pair containing both wrong card IDs.
+      expect(swapPairs.length, 1);
+      expect(swapPairs[0].$1, cards[0].id);
+      expect(swapPairs[0].$2, cards[1].id);
+      // The two wrong cards end up at each other's original positions.
+      expect(result.indexWhere((c) => c.id == cards[0].id), 1);
+      expect(result.indexWhere((c) => c.id == cards[1].id), 0);
+    });
+
     test('medium difficulty produces more swap pairs than easy', () {
       final cards = makeCards(24); // enough eligible cards
       final (_, easyPairs) = shuffleOnMismatch(
         cards, 0, 1, Random(0),
-        extraCount: MemoryDifficulty.easy.shuffleExtraCount,
+        extraCount: MemoryDifficulty.easy.shuffleExtraCount, // 0 → 1 pair
       );
       final (_, mediumPairs) = shuffleOnMismatch(
         cards, 0, 1, Random(0),
-        extraCount: MemoryDifficulty.medium.shuffleExtraCount,
+        extraCount: MemoryDifficulty.medium.shuffleExtraCount, // 4 → 2 pairs
       );
       expect(mediumPairs.length, greaterThan(easyPairs.length));
     });

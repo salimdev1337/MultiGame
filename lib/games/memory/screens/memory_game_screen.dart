@@ -143,6 +143,7 @@ class _MemoryGamePageState extends ConsumerState<MemoryGamePage> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
+              ref.read(memoryProvider.notifier).reset();
               context.go(AppRoutes.home);
             },
             child: Text(
@@ -205,6 +206,7 @@ class _MemoryGamePageState extends ConsumerState<MemoryGamePage> {
           onTap: () {
             Navigator.of(context).pop();
             _resultShowing = false;
+            notifier.reset();
             context.go(AppRoutes.home);
           },
           style: GameResultButtonStyle.outline,

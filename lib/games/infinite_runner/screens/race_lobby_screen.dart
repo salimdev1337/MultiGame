@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'dart:async' show TimeoutException;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -145,9 +145,7 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
   Future<void> _connectAsGuest() async {
     if (_codeInput.length != 6 && _manualIp.isEmpty) {
       setState(
-        () => _errorMsg = kIsWeb
-            ? 'Enter the host\'s IP address (e.g. 192.168.1.42)'
-            : 'Enter the 6-digit room code',
+        () => _errorMsg = 'Enter the 6-digit room code or the host IP address',
       );
       return;
     }
@@ -159,7 +157,9 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
       final ip = _manualIp.isNotEmpty
           ? _manualIp.trim()
           : RaceRoom.roomCodeToIp(_codeInput, _networkPrefix);
-      if (ip.isEmpty) throw Exception('Invalid code');
+      if (ip.isEmpty) {
+        throw Exception('Invalid room code');
+      }
 
       _room = RaceRoom(hostIp: ip, localPlayerId: -1); // ID assigned on join
       _client = RaceClient(hostIp: ip, displayName: _displayName, room: _room!);
@@ -168,10 +168,22 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
       _client!.onHostLeft = _handleHostLeft;
 
       setState(() => _isConnecting = false);
-    } catch (e) {
+    } on TimeoutException {
       setState(() {
         _isConnecting = false;
-        _errorMsg = 'Could not connect: check the code and try again';
+        _errorMsg =
+            'Connection timed out. Make sure the host is running on the same WiFi network and the code is correct.';
+      });
+    } catch (e) {
+      final msg = e.toString();
+      final isSecurityError = msg.contains('SecurityError') ||
+          msg.contains('insecure WebSocket') ||
+          msg.contains('WebSocketChannelException');
+      setState(() {
+        _isConnecting = false;
+        _errorMsg = isSecurityError
+            ? 'Connection blocked by the browser.\n\nLocal WiFi multiplayer requires the Android or Windows app — it cannot run in a browser served over HTTPS.'
+            : 'Could not connect to host. Check the IP address and make sure the host\'s app is running on the same WiFi network.';
       });
     }
   }
@@ -270,6 +282,32 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
 
   // ── Build ───────────────────────────────────────────────────────────────────
 
+  Widget _buildWebUnavailableBody() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.wifi_off, color: Colors.white38, size: 48),
+            SizedBox(height: 16),
+            Text(
+              'Local WiFi multiplayer is not available in the browser.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white70, fontSize: 16),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Use the Android or Windows app to race with friends.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white38, fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -285,7 +323,9 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
         ),
         iconTheme: const IconThemeData(color: Colors.white70),
       ),
-      body: _isConnecting && !_isEffectivelyHost
+      body: kIsWeb
+          ? _buildWebUnavailableBody()
+          : _isConnecting && !_isEffectivelyHost
           ? const Center(child: CircularProgressIndicator(color: _accentCyan))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),

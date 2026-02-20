@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:typed_data';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:multigame/games/bomberman/logic/bomb_logic.dart';
@@ -11,6 +12,7 @@ import 'package:multigame/games/bomberman/models/bomb_player.dart';
 import 'package:multigame/games/bomberman/models/cell_type.dart';
 import 'package:multigame/games/bomberman/models/game_phase.dart';
 import 'package:multigame/games/bomberman/multiplayer/bomb_client.dart';
+import 'package:multigame/games/bomberman/multiplayer/bomb_frame_codec.dart';
 import 'package:multigame/games/bomberman/multiplayer/bomb_message.dart';
 import 'package:multigame/games/bomberman/multiplayer/bomb_server.dart';
 import 'package:multigame/providers/mixins/game_stats_notifier.dart';
@@ -167,6 +169,7 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
     // Route guest input messages to this notifier
     server.onMessage = (msg, fromId) => _handleNetMessage(msg);
     client.onMessage = _handleNetMessage;
+    client.onBinaryFrame = _handleBinaryFrame;
 
     final grid = MapGenerator.generate(seed: _rng.nextInt(9999));
     final spawnPoints = [
@@ -208,6 +211,7 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
     _netClient = client;
     _localPlayerId = localPlayerId;
     client.onMessage = _handleNetMessage;
+    client.onBinaryFrame = _handleBinaryFrame;
   }
 
   // ─── Net message handler ───────────────────────────────────────────────────
@@ -227,16 +231,8 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
           pressPlaceBomb(playerId: id);
         }
       case BombMessageType.frameSync:
-        if (_role == _MultiRole.guest) {
-          final data = msg.payload['data'] as Map<String, dynamic>?;
-          if (data != null) {
-            final incomingId = (data['frameId'] as int?) ?? 0;
-            if (incomingId > _lastAppliedFrameId) {
-              _lastAppliedFrameId = incomingId;
-              state = state.applyFrameSync(data);
-            }
-          }
-        }
+        // frameSync is now sent as binary — this JSON branch is unused.
+        break;
       case BombMessageType.gridUpdate:
         if (_role == _MultiRole.guest) {
           final cells = (msg.payload['cells'] as List?)
@@ -252,15 +248,24 @@ class BombermanNotifier extends GameStatsNotifier<BombGameState> {
 
   void _broadcastIfHost() {
     if (_role != _MultiRole.host) return;
-    _netServer?.broadcast(
-      BombMessage.frameSync(state.toFrameJson(frameId: _frameId++)).encode(),
-    );
+    _netServer?.broadcastBytes(state.toFrameBytes(frameId: _frameId++));
     if (_gridChangedThisTick && _changedCells.isNotEmpty) {
       _netServer?.broadcast(
         BombMessage.gridUpdate(List.from(_changedCells)).encode(),
       );
       _gridChangedThisTick = false;
       _changedCells.clear();
+    }
+  }
+
+  // ─── Binary frame handler ─────────────────────────────────────────────────
+
+  void _handleBinaryFrame(Uint8List bytes) {
+    if (_role != _MultiRole.guest) return;
+    final incomingId = BombFrameCodec.readFrameId(bytes);
+    if (incomingId > _lastAppliedFrameId) {
+      _lastAppliedFrameId = incomingId;
+      state = state.applyFrameSyncBytes(bytes);
     }
   }
 

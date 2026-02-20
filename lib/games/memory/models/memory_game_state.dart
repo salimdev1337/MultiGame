@@ -33,10 +33,12 @@ extension MemoryDifficultyX on MemoryDifficulty {
         MemoryDifficulty.hard => const Duration(milliseconds: 260),
       };
 
-  /// Extra random cards added to shuffle pool beyond the 2 wrong ones.
-  /// Must be even. Easy: 2 swaps, medium: 3 swaps, hard: 4 swaps.
+  /// Shuffle intensity on mismatch.
+  /// Easy: 0 — the two wrong cards simply swap with each other.
+  /// Medium: 2 random extra cards join (4 cards total, 2 swaps).
+  /// Hard: 4 random extra cards join (6 cards total, 3 swaps).
   int get shuffleExtraCount => switch (this) {
-        MemoryDifficulty.easy => 2,
+        MemoryDifficulty.easy => 0,
         MemoryDifficulty.medium => 4,
         MemoryDifficulty.hard => 6,
       };
