@@ -32,15 +32,15 @@ void main() {
     });
 
     test('blue: start is relative 0', () {
-      expect(toRelativePosition(26, LudoPlayerColor.blue), 0);
+      expect(toRelativePosition(39, LudoPlayerColor.blue), 0);
     });
 
     test('green: start is relative 0', () {
-      expect(toRelativePosition(39, LudoPlayerColor.green), 0);
+      expect(toRelativePosition(13, LudoPlayerColor.green), 0);
     });
 
     test('yellow: start is relative 0', () {
-      expect(toRelativePosition(13, LudoPlayerColor.yellow), 0);
+      expect(toRelativePosition(26, LudoPlayerColor.yellow), 0);
     });
 
     test('round-trip: abs → rel → abs for all colors', () {
@@ -187,8 +187,8 @@ void main() {
         owner: LudoPlayerColor.blue,
         trackPosition: 50,
       );
-      // Blue start = 26; rel of 50 = (50-26+52)%52 = 24.
-      // 24 + 3 = 27 → still on track, abs = (27+26)%52 = 1.
+      // Blue start = 39; rel of 50 = (50-39+52)%52 = 11.
+      // 11 + 3 = 14 → still on track, abs = (14+39)%52 = 1.
       final result = advanceToken(t, 3, LudoPlayerColor.blue);
       expect(result.isOnTrack, isTrue);
     });
@@ -494,9 +494,9 @@ void main() {
     test('soloVsBots: 4 players, red is human, others are bots', () {
       final players = LudoGameState.buildPlayers(mode: LudoMode.soloVsBots);
       expect(players.length, 4);
-      expect(players.first.color, LudoPlayerColor.red);
-      expect(players.first.isBot, isFalse);
-      for (final p in players.skip(1)) {
+      final red = players.firstWhere((p) => p.color == LudoPlayerColor.red);
+      expect(red.isBot, isFalse);
+      for (final p in players.where((p) => p.color != LudoPlayerColor.red)) {
         expect(p.isBot, isTrue);
       }
     });
@@ -543,6 +543,210 @@ void main() {
         expect(p.tokens.length, 4);
         expect(p.tokens.every((t) => t.isInBase), isTrue);
       }
+    });
+  });
+
+  // ── same-color stacking — computeMovableTokenIds ──────────────────────────
+  group('same-color stacking — computeMovableTokenIds', () {
+    LudoPlayer makeRedPlayer(List<LudoToken> tokens) {
+      return LudoPlayer(
+        color: LudoPlayerColor.red,
+        name: 'Red',
+        isBot: false,
+        tokens: tokens,
+      );
+    }
+
+    test('token at pos 1 blocked when teammate at pos 3 (non-safe), dice=2', () {
+      // Red start = abs 0. Abs 1 = rel 1. Abs 3 = rel 3. Non-safe.
+      final token0 = const LudoToken(
+        id: 0,
+        owner: LudoPlayerColor.red,
+        trackPosition: 1,
+      );
+      final token1 = const LudoToken(
+        id: 1,
+        owner: LudoPlayerColor.red,
+        trackPosition: 3,
+      );
+      final token2 = const LudoToken(id: 2, owner: LudoPlayerColor.red);
+      final token3 = const LudoToken(id: 3, owner: LudoPlayerColor.red);
+      final player = makeRedPlayer([token0, token1, token2, token3]);
+      final ids = computeMovableTokenIds(player, 2, [player]);
+      expect(ids, isNot(contains(0))); // token0 would stack at 3 — blocked
+      expect(ids, contains(1));        // token1 moves to abs 5, no block
+    });
+
+    test('token at pos 1 movable when dice=3 lands at abs 4 (no teammate)', () {
+      final token0 = const LudoToken(
+        id: 0,
+        owner: LudoPlayerColor.red,
+        trackPosition: 1,
+      );
+      final token1 = const LudoToken(
+        id: 1,
+        owner: LudoPlayerColor.red,
+        trackPosition: 3,
+      );
+      final token2 = const LudoToken(id: 2, owner: LudoPlayerColor.red);
+      final token3 = const LudoToken(id: 3, owner: LudoPlayerColor.red);
+      final player = makeRedPlayer([token0, token1, token2, token3]);
+      final ids = computeMovableTokenIds(player, 3, [player]);
+      expect(ids, contains(0)); // abs 1+3=4, not occupied
+    });
+
+    test('token at pos 1 blocked when teammate at safe square 8 (dice=7)', () {
+      // Safe squares do NOT allow same-color stacking — stacking is blocked everywhere.
+      final token0 = const LudoToken(
+        id: 0,
+        owner: LudoPlayerColor.red,
+        trackPosition: 1,
+      );
+      final token1 = const LudoToken(
+        id: 1,
+        owner: LudoPlayerColor.red,
+        trackPosition: 8,
+      );
+      final token2 = const LudoToken(id: 2, owner: LudoPlayerColor.red);
+      final token3 = const LudoToken(id: 3, owner: LudoPlayerColor.red);
+      final player = makeRedPlayer([token0, token1, token2, token3]);
+      final ids = computeMovableTokenIds(player, 7, [player]);
+      expect(ids, isNot(contains(0))); // would stack on safe square 8 — blocked
+    });
+
+    test('tokens in home column always movable regardless of step overlap', () {
+      // Both in home column — _destinationTrackPos returns null, no block check.
+      final token0 = const LudoToken(
+        id: 0,
+        owner: LudoPlayerColor.red,
+        trackPosition: -2,
+        homeColumnStep: 2,
+      );
+      final token1 = const LudoToken(
+        id: 1,
+        owner: LudoPlayerColor.red,
+        trackPosition: -2,
+        homeColumnStep: 3,
+      );
+      final token2 = const LudoToken(id: 2, owner: LudoPlayerColor.red);
+      final token3 = const LudoToken(id: 3, owner: LudoPlayerColor.red);
+      final player = makeRedPlayer([token0, token1, token2, token3]);
+      final ids = computeMovableTokenIds(player, 1, [player]);
+      expect(ids, contains(0)); // home column exempted from stacking rule
+    });
+
+    test('launch onto safe start pos allowed even with teammate there', () {
+      // Red start = abs 0, which is in kSafeSquares — multiple tokens OK.
+      final token0 = const LudoToken(id: 0, owner: LudoPlayerColor.red);
+      final token1 = const LudoToken(
+        id: 1,
+        owner: LudoPlayerColor.red,
+        trackPosition: 0, // already at start
+      );
+      final token2 = const LudoToken(id: 2, owner: LudoPlayerColor.red);
+      final token3 = const LudoToken(id: 3, owner: LudoPlayerColor.red);
+      final player = makeRedPlayer([token0, token1, token2, token3]);
+      final ids = computeMovableTokenIds(player, 6, [player]);
+      expect(ids, contains(0)); // canLaunch path — stacking check not applied
+    });
+  });
+
+  // ── validDiceValues ────────────────────────────────────────────────────────
+  group('validDiceValues', () {
+    LudoPlayer makeRedPlayer(List<LudoToken> tokens) {
+      return LudoPlayer(
+        color: LudoPlayerColor.red,
+        name: 'Red',
+        isBot: false,
+        tokens: tokens,
+      );
+    }
+
+    test('all tokens in base → only dice=6 is valid', () {
+      final player = LudoPlayer.initial(
+        color: LudoPlayerColor.red,
+        name: 'Red',
+        isBot: false,
+      );
+      final valid = validDiceValues(player, [player]);
+      expect(valid, equals([6]));
+    });
+
+    test('all tokens finished → returns empty', () {
+      final player = makeRedPlayer(
+        List.generate(
+          4,
+          (i) => LudoToken(
+            id: i,
+            owner: LudoPlayerColor.red,
+            trackPosition: -2,
+            homeColumnStep: 6,
+            isFinished: true,
+          ),
+        ),
+      );
+      final valid = validDiceValues(player, [player]);
+      expect(valid, isEmpty);
+    });
+
+    test('one token on track at pos 10 → dice 1-6 all valid', () {
+      // Rel pos 10 for Red, no blocking, no overshoot risk for 1-6.
+      final player = makeRedPlayer([
+        const LudoToken(
+          id: 0,
+          owner: LudoPlayerColor.red,
+          trackPosition: 10,
+        ),
+        const LudoToken(id: 1, owner: LudoPlayerColor.red),
+        const LudoToken(id: 2, owner: LudoPlayerColor.red),
+        const LudoToken(id: 3, owner: LudoPlayerColor.red),
+      ]);
+      final valid = validDiceValues(player, [player]);
+      expect(valid, containsAll([1, 2, 3, 4, 5, 6]));
+    });
+
+    test('adjacent pawns at pos 1 and 2 → dice=1 excluded, dice=2+ valid', () {
+      // token0 at pos 1, token1 at pos 2 (adjacent, non-safe).
+      // dice=1: token0 → pos 2 (stacking-blocked) → whole value excluded.
+      // dice=2: token0 → pos 3 (free), token1 → pos 4 (free) → valid.
+      final player = makeRedPlayer([
+        const LudoToken(
+          id: 0,
+          owner: LudoPlayerColor.red,
+          trackPosition: 1,
+        ),
+        const LudoToken(
+          id: 1,
+          owner: LudoPlayerColor.red,
+          trackPosition: 2,
+        ),
+        const LudoToken(id: 2, owner: LudoPlayerColor.red),
+        const LudoToken(id: 3, owner: LudoPlayerColor.red),
+      ]);
+      final valid = validDiceValues(player, [player]);
+      expect(valid, isNot(contains(1)));
+      expect(valid, containsAll([2, 3, 4, 5, 6]));
+    });
+
+    test('dice=2 excluded when token 2 squares behind teammate on safe square', () {
+      // Red: token0 at abs 6, token1 at abs 8 (safe square).
+      // dice=2 would move token0 to 8 (stacking on token1) — must be excluded.
+      final player = makeRedPlayer([
+        const LudoToken(
+          id: 0,
+          owner: LudoPlayerColor.red,
+          trackPosition: 6,
+        ),
+        const LudoToken(
+          id: 1,
+          owner: LudoPlayerColor.red,
+          trackPosition: 8,
+        ),
+        const LudoToken(id: 2, owner: LudoPlayerColor.red),
+        const LudoToken(id: 3, owner: LudoPlayerColor.red),
+      ]);
+      final valid = validDiceValues(player, [player]);
+      expect(valid, isNot(contains(2)));
     });
   });
 

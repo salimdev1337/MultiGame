@@ -19,6 +19,174 @@ LudoPowerupType randomPowerup() {
   return values[_rng.nextInt(values.length)];
 }
 
+/// Returns a random magic die face.
+MagicDiceFace rollMagicDice() =>
+    MagicDiceFace.values[_rng.nextInt(MagicDiceFace.values.length)];
+
+/// Applies the magic effect to state and returns the updated state.
+/// [skip] is a no-op here — the notifier handles turn advancement for skip.
+LudoGameState applyMagicEffect(
+  LudoGameState state,
+  int normalDice,
+  MagicDiceFace face,
+) {
+  switch (face) {
+    case MagicDiceFace.turbo:
+      return state.copyWith(diceValue: normalDice * 2);
+
+    case MagicDiceFace.wildcard:
+      return state.copyWith(diceValue: 6);
+
+    case MagicDiceFace.shield:
+      final pIdx = state.currentPlayerIndex;
+      final updatedPlayers = state.players.asMap().entries.map((e) {
+        if (e.key != pIdx) {
+          return e.value;
+        }
+        final p = e.value;
+        final tokens = p.tokens.map((t) {
+          if (t.isOnTrack || t.isInHomeColumn) {
+            return t.copyWith(shieldTurnsLeft: 2);
+          }
+          return t;
+        }).toList();
+        return p.copyWith(tokens: tokens);
+      }).toList();
+      return state.copyWith(players: updatedPlayers);
+
+    case MagicDiceFace.swap:
+      return state.copyWith(
+        players: _applySwap(state.players, state.currentPlayerIndex),
+      );
+
+    case MagicDiceFace.blast:
+      return state.copyWith(
+        players: _applyBlast(state.players, state.currentPlayerIndex),
+      );
+
+    case MagicDiceFace.skip:
+      return state;
+  }
+}
+
+List<LudoPlayer> _applySwap(List<LudoPlayer> players, int currentIdx) {
+  final current = players[currentIdx];
+
+  LudoToken? ownBest;
+  int ownBestRel = -1;
+  for (final t in current.tokens) {
+    if (!t.isOnTrack) {
+      continue;
+    }
+    final rel = toRelativePosition(t.trackPosition, current.color);
+    if (rel > ownBestRel) {
+      ownBestRel = rel;
+      ownBest = t;
+    }
+  }
+  if (ownBest == null) {
+    return players;
+  }
+
+  LudoToken? oppBest;
+  int oppBestRel = -1;
+  int oppBestIdx = -1;
+  for (int i = 0; i < players.length; i++) {
+    if (i == currentIdx) {
+      continue;
+    }
+    final opp = players[i];
+    for (final t in opp.tokens) {
+      if (!t.isOnTrack) {
+        continue;
+      }
+      final rel = toRelativePosition(t.trackPosition, opp.color);
+      if (rel > oppBestRel) {
+        oppBestRel = rel;
+        oppBest = t;
+        oppBestIdx = i;
+      }
+    }
+  }
+  if (oppBest == null || oppBestIdx == -1) {
+    return players;
+  }
+
+  final ownPos = ownBest.trackPosition;
+  final oppPos = oppBest.trackPosition;
+  final capturedOwnBest = ownBest;
+  final capturedOppBest = oppBest;
+
+  final updatedPlayers = List<LudoPlayer>.from(players);
+  updatedPlayers[currentIdx] = current.copyWith(
+    tokens: current.tokens.map((t) {
+      if (t.id == capturedOwnBest.id) {
+        return t.copyWith(trackPosition: oppPos);
+      }
+      return t;
+    }).toList(),
+  );
+  final opp = players[oppBestIdx];
+  updatedPlayers[oppBestIdx] = opp.copyWith(
+    tokens: opp.tokens.map((t) {
+      if (t.id == capturedOppBest.id) {
+        return t.copyWith(trackPosition: ownPos);
+      }
+      return t;
+    }).toList(),
+  );
+  return updatedPlayers;
+}
+
+List<LudoPlayer> _applyBlast(List<LudoPlayer> players, int currentIdx) {
+  LudoToken? target;
+  int targetRel = -1;
+  int targetPlayerIdx = -1;
+
+  for (int i = 0; i < players.length; i++) {
+    if (i == currentIdx) {
+      continue;
+    }
+    final opp = players[i];
+    for (final t in opp.tokens) {
+      if (!t.isOnTrack) {
+        continue;
+      }
+      final rel = toRelativePosition(t.trackPosition, opp.color);
+      if (rel > targetRel) {
+        targetRel = rel;
+        target = t;
+        targetPlayerIdx = i;
+      }
+    }
+  }
+
+  if (target == null || targetPlayerIdx == -1) {
+    return players;
+  }
+
+  final opp = players[targetPlayerIdx];
+  final capturedTarget = target;
+  final LudoToken newToken;
+  if (targetRel < 6) {
+    newToken = LudoToken(id: capturedTarget.id, owner: capturedTarget.owner);
+  } else {
+    final newAbs = toAbsolutePosition(targetRel - 6, opp.color);
+    newToken = capturedTarget.copyWith(trackPosition: newAbs);
+  }
+
+  final updatedPlayers = List<LudoPlayer>.from(players);
+  updatedPlayers[targetPlayerIdx] = opp.copyWith(
+    tokens: opp.tokens.map((t) {
+      if (t.id == capturedTarget.id) {
+        return newToken;
+      }
+      return t;
+    }).toList(),
+  );
+  return updatedPlayers;
+}
+
 // ── Position helpers ───────────────────────────────────────────────────────
 
 /// Converts an absolute track position to a player-relative position.
@@ -68,9 +236,9 @@ bool wouldOvershoot(LudoToken token, int steps, LudoPlayerColor color) {
   }
   if (token.isOnTrack) {
     final rel = toRelativePosition(token.trackPosition, color);
-    // Relative position 51 = last track square before home column.
-    // Steps to enter home column = 52 - rel; each step in home column adds 1.
-    final stepsToEntry = 51 - rel + 1; // steps to cross into home col step 1
+    // Relative position 50 = last valid track square; rel 51 is forbidden.
+    // From rel 50, 1 step crosses into home column step 1.
+    final stepsToEntry = 51 - rel; // steps to cross into home col step 1
     if (steps < stepsToEntry) {
       return false; // stays on track — no overshoot possible
     }
@@ -82,6 +250,21 @@ bool wouldOvershoot(LudoToken token, int steps, LudoPlayerColor color) {
 
 /// True if the absolute track position is a safe square.
 bool isTrackSafe(int absPos) => kSafeSquares.contains(absPos);
+
+/// Computes the absolute track position where [token] lands after [steps].
+/// Returns null when the token is already in or will enter the home column
+/// (stacking is always allowed in the private home lane).
+int? _destinationTrackPos(LudoToken token, int steps) {
+  if (token.isInHomeColumn) {
+    return null;
+  }
+  final rel = toRelativePosition(token.trackPosition, token.owner);
+  final stepsToEntry = 51 - rel;
+  if (steps >= stepsToEntry) {
+    return null;
+  }
+  return toAbsolutePosition(rel + steps, token.owner);
+}
 
 // ── Token advancement ──────────────────────────────────────────────────────
 
@@ -102,7 +285,7 @@ LudoToken advanceToken(LudoToken token, int steps, LudoPlayerColor color) {
 
   // Token is on the main track.
   final rel = toRelativePosition(token.trackPosition, color);
-  final stepsToEntry = 51 - rel + 1;
+  final stepsToEntry = 51 - rel;
 
   if (steps < stepsToEntry) {
     // Stays on track.
@@ -185,10 +368,65 @@ List<int> computeMovableTokenIds(
       continue;
     }
     if (canMoveOnTrack(token, diceValue, all)) {
+      final dest = _destinationTrackPos(token, diceValue);
+      if (dest != null) {
+        final blocked = player.tokens.any(
+          (t) =>
+              t.id != token.id &&
+              !t.isFinished &&
+              t.isOnTrack &&
+              t.trackPosition == dest,
+        );
+        if (blocked) {
+          continue;
+        }
+      }
       ids.add(token.id);
     }
   }
   return ids;
+}
+
+/// Returns the dice values (subset of 1–6) that satisfy both conditions:
+///   1. At least one token has a legal move.
+///   2. No on-track token that could physically move is blocked by same-color
+///      stacking (i.e. every canMoveOnTrack token can reach a free square).
+List<int> validDiceValues(LudoPlayer player, List<LudoPlayer> all) {
+  final valid = <int>[];
+  outer:
+  for (int v = 1; v <= 6; v++) {
+    if (computeMovableTokenIds(player, v, all).isEmpty) {
+      continue;
+    }
+    // Reject v if any on-track token would be stacking-blocked.
+    for (final token in player.tokens) {
+      if (!canMoveOnTrack(token, v, all)) {
+        continue;
+      }
+      final dest = _destinationTrackPos(token, v);
+      if (dest == null) {
+        continue;
+      }
+      final stacked = player.tokens.any(
+        (t) =>
+            t.id != token.id &&
+            !t.isFinished &&
+            t.isOnTrack &&
+            t.trackPosition == dest,
+      );
+      if (stacked) {
+        continue outer;
+      }
+    }
+    valid.add(v);
+  }
+  return valid;
+}
+
+/// Picks a random value from [values]. [values] must be non-empty.
+int rollDiceFrom(List<int> values) {
+  assert(values.isNotEmpty, 'rollDiceFrom called with empty list');
+  return values[_rng.nextInt(values.length)];
 }
 
 // ── Applying a move ────────────────────────────────────────────────────────
@@ -371,6 +609,7 @@ LudoGameState _advanceTurn(
     currentPlayerIndex: nextIdx,
     diceValue: 0,
     selectedTokenId: null,
+    magicDiceFace: null,
     finishCount: finishCount,
   );
 }
@@ -464,6 +703,68 @@ int? checkTeamWinner(LudoGameState state) {
     }
   }
   return null;
+}
+
+// ── Token hop path (animation) ───────────────────────────────────────────
+
+// The 4 outer-corner diagonal transitions on the 15×15 Ludo track plus the
+// 4 diagonal steps when each player enters their home column.
+// kTrackCoords jumps diagonally at outer corners and at home-col entries;
+// these intermediate cells restore the missing visual step.
+const _cornerWaypoints = <(int, int, int, int), (int, int)>{
+  // Track outer corners — corner cells are coloured decorations, tokens skip them.
+  // Home column entries (last track cell → home col step 1)
+  (0, 6, 1, 7):   (0, 7),   // Red   home entry
+  (8, 0, 7, 1):   (7, 0),   // Green home entry
+  (14, 8, 13, 7): (14, 7),  // Yellow home entry
+  (6, 14, 7, 13): (7, 14),  // Blue  home entry
+};
+
+/// Returns a list of (col, row) board coordinates stepped one square at a
+/// time from [from]'s position toward [to]'s position for [color].
+/// Used to drive the per-square hop animation. Returns empty on no movement.
+List<(int col, int row)> computeTokenHopPath(
+  LudoToken from,
+  LudoToken to,
+  LudoPlayerColor color,
+) {
+  if (from.isFinished || to.isInBase) {
+    return [];
+  }
+  // Launch from base: single hop to the start position.
+  if (from.isInBase && !to.isInBase) {
+    return [tokenGridCoord(to, color)];
+  }
+  if (from.trackPosition == to.trackPosition &&
+      from.homeColumnStep == to.homeColumnStep &&
+      from.isFinished == to.isFinished) {
+    return [];
+  }
+  final path = <(int col, int row)>[];
+  var cur = from;
+  var prevCoord = tokenGridCoord(from, color);
+  for (int i = 0; i < 12; i++) {
+    if (cur.trackPosition == to.trackPosition &&
+        cur.homeColumnStep == to.homeColumnStep &&
+        cur.isFinished == to.isFinished) {
+      break;
+    }
+    if (wouldOvershoot(cur, 1, color)) {
+      break;
+    }
+    cur = advanceToken(cur, 1, color);
+    final nextCoord = tokenGridCoord(cur, color);
+    // Insert a corner waypoint when the step crosses a board outer corner
+    // (both col and row change = diagonal jump in kTrackCoords).
+    final corner = _cornerWaypoints[
+        (prevCoord.$1, prevCoord.$2, nextCoord.$1, nextCoord.$2)];
+    if (corner != null) {
+      path.add(corner);
+    }
+    path.add(nextCoord);
+    prevCoord = nextCoord;
+  }
+  return path;
 }
 
 // ── Steps to finish ───────────────────────────────────────────────────────

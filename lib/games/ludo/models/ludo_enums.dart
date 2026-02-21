@@ -29,3 +29,9 @@ enum LudoPowerupType {
   recall,
   luckyRoll,
 }
+
+/// Dice mode — classic (one die) or magic (two dice: normal + magic).
+enum LudoDiceMode { classic, magic }
+
+/// The six faces of the magic die.
+enum MagicDiceFace { turbo, skip, swap, shield, blast, wildcard }

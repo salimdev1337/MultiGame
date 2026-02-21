@@ -10,18 +10,22 @@ class LudoGameState {
     this.phase = LudoPhase.idle,
     this.mode = LudoMode.soloVsBots,
     this.difficulty = LudoDifficulty.medium,
+    this.diceMode = LudoDiceMode.classic,
     this.players = const [],
     this.currentPlayerIndex = 0,
     this.diceValue = 0,
     this.selectedTokenId,
     this.pendingPowerup,
     this.excludedColor,
+    this.magicDiceFace,
+    this.diceRollerColor,
     this.finishCount = 0,
   });
 
   final LudoPhase phase;
   final LudoMode mode;
   final LudoDifficulty difficulty;
+  final LudoDiceMode diceMode;
 
   /// Active player list (3 or 4 entries depending on mode).
   final List<LudoPlayer> players;
@@ -40,6 +44,13 @@ class LudoGameState {
 
   /// In Free-for-All 3-player mode one colour is excluded.  Null otherwise.
   final LudoPlayerColor? excludedColor;
+
+  /// The magic die face rolled this turn (null in classic mode or not yet rolled).
+  final MagicDiceFace? magicDiceFace;
+
+  /// Color of the player who last rolled the dice. Stays fixed until the next
+  /// roll so the dice widget doesn't repaint on turn advance.
+  final LudoPlayerColor? diceRollerColor;
 
   /// Number of players who have finished all 4 tokens.
   final int finishCount;
@@ -72,14 +83,14 @@ class LudoGameState {
       case LudoMode.soloVsBots:
         return [
           LudoPlayer.initial(
-            color: LudoPlayerColor.red,
-            name: 'You',
-            isBot: false,
-          ),
-          LudoPlayer.initial(
             color: LudoPlayerColor.blue,
             name: 'Bot 1',
             isBot: true,
+          ),
+          LudoPlayer.initial(
+            color: LudoPlayerColor.red,
+            name: 'You',
+            isBot: false,
           ),
           LudoPlayer.initial(
             color: LudoPlayerColor.green,
@@ -94,7 +105,12 @@ class LudoGameState {
         ];
 
       case LudoMode.freeForAll3:
-        final allColors = LudoPlayerColor.values;
+        const allColors = [
+          LudoPlayerColor.blue,
+          LudoPlayerColor.red,
+          LudoPlayerColor.green,
+          LudoPlayerColor.yellow,
+        ];
         final colors = allColors
             .where((c) => c != excludedColor)
             .take(3)
@@ -110,7 +126,12 @@ class LudoGameState {
 
       case LudoMode.freeForAll4:
         return [
-          for (final c in LudoPlayerColor.values)
+          for (final c in const [
+            LudoPlayerColor.blue,
+            LudoPlayerColor.red,
+            LudoPlayerColor.green,
+            LudoPlayerColor.yellow,
+          ])
             LudoPlayer.initial(color: c, name: _colorName(c), isBot: false),
         ];
 
@@ -118,16 +139,16 @@ class LudoGameState {
         // Red+Green = team 0, Blue+Yellow = team 1
         return [
           LudoPlayer.initial(
-            color: LudoPlayerColor.red,
-            name: 'Red',
-            isBot: false,
-            teamIndex: 0,
-          ),
-          LudoPlayer.initial(
             color: LudoPlayerColor.blue,
             name: 'Blue',
             isBot: false,
             teamIndex: 1,
+          ),
+          LudoPlayer.initial(
+            color: LudoPlayerColor.red,
+            name: 'Red',
+            isBot: false,
+            teamIndex: 0,
           ),
           LudoPlayer.initial(
             color: LudoPlayerColor.green,
@@ -167,18 +188,22 @@ class LudoGameState {
     LudoPhase? phase,
     LudoMode? mode,
     LudoDifficulty? difficulty,
+    LudoDiceMode? diceMode,
     List<LudoPlayer>? players,
     int? currentPlayerIndex,
     int? diceValue,
     Object? selectedTokenId = _unset,
     Object? pendingPowerup = _unset,
     Object? excludedColor = _unset,
+    Object? magicDiceFace = _unset,
+    Object? diceRollerColor = _unset,
     int? finishCount,
   }) {
     return LudoGameState(
       phase: phase ?? this.phase,
       mode: mode ?? this.mode,
       difficulty: difficulty ?? this.difficulty,
+      diceMode: diceMode ?? this.diceMode,
       players: players ?? this.players,
       currentPlayerIndex: currentPlayerIndex ?? this.currentPlayerIndex,
       diceValue: diceValue ?? this.diceValue,
@@ -191,6 +216,12 @@ class LudoGameState {
       excludedColor: excludedColor == _unset
           ? this.excludedColor
           : excludedColor as LudoPlayerColor?,
+      magicDiceFace: magicDiceFace == _unset
+          ? this.magicDiceFace
+          : magicDiceFace as MagicDiceFace?,
+      diceRollerColor: diceRollerColor == _unset
+          ? this.diceRollerColor
+          : diceRollerColor as LudoPlayerColor?,
       finishCount: finishCount ?? this.finishCount,
     );
   }

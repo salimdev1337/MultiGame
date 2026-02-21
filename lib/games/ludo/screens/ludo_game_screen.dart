@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,7 +11,27 @@ import '../models/ludo_player.dart';
 import '../models/ludo_token.dart';
 import '../providers/ludo_notifier.dart';
 import '../widgets/ludo_board_painter.dart';
+import '../widgets/ludo_dice_widget.dart';
 import '../widgets/ludo_token_widget.dart';
+
+// ── Shared token dot decoration ───────────────────────────────────────────
+
+Widget _tokenDot(Color color) {
+  return Container(
+    width: 14,
+    height: 14,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      color: color,
+      boxShadow: [
+        BoxShadow(
+          color: color.withValues(alpha: 0.6),
+          blurRadius: 8,
+        ),
+      ],
+    ),
+  );
+}
 
 class LudoGamePage extends ConsumerWidget {
   const LudoGamePage({super.key});
@@ -19,12 +41,21 @@ class LudoGamePage extends ConsumerWidget {
     final phase = ref.watch(ludoProvider.select((s) => s.phase));
 
     return Scaffold(
-      backgroundColor: DSColors.surface,
-      body: SafeArea(
-        child: switch (phase) {
-          LudoPhase.idle => const _LudoModeSelector(),
-          _ => const _LudoGameBody(),
-        },
+      backgroundColor: const Color(0xFF090912),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF090912), Color(0xFF14142A)],
+          ),
+        ),
+        child: SafeArea(
+          child: switch (phase) {
+            LudoPhase.idle => const _LudoModeSelector(),
+            _ => const _LudoGameBody(),
+          },
+        ),
       ),
     );
   }
@@ -41,24 +72,49 @@ class _LudoModeSelector extends ConsumerStatefulWidget {
 
 class _LudoModeSelectorState extends ConsumerState<_LudoModeSelector> {
   LudoDifficulty _difficulty = LudoDifficulty.medium;
+  LudoDiceMode _diceMode = LudoDiceMode.classic;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 16),
-          Text(
-            'Ludo',
-            style: DSTypography.displayMedium.copyWith(
-              color: DSColors.ludoPrimary,
-              fontWeight: FontWeight.w800,
+          Center(
+            child: ShaderMask(
+              shaderCallback: (bounds) => const LinearGradient(
+                colors: [
+                  Color(0xFFFFD700),
+                  Color(0xFFFF6B6B),
+                  Color(0xFFE91E63),
+                ],
+              ).createShader(bounds),
+              child: Text(
+                'LUDO',
+                style: DSTypography.displayMedium.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 4,
+                ),
+              ),
             ),
-            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _tokenDot(const Color(0xFFE53935)),
+              const SizedBox(width: 6),
+              _tokenDot(const Color(0xFF2979FF)),
+              const SizedBox(width: 6),
+              _tokenDot(const Color(0xFF43A047)),
+              const SizedBox(width: 6),
+              _tokenDot(const Color(0xFFFFD600)),
+            ],
+          ),
+          const SizedBox(height: 12),
           Text(
             'Race tokens home — roll, capture, and use powerups!',
             style: DSTypography.bodyMedium.copyWith(color: DSColors.textSecondary),
@@ -66,15 +122,51 @@ class _LudoModeSelectorState extends ConsumerState<_LudoModeSelector> {
           ),
           const SizedBox(height: 32),
 
-          // Difficulty selector (only relevant for solo mode)
-          Text(
-            'Bot Difficulty',
-            style: DSTypography.labelLarge.copyWith(color: DSColors.textPrimary),
+          // Bot Difficulty section
+          Row(
+            children: [
+              Container(
+                width: 3,
+                height: 16,
+                margin: const EdgeInsets.only(right: 8),
+                color: DSColors.ludoPrimary,
+              ),
+              Text(
+                'Bot Difficulty',
+                style: DSTypography.labelLarge.copyWith(
+                  color: DSColors.textPrimary,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           _DifficultyRow(
             selected: _difficulty,
             onChanged: (d) => setState(() => _difficulty = d),
+          ),
+          const SizedBox(height: 24),
+
+          // Dice Mode section
+          Row(
+            children: [
+              Container(
+                width: 3,
+                height: 16,
+                margin: const EdgeInsets.only(right: 8),
+                color: DSColors.ludoPrimary,
+              ),
+              Text(
+                'Dice Mode',
+                style: DSTypography.labelLarge.copyWith(
+                  color: DSColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _DiceModeRow(
+            selected: _diceMode,
+            onChanged: (m) => setState(() => _diceMode = m),
           ),
           const SizedBox(height: 32),
 
@@ -83,7 +175,9 @@ class _LudoModeSelectorState extends ConsumerState<_LudoModeSelector> {
             label: 'Solo vs Bots',
             icon: Icons.smart_toy_rounded,
             color: DSColors.ludoPrimary,
-            onTap: () => ref.read(ludoProvider.notifier).startSolo(_difficulty),
+            onTap: () => ref
+                .read(ludoProvider.notifier)
+                .startSolo(_difficulty, diceMode: _diceMode),
           ),
           const SizedBox(height: 12),
           _ModeButton(
@@ -92,7 +186,7 @@ class _LudoModeSelectorState extends ConsumerState<_LudoModeSelector> {
             color: DSColors.ludoAccent,
             onTap: () => ref
                 .read(ludoProvider.notifier)
-                .startFreeForAll(playerCount: 3),
+                .startFreeForAll(playerCount: 3, diceMode: _diceMode),
           ),
           const SizedBox(height: 12),
           _ModeButton(
@@ -101,15 +195,16 @@ class _LudoModeSelectorState extends ConsumerState<_LudoModeSelector> {
             color: DSColors.ludoAccent,
             onTap: () => ref
                 .read(ludoProvider.notifier)
-                .startFreeForAll(playerCount: 4),
+                .startFreeForAll(playerCount: 4, diceMode: _diceMode),
           ),
           const SizedBox(height: 12),
           _ModeButton(
             label: '2v2 Teams',
             icon: Icons.people_alt_rounded,
             color: DSColors.connectFourPrimary,
-            onTap: () =>
-                ref.read(ludoProvider.notifier).startTeamVsTeam(),
+            onTap: () => ref
+                .read(ludoProvider.notifier)
+                .startTeamVsTeam(diceMode: _diceMode),
           ),
         ],
       ),
@@ -138,15 +233,65 @@ class _DifficultyRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: GestureDetector(
               onTap: () => onChanged(d),
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: isActive ? DSColors.ludoPrimary : DSColors.surfaceElevated,
+                  color: isActive
+                      ? DSColors.ludoPrimary
+                      : const Color(0xFF1A1A30),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: isActive
                         ? DSColors.ludoPrimary
-                        : DSColors.surfaceHighlight,
+                        : const Color(0xFF252545),
+                  ),
+                ),
+                child: Text(
+                  label,
+                  style: DSTypography.labelMedium.copyWith(
+                    color: isActive ? Colors.white : DSColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _DiceModeRow extends StatelessWidget {
+  const _DiceModeRow({required this.selected, required this.onChanged});
+
+  final LudoDiceMode selected;
+  final ValueChanged<LudoDiceMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    const magicColor = Color(0xFF9C27B0);
+    return Row(
+      children: LudoDiceMode.values.map((m) {
+        final isActive = m == selected;
+        final label = m == LudoDiceMode.classic ? 'Classic Dice' : 'Magic Dice';
+        final activeColor =
+            m == LudoDiceMode.magic ? magicColor : DSColors.ludoPrimary;
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: GestureDetector(
+              onTap: () => onChanged(m),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: isActive ? activeColor : const Color(0xFF1A1A30),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isActive ? activeColor : const Color(0xFF252545),
                   ),
                 ),
                 child: Text(
@@ -187,11 +332,20 @@ class _ModeButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [color, Color.lerp(color, Colors.black, 0.2)!],
+            colors: [
+              Color.lerp(color, Colors.white, 0.12)!,
+              color,
+              Color.lerp(color, Colors.black, 0.20)!,
+            ],
+            stops: const [0.0, 0.3, 1.0],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.15),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
               color: color.withValues(alpha: 0.35),
@@ -204,12 +358,19 @@ class _ModeButton extends StatelessWidget {
           children: [
             Icon(icon, color: Colors.white, size: 24),
             const SizedBox(width: 12),
-            Text(
-              label,
-              style: DSTypography.labelLarge.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
+            Expanded(
+              child: Text(
+                label,
+                style: DSTypography.labelLarge.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: Colors.white60,
+              size: 16,
             ),
           ],
         ),
@@ -220,11 +381,18 @@ class _ModeButton extends StatelessWidget {
 
 // ── Game body ─────────────────────────────────────────────────────────────
 
-class _LudoGameBody extends ConsumerWidget {
+class _LudoGameBody extends ConsumerStatefulWidget {
   const _LudoGameBody();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_LudoGameBody> createState() => _LudoGameBodyState();
+}
+
+class _LudoGameBodyState extends ConsumerState<_LudoGameBody> {
+  bool _is3D = false;
+
+  @override
+  Widget build(BuildContext context) {
     final phase = ref.watch(ludoProvider.select((s) => s.phase));
 
     if (phase == LudoPhase.won) {
@@ -233,15 +401,11 @@ class _LudoGameBody extends ConsumerWidget {
 
     return Column(
       children: [
-        _LudoAppBar(),
-        Expanded(
-          child: Column(
-            children: [
-              Expanded(child: _LudoBoardView()),
-              _LudoHud(),
-            ],
-          ),
+        _LudoAppBar(
+          is3D: _is3D,
+          onToggle3D: () => setState(() => _is3D = !_is3D),
         ),
+        Expanded(child: _LudoBoardView(is3D: _is3D)),
       ],
     );
   }
@@ -250,46 +414,100 @@ class _LudoGameBody extends ConsumerWidget {
 // ── AppBar ─────────────────────────────────────────────────────────────────
 
 class _LudoAppBar extends ConsumerWidget {
+  const _LudoAppBar({required this.is3D, required this.onToggle3D});
+
+  final bool is3D;
+  final VoidCallback onToggle3D;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_rounded),
-            color: DSColors.textPrimary,
-            onPressed: () => _confirmExit(context, ref),
-          ),
-          Expanded(
-            child: Text(
-              'Ludo',
-              style: DSTypography.titleLarge.copyWith(
-                color: DSColors.ludoPrimary,
-                fontWeight: FontWeight.w700,
+    final diceMode = ref.watch(ludoProvider.select((s) => s.diceMode));
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                color: DSColors.textPrimary,
+                onPressed: () => _confirmExit(context, ref),
               ),
-              textAlign: TextAlign.center,
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Ludo',
+                      style: DSTypography.titleLarge.copyWith(
+                        color: DSColors.ludoPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (diceMode == LudoDiceMode.magic) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF9C27B0),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          'MAGIC',
+                          style: DSTypography.labelSmall.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: Icon(
+                  is3D ? Icons.view_in_ar_rounded : Icons.grid_on_rounded,
+                ),
+                color: DSColors.textPrimary,
+                tooltip: is3D ? '2D View' : '3D View',
+                onPressed: onToggle3D,
+              ),
+            ],
+          ),
+        ),
+        Container(
+          height: 1,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.transparent,
+                DSColors.ludoPrimary.withValues(alpha: 0.4),
+                Colors.transparent,
+              ],
             ),
           ),
-          const SizedBox(width: 48), // balance the back button
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   void _confirmExit(BuildContext context, WidgetRef ref) {
     showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Quit Game?'),
         content: const Text('Your current game will be lost.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Quit'),
           ),
         ],
@@ -304,9 +522,142 @@ class _LudoAppBar extends ConsumerWidget {
 
 // ── Board ─────────────────────────────────────────────────────────────────
 
-class _LudoBoardView extends ConsumerWidget {
+class _LudoBoardView extends ConsumerStatefulWidget {
+  const _LudoBoardView({required this.is3D});
+
+  final bool is3D;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_LudoBoardView> createState() => _LudoBoardViewState();
+}
+
+class _LudoBoardViewState extends ConsumerState<_LudoBoardView> {
+  bool _showDice = false;
+  bool _diceRolling = false;
+
+  // ── Token hop animation ─────────────────────────────────────────────────
+  String? _animKey;
+  (int, int)? _animCoord;
+  List<(int, int)> _animPath = const [];
+  int _animStep = 0;
+  int _hopTrigger = 0;
+  Timer? _animTimer;
+
+  @override
+  void dispose() {
+    _animTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onPlayersChanged(
+    List<LudoPlayer> prev,
+    List<LudoPlayer> next,
+  ) {
+    for (final prevPlayer in prev) {
+      final nextPlayer = next.firstWhere(
+        (p) => p.color == prevPlayer.color,
+        orElse: () => prevPlayer,
+      );
+      for (final prevToken in prevPlayer.tokens) {
+        final nextToken = nextPlayer.tokens.firstWhere(
+          (t) => t.id == prevToken.id,
+          orElse: () => prevToken,
+        );
+        final moved = prevToken.trackPosition != nextToken.trackPosition ||
+            prevToken.homeColumnStep != nextToken.homeColumnStep ||
+            prevToken.isFinished != nextToken.isFinished;
+        final movedToBase = !prevToken.isInBase && nextToken.isInBase;
+        if (!moved || movedToBase) {
+          continue;
+        }
+        final path = computeTokenHopPath(prevToken, nextToken, prevPlayer.color);
+        if (path.isEmpty) {
+          continue;
+        }
+        _animTimer?.cancel();
+        _animKey = '${prevPlayer.color.name}_${prevToken.id}';
+        _animPath = path;
+        _animStep = 0;
+        _hopTrigger++;
+        _animCoord = path[0];
+        setState(() {});
+        _startHopTimer();
+        return;
+      }
+    }
+  }
+
+  void _startHopTimer() {
+    _animTimer = Timer.periodic(const Duration(milliseconds: 140), (t) {
+      _animStep++;
+      if (_animStep >= _animPath.length) {
+        t.cancel();
+        if (mounted) {
+          setState(() {
+            _animKey = null;
+            _animCoord = null;
+            _animPath = const [];
+            _animStep = 0;
+          });
+        }
+        return;
+      }
+      if (mounted) {
+        setState(() {
+          _animCoord = _animPath[_animStep];
+          _hopTrigger++;
+        });
+      }
+    });
+  }
+
+  (double dx, double dy) _stackOffset(int idx, int total, double cell) {
+    if (total <= 1) {
+      return (0.0, 0.0);
+    }
+    final s = cell * 0.22;
+    if (total == 2) {
+      return idx == 0 ? (-s, 0.0) : (s, 0.0);
+    }
+    if (total == 3) {
+      final offsets = [(-s, s * 0.5), (s, s * 0.5), (0.0, -s * 0.7)];
+      return offsets[idx];
+    }
+    return (idx % 2 == 0 ? -s : s, idx < 2 ? -s : s);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen(
+      ludoProvider.select((s) => s.players),
+      (prev, next) {
+        if (prev != null && prev != next) {
+          _onPlayersChanged(prev, next);
+        }
+      },
+    );
+
+    ref.listen(
+      ludoProvider.select((s) => s.diceValue),
+      (prev, next) {
+        if (next > 0 && next != (prev ?? 0)) {
+          setState(() {
+            _showDice = true;
+            _diceRolling = true;
+          });
+          Future.delayed(const Duration(milliseconds: 900), () {
+            if (mounted) {
+              setState(() => _diceRolling = false);
+            }
+          });
+        } else if (next == 0) {
+          if (mounted) {
+            setState(() => _showDice = false);
+          }
+        }
+      },
+    );
+
     final players = ref.watch(ludoProvider.select((s) => s.players));
     final selectedId = ref.watch(ludoProvider.select((s) => s.selectedTokenId));
     final diceValue = ref.watch(ludoProvider.select((s) => s.diceValue));
@@ -320,29 +671,38 @@ class _LudoBoardView extends ConsumerWidget {
         final boardSize = constraints.maxWidth.clamp(0.0, constraints.maxHeight);
         final cell = boardSize / 15;
 
-        // Compute movable token IDs for the current player.
         final movable = (phase == LudoPhase.selectingToken && currentPlayer != null)
             ? computeMovableTokenIds(currentPlayer, diceValue, players)
             : <int>[];
 
-        return Center(
+        final Map<(int, int), List<({LudoToken token, LudoPlayer player})>>
+            groups = {};
+        for (final player in players) {
+          for (final token in player.tokens) {
+            final coord = tokenGridCoord(token, player.color);
+            groups.putIfAbsent(coord, () => []).add(
+              (token: token, player: player),
+            );
+          }
+        }
+
+        final boardStack = Center(
           child: SizedBox(
             width: boardSize,
             height: boardSize,
             child: Stack(
               children: [
-                // Static board.
                 CustomPaint(
                   size: Size(boardSize, boardSize),
                   painter: const LudoBoardPainter(),
                 ),
-                // Tokens.
                 for (final player in players)
                   for (final token in player.tokens)
                     ..._buildTokenWidgets(
                       token: token,
                       player: player,
                       cell: cell,
+                      groups: groups,
                       isSelected: selectedId == token.id &&
                           currentPlayer?.color == player.color,
                       isMovable: currentPlayer?.color == player.color &&
@@ -353,9 +713,54 @@ class _LudoBoardView extends ConsumerWidget {
                         }
                       },
                     ),
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: AnimatedOpacity(
+                      opacity: _showDice ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 300),
+                      child: Center(
+                        child: LudoDiceWidget(
+                          value: diceValue > 0 ? diceValue : 1,
+                          rolling: _diceRolling,
+                          playerColor: ref.watch(
+                            ludoProvider.select((s) => s.diceRollerColor),
+                          ),
+                          size: cell * 2.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
+        );
+
+        final boardWidget = TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: widget.is3D ? 1.0 : 0.0),
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+          builder: (context, t, child) {
+            return Transform(
+              transform: Matrix4.identity()
+                ..setEntry(3, 2, 0.0015 * t)
+                ..rotateX(-0.45 * t),
+              alignment: Alignment.center,
+              child: child,
+            );
+          },
+          child: boardStack,
+        );
+
+        return Column(
+          children: [
+            Expanded(child: boardWidget),
+            _LudoHud(
+              phase: phase,
+              currentPlayer: currentPlayer,
+              onRoll: () => ref.read(ludoProvider.notifier).rollDice(),
+            ),
+          ],
         );
       },
     );
@@ -365,197 +770,241 @@ class _LudoBoardView extends ConsumerWidget {
     required LudoToken token,
     required LudoPlayer player,
     required double cell,
+    required Map<(int, int), List<({LudoToken token, LudoPlayer player})>> groups,
     required bool isSelected,
     required bool isMovable,
     required VoidCallback onTap,
   }) {
-    final coord = tokenGridCoord(token, player.color);
+    final widgetKey = '${player.color.name}_${token.id}';
+    final isAnimating = _animKey == widgetKey;
+
+    final (int, int) coord;
+    double dx = 0;
+    double dy = 0;
+
+    if (isAnimating && _animCoord != null) {
+      coord = _animCoord!;
+    } else {
+      coord = tokenGridCoord(token, player.color);
+      final group = groups[coord]!;
+      final idx = group.indexWhere(
+        (e) => e.token.id == token.id && e.player.color == player.color,
+      );
+      (dx, dy) = _stackOffset(idx < 0 ? 0 : idx, group.length, cell);
+    }
+
     return [
       LudoTokenWidget(
-        key: ValueKey('${player.color.name}_${token.id}'),
+        key: ValueKey(widgetKey),
         token: token,
         cellSize: cell,
         col: coord.$1,
         row: coord.$2,
         isSelected: isSelected,
         isMovable: isMovable,
+        subCellOffsetX: dx,
+        subCellOffsetY: dy,
+        hopTrigger: isAnimating ? _hopTrigger : 0,
+        instantMove: isAnimating,
         onTap: onTap,
       ),
     ];
   }
 }
 
-// ── HUD ───────────────────────────────────────────────────────────────────
+// ── Bottom HUD ─────────────────────────────────────────────────────────────
 
-class _LudoHud extends ConsumerWidget {
+class _LudoHud extends StatelessWidget {
+  const _LudoHud({
+    required this.phase,
+    required this.currentPlayer,
+    required this.onRoll,
+  });
+
+  final LudoPhase phase;
+  final LudoPlayer? currentPlayer;
+  final VoidCallback onRoll;
+
+  static Color _playerColor(LudoPlayerColor c) => switch (c) {
+        LudoPlayerColor.red    => const Color(0xFFE53935),
+        LudoPlayerColor.green  => const Color(0xFF43A047),
+        LudoPlayerColor.blue   => const Color(0xFF2979FF),
+        LudoPlayerColor.yellow => const Color(0xFFFFD600),
+      };
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
-      color: DSColors.surface,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _CurrentPlayerBadge(),
-          const SizedBox(height: 12),
-          _DiceArea(),
-          const SizedBox(height: 8),
-          _PowerupTray(),
-        ],
-      ),
-    );
-  }
-}
-
-/// Isolated widget — only rebuilds when currentPlayer changes.
-class _CurrentPlayerBadge extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final player = ref.watch(
-      ludoProvider.select((s) => s.players.isEmpty ? null : s.currentPlayer),
-    );
-    if (player == null) {
-      return const SizedBox.shrink();
-    }
-    final colorMap = {
-      LudoPlayerColor.red: const Color(0xFFE53935),
-      LudoPlayerColor.blue: const Color(0xFF2196F3),
-      LudoPlayerColor.green: const Color(0xFF43A047),
-      LudoPlayerColor.yellow: const Color(0xFFFFD700),
-    };
-    final color = colorMap[player.color]!;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        CircleAvatar(backgroundColor: color, radius: 8),
-        const SizedBox(width: 8),
-        Text(
-          player.isBot ? '${player.name} is thinking…' : "${player.name}'s turn",
-          style: DSTypography.labelLarge.copyWith(color: DSColors.textPrimary),
-        ),
-      ],
-    );
-  }
-}
-
-/// Isolated widget — only rebuilds when diceValue + phase change.
-class _DiceArea extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final dice = ref.watch(ludoProvider.select((s) => s.diceValue));
-    final phase = ref.watch(ludoProvider.select((s) => s.phase));
-    final isHumanTurn = ref.watch(
-      ludoProvider.select(
-        (s) => s.players.isNotEmpty && !s.currentPlayer.isBot,
-      ),
-    );
-    final canRoll = phase == LudoPhase.rolling && isHumanTurn;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (dice > 0)
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: DSColors.surfaceElevated,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: DSColors.surfaceHighlight),
+  Widget build(BuildContext context) {
+    if (phase == LudoPhase.rolling && currentPlayer != null && !currentPlayer!.isBot) {
+      final c = _playerColor(currentPlayer!.color);
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A2E),
+                borderRadius: BorderRadius.circular(14),
+                border: Border(left: BorderSide(color: c, width: 3)),
+                boxShadow: [
+                  BoxShadow(
+                    color: c.withValues(alpha: 0.25),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+                  ),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        currentPlayer!.name,
+                        style: DSTypography.labelMedium.copyWith(
+                          color: DSColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        'Your turn',
+                        style: DSTypography.labelSmall.copyWith(
+                          color: DSColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            child: Center(
-              child: Text(
-                '$dice',
-                style: DSTypography.displaySmall.copyWith(
-                  color: DSColors.textPrimary,
-                  fontWeight: FontWeight.w800,
+            const Spacer(),
+            GestureDetector(
+              onTap: onRoll,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      c,
+                      Color.lerp(c, const Color(0xFF000000), 0.25)!,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.20),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: c.withValues(alpha: 0.45),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.casino_rounded, color: Colors.white, size: 22),
+                    SizedBox(width: 8),
+                    Text(
+                      'Roll Dice',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ),
-        if (dice > 0) const SizedBox(width: 16),
-        if (canRoll)
-          ElevatedButton.icon(
-            onPressed: () => ref.read(ludoProvider.notifier).rollDice(),
-            icon: const Icon(Icons.casino_rounded),
-            label: const Text('Roll'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: DSColors.ludoPrimary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          ],
+        ),
+      );
+    }
+
+    if (phase == LudoPhase.rolling && currentPlayer != null && currentPlayer!.isBot) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A2E),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFF252545)),
+            ),
+            child: Text(
+              'Bot is thinking...',
+              style: DSTypography.bodyMedium.copyWith(
+                color: DSColors.textSecondary,
               ),
             ),
-          )
-        else if (phase == LudoPhase.selectingToken)
-          Text(
-            'Select a token to move',
-            style: DSTypography.labelMedium.copyWith(color: DSColors.textSecondary),
           ),
-      ],
-    );
-  }
-}
-
-/// Powerup tray for the current human player.
-class _PowerupTray extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final player = ref.watch(
-      ludoProvider.select((s) {
-        if (s.players.isEmpty) {
-          return null;
-        }
-        final cp = s.currentPlayer;
-        return cp.isBot ? null : cp;
-      }),
-    );
-    if (player == null || player.powerups.isEmpty) {
-      return const SizedBox.shrink();
+        ),
+      );
     }
 
-    return Wrap(
-      spacing: 8,
-      children: player.powerups.map((p) {
-        return ActionChip(
-          label: Text(_powerupLabel(p)),
-          avatar: Icon(_powerupIcon(p), size: 16),
-          onPressed: () =>
-              ref.read(ludoProvider.notifier).activatePowerup(p),
-        );
-      }).toList(),
-    );
-  }
-
-  String _powerupLabel(LudoPowerupType p) {
-    switch (p) {
-      case LudoPowerupType.shield:
-        return 'Shield';
-      case LudoPowerupType.doubleStep:
-        return '×2 Step';
-      case LudoPowerupType.freeze:
-        return 'Freeze';
-      case LudoPowerupType.recall:
-        return 'Recall';
-      case LudoPowerupType.luckyRoll:
-        return 'Lucky';
+    if (phase == LudoPhase.selectingToken) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A2E),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFF252545)),
+            ),
+            child: Text(
+              'Tap a highlighted token to move',
+              style: DSTypography.bodyMedium.copyWith(
+                color: DSColors.textSecondary,
+              ),
+            ),
+          ),
+        ),
+      );
     }
-  }
 
-  IconData _powerupIcon(LudoPowerupType p) {
-    switch (p) {
-      case LudoPowerupType.shield:
-        return Icons.shield_rounded;
-      case LudoPowerupType.doubleStep:
-        return Icons.fast_forward_rounded;
-      case LudoPowerupType.freeze:
-        return Icons.ac_unit_rounded;
-      case LudoPowerupType.recall:
-        return Icons.undo_rounded;
-      case LudoPowerupType.luckyRoll:
-        return Icons.star_rounded;
+    if (phase == LudoPhase.selectingPowerupTarget) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A2E),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFF252545)),
+            ),
+            child: Text(
+              'Tap a token to apply powerup',
+              style: DSTypography.bodyMedium.copyWith(
+                color: DSColors.textSecondary,
+              ),
+            ),
+          ),
+        ),
+      );
     }
+
+    return const SizedBox(height: 20);
   }
 }
 
@@ -569,7 +1018,6 @@ class _WonScreen extends ConsumerWidget {
     final players = ref.watch(ludoProvider.select((s) => s.players));
     final mode = ref.watch(ludoProvider.select((s) => s.mode));
 
-    // Find winner(s).
     final finished = players.where((p) => p.hasWon).toList()
       ..sort((a, b) => a.finishPosition.compareTo(b.finishPosition));
 
@@ -579,55 +1027,187 @@ class _WonScreen extends ConsumerWidget {
         ? 'Team ${finished.isNotEmpty ? (finished.first.teamIndex == 0 ? "Red & Green" : "Blue & Yellow") : "?"} Wins!'
         : '$winnerName Wins!';
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.emoji_events_rounded, size: 72, color: Color(0xFFFFD700)),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: DSTypography.displaySmall.copyWith(
-                color: DSColors.textPrimary,
-                fontWeight: FontWeight.w800,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () {
-                final s = ref.read(ludoProvider);
-                switch (s.mode) {
-                  case LudoMode.soloVsBots:
-                    ref.read(ludoProvider.notifier).startSolo(s.difficulty);
-                  case LudoMode.freeForAll3:
-                    ref.read(ludoProvider.notifier).startFreeForAll(playerCount: 3);
-                  case LudoMode.freeForAll4:
-                    ref.read(ludoProvider.notifier).startFreeForAll(playerCount: 4);
-                  case LudoMode.twoVsTwo:
-                    ref.read(ludoProvider.notifier).startTeamVsTeam();
-                }
-              },
-              icon: const Icon(Icons.replay_rounded),
-              label: const Text('Play Again'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: DSColors.ludoPrimary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: RadialGradient(
+          colors: [
+            DSColors.ludoPrimary.withValues(alpha: 0.10),
+            const Color(0xFF0D0D1A),
+          ],
+          radius: 1.0,
+        ),
+      ),
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Trophy section
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const RadialGradient(
+                    colors: [Color(0xFFFFD700), Color(0xFFB8860B)],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFFD700).withValues(alpha: 0.5),
+                      blurRadius: 24,
+                      spreadRadius: 4,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.emoji_events_rounded,
+                  size: 56,
+                  color: Colors.white,
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            TextButton.icon(
-              onPressed: () => ref.read(ludoProvider.notifier).goToIdle(),
-              icon: const Icon(Icons.home_rounded),
-              label: const Text('Main Menu'),
-            ),
-          ],
+              const SizedBox(height: 20),
+
+              Text(
+                'WINNER',
+                style: DSTypography.labelSmall.copyWith(
+                  color: DSColors.ludoPrimary,
+                  letterSpacing: 4,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [
+                    Color(0xFFFFD700),
+                    Color(0xFFFF6B6B),
+                    Color(0xFFFFD700),
+                  ],
+                ).createShader(bounds),
+                child: Text(
+                  title,
+                  style: DSTypography.displaySmall.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _tokenDot(const Color(0xFFE53935)),
+                  const SizedBox(width: 6),
+                  _tokenDot(const Color(0xFF2979FF)),
+                  const SizedBox(width: 6),
+                  _tokenDot(const Color(0xFF43A047)),
+                  const SizedBox(width: 6),
+                  _tokenDot(const Color(0xFFFFD600)),
+                ],
+              ),
+              const SizedBox(height: 32),
+
+              // Play Again button
+              GestureDetector(
+                onTap: () {
+                  final s = ref.read(ludoProvider);
+                  switch (s.mode) {
+                    case LudoMode.soloVsBots:
+                      ref
+                          .read(ludoProvider.notifier)
+                          .startSolo(s.difficulty, diceMode: s.diceMode);
+                    case LudoMode.freeForAll3:
+                      ref
+                          .read(ludoProvider.notifier)
+                          .startFreeForAll(playerCount: 3, diceMode: s.diceMode);
+                    case LudoMode.freeForAll4:
+                      ref
+                          .read(ludoProvider.notifier)
+                          .startFreeForAll(playerCount: 4, diceMode: s.diceMode);
+                    case LudoMode.twoVsTwo:
+                      ref
+                          .read(ludoProvider.notifier)
+                          .startTeamVsTeam(diceMode: s.diceMode);
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 14,
+                    horizontal: 32,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        DSColors.ludoPrimary,
+                        Color.lerp(
+                          DSColors.ludoPrimary,
+                          Colors.black,
+                          0.20,
+                        )!,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: DSColors.ludoPrimary.withValues(alpha: 0.35),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.replay_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Play Again',
+                        style: DSTypography.labelLarge.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              OutlinedButton.icon(
+                onPressed: () => ref.read(ludoProvider.notifier).goToIdle(),
+                icon: const Icon(Icons.home_rounded),
+                label: const Text('Main Menu'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: DSColors.ludoPrimary,
+                  side: BorderSide(
+                    color: DSColors.ludoPrimary.withValues(alpha: 0.5),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

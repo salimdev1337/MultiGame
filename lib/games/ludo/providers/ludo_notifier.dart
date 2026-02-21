@@ -30,12 +30,16 @@ class LudoNotifier extends GameStatsNotifier<LudoGameState> {
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
-  void startSolo(LudoDifficulty difficulty) {
+  void startSolo(
+    LudoDifficulty difficulty, {
+    LudoDiceMode diceMode = LudoDiceMode.classic,
+  }) {
     _cancelBotTimer();
     state = LudoGameState(
       phase: LudoPhase.rolling,
       mode: LudoMode.soloVsBots,
       difficulty: difficulty,
+      diceMode: diceMode,
       players: LudoGameState.buildPlayers(
         mode: LudoMode.soloVsBots,
         difficulty: difficulty,
@@ -44,7 +48,10 @@ class LudoNotifier extends GameStatsNotifier<LudoGameState> {
     _maybeBotTurn();
   }
 
-  void startFreeForAll({required int playerCount}) {
+  void startFreeForAll({
+    required int playerCount,
+    LudoDiceMode diceMode = LudoDiceMode.classic,
+  }) {
     _cancelBotTimer();
     final mode = playerCount == 3 ? LudoMode.freeForAll3 : LudoMode.freeForAll4;
     // For 3-player FFA exclude Yellow by default.
@@ -52,6 +59,7 @@ class LudoNotifier extends GameStatsNotifier<LudoGameState> {
     state = LudoGameState(
       phase: LudoPhase.rolling,
       mode: mode,
+      diceMode: diceMode,
       players: LudoGameState.buildPlayers(
         mode: mode,
         excludedColor: mode == LudoMode.freeForAll3 ? excluded : null,
@@ -60,11 +68,12 @@ class LudoNotifier extends GameStatsNotifier<LudoGameState> {
     );
   }
 
-  void startTeamVsTeam() {
+  void startTeamVsTeam({LudoDiceMode diceMode = LudoDiceMode.classic}) {
     _cancelBotTimer();
     state = LudoGameState(
       phase: LudoPhase.rolling,
       mode: LudoMode.twoVsTwo,
+      diceMode: diceMode,
       players: LudoGameState.buildPlayers(mode: LudoMode.twoVsTwo),
     );
   }
@@ -201,30 +210,84 @@ class LudoNotifier extends GameStatsNotifier<LudoGameState> {
   /// Rolls the dice and transitions to [LudoPhase.selectingToken] if there
   /// are movable tokens, otherwise skips the turn.
   void _executeRoll() {
-    final dice = logic.rollDice();
-    final player = state.currentPlayer;
-    final movable = logic.computeMovableTokenIds(player, dice, state.players);
-
-    if (movable.isEmpty) {
-      // No valid moves — advance to next player.
+    // Classic mode: only roll values that have at least one legal move.
+    if (state.diceMode == LudoDiceMode.classic) {
+      final player = state.currentPlayer;
+      final valid = logic.validDiceValues(player, state.players);
+      if (valid.isEmpty) {
+        state = state.copyWith(
+          phase: LudoPhase.rolling,
+          currentPlayerIndex: _nextPlayerIndex(),
+        );
+        _maybeBotTurn();
+        return;
+      }
+      final normalDice = logic.rollDiceFrom(valid);
       state = state.copyWith(
-        diceValue: dice,
+        diceValue: normalDice,
+        diceRollerColor: player.color,
+      );
+      final movable =
+          logic.computeMovableTokenIds(player, normalDice, state.players);
+      if (movable.length == 1) {
+        state = state.copyWith(phase: LudoPhase.selectingToken);
+        state = logic.applyMove(state, movable.first);
+        _maybeBotTurn();
+        return;
+      }
+      state = state.copyWith(phase: LudoPhase.selectingToken);
+      return;
+    }
+
+    // Magic mode: original logic (transform may change effective value).
+    final normalDice = logic.rollDice();
+    final magic = logic.rollMagicDice();
+    final effectiveDice = _applyMagicAndGetEffectiveDice(normalDice, magic);
+    if (effectiveDice == null) {
+      return;
+    }
+    final player = state.currentPlayer;
+    final movable =
+        logic.computeMovableTokenIds(player, effectiveDice, state.players);
+    if (movable.isEmpty) {
+      state = state.copyWith(
         phase: LudoPhase.rolling,
         currentPlayerIndex: _nextPlayerIndex(),
       );
       _maybeBotTurn();
       return;
     }
-
     if (movable.length == 1) {
-      // Auto-select the only valid token.
-      state = state.copyWith(diceValue: dice, phase: LudoPhase.selectingToken);
+      state = state.copyWith(phase: LudoPhase.selectingToken);
       state = logic.applyMove(state, movable.first);
       _maybeBotTurn();
       return;
     }
+    state = state.copyWith(phase: LudoPhase.selectingToken);
+  }
 
-    state = state.copyWith(diceValue: dice, phase: LudoPhase.selectingToken);
+  /// Applies the magic effect (if any) and returns the effective dice value.
+  /// Returns null if the turn was skipped (caller should return early).
+  int? _applyMagicAndGetEffectiveDice(int normalDice, MagicDiceFace? magic) {
+    final rollerColor = state.currentPlayer.color;
+    if (magic == null) {
+      state = state.copyWith(diceValue: normalDice, diceRollerColor: rollerColor);
+      return normalDice;
+    }
+    if (magic == MagicDiceFace.skip) {
+      state = state.copyWith(
+        diceValue: normalDice,
+        magicDiceFace: magic,
+        diceRollerColor: rollerColor,
+        phase: LudoPhase.rolling,
+        currentPlayerIndex: _nextPlayerIndex(),
+      );
+      _maybeBotTurn();
+      return null;
+    }
+    state = state.copyWith(diceValue: normalDice, magicDiceFace: magic, diceRollerColor: rollerColor);
+    state = logic.applyMagicEffect(state, normalDice, magic);
+    return state.diceValue;
   }
 
   int _nextPlayerIndex() {
@@ -255,13 +318,52 @@ class LudoNotifier extends GameStatsNotifier<LudoGameState> {
         return;
       }
 
-      final dice = logic.rollDice();
       final player = state.currentPlayer;
-      final movable = logic.computeMovableTokenIds(player, dice, state.players);
+
+      if (state.diceMode == LudoDiceMode.classic) {
+        final valid = logic.validDiceValues(player, state.players);
+        if (valid.isEmpty) {
+          state = state.copyWith(
+            phase: LudoPhase.rolling,
+            currentPlayerIndex: _nextPlayerIndex(),
+          );
+          _maybeBotTurn();
+          return;
+        }
+        final normalDice = logic.rollDiceFrom(valid);
+        state = state.copyWith(
+          diceValue: normalDice,
+          diceRollerColor: player.color,
+          phase: LudoPhase.selectingToken,
+        );
+        final tokenId =
+            botDecide(state.difficulty, player, normalDice, state.players);
+        if (tokenId == -1) {
+          state = state.copyWith(
+            phase: LudoPhase.rolling,
+            currentPlayerIndex: _nextPlayerIndex(),
+          );
+        } else {
+          state = logic.applyMove(state, tokenId);
+        }
+        _maybeSaveScore(state);
+        _maybeBotTurn();
+        return;
+      }
+
+      // Magic mode: original logic.
+      final normalDice = logic.rollDice();
+      final magic = logic.rollMagicDice();
+      final effectiveDice = _applyMagicAndGetEffectiveDice(normalDice, magic);
+      if (effectiveDice == null) {
+        return;
+      }
+
+      final movable =
+          logic.computeMovableTokenIds(player, effectiveDice, state.players);
 
       if (movable.isEmpty) {
         state = state.copyWith(
-          diceValue: dice,
           phase: LudoPhase.rolling,
           currentPlayerIndex: _nextPlayerIndex(),
         );
@@ -269,9 +371,10 @@ class LudoNotifier extends GameStatsNotifier<LudoGameState> {
         return;
       }
 
-      state = state.copyWith(diceValue: dice, phase: LudoPhase.selectingToken);
+      state = state.copyWith(phase: LudoPhase.selectingToken);
 
-      final tokenId = botDecide(state.difficulty, player, dice, state.players);
+      final tokenId =
+          botDecide(state.difficulty, player, effectiveDice, state.players);
       if (tokenId == -1) {
         state = state.copyWith(
           phase: LudoPhase.rolling,

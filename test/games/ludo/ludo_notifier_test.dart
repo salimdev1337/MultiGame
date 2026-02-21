@@ -70,9 +70,13 @@ void main() {
       container.read(ludoProvider.notifier).startSolo(LudoDifficulty.easy);
       final state = container.read(ludoProvider);
 
-      expect(state.players.first.color, LudoPlayerColor.red);
-      expect(state.players.first.isBot, isFalse);
-      for (final p in state.players.skip(1)) {
+      final redPlayer = state.players.firstWhere(
+        (p) => p.color == LudoPlayerColor.red,
+      );
+      expect(redPlayer.isBot, isFalse);
+      for (final p in state.players.where(
+        (p) => p.color != LudoPlayerColor.red,
+      )) {
         expect(p.isBot, isTrue);
       }
     });
@@ -192,7 +196,7 @@ void main() {
 
       container.read(ludoProvider.notifier).startSolo(LudoDifficulty.easy);
 
-      // Red is index 0, so it's their turn first.  If bots ran before we
+      // Blue is index 0, so it's their turn first (bot).  If bots ran before we
       // read, we skip — just confirm the state transitions.
       final stateBefore = container.read(ludoProvider);
       if (stateBefore.phase == LudoPhase.rolling &&
