@@ -8,17 +8,25 @@ import '../models/ludo_enums.dart';
 
 // ── Colour palette ────────────────────────────────────────────────────────
 
-const _colorBg         = Color(0xFF0D0D1A);
-const _colorCell       = Color(0xFF1A1A30);
-const _colorBorder     = Color(0xFF252545);
-const _colorFrameLight = Color(0xFF2E2E50);
-const _colorFrameDark  = Color(0xFF07070F);
-const _colorRed        = Color(0xFFE53935);
-const _colorBlue       = Color(0xFF2979FF);
-const _colorGreen      = Color(0xFF43A047);
-const _colorYellow     = Color(0xFFFFD600);
-const _colorGold       = Color(0xFFFFD700);
-const _colorGoldDark   = Color(0xFF8B6914);
+// Dark-mode neutral palette
+const _bgDark      = Color(0xFF0D0D1A);
+const _cellDark    = Color(0xFF1A1A30);
+const _borderDark  = Color(0xFF252545);
+const _frameLtDark = Color(0xFF2E2E50);
+const _frameDkDark = Color(0xFF07070F);
+// Light-mode neutral palette
+const _bgLight      = Color(0xFFF0EDE4);
+const _cellLight    = Color(0xFFDDD7CB);
+const _borderLight  = Color(0xFFB8B0A0);
+const _frameLtLight = Color(0xFF9A9080);
+const _frameDkLight = Color(0xFF7A7060);
+
+const _colorRed    = Color(0xFFE53935);
+const _colorBlue   = Color(0xFF2979FF);
+const _colorGreen  = Color(0xFF43A047);
+const _colorYellow = Color(0xFFFFD600);
+const _colorGold     = Color(0xFFFFD700);
+const _colorGoldDark = Color(0xFF8B6914);
 
 Color _playerColor(LudoPlayerColor c) {
   switch (c) {
@@ -54,9 +62,16 @@ LudoPlayerColor _safeZone(int absPos) {
 /// Set [debug] to true to overlay every cell with its grid coordinate and
 /// track / home-column position index.
 class LudoBoardPainter extends CustomPainter {
-  const LudoBoardPainter({this.debug = false});
+  const LudoBoardPainter({this.debug = false, this.isDark = true});
 
   final bool debug;
+  final bool isDark;
+
+  Color get _bg      => isDark ? _bgDark      : _bgLight;
+  Color get _cell    => isDark ? _cellDark    : _cellLight;
+  Color get _border  => isDark ? _borderDark  : _borderLight;
+  Color get _frameLt => isDark ? _frameLtDark : _frameLtLight;
+  Color get _frameDk => isDark ? _frameDkDark : _frameDkLight;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -79,7 +94,7 @@ class LudoBoardPainter extends CustomPainter {
   void _drawBackground(Canvas canvas, Size size, double cell) {
     canvas.drawRect(
       Rect.fromLTWH(0, 0, size.width, size.height),
-      Paint()..color = _colorBg,
+      Paint()..color = _bg,
     );
     canvas.drawRRect(
       RRect.fromRectAndRadius(
@@ -87,7 +102,7 @@ class LudoBoardPainter extends CustomPainter {
         Radius.circular(cell * 0.1),
       ),
       Paint()
-        ..color = _colorFrameLight
+        ..color = _frameLt
         ..style = PaintingStyle.stroke
         ..strokeWidth = cell * 0.08,
     );
@@ -96,9 +111,9 @@ class LudoBoardPainter extends CustomPainter {
   // ── Cross area (arms + center 3×3) ────────────────────────────────────
 
   void _drawCrossArea(Canvas canvas, double cell) {
-    final fillPaint = Paint()..color = _colorCell;
+    final fillPaint = Paint()..color = _cell;
     final borderPaint = Paint()
-      ..color = _colorBorder
+      ..color = _border
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.6;
 
@@ -155,7 +170,7 @@ class LudoBoardPainter extends CustomPainter {
 
   void _drawHomeColumns(Canvas canvas, double cell) {
     final borderPaint = Paint()
-      ..color = _colorBorder
+      ..color = _border
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.6;
 
@@ -363,7 +378,7 @@ class LudoBoardPainter extends CustomPainter {
       // 2. Inner circle — dark fill
       final baseCentre = rect.center;
       final circleRadius = cell * 2.25;
-      canvas.drawCircle(baseCentre, circleRadius, Paint()..color = _colorBg);
+      canvas.drawCircle(baseCentre, circleRadius, Paint()..color = _bg);
 
       // 3. Inner circle — outer glow ring
       canvas.drawCircle(
@@ -397,7 +412,7 @@ class LudoBoardPainter extends CustomPainter {
         canvas.drawCircle(
           slotCenter,
           slotR,
-          Paint()..color = const Color(0xFF0D0D1A),
+          Paint()..color = _bg,
         );
 
         // Blurred glow border
@@ -426,7 +441,7 @@ class LudoBoardPainter extends CustomPainter {
       canvas.drawRect(
         rect,
         Paint()
-          ..color = _colorFrameDark
+          ..color = _frameDk
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.0,
       );
@@ -540,5 +555,6 @@ class LudoBoardPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(LudoBoardPainter oldDelegate) => oldDelegate.debug != debug;
+  bool shouldRepaint(LudoBoardPainter oldDelegate) =>
+      oldDelegate.debug != debug || oldDelegate.isDark != isDark;
 }

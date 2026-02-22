@@ -183,3 +183,4 @@ const Map<LudoPlayerColor, List<(int col, int row)>> kBaseSlotCoords = {
   }
   return kTrackCoords[token.trackPosition] ?? (7, 7);
 }
+

@@ -99,15 +99,6 @@ void main() {
       expect(canMoveOnTrack(t, 1, players), isFalse);
     });
 
-    test('returns false for a frozen token', () {
-      final t = const LudoToken(
-        id: 0,
-        owner: LudoPlayerColor.red,
-        trackPosition: 5,
-        isFrozen: true,
-      );
-      expect(canMoveOnTrack(t, 3, players), isFalse);
-    });
 
     test('returns false when move would overshoot home column', () {
       // In home column at step 5 — can only move 1 more step.
@@ -151,6 +142,15 @@ void main() {
       );
       expect(wouldOvershoot(t, 1, LudoPlayerColor.red), isFalse);
     });
+
+    test('track token rel 50 + roll 6 does not overshoot (finishes exactly)', () {
+      final t = const LudoToken(
+        id: 0,
+        owner: LudoPlayerColor.red,
+        trackPosition: 50,
+      );
+      expect(wouldOvershoot(t, 6, LudoPlayerColor.red), isFalse);
+    });
   });
 
   // ── isTrackSafe ────────────────────────────────────────────────────────────
@@ -193,15 +193,57 @@ void main() {
       expect(result.isOnTrack, isTrue);
     });
 
-    test('enters home column correctly', () {
-      // Red's last track square before home column is at relative 51 = absolute 51.
+    test('enters home column correctly from rel 50 + roll 1', () {
+      // Red's last track square is relative 50 = absolute 50.
       final t = const LudoToken(
         id: 0,
         owner: LudoPlayerColor.red,
-        trackPosition: 51,
+        trackPosition: 50,
       );
-      // 1 step enters home column step 1.
       final result = advanceToken(t, 1, LudoPlayerColor.red);
+      expect(result.isInHomeColumn, isTrue);
+      expect(result.homeColumnStep, 1);
+    });
+
+    test('rel 50 + roll 2 → homeColumnStep 2', () {
+      final t = const LudoToken(
+        id: 0,
+        owner: LudoPlayerColor.red,
+        trackPosition: 50,
+      );
+      final result = advanceToken(t, 2, LudoPlayerColor.red);
+      expect(result.isInHomeColumn, isTrue);
+      expect(result.homeColumnStep, 2);
+    });
+
+    test('rel 50 + roll 6 → isFinished', () {
+      final t = const LudoToken(
+        id: 0,
+        owner: LudoPlayerColor.red,
+        trackPosition: 50,
+      );
+      final result = advanceToken(t, 6, LudoPlayerColor.red);
+      expect(result.isFinished, isTrue);
+    });
+
+    test('rel 49 + roll 1 → stays on track at abs 50', () {
+      final t = const LudoToken(
+        id: 0,
+        owner: LudoPlayerColor.red,
+        trackPosition: 49,
+      );
+      final result = advanceToken(t, 1, LudoPlayerColor.red);
+      expect(result.isOnTrack, isTrue);
+      expect(result.trackPosition, 50);
+    });
+
+    test('rel 49 + roll 2 → homeColumnStep 1', () {
+      final t = const LudoToken(
+        id: 0,
+        owner: LudoPlayerColor.red,
+        trackPosition: 49,
+      );
+      final result = advanceToken(t, 2, LudoPlayerColor.red);
       expect(result.isInHomeColumn, isTrue);
       expect(result.homeColumnStep, 1);
     });
@@ -250,7 +292,7 @@ void main() {
       expect(targets, isEmpty);
     });
 
-    test('does not capture shielded token (non-recall)', () {
+    test('does not capture ghost-protected token', () {
       final blue = LudoPlayer(
         color: LudoPlayerColor.blue,
         name: 'Blue',
@@ -260,7 +302,7 @@ void main() {
             id: 0,
             owner: LudoPlayerColor.blue,
             trackPosition: 5,
-            shieldTurnsLeft: 2,
+            ghostTurnsLeft: 2,
           ),
           const LudoToken(id: 1, owner: LudoPlayerColor.blue),
           const LudoToken(id: 2, owner: LudoPlayerColor.blue),
@@ -272,7 +314,7 @@ void main() {
       expect(targets, isEmpty);
     });
 
-    test('capture bypasses shield when recall powerup', () {
+    test('ghost token is never capturable (no bypass)', () {
       final blue = LudoPlayer(
         color: LudoPlayerColor.blue,
         name: 'Blue',
@@ -282,7 +324,7 @@ void main() {
             id: 0,
             owner: LudoPlayerColor.blue,
             trackPosition: 5,
-            shieldTurnsLeft: 2,
+            ghostTurnsLeft: 2,
           ),
           const LudoToken(id: 1, owner: LudoPlayerColor.blue),
           const LudoToken(id: 2, owner: LudoPlayerColor.blue),
@@ -291,7 +333,7 @@ void main() {
       );
       final all = [makePlayer(LudoPlayerColor.red, 10), blue];
       final targets = captureTargets(5, LudoPlayerColor.red, all, true);
-      expect(targets.length, 1);
+      expect(targets, isEmpty);
     });
 
     test('cannot capture on safe square (non-recall)', () {
@@ -761,11 +803,426 @@ void main() {
 
     test('copyWith preserves unchanged fields', () {
       const t = LudoToken(id: 2, owner: LudoPlayerColor.blue, trackPosition: 7);
-      final t2 = t.copyWith(shieldTurnsLeft: 2);
+      final t2 = t.copyWith(ghostTurnsLeft: 2);
       expect(t2.id, 2);
       expect(t2.owner, LudoPlayerColor.blue);
       expect(t2.trackPosition, 7);
-      expect(t2.shieldTurnsLeft, 2);
+      expect(t2.ghostTurnsLeft, 2);
+    });
+  });
+
+  // ── Magic Dice — Turbo ─────────────────────────────────────────────────────
+  group('Magic Dice — Turbo', () {
+    LudoGameState stateWithPlayers(List<LudoPlayer> players) {
+      return LudoGameState(
+        phase: LudoPhase.rolling,
+        diceMode: LudoDiceMode.magic,
+        players: players,
+        currentPlayerIndex: 0,
+      );
+    }
+
+    test('computeMovableTokenIds allows base token launch when normalDice=6 even if effectiveDice=12', () {
+      final redPlayer = LudoPlayer(
+        color: LudoPlayerColor.red,
+        name: 'Red',
+        isBot: false,
+        tokens: [const LudoToken(id: 0, owner: LudoPlayerColor.red)], // in base
+      );
+      final movable = computeMovableTokenIds(
+        redPlayer,
+        12, // effectiveDice (turbo doubled)
+        [redPlayer],
+        normalDice: 6, // physical roll was 6
+      );
+      expect(movable, contains(0));
+    });
+
+    test('computeMovableTokenIds blocks launch when normalDice!=6 even with turbo', () {
+      final redPlayer = LudoPlayer(
+        color: LudoPlayerColor.red,
+        name: 'Red',
+        isBot: false,
+        tokens: [const LudoToken(id: 0, owner: LudoPlayerColor.red)], // in base
+      );
+      final movable = computeMovableTokenIds(
+        redPlayer,
+        8, // effectiveDice (turbo: 4×2)
+        [redPlayer],
+        normalDice: 4, // physical roll was 4 — can't launch
+      );
+      expect(movable, isEmpty);
+    });
+
+    test('consecutive sixes increments based on normalDice, not effectiveDice', () {
+      final redPlayer = LudoPlayer(
+        color: LudoPlayerColor.red,
+        name: 'Red',
+        isBot: false,
+        tokens: [const LudoToken(id: 0, owner: LudoPlayerColor.red, trackPosition: 0)],
+      );
+      final state = stateWithPlayers([redPlayer]).copyWith(
+        diceValue: 12, // effectiveDice after turbo
+        magicDiceFace: MagicDiceFace.turbo,
+      );
+      final result = applyMove(state, 0, normalDice: 6);
+      expect(result.players[0].consecutiveSixes, 1);
+    });
+
+    test('consecutive sixes does NOT increment when normalDice!=6', () {
+      final redPlayer = LudoPlayer(
+        color: LudoPlayerColor.red,
+        name: 'Red',
+        isBot: false,
+        tokens: [const LudoToken(id: 0, owner: LudoPlayerColor.red, trackPosition: 0)],
+      );
+      final state = stateWithPlayers([redPlayer]).copyWith(
+        diceValue: 8, // effectiveDice after turbo
+        magicDiceFace: MagicDiceFace.turbo,
+      );
+      final result = applyMove(state, 0, normalDice: 4);
+      expect(result.players[0].consecutiveSixes, 0);
+    });
+  });
+
+  // ── Magic Dice — Ghost ─────────────────────────────────────────────────────
+  group('Magic Dice — Ghost', () {
+    LudoGameState ghostState(List<LudoPlayer> players) {
+      return LudoGameState(
+        phase: LudoPhase.selectingToken,
+        diceMode: LudoDiceMode.magic,
+        magicDiceFace: MagicDiceFace.ghost,
+        diceValue: 3,
+        players: players,
+        currentPlayerIndex: 0,
+      );
+    }
+
+    test('applyMove with ghost face sets ghostTurnsLeft=3 on moved token', () {
+      final redPlayer = LudoPlayer(
+        color: LudoPlayerColor.red,
+        name: 'Red',
+        isBot: false,
+        tokens: [const LudoToken(id: 0, owner: LudoPlayerColor.red, trackPosition: 0)],
+      );
+      final state = ghostState([redPlayer]);
+      final result = applyMove(state, 0, normalDice: 3);
+      final movedToken = result.players
+          .firstWhere((p) => p.color == LudoPlayerColor.red)
+          .tokens
+          .first;
+      expect(movedToken.ghostTurnsLeft, 3);
+    });
+
+    test('ghost token defuses an enemy bomb on contact', () {
+      final enemyBombPos = 5;
+      final redPlayer = LudoPlayer(
+        color: LudoPlayerColor.red,
+        name: 'Red',
+        isBot: false,
+        tokens: [
+          LudoToken(id: 0, owner: LudoPlayerColor.red, trackPosition: 2, ghostTurnsLeft: 3),
+        ],
+      );
+      final bluePlayer = LudoPlayer(
+        color: LudoPlayerColor.blue,
+        name: 'Blue',
+        isBot: false,
+        tokens: [const LudoToken(id: 0, owner: LudoPlayerColor.blue, trackPosition: 10)],
+      );
+      final bomb = LudoBomb(
+        trackPosition: enemyBombPos,
+        placedBy: LudoPlayerColor.blue,
+        turnsLeft: 8,
+      );
+      final state = LudoGameState(
+        phase: LudoPhase.selectingToken,
+        diceMode: LudoDiceMode.magic,
+        diceValue: 3, // red moves from 2 → 5, lands on bomb
+        players: [redPlayer, bluePlayer],
+        currentPlayerIndex: 0,
+        activeBombs: [bomb],
+      );
+      final result = applyMove(state, 0, normalDice: 3);
+      final redToken = result.players
+          .firstWhere((p) => p.color == LudoPlayerColor.red)
+          .tokens
+          .first;
+      expect(redToken.isInBase, isFalse, reason: 'ghost token should survive');
+      expect(result.activeBombs, isEmpty, reason: 'bomb should be defused');
+    });
+  });
+
+  // ── freeForAll3 — portal mechanic ────────────────────────────────────────
+  group('freeForAll3 — portal mechanic', () {
+    // Builds a minimal ffa3 state with one on-track token for [color].
+    LudoGameState ffa3State({
+      required LudoPlayerColor color,
+      required int trackPosition,
+      required int diceValue,
+    }) {
+      LudoPlayer makePlayer(LudoPlayerColor c, int pos) {
+        return LudoPlayer(
+          color: c,
+          name: c.name,
+          isBot: false,
+          tokens: [
+            LudoToken(id: 0, owner: c, trackPosition: pos),
+            LudoToken(id: 1, owner: c),
+            LudoToken(id: 2, owner: c),
+            LudoToken(id: 3, owner: c),
+          ],
+        );
+      }
+
+      final players = [
+        makePlayer(LudoPlayerColor.red, color == LudoPlayerColor.red ? trackPosition : 5),
+        makePlayer(LudoPlayerColor.green, color == LudoPlayerColor.green ? trackPosition : 18),
+        makePlayer(LudoPlayerColor.blue, color == LudoPlayerColor.blue ? trackPosition : 44),
+      ];
+      final idx = players.indexWhere((p) => p.color == color);
+      return LudoGameState(
+        phase: LudoPhase.selectingToken,
+        mode: LudoMode.freeForAll3,
+        players: players,
+        currentPlayerIndex: idx,
+        diceValue: diceValue,
+      );
+    }
+
+    test('Red at pos 25 + dice 5 → teleports via portal, lands at abs 43', () {
+      final state = ffa3State(
+        color: LudoPlayerColor.red,
+        trackPosition: 25,
+        diceValue: 5,
+      );
+      final result = applyMove(state, 0, normalDice: 5);
+      final token = result.players
+          .firstWhere((p) => p.color == LudoPlayerColor.red)
+          .tokens
+          .first;
+      expect(token.trackPosition, 43);
+      expect(token.isOnTrack, isTrue);
+    });
+
+    test('Green at pos 25 + dice 1 → teleports to Blue spawn (abs 39)', () {
+      final state = ffa3State(
+        color: LudoPlayerColor.green,
+        trackPosition: 25,
+        diceValue: 1,
+      );
+      final result = applyMove(state, 0, normalDice: 1);
+      final token = result.players
+          .firstWhere((p) => p.color == LudoPlayerColor.green)
+          .tokens
+          .first;
+      expect(token.trackPosition, 39);
+      expect(token.isOnTrack, isTrue);
+    });
+
+    test('Blue at pos 25 + dice 1 → enters home column at step 1', () {
+      final state = ffa3State(
+        color: LudoPlayerColor.blue,
+        trackPosition: 25,
+        diceValue: 1,
+      );
+      final result = applyMove(state, 0, normalDice: 1);
+      final token = result.players
+          .firstWhere((p) => p.color == LudoPlayerColor.blue)
+          .tokens
+          .first;
+      expect(token.isInHomeColumn, isTrue);
+      expect(token.homeColumnStep, 1);
+    });
+
+    test('Blue at pos 25 + dice 6 → finishes (home column step 6)', () {
+      final state = ffa3State(
+        color: LudoPlayerColor.blue,
+        trackPosition: 25,
+        diceValue: 6,
+      );
+      final result = applyMove(state, 0, normalDice: 6);
+      final token = result.players
+          .firstWhere((p) => p.color == LudoPlayerColor.blue)
+          .tokens
+          .first;
+      expect(token.isFinished, isTrue);
+    });
+
+    test('Blue at pos 25 is NOT movable with dice 7 (overshoot after portal)', () {
+      final player = LudoPlayer(
+        color: LudoPlayerColor.blue,
+        name: 'Blue',
+        isBot: false,
+        tokens: [
+          const LudoToken(id: 0, owner: LudoPlayerColor.blue, trackPosition: 25),
+          const LudoToken(id: 1, owner: LudoPlayerColor.blue),
+          const LudoToken(id: 2, owner: LudoPlayerColor.blue),
+          const LudoToken(id: 3, owner: LudoPlayerColor.blue),
+        ],
+      );
+      final ids = computeMovableTokenIds(
+        player,
+        7,
+        [player],
+        mode: LudoMode.freeForAll3,
+      );
+      expect(ids, isNot(contains(0)));
+    });
+
+    test('Blue at pos 25 IS movable with dice 6 (exact finish, no overshoot)', () {
+      final player = LudoPlayer(
+        color: LudoPlayerColor.blue,
+        name: 'Blue',
+        isBot: false,
+        tokens: [
+          const LudoToken(id: 0, owner: LudoPlayerColor.blue, trackPosition: 25),
+          const LudoToken(id: 1, owner: LudoPlayerColor.blue),
+          const LudoToken(id: 2, owner: LudoPlayerColor.blue),
+          const LudoToken(id: 3, owner: LudoPlayerColor.blue),
+        ],
+      );
+      final ids = computeMovableTokenIds(
+        player,
+        6,
+        [player],
+        mode: LudoMode.freeForAll3,
+      );
+      expect(ids, contains(0));
+    });
+  });
+
+  // ── Magic Dice — Bomb ──────────────────────────────────────────────────────
+  group('Magic Dice — Bomb', () {
+    test('own token stepping on own bomb defuses it without dying', () {
+      final ownBombPos = 3;
+      final redPlayer = LudoPlayer(
+        color: LudoPlayerColor.red,
+        name: 'Red',
+        isBot: false,
+        tokens: [
+          const LudoToken(id: 0, owner: LudoPlayerColor.red, trackPosition: 0),
+        ],
+      );
+      final bomb = LudoBomb(
+        trackPosition: ownBombPos,
+        placedBy: LudoPlayerColor.red,
+        turnsLeft: 8,
+      );
+      final state = LudoGameState(
+        phase: LudoPhase.selectingToken,
+        diceValue: 3, // moves from 0 → 3, lands on own bomb
+        players: [redPlayer],
+        currentPlayerIndex: 0,
+        activeBombs: [bomb],
+      );
+      final result = applyMove(state, 0, normalDice: 3);
+      final redToken = result.players
+          .firstWhere((p) => p.color == LudoPlayerColor.red)
+          .tokens
+          .first;
+      expect(redToken.isInBase, isFalse, reason: 'own token should survive own bomb');
+      expect(result.activeBombs, isEmpty, reason: 'own bomb should be defused');
+    });
+
+    test('enemy token stepping on a bomb is reset to base', () {
+      final bombPos = 3;
+      final redPlayer = LudoPlayer(
+        color: LudoPlayerColor.red,
+        name: 'Red',
+        isBot: false,
+        tokens: [const LudoToken(id: 0, owner: LudoPlayerColor.red, trackPosition: 0)],
+      );
+      final bomb = LudoBomb(
+        trackPosition: bombPos,
+        placedBy: LudoPlayerColor.blue, // placed by someone else
+        turnsLeft: 8,
+      );
+      final state = LudoGameState(
+        phase: LudoPhase.selectingToken,
+        diceValue: 3,
+        players: [redPlayer],
+        currentPlayerIndex: 0,
+        activeBombs: [bomb],
+      );
+      final result = applyMove(state, 0, normalDice: 3);
+      final redToken = result.players
+          .firstWhere((p) => p.color == LudoPlayerColor.red)
+          .tokens
+          .first;
+      expect(redToken.isInBase, isTrue, reason: 'enemy bomb should kill token');
+      expect(result.activeBombs, isEmpty);
+    });
+  });
+
+  // ── Magic Dice — skipMagicDiceOnNextRoll ──────────────────────────────────
+  group('Magic Dice — skipMagicDiceOnNextRoll', () {
+    LudoPlayer makePlayer(LudoPlayerColor color, List<LudoToken> tokens) {
+      return LudoPlayer(
+        color: color,
+        name: color.name,
+        isBot: false,
+        tokens: tokens,
+      );
+    }
+
+    test('applyMove with normalDice=6 and extraTurn sets skipMagicDiceOnNextRoll=true', () {
+      final red = makePlayer(LudoPlayerColor.red, [
+        const LudoToken(id: 0, owner: LudoPlayerColor.red, trackPosition: 5),
+        const LudoToken(id: 1, owner: LudoPlayerColor.red),
+        const LudoToken(id: 2, owner: LudoPlayerColor.red),
+        const LudoToken(id: 3, owner: LudoPlayerColor.red),
+      ]);
+      final state = LudoGameState(
+        phase: LudoPhase.selectingToken,
+        diceMode: LudoDiceMode.magic,
+        diceValue: 6,
+        players: [red],
+        currentPlayerIndex: 0,
+      );
+      // Moving with normalDice=6 grants an extra turn (non-launch 6 rule).
+      final result = applyMove(state, 0, normalDice: 6);
+      expect(result.skipMagicDiceOnNextRoll, isTrue);
+    });
+
+    test('applyMove capture with normalDice!=6 sets skipMagicDiceOnNextRoll=false', () {
+      final red = makePlayer(LudoPlayerColor.red, [
+        const LudoToken(id: 0, owner: LudoPlayerColor.red, trackPosition: 5),
+      ]);
+      final blue = makePlayer(LudoPlayerColor.blue, [
+        const LudoToken(id: 0, owner: LudoPlayerColor.blue, trackPosition: 8),
+      ]);
+      final state = LudoGameState(
+        phase: LudoPhase.selectingToken,
+        diceMode: LudoDiceMode.magic,
+        diceValue: 3,
+        players: [red, blue],
+        currentPlayerIndex: 0,
+      );
+      // Red moves from 5 to 8 and captures Blue — extra turn but normalDice=3.
+      final result = applyMove(state, 0, normalDice: 3);
+      expect(result.skipMagicDiceOnNextRoll, isFalse);
+    });
+
+    test('applyMove token finishes with normalDice!=6 sets skipMagicDiceOnNextRoll=false', () {
+      final red = makePlayer(LudoPlayerColor.red, [
+        const LudoToken(
+          id: 0,
+          owner: LudoPlayerColor.red,
+          trackPosition: -2,
+          homeColumnStep: 4,
+        ),
+      ]);
+      final state = LudoGameState(
+        phase: LudoPhase.selectingToken,
+        diceMode: LudoDiceMode.magic,
+        diceValue: 2,
+        players: [red],
+        currentPlayerIndex: 0,
+      );
+      // Token reaches finish (homeColumnStep 4+2=6) — extra turn but normalDice=2.
+      final result = applyMove(state, 0, normalDice: 2);
+      expect(result.skipMagicDiceOnNextRoll, isFalse);
     });
   });
 }

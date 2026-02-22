@@ -27,6 +27,54 @@ int botDecide(
   }
 }
 
+/// Picks the best wildcard value (1–6) for the bot.
+///
+/// - Hard: tries values in priority order (capture, launch, advance home col,
+///   advance furthest). Returns the value yielding the best outcome.
+/// - Easy/Medium: always pick 6 (or 5 if 6 is blocked by 3-sixes rule).
+int botPickWildcardValue(
+  LudoDifficulty difficulty,
+  LudoPlayer player,
+  List<LudoPlayer> all, {
+  required bool canUse6,
+}) {
+  if (difficulty != LudoDifficulty.hard) {
+    return canUse6 ? 6 : 5;
+  }
+  // Hard bot: evaluate each value and pick the one with the best outcome.
+  final candidates = canUse6
+      ? [6, 5, 4, 3, 2, 1]
+      : [5, 4, 3, 2, 1];
+  for (final v in candidates) {
+    final movable = computeMovableTokenIds(player, v, all);
+    if (movable.isEmpty) {
+      continue;
+    }
+    // Prefer values that allow a capture.
+    if (_findCapture(player, movable, v, all) != -1) {
+      return v;
+    }
+  }
+  // Prefer 6 for launch.
+  if (canUse6) {
+    final movable = computeMovableTokenIds(player, 6, all);
+    if (movable.isNotEmpty) {
+      for (final id in movable) {
+        if (player.tokens.firstWhere((t) => t.id == id).isInBase) {
+          return 6;
+        }
+      }
+    }
+  }
+  // Otherwise pick the largest usable value.
+  for (final v in candidates) {
+    if (computeMovableTokenIds(player, v, all).isNotEmpty) {
+      return v;
+    }
+  }
+  return canUse6 ? 6 : 5;
+}
+
 // ── Easy bot — random valid move ──────────────────────────────────────────
 
 /// Easy: picks a random valid token to move.
@@ -68,6 +116,11 @@ int botDecideMedium(LudoPlayer player, int diceValue, List<LudoPlayer> all) {
 // ── Hard bot — aggressive priorities ─────────────────────────────────────
 
 /// Hard: capture > block opponent near home > advance home-column token > launch > advance furthest.
+///
+/// In magic mode, the hard bot is also aware of the current magic face:
+/// - After Anchor: prioritise spreading out tokens (launch new ones).
+/// - After Ghost: advance the ghost-protected token aggressively.
+/// - After Turbo: treat larger step as opportunity to capture / finish.
 int botDecideHard(LudoPlayer player, int diceValue, List<LudoPlayer> all) {
   final movable = computeMovableTokenIds(player, diceValue, all);
   if (movable.isEmpty) {
@@ -102,7 +155,15 @@ int botDecideHard(LudoPlayer player, int diceValue, List<LudoPlayer> all) {
     }
   }
 
-  // 5. Advance furthest token.
+  // 5. Prefer advancing a ghost-protected token (already immune — safer).
+  for (final id in movable) {
+    final token = player.tokens.firstWhere((t) => t.id == id);
+    if (token.ghostTurnsLeft > 0) {
+      return id;
+    }
+  }
+
+  // 6. Advance furthest token.
   return _advanceFurthest(player, movable);
 }
 
@@ -144,7 +205,6 @@ int _findBlock(
   int diceValue,
   List<LudoPlayer> all,
 ) {
-  // Identify opponent tokens that are far along (rel > 40).
   final threateningPositions = <int>[];
   for (final other in all) {
     if (other.color == player.color) {
@@ -164,7 +224,6 @@ int _findBlock(
     return -1;
   }
 
-  // Find a movable token that would land 1-2 squares behind a threat.
   for (final id in movable) {
     final token = player.tokens.firstWhere((t) => t.id == id);
     if (!token.isOnTrack) {

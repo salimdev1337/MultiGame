@@ -7,12 +7,149 @@ import '../../../design_system/design_system.dart';
 import '../logic/ludo_logic.dart';
 import '../logic/ludo_path.dart';
 import '../models/ludo_enums.dart';
+import '../models/ludo_game_state.dart';
 import '../models/ludo_player.dart';
 import '../models/ludo_token.dart';
 import '../providers/ludo_notifier.dart';
 import '../widgets/ludo_board_painter.dart';
 import '../widgets/ludo_dice_widget.dart';
 import '../widgets/ludo_token_widget.dart';
+
+// ── Dice display (normal + optional magic die) ────────────────────────────
+
+class _DiceDisplay extends StatelessWidget {
+  const _DiceDisplay({
+    required this.diceValue,
+    required this.rolling,
+    required this.playerColor,
+    required this.magicFace,
+    required this.diceMode,
+    required this.cellSize,
+  });
+
+  final int diceValue;
+  final bool rolling;
+  final LudoPlayerColor? playerColor;
+  final MagicDiceFace? magicFace;
+  final LudoDiceMode diceMode;
+  final double cellSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final dieSize = cellSize * 2.5;
+    final normalDie = LudoDiceWidget(
+      value: diceValue,
+      rolling: rolling,
+      playerColor: playerColor,
+      size: dieSize,
+    );
+
+    if (diceMode != LudoDiceMode.magic || magicFace == null) {
+      return normalDie;
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        normalDie,
+        SizedBox(width: cellSize * 0.4),
+        LudoMagicDiceWidget(
+          face: magicFace!,
+          rolling: rolling,
+          size: dieSize,
+        ),
+      ],
+    );
+  }
+}
+
+// ── Wildcard value picker ──────────────────────────────────────────────────
+
+class _WildcardPicker extends ConsumerWidget {
+  const _WildcardPicker({required this.currentPlayer, required this.onRoll});
+
+  final LudoPlayer? currentPlayer;
+  final VoidCallback onRoll;
+
+  static Color _playerColor(LudoPlayerColor c) => switch (c) {
+        LudoPlayerColor.red    => const Color(0xFFE53935),
+        LudoPlayerColor.green  => const Color(0xFF43A047),
+        LudoPlayerColor.blue   => const Color(0xFF2979FF),
+        LudoPlayerColor.yellow => const Color(0xFFFFD600),
+      };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final consecutiveSixes = ref.watch(
+      ludoProvider.select(
+        (s) => s.players.isEmpty ? 0 : s.currentPlayer.consecutiveSixes,
+      ),
+    );
+    final canUse6 = consecutiveSixes < 2;
+    final c = currentPlayer != null
+        ? _playerColor(currentPlayer!.color)
+        : DSColors.ludoPrimary;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Wildcard — Pick your dice value',
+            style: DSTypography.labelMedium.copyWith(
+              color: DSColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(6, (i) {
+              final v = i + 1;
+              final blocked = v == 6 && !canUse6;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: GestureDetector(
+                  onTap: blocked
+                      ? null
+                      : () => ref
+                            .read(ludoProvider.notifier)
+                            .selectWildcardValue(v),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: blocked
+                          ? const Color(0xFF1A1A2E)
+                          : c.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: blocked
+                            ? const Color(0xFF252545)
+                            : c,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '$v',
+                        style: DSTypography.titleMedium.copyWith(
+                          color: blocked ? DSColors.textSecondary : c,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 // ── Shared token dot decoration ───────────────────────────────────────────
 
@@ -390,6 +527,7 @@ class _LudoGameBody extends ConsumerStatefulWidget {
 
 class _LudoGameBodyState extends ConsumerState<_LudoGameBody> {
   bool _is3D = false;
+  bool _isDark = true;
 
   @override
   Widget build(BuildContext context) {
@@ -399,13 +537,20 @@ class _LudoGameBodyState extends ConsumerState<_LudoGameBody> {
       return const _WonScreen();
     }
 
-    return Column(
+    return Stack(
       children: [
-        _LudoAppBar(
-          is3D: _is3D,
-          onToggle3D: () => setState(() => _is3D = !_is3D),
+        Column(
+          children: [
+            _LudoAppBar(
+              is3D: _is3D,
+              onToggle3D: () => setState(() => _is3D = !_is3D),
+              isDark: _isDark,
+              onToggleDark: () => setState(() => _isDark = !_isDark),
+            ),
+            Expanded(child: _LudoBoardView(is3D: _is3D, isDark: _isDark)),
+          ],
         ),
-        Expanded(child: _LudoBoardView(is3D: _is3D)),
+        const _TurboOvershootListener(),
       ],
     );
   }
@@ -414,10 +559,17 @@ class _LudoGameBodyState extends ConsumerState<_LudoGameBody> {
 // ── AppBar ─────────────────────────────────────────────────────────────────
 
 class _LudoAppBar extends ConsumerWidget {
-  const _LudoAppBar({required this.is3D, required this.onToggle3D});
+  const _LudoAppBar({
+    required this.is3D,
+    required this.onToggle3D,
+    required this.isDark,
+    required this.onToggleDark,
+  });
 
   final bool is3D;
   final VoidCallback onToggle3D;
+  final bool isDark;
+  final VoidCallback onToggleDark;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -467,6 +619,14 @@ class _LudoAppBar extends ConsumerWidget {
                     ],
                   ],
                 ),
+              ),
+              IconButton(
+                icon: Icon(
+                  isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                ),
+                color: DSColors.textPrimary,
+                tooltip: isDark ? 'Light Mode' : 'Dark Mode',
+                onPressed: onToggleDark,
               ),
               IconButton(
                 icon: Icon(
@@ -523,9 +683,10 @@ class _LudoAppBar extends ConsumerWidget {
 // ── Board ─────────────────────────────────────────────────────────────────
 
 class _LudoBoardView extends ConsumerStatefulWidget {
-  const _LudoBoardView({required this.is3D});
+  const _LudoBoardView({required this.is3D, required this.isDark});
 
   final bool is3D;
+  final bool isDark;
 
   @override
   ConsumerState<_LudoBoardView> createState() => _LudoBoardViewState();
@@ -537,8 +698,8 @@ class _LudoBoardViewState extends ConsumerState<_LudoBoardView> {
 
   // ── Token hop animation ─────────────────────────────────────────────────
   String? _animKey;
-  (int, int)? _animCoord;
-  List<(int, int)> _animPath = const [];
+  (double, double)? _animCoord;
+  List<(double, double)> _animPath = const [];
   int _animStep = 0;
   int _hopTrigger = 0;
   Timer? _animTimer;
@@ -570,7 +731,8 @@ class _LudoBoardViewState extends ConsumerState<_LudoBoardView> {
         if (!moved || movedToBase) {
           continue;
         }
-        final path = computeTokenHopPath(prevToken, nextToken, prevPlayer.color);
+        final mode = ref.read(ludoProvider.select((s) => s.mode));
+        final path = computeTokenHopPath(prevToken, nextToken, prevPlayer.color, mode: mode);
         if (path.isEmpty) {
           continue;
         }
@@ -662,24 +824,26 @@ class _LudoBoardViewState extends ConsumerState<_LudoBoardView> {
     final selectedId = ref.watch(ludoProvider.select((s) => s.selectedTokenId));
     final diceValue = ref.watch(ludoProvider.select((s) => s.diceValue));
     final phase = ref.watch(ludoProvider.select((s) => s.phase));
+    final mode = ref.watch(ludoProvider.select((s) => s.mode));
+    final activeBombs = ref.watch(ludoProvider.select((s) => s.activeBombs));
     final currentPlayer = ref.watch(
       ludoProvider.select((s) => s.players.isEmpty ? null : s.currentPlayer),
     );
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final boardSize = constraints.maxWidth.clamp(0.0, constraints.maxHeight);
         final cell = boardSize / 15;
 
         final movable = (phase == LudoPhase.selectingToken && currentPlayer != null)
-            ? computeMovableTokenIds(currentPlayer, diceValue, players)
+            ? computeMovableTokenIds(currentPlayer, diceValue, players, mode: mode)
             : <int>[];
 
-        final Map<(int, int), List<({LudoToken token, LudoPlayer player})>>
+        final Map<(double, double), List<({LudoToken token, LudoPlayer player})>>
             groups = {};
         for (final player in players) {
           for (final token in player.tokens) {
-            final coord = tokenGridCoord(token, player.color);
+            final c = tokenGridCoord(token, player.color);
+            final coord = (c.$1.toDouble(), c.$2.toDouble());
             groups.putIfAbsent(coord, () => []).add(
               (token: token, player: player),
             );
@@ -694,7 +858,7 @@ class _LudoBoardViewState extends ConsumerState<_LudoBoardView> {
               children: [
                 CustomPaint(
                   size: Size(boardSize, boardSize),
-                  painter: const LudoBoardPainter(),
+                  painter: LudoBoardPainter(isDark: widget.isDark),
                 ),
                 for (final player in players)
                   for (final token in player.tokens)
@@ -713,19 +877,27 @@ class _LudoBoardViewState extends ConsumerState<_LudoBoardView> {
                         }
                       },
                     ),
+                for (final bomb in activeBombs)
+                  _buildBombWidget(bomb: bomb, cell: cell),
                 Positioned.fill(
                   child: IgnorePointer(
                     child: AnimatedOpacity(
                       opacity: _showDice ? 1.0 : 0.0,
                       duration: const Duration(milliseconds: 300),
                       child: Center(
-                        child: LudoDiceWidget(
-                          value: diceValue > 0 ? diceValue : 1,
+                        child: _DiceDisplay(
+                          diceValue: diceValue > 0 ? diceValue : 1,
                           rolling: _diceRolling,
                           playerColor: ref.watch(
                             ludoProvider.select((s) => s.diceRollerColor),
                           ),
-                          size: cell * 2.5,
+                          magicFace: ref.watch(
+                            ludoProvider.select((s) => s.magicDiceFace),
+                          ),
+                          diceMode: ref.watch(
+                            ludoProvider.select((s) => s.diceMode),
+                          ),
+                          cellSize: cell,
                         ),
                       ),
                     ),
@@ -766,11 +938,40 @@ class _LudoBoardViewState extends ConsumerState<_LudoBoardView> {
     );
   }
 
+  static Color _bombPlayerColor(LudoPlayerColor c) => switch (c) {
+        LudoPlayerColor.red    => const Color(0xFFE53935),
+        LudoPlayerColor.green  => const Color(0xFF43A047),
+        LudoPlayerColor.blue   => const Color(0xFF2979FF),
+        LudoPlayerColor.yellow => const Color(0xFFFFD600),
+      };
+
+  Widget _buildBombWidget({
+    required LudoBomb bomb,
+    required double cell,
+  }) {
+    final c = kTrackCoords[bomb.trackPosition]!;
+    final (double col, double row) = (c.$1.toDouble(), c.$2.toDouble());
+    final size = cell * 0.6;
+    final left = col * cell + (cell - size) / 2;
+    final top  = row * cell + (cell - size) / 2;
+    return Positioned(
+      left: left,
+      top: top,
+      child: IgnorePointer(
+        child: _BombIndicator(
+          color: _bombPlayerColor(bomb.placedBy),
+          size: size,
+          turnsLeft: bomb.turnsLeft,
+        ),
+      ),
+    );
+  }
+
   List<Widget> _buildTokenWidgets({
     required LudoToken token,
     required LudoPlayer player,
     required double cell,
-    required Map<(int, int), List<({LudoToken token, LudoPlayer player})>> groups,
+    required Map<(double, double), List<({LudoToken token, LudoPlayer player})>> groups,
     required bool isSelected,
     required bool isMovable,
     required VoidCallback onTap,
@@ -778,19 +979,22 @@ class _LudoBoardViewState extends ConsumerState<_LudoBoardView> {
     final widgetKey = '${player.color.name}_${token.id}';
     final isAnimating = _animKey == widgetKey;
 
-    final (int, int) coord;
+    final (double, double) coord;
     double dx = 0;
     double dy = 0;
 
     if (isAnimating && _animCoord != null) {
       coord = _animCoord!;
     } else {
-      coord = tokenGridCoord(token, player.color);
-      final group = groups[coord]!;
-      final idx = group.indexWhere(
-        (e) => e.token.id == token.id && e.player.color == player.color,
-      );
-      (dx, dy) = _stackOffset(idx < 0 ? 0 : idx, group.length, cell);
+      final c = tokenGridCoord(token, player.color);
+      coord = (c.$1.toDouble(), c.$2.toDouble());
+      final group = groups[coord];
+      if (group != null) {
+        final idx = group.indexWhere(
+          (e) => e.token.id == token.id && e.player.color == player.color,
+        );
+        (dx, dy) = _stackOffset(idx < 0 ? 0 : idx, group.length, cell);
+      }
     }
 
     return [
@@ -982,26 +1186,8 @@ class _LudoHud extends StatelessWidget {
       );
     }
 
-    if (phase == LudoPhase.selectingPowerupTarget) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-        child: Center(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A2E),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFF252545)),
-            ),
-            child: Text(
-              'Tap a token to apply powerup',
-              style: DSTypography.bodyMedium.copyWith(
-                color: DSColors.textSecondary,
-              ),
-            ),
-          ),
-        ),
-      );
+    if (phase == LudoPhase.selectingWildcard) {
+      return _WildcardPicker(currentPlayer: currentPlayer, onRoll: onRoll);
     }
 
     return const SizedBox(height: 20);
@@ -1211,5 +1397,128 @@ class _WonScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+// ── Bomb indicator ─────────────────────────────────────────────────────────
+
+class _BombIndicator extends StatefulWidget {
+  const _BombIndicator({
+    required this.color,
+    required this.size,
+    required this.turnsLeft,
+  });
+
+  final Color color;
+  final double size;
+  final int turnsLeft;
+
+  @override
+  State<_BombIndicator> createState() => _BombIndicatorState();
+}
+
+class _BombIndicatorState extends State<_BombIndicator>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    )..repeat(reverse: true);
+    _scale = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scale,
+      child: Container(
+        width: widget.size,
+        height: widget.size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: widget.color.withValues(alpha: 0.25),
+          border: Border.all(color: widget.color, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: widget.color.withValues(alpha: 0.5),
+              blurRadius: 6,
+            ),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Icon(
+              Icons.crisis_alert_rounded,
+              size: widget.size * 0.55,
+              color: widget.color,
+            ),
+            Positioned(
+              right: 0,
+              top: 0,
+              child: Container(
+                width: widget.size * 0.38,
+                height: widget.size * 0.38,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: widget.color,
+                ),
+                child: Center(
+                  child: Text(
+                    '${widget.turnsLeft}',
+                    style: TextStyle(
+                      fontSize: widget.size * 0.22,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      height: 1,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Turbo overshoot listener ───────────────────────────────────────────────
+
+/// Watches only [LudoGameState.turboOvershoot] and shows a brief snackbar
+/// when turbo causes all tokens to overshoot with no valid move.
+class _TurboOvershootListener extends ConsumerWidget {
+  const _TurboOvershootListener();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(
+      ludoProvider.select((s) => s.turboOvershoot),
+      (_, overshot) {
+        if (overshot) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Turbo overshoot — no valid move!'),
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      },
+    );
+    return const SizedBox.shrink();
   }
 }

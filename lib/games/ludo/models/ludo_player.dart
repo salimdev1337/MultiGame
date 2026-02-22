@@ -12,7 +12,6 @@ class LudoPlayer {
     required this.isBot,
     required this.name,
     this.teamIndex = -1,
-    this.powerups = const [],
     this.consecutiveSixes = 0,
     this.finishPosition = 0,
   });
@@ -32,10 +31,7 @@ class LudoPlayer {
   /// Display name (e.g. "Red", "Bot 1").
   final String name;
 
-  /// Held powerups — max 3 at a time.
-  final List<LudoPowerupType> powerups;
-
-  /// Consecutive sixes rolled (3 in a row = forfeit turn).
+  /// Consecutive sixes rolled (2 in a row = 6 blocked on next roll).
   final int consecutiveSixes;
 
   /// 0 = still playing; 1 = 1st to finish; 2 = 2nd; etc.
@@ -72,7 +68,6 @@ class LudoPlayer {
 
   LudoPlayer copyWith({
     List<LudoToken>? tokens,
-    List<LudoPowerupType>? powerups,
     int? consecutiveSixes,
     int? finishPosition,
   }) {
@@ -82,7 +77,6 @@ class LudoPlayer {
       isBot: isBot,
       teamIndex: teamIndex,
       name: name,
-      powerups: powerups ?? this.powerups,
       consecutiveSixes: consecutiveSixes ?? this.consecutiveSixes,
       finishPosition: finishPosition ?? this.finishPosition,
     );
@@ -98,7 +92,6 @@ class LudoPlayer {
           isBot == other.isBot &&
           teamIndex == other.teamIndex &&
           name == other.name &&
-          powerups == other.powerups &&
           consecutiveSixes == other.consecutiveSixes &&
           finishPosition == other.finishPosition;
 
@@ -109,7 +102,6 @@ class LudoPlayer {
         isBot,
         teamIndex,
         name,
-        powerups,
         consecutiveSixes,
         finishPosition,
       );

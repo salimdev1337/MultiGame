@@ -3,6 +3,43 @@ import 'package:flutter/foundation.dart';
 import 'ludo_enums.dart';
 import 'ludo_player.dart';
 
+// ── Bomb model ──────────────────────────────────────────────────────────────
+
+/// An active bomb left on the track by the bomb magic face.
+@immutable
+class LudoBomb {
+  const LudoBomb({
+    required this.trackPosition,
+    required this.placedBy,
+    required this.turnsLeft,
+  });
+
+  /// Absolute track position (0–51 standard, 0–47 triangular).
+  final int trackPosition;
+
+  /// Which player placed the bomb — used for UI colour only.
+  final LudoPlayerColor placedBy;
+
+  /// Decrements once per player-turn; bomb is removed when it reaches 0.
+  final int turnsLeft;
+
+  LudoBomb withTick() => LudoBomb(
+        trackPosition: trackPosition,
+        placedBy: placedBy,
+        turnsLeft: turnsLeft - 1,
+      );
+
+  @override
+  bool operator ==(Object other) =>
+      other is LudoBomb &&
+      trackPosition == other.trackPosition &&
+      placedBy == other.placedBy &&
+      turnsLeft == other.turnsLeft;
+
+  @override
+  int get hashCode => Object.hash(trackPosition, placedBy, turnsLeft);
+}
+
 /// Immutable top-level game state for Ludo.
 @immutable
 class LudoGameState {
@@ -15,11 +52,13 @@ class LudoGameState {
     this.currentPlayerIndex = 0,
     this.diceValue = 0,
     this.selectedTokenId,
-    this.pendingPowerup,
     this.excludedColor,
     this.magicDiceFace,
     this.diceRollerColor,
     this.finishCount = 0,
+    this.activeBombs = const [],
+    this.turboOvershoot = false,
+    this.skipMagicDiceOnNextRoll = false,
   });
 
   final LudoPhase phase;
@@ -39,9 +78,6 @@ class LudoGameState {
   /// Token id currently selected by the human player (null = none).
   final int? selectedTokenId;
 
-  /// Non-null while in [LudoPhase.selectingPowerupTarget] phase.
-  final LudoPowerupType? pendingPowerup;
-
   /// In Free-for-All 3-player mode one colour is excluded.  Null otherwise.
   final LudoPlayerColor? excludedColor;
 
@@ -54,6 +90,16 @@ class LudoGameState {
 
   /// Number of players who have finished all 4 tokens.
   final int finishCount;
+
+  /// Active bombs on the board (bomb magic face).
+  final List<LudoBomb> activeBombs;
+
+  /// True for one state emission when turbo causes all tokens to overshoot (no valid move).
+  /// The UI reads this to show a brief message, then it is cleared on the next roll.
+  final bool turboOvershoot;
+
+  /// When true the next roll skips the magic die (bonus turn earned by rolling 6).
+  final bool skipMagicDiceOnNextRoll;
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -193,11 +239,13 @@ class LudoGameState {
     int? currentPlayerIndex,
     int? diceValue,
     Object? selectedTokenId = _unset,
-    Object? pendingPowerup = _unset,
     Object? excludedColor = _unset,
     Object? magicDiceFace = _unset,
     Object? diceRollerColor = _unset,
     int? finishCount,
+    List<LudoBomb>? activeBombs,
+    bool? turboOvershoot,
+    bool? skipMagicDiceOnNextRoll,
   }) {
     return LudoGameState(
       phase: phase ?? this.phase,
@@ -210,9 +258,6 @@ class LudoGameState {
       selectedTokenId: selectedTokenId == _unset
           ? this.selectedTokenId
           : selectedTokenId as int?,
-      pendingPowerup: pendingPowerup == _unset
-          ? this.pendingPowerup
-          : pendingPowerup as LudoPowerupType?,
       excludedColor: excludedColor == _unset
           ? this.excludedColor
           : excludedColor as LudoPlayerColor?,
@@ -223,6 +268,9 @@ class LudoGameState {
           ? this.diceRollerColor
           : diceRollerColor as LudoPlayerColor?,
       finishCount: finishCount ?? this.finishCount,
+      activeBombs: activeBombs ?? this.activeBombs,
+      turboOvershoot: turboOvershoot ?? this.turboOvershoot,
+      skipMagicDiceOnNextRoll: skipMagicDiceOnNextRoll ?? this.skipMagicDiceOnNextRoll,
     );
   }
 }

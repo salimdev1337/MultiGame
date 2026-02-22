@@ -18,8 +18,7 @@ class LudoToken {
     this.trackPosition = -1,
     this.homeColumnStep = 0,
     this.isFinished = false,
-    this.shieldTurnsLeft = 0,
-    this.isFrozen = false,
+    this.ghostTurnsLeft = 0,
   });
 
   /// Token index within the owning player's piece list (0–3).
@@ -37,11 +36,8 @@ class LudoToken {
   /// True when the token has reached the centre finish zone.
   final bool isFinished;
 
-  /// Remaining turns the shield powerup is active (0 = no shield).
-  final int shieldTurnsLeft;
-
-  /// When true this token skips its next move opportunity.
-  final bool isFrozen;
+  /// Remaining player-turns the ghost magic face is active (0 = not ghost, >0 = immune to captures and bombs).
+  final int ghostTurnsLeft;
 
   // ── Computed helpers ───────────────────────────────────────────────────────
 
@@ -55,8 +51,7 @@ class LudoToken {
     int? trackPosition,
     int? homeColumnStep,
     bool? isFinished,
-    int? shieldTurnsLeft,
-    bool? isFrozen,
+    int? ghostTurnsLeft,
   }) {
     return LudoToken(
       id: id,
@@ -64,8 +59,7 @@ class LudoToken {
       trackPosition: trackPosition ?? this.trackPosition,
       homeColumnStep: homeColumnStep ?? this.homeColumnStep,
       isFinished: isFinished ?? this.isFinished,
-      shieldTurnsLeft: shieldTurnsLeft ?? this.shieldTurnsLeft,
-      isFrozen: isFrozen ?? this.isFrozen,
+      ghostTurnsLeft: ghostTurnsLeft ?? this.ghostTurnsLeft,
     );
   }
 
@@ -79,8 +73,7 @@ class LudoToken {
           trackPosition == other.trackPosition &&
           homeColumnStep == other.homeColumnStep &&
           isFinished == other.isFinished &&
-          shieldTurnsLeft == other.shieldTurnsLeft &&
-          isFrozen == other.isFrozen;
+          ghostTurnsLeft == other.ghostTurnsLeft;
 
   @override
   int get hashCode => Object.hash(
@@ -89,7 +82,6 @@ class LudoToken {
         trackPosition,
         homeColumnStep,
         isFinished,
-        shieldTurnsLeft,
-        isFrozen,
+        ghostTurnsLeft,
       );
 }

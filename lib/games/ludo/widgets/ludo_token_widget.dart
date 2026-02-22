@@ -40,8 +40,8 @@ class LudoTokenWidget extends StatefulWidget {
 
   final LudoToken token;
   final double cellSize;
-  final int col;
-  final int row;
+  final double col;
+  final double row;
   final bool isSelected;
   final bool isMovable;
   final double subCellOffsetX;
@@ -122,11 +122,10 @@ class _LudoTokenWidgetState extends State<LudoTokenWidget>
         widget.subCellOffsetY;
 
     final color = _tokenColor(widget.token.owner);
-    final shielded = widget.token.shieldTurnsLeft > 0;
-    final frozen = widget.token.isFrozen;
+    final ghosted = widget.token.ghostTurnsLeft > 0;
     final ambient = !widget.isMovable &&
         !widget.isSelected &&
-        !shielded &&
+        !ghosted &&
         widget.token.isInBase;
 
     return AnimatedPositioned(
@@ -147,7 +146,7 @@ class _LudoTokenWidgetState extends State<LudoTokenWidget>
             final liftY = _hopLift.value * widget.cellSize * 0.5;
             final glowAlpha = widget.isMovable
                 ? _glowAlpha.value
-                : (shielded ? 0.55 : 0.0);
+                : (ghosted ? 0.55 : 0.0);
             return Transform.translate(
               offset: Offset(0, liftY),
               child: Transform.scale(
@@ -158,8 +157,7 @@ class _LudoTokenWidgetState extends State<LudoTokenWidget>
                     color: color,
                     isSelected: widget.isSelected,
                     isMovable: widget.isMovable,
-                    shielded: shielded,
-                    frozen: frozen,
+                    ghosted: ghosted,
                     glowAlpha: glowAlpha,
                     ambient: ambient,
                   ),
@@ -180,8 +178,7 @@ class _PawnPainter extends CustomPainter {
     required this.color,
     required this.isSelected,
     required this.isMovable,
-    required this.shielded,
-    required this.frozen,
+    required this.ghosted,
     required this.glowAlpha,
     required this.ambient,
   });
@@ -189,8 +186,7 @@ class _PawnPainter extends CustomPainter {
   final Color color;
   final bool isSelected;
   final bool isMovable;
-  final bool shielded;
-  final bool frozen;
+  final bool ghosted;
   final double glowAlpha;
   final bool ambient;
 
@@ -199,9 +195,9 @@ class _PawnPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    // Glow beneath the pawn when movable (animated) or shielded (fixed).
+    // Glow beneath the pawn when movable (animated) or ghosted (fixed).
     if (glowAlpha > 0) {
-      final glowColor = shielded ? const Color(0xFF80DEEA) : color;
+      final glowColor = ghosted ? const Color(0xFF80DEEA) : color;
       final glowPaint = Paint()
         ..color = glowColor.withValues(alpha: glowAlpha)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
@@ -240,13 +236,13 @@ class _PawnPainter extends CustomPainter {
     // Stroke outline
     final borderColor = isSelected
         ? Colors.white
-        : shielded
+        : ghosted
             ? const Color(0xFF80DEEA)
             : Colors.black.withValues(alpha: 0.35);
     final strokePaint = Paint()
       ..color = borderColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = shielded ? 2.5 : (isSelected ? 2.0 : 1.5);
+      ..strokeWidth = ghosted ? 2.5 : (isSelected ? 2.0 : 1.5);
     _drawAllParts(canvas, w, h, strokePaint);
 
     // Head highlight — primary specular oval
@@ -265,17 +261,6 @@ class _PawnPainter extends CustomPainter {
       Paint()..color = Colors.white.withValues(alpha: 0.88),
     );
 
-    // Frozen snowflake overlay
-    if (frozen) {
-      final tp = TextPainter(
-        text: const TextSpan(
-          text: '❄',
-          style: TextStyle(fontSize: 10, color: Colors.white),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      tp.paint(canvas, Offset((w - tp.width) / 2, h * 0.18));
-    }
   }
 
   void _drawAllParts(Canvas canvas, double w, double h, Paint paint) {
@@ -328,8 +313,7 @@ class _PawnPainter extends CustomPainter {
       old.color != color ||
       old.isSelected != isSelected ||
       old.isMovable != isMovable ||
-      old.shielded != shielded ||
-      old.frozen != frozen ||
+      old.ghosted != ghosted ||
       old.glowAlpha != glowAlpha ||
       old.ambient != ambient;
 }

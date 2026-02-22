@@ -6,6 +6,202 @@ import 'package:flutter/material.dart';
 import '../../../design_system/design_system.dart';
 import '../models/ludo_enums.dart';
 
+// ── Magic face metadata ────────────────────────────────────────────────────
+
+String _magicFaceLabel(MagicDiceFace face) {
+  switch (face) {
+    case MagicDiceFace.turbo:
+      return 'TURBO';
+    case MagicDiceFace.skip:
+      return 'SKIP';
+    case MagicDiceFace.ghost:
+      return 'GHOST';
+    case MagicDiceFace.bomb:
+      return 'BOMB';
+    case MagicDiceFace.wildcard:
+      return 'WILDCARD';
+  }
+}
+
+IconData _magicFaceIcon(MagicDiceFace face) {
+  switch (face) {
+    case MagicDiceFace.turbo:
+      return Icons.bolt_rounded;
+    case MagicDiceFace.skip:
+      return Icons.block_rounded;
+    case MagicDiceFace.ghost:
+      return Icons.visibility_off_rounded;
+    case MagicDiceFace.bomb:
+      return Icons.crisis_alert_rounded;
+    case MagicDiceFace.wildcard:
+      return Icons.star_rounded;
+  }
+}
+
+Color _magicFaceColor(MagicDiceFace face) {
+  switch (face) {
+    case MagicDiceFace.turbo:
+      return const Color(0xFFFFD600);
+    case MagicDiceFace.skip:
+      return const Color(0xFFEF5350);
+    case MagicDiceFace.ghost:
+      return const Color(0xFF80DEEA);
+    case MagicDiceFace.bomb:
+      return const Color(0xFFFF5722);
+    case MagicDiceFace.wildcard:
+      return const Color(0xFFCE93D8);
+  }
+}
+
+/// Animated magic die widget displayed alongside the normal die in magic mode.
+///
+/// Shows a spinning face icon that settles to [face] after rolling.
+class LudoMagicDiceWidget extends StatefulWidget {
+  const LudoMagicDiceWidget({
+    super.key,
+    required this.face,
+    required this.rolling,
+    this.size = 80.0,
+  });
+
+  final MagicDiceFace face;
+  final bool rolling;
+  final double size;
+
+  @override
+  State<LudoMagicDiceWidget> createState() => _LudoMagicDiceWidgetState();
+}
+
+class _LudoMagicDiceWidgetState extends State<LudoMagicDiceWidget>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _rotation;
+  late final Animation<double> _scale;
+
+  MagicDiceFace _displayFace = MagicDiceFace.turbo;
+  Timer? _cycleTimer;
+  final _rng = Random();
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _rotation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 0.3), weight: 15),
+      TweenSequenceItem(tween: Tween(begin: 0.3, end: -0.3), weight: 30),
+      TweenSequenceItem(tween: Tween(begin: -0.3, end: 0.15), weight: 15),
+      TweenSequenceItem(tween: Tween(begin: 0.15, end: 0.0), weight: 40),
+    ]).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+    _scale = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.0), weight: 60),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.15), weight: 20),
+      TweenSequenceItem(tween: Tween(begin: 1.15, end: 1.0), weight: 20),
+    ]).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+
+    if (widget.rolling) {
+      _startRolling();
+    } else {
+      _displayFace = widget.face;
+    }
+  }
+
+  void _startRolling() {
+    _cycleTimer?.cancel();
+    _ctrl.forward(from: 0);
+    _cycleTimer = Timer.periodic(const Duration(milliseconds: 80), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      if (_ctrl.value >= 0.6) {
+        t.cancel();
+        setState(() => _displayFace = widget.face);
+        return;
+      }
+      setState(() {
+        _displayFace =
+            MagicDiceFace.values[_rng.nextInt(MagicDiceFace.values.length)];
+      });
+    });
+  }
+
+  @override
+  void didUpdateWidget(LudoMagicDiceWidget old) {
+    super.didUpdateWidget(old);
+    if (widget.rolling && !old.rolling) {
+      _startRolling();
+    } else if (!widget.rolling && old.rolling) {
+      _cycleTimer?.cancel();
+      setState(() => _displayFace = widget.face);
+    } else if (widget.face != old.face && !widget.rolling) {
+      setState(() => _displayFace = widget.face);
+    }
+  }
+
+  @override
+  void dispose() {
+    _cycleTimer?.cancel();
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final faceColor = _magicFaceColor(_displayFace);
+    final icon = _magicFaceIcon(_displayFace);
+    final label = _magicFaceLabel(_displayFace);
+    final s = widget.size;
+
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scale.value,
+          child: Transform.rotate(
+            angle: _rotation.value,
+            child: child,
+          ),
+        );
+      },
+      child: Container(
+        width: s,
+        height: s,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(s * 0.18),
+          color: const Color(0xFF1A1A30),
+          border: Border.all(color: faceColor, width: s * 0.045),
+          boxShadow: [
+            BoxShadow(
+              color: faceColor.withValues(alpha: 0.45),
+              blurRadius: 14,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: faceColor, size: s * 0.40),
+            SizedBox(height: s * 0.04),
+            Text(
+              label,
+              style: TextStyle(
+                color: faceColor,
+                fontSize: s * 0.115,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // Pip dot positions per face value (normalized 0..1 within the pip area)
 const _kPipLayouts = <int, List<(double, double)>>{
   1: [(0.5, 0.5)],
