@@ -21,7 +21,10 @@ class LudoNotifier extends GameStatsNotifier<LudoGameState> {
 
   @override
   LudoGameState build() {
-    ref.onDispose(_cancelBotTimer);
+    ref.onDispose(() {
+      _botTimer?.cancel();
+      _pendingMoveTimer?.cancel();
+    });
     return const LudoGameState();
   }
 
@@ -116,7 +119,7 @@ class LudoNotifier extends GameStatsNotifier<LudoGameState> {
     final effectiveValue = (player.consecutiveSixes >= 2 && value == 6) ? 5 : value;
 
     _normalDice = effectiveValue;
-    state = state.copyWith(diceValue: effectiveValue, phase: LudoPhase.rolling);
+    state = state.copyWith(diceValue: effectiveValue, normalDiceValue: effectiveValue, phase: LudoPhase.rolling);
 
     final movable = logic.computeMovableTokenIds(player, effectiveValue, state.players);
     if (movable.isEmpty) {
@@ -168,6 +171,7 @@ class LudoNotifier extends GameStatsNotifier<LudoGameState> {
       _normalDice = normalDice;
       state = state.copyWith(
         diceValue: normalDice,
+        normalDiceValue: normalDice,
         diceRollerColor: player.color,
       );
       final movable =
@@ -251,7 +255,7 @@ class LudoNotifier extends GameStatsNotifier<LudoGameState> {
   int? _applyMagicAndGetEffectiveDice(int normalDice, MagicDiceFace? magic) {
     final rollerColor = state.currentPlayer.color;
     if (magic == null) {
-      state = state.copyWith(diceValue: normalDice, diceRollerColor: rollerColor);
+      state = state.copyWith(diceValue: normalDice, normalDiceValue: normalDice, diceRollerColor: rollerColor);
       return normalDice;
     }
 
@@ -259,6 +263,7 @@ class LudoNotifier extends GameStatsNotifier<LudoGameState> {
       state = _tickBombs(state);
       state = state.copyWith(
         diceValue: normalDice,
+        normalDiceValue: normalDice,
         magicDiceFace: magic,
         diceRollerColor: rollerColor,
         phase: LudoPhase.rolling,
@@ -271,6 +276,7 @@ class LudoNotifier extends GameStatsNotifier<LudoGameState> {
     if (magic == MagicDiceFace.wildcard) {
       state = state.copyWith(
         diceValue: normalDice,
+        normalDiceValue: normalDice,
         magicDiceFace: magic,
         diceRollerColor: rollerColor,
         phase: LudoPhase.selectingWildcard,
@@ -282,13 +288,14 @@ class LudoNotifier extends GameStatsNotifier<LudoGameState> {
       return null;
     }
 
+    final effectiveDice = magic == MagicDiceFace.turbo ? normalDice * 2 : normalDice;
     state = state.copyWith(
-      diceValue: normalDice,
+      diceValue: effectiveDice,
+      normalDiceValue: normalDice,
       magicDiceFace: magic,
       diceRollerColor: rollerColor,
     );
-    state = logic.applyMagicEffect(state, normalDice, magic);
-    return state.diceValue;
+    return effectiveDice;
   }
 
   /// Bot immediately resolves the wildcard face by picking an optimal value.
@@ -303,7 +310,7 @@ class LudoNotifier extends GameStatsNotifier<LudoGameState> {
     );
     final movable = logic.computeMovableTokenIds(player, chosen, state.players, mode: state.mode);
     _normalDice = chosen;
-    state = state.copyWith(diceValue: chosen, phase: LudoPhase.rolling);
+    state = state.copyWith(diceValue: chosen, normalDiceValue: chosen, phase: LudoPhase.rolling);
     if (movable.isEmpty) {
       state = _tickBombs(state);
       state = state.copyWith(
@@ -385,6 +392,7 @@ class LudoNotifier extends GameStatsNotifier<LudoGameState> {
         _normalDice = normalDice;
         state = state.copyWith(
           diceValue: normalDice,
+          normalDiceValue: normalDice,
           diceRollerColor: player.color,
           phase: LudoPhase.selectingToken,
         );

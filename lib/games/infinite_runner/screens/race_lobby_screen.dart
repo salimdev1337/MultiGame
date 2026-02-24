@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:multigame/config/app_router.dart';
 import 'package:network_info_plus/network_info_plus.dart';
+import 'package:multigame/utils/input_validator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../multiplayer/race_client.dart';
@@ -148,6 +149,13 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
         () => _errorMsg = 'Enter the 6-digit room code or the host IP address',
       );
       return;
+    }
+    if (_manualIp.isNotEmpty) {
+      final ipValidation = InputValidator.validateIpAddress(_manualIp);
+      if (!ipValidation.isValid) {
+        setState(() => _errorMsg = ipValidation.error);
+        return;
+      }
     }
     setState(() {
       _isConnecting = true;
@@ -336,7 +344,14 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
                   _NameField(
                     controller: _nameController,
                     onChanged: (v) {
-                      _displayName = v.trim().isEmpty ? 'Player' : v.trim();
+                      final trimmed = v.trim();
+                      if (trimmed.isNotEmpty) {
+                        final valid = InputValidator.validateNickname(trimmed);
+                        if (!valid.isValid) {
+                          return;
+                        }
+                      }
+                      _displayName = trimmed.isEmpty ? 'Player' : trimmed;
                       _saveName(_displayName);
                     },
                   ),

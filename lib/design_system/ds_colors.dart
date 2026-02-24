@@ -111,10 +111,20 @@ class DSColors {
   static const Color ludoPlayerBlue   = Color(0xFF2196F3);
   static const Color ludoPlayerGreen  = Color(0xFF43A047);
   static const Color ludoPlayerYellow = Color(0xFFFFD700);
+  static const Color ludoBgTop        = Color(0xFF090912); // scaffold & gradient start
+  static const Color ludoBgBottom     = Color(0xFF14142A); // gradient end (dark blue)
 
   /// RPG — Shadowfall Chronicles colors
   static const Color rpgPrimary = Color(0xFFCC2200); // blood red
   static const Color rpgAccent  = Color(0xFFFFD700);  // gold
+
+  /// Rummy game colors
+  static const Color rummyPrimary  = Color(0xFF00897B); // teal-green (felt)
+  static const Color rummyAccent   = Color(0xFFFFD700); // gold
+  static const Color rummyFelt     = Color(0xFF1B5E20); // dark green table
+  static const Color rummyCardFace = Color(0xFFFFF8E7); // cream
+  static const Color rummyCardBack = Color(0xFF1A237E); // deep navy back
+  static const Color rummySuitRed  = Color(0xFFD32F2F); // hearts/diamonds
 
   /// Bomberman game colors
   // Floor — near-black stone tiles
@@ -228,6 +238,8 @@ class DSColors {
         return ludoPrimary;
       case 'rpg':
         return rpgPrimary;
+      case 'rummy':
+        return rummyPrimary;
       default:
         return primary;
     }

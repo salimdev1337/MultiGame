@@ -122,6 +122,24 @@ class InputValidator {
     return ValidationResult.success(gameType);
   }
 
+  /// Validate an IPv4 address (e.g. 192.168.1.5)
+  static ValidationResult validateIpAddress(String input) {
+    final trimmed = input.trim();
+    if (trimmed.isEmpty) {
+      return ValidationResult.error('IP address cannot be empty');
+    }
+    final ipv4 = RegExp(
+      r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}'
+      r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$',
+    );
+    if (!ipv4.hasMatch(trimmed)) {
+      return ValidationResult.error(
+        'Enter a valid IPv4 address (e.g. 192.168.1.5)',
+      );
+    }
+    return ValidationResult.success(trimmed);
+  }
+
   /// Check if string contains potentially dangerous characters
   static bool containsDangerousChars(String input) {
     // Check for script tags, event-handler attributes (on*=), javascript: URIs,

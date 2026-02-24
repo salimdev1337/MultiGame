@@ -288,6 +288,72 @@ import 'package:multigame/games/bomberman/multiplayer/bomb_server_stub.dart'
 
 **Tests:** 58 unit tests in `test/games/bomberman/` — all pure logic + serialization, no Flutter context needed.
 
+### RPG — Shadowfall Chronicles (Flame Engine)
+- **Provider:** `rpgProvider` — `NotifierProvider.autoDispose<RpgNotifier, RpgState>`
+- **Routes:** `/play/rpg` (game screen), `/play/rpg/boss_select` (boss map)
+- **Colors:** `DSColors.rpgPrimary` (0xFFCC2200 blood red), `DSColors.rpgAccent` (0xFFFFD700 gold)
+
+**Bosses (sequential unlock chain):**
+| Boss | HP | Phases | Drop |
+|---|---|---|---|
+| The Warden | 300 | 2 (50%) | wardenSword (+8 ATK) |
+| The Plague Shaman | 450 | 2 (50%) | shamanCloak (+25 HP, poison resist) |
+| The Hollow King | 600 | 3 (66%/33%) | hollowCrown (+10 ATK, +20% ult start) |
+| The Shadowlord | 900 | 3 (66%/33%) | — (final boss) |
+
+**Key systems:**
+- `SkillTree` — 3 random node options after each boss; `SkillTree.pickOptions(applied, rng)` / `SkillTree.applyNode(stats, nodeId)` — 12 nodes (maxHp, attack, staminaPip, staminaRegen, comboWindow, ultHit, ultDmg, heavyFinisher, moveSpeed, quickRecovery, ironFist, rugged)
+- `Equipment` — weapon/armor slots; `ProgressionEngine.applyEquipment(stats, weapon, armor)` applies bonuses; equip flow triggered by `pendingEquipment` on `RpgState`
+- `StaminaSystem` — mutable pip-based dodge charges (default 3 pips, 2s regen); `consumePip()` / `update(dt)`
+- `UltimateGauge` — 0.0–1.0 charge; fills on hit landed (`+0.05`) and hit taken (`+0.10`); `fire()` resets; `isReady` when `>= 1.0`
+- `BossAI` abstract → `GolemAI` / `WraithAI` / `HollowKingAI` / `ShadowlordAI` state machines
+
+**`RpgState` fields:** `playerStats`, `defeatedBosses`, `weapon`, `armor`, `selectedBoss`, `appliedNodes`, `levelUpOptions`, `pendingLevelUp`, `pendingEquipment`
+
+**Notifier flow:**
+```
+selectBoss(id) → game screen launches boss fight
+onBossDefeated(id) → marks defeated, picks 3 skill nodes, sets pendingEquipment, saves score (defeatedBosses.length × 100)
+selectLevelUpNode(nodeId) → applies skill, clears pendingLevelUp
+equipPending() / skipEquip() → resolves equipment overlay, saves progress
+```
+
+**Save:** `SharedPreferences` key `rpg_save` (JSON — playerStats, defeatedBosses, weapon, armor, appliedNodes)
+
+**Flame:** `RpgFlameGame` landscape-locked, `HasCollisionDetection`; `gameTick` ValueNotifier 50ms throttle; `ArenaComponent` uses `HasGameReference` (not `HasGameRef`), `game.size` accessor
+
+**Attack types:** meleeSlash1/2, heavySlash, ultimateAoe (player); chargeAttack, overheadSlam (Warden); poisonPool, poisonProjectile (Shaman); dashSlash, bladeTrail (Hollow King); voidBlast, shadowSurge (Shadowlord)
+
+**Tests:** 16 pure tests in `test/games/rpg/`
+
+### Ludo (Multi-Mode Board Game)
+- **Provider:** `ludoProvider` — `NotifierProvider.autoDispose<LudoNotifier, LudoGameState>`
+- **Routes:** `/play/ludo`, game model id: `ludo`
+- **Colors:** `DSColors.ludoPrimary` (0xFFE91E63 pink), `DSColors.ludoAccent` (0xFFFFEB3B yellow)
+
+**Modes:** soloVsBots (Red=human + 3 bots), freeForAll3 (yellow excluded, triangular board), freeForAll4, twoVsTwo (Red+Green=team0, Blue+Yellow=team1)
+
+**Token encoding:** trackPosition=-1=base, 0–51=track, -2=homeColumn sentinel (+homeColumnStep 1–6), isFinished=true=centre
+
+**Magic Dice Mode:** `LudoDiceMode` enum (classic/magic); `MagicDiceFace` enum (turbo/skip/swap/shield/blast/wildcard)
+- turbo: doubles dice value; `diceValue` = effective doubled, `normalDiceValue` = raw pip display
+- skip: notifier returns early, advances turn (no-op in `applyMagicEffect`)
+- blast: drops `LudoBomb` on track; `activeBombs: List<LudoBomb>` on `LudoGameState`; bomb ticks down per player-turn
+
+**Key constants:** `kSafeSquares = {0,8,13,21,26,34,39,47}`; start positions Red=0, Yellow=13, Blue=26, Green=39
+
+**Triangular board (freeForAll3):** `kTriTrackLength=48`, 16 squares/side; `kTriStartPositions={red:0,green:16,blue:32}`; `kTriSafeSquares={0,8,16,24,32,40}`; `LudoTriangularBoardPainter` in `ludo_board_painter.dart`
+
+**Logic dispatch:** `_modeTrackParams(mode)` → `(trackLength, startPositions)`; `computeMovableTokenIds`/`validDiceValues` accept `{LudoMode mode}`; `computeTokenHopPath` → `List<(double,double)>` dispatches to `_computeTokenHopPathTri` for freeForAll3
+
+**Powerups:** shield (2 turns immune), doubleStep, freeze, recall (bypasses safe), luckyRoll
+
+**Rules:** 3 consecutive 6s = forfeit turn + send furthest token to base; extra turn on rolling 6 OR capture; `saveScore('ludo', 1)` only in soloVsBots when Red wins
+
+**Board painter:** `flutter/rendering.dart` ONLY (NOT material.dart); `LudoTokenWidget` col/row are `double`
+
+**Tests:** 73 pure tests in `test/games/ludo/` (ludo_logic_test.dart + ludo_notifier_test.dart)
+
 ## Testing Strategy
 
 - **Unit tests:** Pure functions, models, services
@@ -475,3 +541,48 @@ GitHub Actions workflows:
 ### Production & Release
 - [task.md](task.md) - Production readiness tasks and deployment guide
 - [firestore.rules](firestore.rules) - Firebase security rules
+
+---
+
+## File Size & Class Density Rules (Non-Negotiable)
+
+These rules apply to every Flutter file, no exceptions.
+
+- **Max 300 lines per file.** If a change would push a file past 300 lines, STOP. Extract widgets into separate files first, then implement the change.
+- **Max 3 widget classes per file.** A fourth class means a new file is needed.
+- **Screen files** (`*_screen.dart`, `*_page.dart`) may only contain the page widget and its state class. Every other widget goes in the game's `widgets/` subfolder.
+
+If the user asks to add code to a file that already violates these rules:
+1. REFUSE to add the code directly
+2. Show which classes should be extracted and into which target files
+3. Only proceed after the extraction is planned or done
+
+This prevents the accumulation of god-object screen files that make testing, review, and parallel development impossible.
+
+---
+
+## Senior Code Reviewer Mode
+
+You are a senior engineer reviewing this codebase alongside the user. Before implementing any change over 10 lines, run this checklist silently. If any item fails, **call it out before writing a single line of code** — the way a senior peer would: clearly, with the reason, and with a concrete fix.
+
+**Pre-implementation checklist:**
+
+1. **File size** — will the target file exceed 300 lines after this change? If yes, propose an extraction plan first.
+2. **Silent failures** — does any new function return void and silently ignore errors? If yes, require a `statusMessage` update or a thrown exception so failures are observable.
+3. **Design system** — are any colors, spacings, or text styles hardcoded (raw `Color(0xFF...)`, raw `double` padding)? If yes, use `DSColors` / `DSSpacing` / `DSTypography`.
+4. **Lifecycle** — does any new `Timer`, `StreamSubscription`, `AnimationController`, or listener get disposed? If not, add disposal before proceeding.
+5. **Tests** — is the changed function or widget covered by a test? If not, flag it explicitly. Never require tests to be added right now, but always name the gap.
+
+**When you spot a violation in existing code** (even if not directly touched), point it out as a brief side note: what it is, why it matters, and what the fix looks like. Do not let bad patterns pass silently.
+
+**Tone:** Direct and concrete, like a trusted senior coworker — not a linter, not a lecture. One sentence on the problem, one sentence on the fix.
+
+---
+
+## Persistence & Storage Decision Rule
+
+- **User-facing game progress** (saves, stats, achievements, scores) → `flutter_secure_storage` via `SecureStorageRepository`
+- **App preferences** (theme, volume, accessibility settings) → `SharedPreferences` is acceptable
+- **In-memory session state** → provider state only, never persisted unless the user expects it to survive an app restart
+
+`SharedPreferences` is unencrypted plaintext on disk. Any data the user would consider "theirs" must be encrypted.

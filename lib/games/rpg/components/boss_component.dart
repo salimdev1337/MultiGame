@@ -1,81 +1,79 @@
-import 'dart:math' as math;
-import 'dart:ui' as ui;
+import 'dart:ui';
 
-import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:multigame/games/rpg/components/attack_component.dart';
+import 'package:multigame/games/rpg/components/boss_sprite_renderer.dart';
 import 'package:multigame/games/rpg/logic/boss_ai/boss_ai.dart';
-import 'package:multigame/games/rpg/models/attack_command.dart';
 import 'package:multigame/games/rpg/models/boss_config.dart';
 import 'package:multigame/games/rpg/models/rpg_enums.dart';
-import 'package:multigame/games/rpg/sprites/golem_sprites.dart';
-import 'package:multigame/games/rpg/sprites/wraith_sprites.dart';
 
-class BossComponent extends PositionComponent with CollisionCallbacks {
+class BossComponent extends PositionComponent {
   BossComponent({
     required Vector2 position,
     required this.config,
     required this.ai,
-    required this.scaledHp,
   }) : super(
           position: position,
-          size: config.id == BossId.golem ? Vector2(96, 112) : Vector2(80, 112),
-        ) {
-    currentHp = scaledHp;
-    maxHp = scaledHp;
-  }
+          size: Vector2(config.bossWidth, config.bossHeight),
+        );
 
   final BossConfig config;
   final BossAI ai;
-  final int scaledHp;
 
-  int currentHp = 0;
-  int maxHp = 0;
+  late int _maxHp;
+  late int _currentHp;
   int _currentPhase = 0;
-  bool _isDead = false;
-  bool facingLeft = true;
-
-  double _animTime = 0;
   BossAnimState _animState = BossAnimState.idle;
+  double _animTime = 0;
 
-  // Wraith vertical float
-  double _floatTime = 0;
-  double _baseY = 0;
+  // Hurt flash
+  bool _isHurt = false;
+  double _hurtTimer = 0;
 
-  ui.Image? _idleImg;
-  ui.Image? _attackImg;
+  late BossSpriteRenderer _sprites;
 
-  void Function(int phase)? onPhaseChange;
-  void Function()? onDeath;
+  // Callbacks
+  VoidCallback? onDeath;
+  void Function(int newPhase)? onPhaseChange;
 
-  static const int _pixelScale = 6;
+  int get currentHp => _currentHp;
+  int get maxHp => _maxHp;
+  int get currentPhase => _currentPhase;
+
+  /// Collision radius.
+  double get hitRadius => size.x * 0.42;
+
+  /// Center position for collision checks.
+  @override
+  Vector2 get center => Vector2(position.x + size.x / 2, position.y + size.y / 2);
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    _baseY = position.y;
-    add(RectangleHitbox(
-      size: Vector2(size.x * 0.8, size.y * 0.9),
-      position: Vector2(size.x * 0.1, size.y * 0.05),
-    ));
-    if (config.id == BossId.golem) {
-      _idleImg = await GolemSprites.idle0.toImage(_pixelScale);
-      _attackImg = await GolemSprites.idle1.toImage(_pixelScale);
-    } else {
-      _idleImg = await WraithSprites.float0.toImage(_pixelScale);
-      _attackImg = await WraithSprites.float1.toImage(_pixelScale);
+    _maxHp = config.baseHp;
+    _currentHp = _maxHp;
+    _sprites = BossSpriteRenderer(config.id);
+    await _sprites.load();
+  }
+
+  void takeDamage(int damage) {
+    if (_animState == BossAnimState.die) {
+      return;
+    }
+    _currentHp = (_currentHp - damage).clamp(0, _maxHp);
+    _isHurt = true;
+    _hurtTimer = 0.12;
+
+    _checkPhase();
+
+    if (_currentHp <= 0) {
+      _animState = BossAnimState.die;
+      onDeath?.call();
     }
   }
 
-  AttackCommand? update2(double dt, Vector2 playerPos) {
-    _animTime += dt;
-
-    if (_isDead) {
-      return null;
-    }
-
-    // Phase check
-    final hpRatio = maxHp > 0 ? currentHp / maxHp : 0.0;
+  void _checkPhase() {
+    final hpRatio = _currentHp / _maxHp;
     final phases = config.phases;
     int newPhase = 0;
     for (int i = phases.length - 1; i >= 0; i--) {
@@ -86,134 +84,184 @@ class BossComponent extends PositionComponent with CollisionCallbacks {
     }
     if (newPhase != _currentPhase) {
       _currentPhase = newPhase;
-      ai.onPhaseChange(_currentPhase);
-      onPhaseChange?.call(_currentPhase);
+      _animState = BossAnimState.phaseChange;
+      _animTime = 0;
+      ai.onPhaseChange(newPhase);
+      onPhaseChange?.call(newPhase);
     }
-
-    final speed = config.phases[_currentPhase].moveSpeed;
-    final centerX = position.x + size.x / 2;
-    final playerCenterX = playerPos.x + 24;
-    final dx = playerCenterX - centerX;
-    facingLeft = dx > 0;
-
-    // Continuous pursuit — maintain a fighting distance
-    final dist = dx.abs();
-    const closeDist = 80.0;
-    const chaseDist = 220.0;
-    if (dist > chaseDist) {
-      // Chase aggressively
-      position.x += (dx > 0 ? 1.0 : -1.0) * speed * dt;
-    } else if (dist > closeDist) {
-      // Close in at moderate pace
-      position.x += (dx > 0 ? 1.0 : -1.0) * speed * 0.6 * dt;
-    } else if (dist < 40) {
-      // Too close — back off slightly
-      position.x -= (dx > 0 ? 1.0 : -1.0) * speed * 0.3 * dt;
-    }
-
-    // Wraith vertical float — sinusoidal hover
-    if (config.id == BossId.wraith) {
-      _floatTime += dt;
-      position.y = _baseY + math.sin(_floatTime * 1.4) * 22;
-    }
-
-    // Clamp position to game bounds
-    position.x = position.x.clamp(0, 2000 - size.x);
-
-    return ai.decide(dt, position, playerPos);
   }
 
-  @override
-  void update(double dt) {
-    super.update(dt);
-    if (_animState == BossAnimState.attack && _animTime > 0.3) {
+  BossPhaseConfig get _phaseConfig => config.phases[_currentPhase];
+
+  /// Called every frame by RpgFlameGame. Returns an optional attack to spawn.
+  AttackComponent? update2(double dt, Vector2 playerPos) {
+    _animTime += dt;
+
+    if (_isHurt) {
+      _hurtTimer -= dt;
+      if (_hurtTimer <= 0) {
+        _isHurt = false;
+      }
+    }
+
+    if (_animState == BossAnimState.die) {
+      return null;
+    }
+
+    if (_animState == BossAnimState.phaseChange && _animTime < 0.5) {
+      return null;
+    } else if (_animState == BossAnimState.phaseChange) {
       _animState = BossAnimState.idle;
-      _animTime = 0;
     }
-  }
 
-  void takeDamage(int damage) {
-    if (_isDead) {
-      return;
+    final params = BossPhaseParams(
+      moveSpeed: _phaseConfig.moveSpeed,
+      attackDamage: _phaseConfig.attackDamage,
+      attackCooldown: _phaseConfig.attackCooldown,
+      windupDuration: _phaseConfig.windupDuration,
+    );
+
+    final tick = ai.tick(dt, position, playerPos, _currentPhase, params);
+
+    // Apply movement
+    if (tick.velocity.length > 0) {
+      position += tick.velocity * dt;
     }
-    currentHp -= damage;
-    if (currentHp <= 0) {
-      currentHp = 0;
-      _isDead = true;
-      _animState = BossAnimState.die;
-      _animTime = 0;
-      onDeath?.call();
-    } else {
-      _animState = BossAnimState.hurt;
-      _animTime = 0;
+
+    if (tick.attack == null) {
+      return null;
     }
-  }
 
-  bool get isDead => _isDead;
-  int get currentPhase => _currentPhase;
-
-  AttackComponent? spawnAttack(AttackCommand cmd, int cycle) {
     _animState = BossAnimState.attack;
     _animTime = 0;
-    final baseDmg = config.phases[_currentPhase].attackDamage;
-    final scaledDmg = (baseDmg * math.pow(config.dmgScaleFactor, cycle)).round();
-    final spawnPos = position + Vector2(size.x / 2, size.y / 3);
-    return AttackComponent(
-      position: spawnPos,
-      direction: cmd.direction,
-      damage: scaledDmg,
-      owner: 'boss',
-      attackType: cmd.type,
-      speed: _speedForType(cmd.type),
-      lifetime: _lifetimeForType(cmd.type),
-    );
+
+    final cmd = tick.attack!;
+    return _buildAttack(cmd);
   }
 
-  double _speedForType(AttackType type) {
-    switch (type) {
-      case AttackType.rockProjectile:
-        return 220;
-      case AttackType.shadowBolt:
-        return 300;
-      case AttackType.dashAttack:
-        return 480;
+  AttackComponent? _buildAttack(BossAttackCommand cmd) {
+    switch (cmd.type) {
+      case AttackType.chargeAttack:
+        return AttackComponent(
+          position: cmd.spawnPosition,
+          direction: cmd.direction,
+          damage: cmd.damage,
+          owner: 'boss',
+          attackType: AttackType.chargeAttack,
+          speed: 0, // moves with boss during charging state
+          lifetime: 0.45,
+        );
+      case AttackType.overheadSlam:
+        return AttackComponent(
+          position: Vector2(
+            cmd.spawnPosition.x - 48,
+            cmd.spawnPosition.y - 48,
+          ),
+          direction: Vector2(0, 1),
+          damage: cmd.damage,
+          owner: 'boss',
+          attackType: AttackType.overheadSlam,
+          lifetime: 0.35,
+        );
+      case AttackType.poisonPool:
+        return AttackComponent(
+          position: Vector2(
+            cmd.spawnPosition.x - 40,
+            cmd.spawnPosition.y - 40,
+          ),
+          direction: Vector2(0, 1),
+          damage: cmd.damage,
+          owner: 'boss',
+          attackType: AttackType.poisonPool,
+          lifetime: 4.0, // long-lived hazard
+        );
+      case AttackType.poisonProjectile:
+        return AttackComponent(
+          position: Vector2(
+            cmd.spawnPosition.x - 9,
+            cmd.spawnPosition.y - 9,
+          ),
+          direction: cmd.direction,
+          damage: cmd.damage,
+          owner: 'boss',
+          attackType: AttackType.poisonProjectile,
+          speed: 280,
+          lifetime: 2.5,
+        );
+      case AttackType.dashSlash:
+        return AttackComponent(
+          position: Vector2(
+            cmd.spawnPosition.x - 16,
+            cmd.spawnPosition.y - 18,
+          ),
+          direction: cmd.direction,
+          damage: cmd.damage,
+          owner: 'boss',
+          attackType: AttackType.dashSlash,
+          speed: 0, // moves with boss dash
+          lifetime: 0.30,
+        );
+      case AttackType.bladeTrail:
+        return AttackComponent(
+          position: Vector2(
+            cmd.spawnPosition.x - 12,
+            cmd.spawnPosition.y - 40,
+          ),
+          direction: Vector2(0, 1),
+          damage: cmd.damage,
+          owner: 'boss',
+          attackType: AttackType.bladeTrail,
+          lifetime: 2.5,
+        );
+      case AttackType.voidBlast:
+        return AttackComponent(
+          position: Vector2(
+            cmd.spawnPosition.x - 10,
+            cmd.spawnPosition.y - 10,
+          ),
+          direction: cmd.direction,
+          damage: cmd.damage,
+          owner: 'boss',
+          attackType: AttackType.voidBlast,
+          speed: 320,
+          lifetime: 2.0,
+        );
+      case AttackType.shadowSurge:
+        return AttackComponent(
+          position: Vector2(cmd.spawnPosition.x - 300, cmd.spawnPosition.y - 24),
+          direction: Vector2(0, 1),
+          damage: cmd.damage,
+          owner: 'boss',
+          attackType: AttackType.shadowSurge,
+          lifetime: 0.5,
+        );
       default:
-        return 0;
-    }
-  }
-
-  double _lifetimeForType(AttackType type) {
-    switch (type) {
-      case AttackType.groundStomp:
-      case AttackType.aoe:
-        return 0.5;
-      case AttackType.dashAttack:
-        return 0.3;
-      default:
-        return 2.0;
+        return null;
     }
   }
 
   @override
-  void render(ui.Canvas canvas) {
-    final img = _animState == BossAnimState.attack ? _attackImg : _idleImg;
-    if (img != null) {
-      final src = ui.Rect.fromLTWH(0, 0, img.width.toDouble(), img.height.toDouble());
-      final dst = ui.Rect.fromLTWH(0, 0, size.x, size.y);
-      if (!facingLeft) {
-        canvas.save();
-        canvas.translate(size.x, 0);
-        canvas.scale(-1, 1);
-      }
-      canvas.drawImageRect(img, src, dst, ui.Paint());
-      if (!facingLeft) {
-        canvas.restore();
-      }
-    } else {
-      final color = config.id == BossId.golem
-          ? const ui.Color(0xFF808080)
-          : const ui.Color(0xFF4A0080);
-      canvas.drawRect(size.toRect(), ui.Paint()..color = color);
+  void render(Canvas canvas) {
+    if (_animState == BossAnimState.die) {
+      final alpha = (_hurtTimer * 4).clamp(0.0, 1.0);
+      final paint = Paint()
+        ..color = const Color(0xFF666666).withValues(alpha: alpha);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(size.toRect(), const Radius.circular(8)),
+        paint,
+      );
+      return;
+    }
+
+    _sprites.draw(canvas, _animState, _isHurt, _animTime, size);
+
+    if (_currentPhase > 0) {
+      final phasePaint = Paint()..color = const Color(0xCCFF0000);
+      canvas.drawCircle(
+        Offset(size.x / 2, size.y / 2),
+        8 + _currentPhase * 4,
+        phasePaint,
+      );
     }
   }
 }

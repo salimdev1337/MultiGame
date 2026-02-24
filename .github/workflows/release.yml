@@ -13,6 +13,7 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       version: ${{ steps.version.outputs.version }}
+      build_number: ${{ steps.version.outputs.build_number }}
     
     steps:
       - name:  Checkout code
@@ -20,13 +21,16 @@ jobs:
         with:
           fetch-depth: 0  # Get all history for changelog
           
-      # Extract version from tag (v1.0.0 -> 1.0.0)
+      # Extract version from tag (v1.0.0 -> 1.0.0) and build number from
+      # total commit count — monotonically increasing, no manual edits needed.
       - name:  Get version
         id: version
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
+          BUILD_NUMBER=$(git rev-list --count HEAD)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION"
+          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION  Build: $BUILD_NUMBER"
           
       # Generate changelog from commits
       - name:  Generate changelog
@@ -75,7 +79,7 @@ jobs:
             3. Run `puzzle.exe`
             
             ---
-            Built with ❤️ using Flutter
+            Built with using Flutter
           draft: false
           prerelease: false
 
@@ -113,15 +117,33 @@ jobs:
       - name:  Get dependencies
         run: flutter pub get
 
+      - name: Restore release keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 --decode > /tmp/multigame-release-key.jks
+          cat > android/key.properties <<EOF
+          storePassword=$KEY_STORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=multigame
+          storeFile=/tmp/multigame-release-key.jks
+          EOF
+
       - name: Build APK
         env:
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
-        run: flutter build apk --release --dart-define=UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY
-        
+        run: |
+          flutter build apk --release \
+            --dart-define=UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY \
+            --build-name=${{ needs.create-release.outputs.version }} \
+            --build-number=${{ needs.create-release.outputs.build_number }}
+
       # Rename APK for release
       - name:  Rename APK
         run: |
-          mv build/app/outputs/flutter-apk/app-release.apk puzzle-android.apk
+          mv build/app/outputs/flutter-apk/app-release.apk multigame-android.apk
           
       - name:  Upload APK to Release
         uses: actions/upload-release-asset@v1
@@ -129,8 +151,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./puzzle-android.apk
-          asset_name: puzzle-android.apk
+          asset_path: ./multigame-android.apk
+          asset_name: multigame-android.apk
           asset_content_type: application/vnd.android.package-archive
 
   # Job 3: Build and upload Windows
@@ -162,7 +184,11 @@ jobs:
       - name:  Build Windows
         env:
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
-        run: flutter build windows --release --dart-define=UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY
+        run: |
+          flutter build windows --release `
+            --dart-define=UNSPLASH_ACCESS_KEY=$env:UNSPLASH_ACCESS_KEY `
+            --build-name=${{ needs.create-release.outputs.version }} `
+            --build-number=${{ needs.create-release.outputs.build_number }}
         
       - name:  Package Windows
         run: |

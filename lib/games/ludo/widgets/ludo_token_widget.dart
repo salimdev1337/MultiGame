@@ -33,8 +33,7 @@ class LudoTokenWidget extends StatefulWidget {
     required this.isMovable,
     this.subCellOffsetX = 0,
     this.subCellOffsetY = 0,
-    this.hopTrigger = 0,
-    this.instantMove = false,
+    this.hopOnMove = false,
     this.onTap,
   });
 
@@ -46,11 +45,9 @@ class LudoTokenWidget extends StatefulWidget {
   final bool isMovable;
   final double subCellOffsetX;
   final double subCellOffsetY;
-  /// Increments each time the token should bounce. `didUpdateWidget` triggers
-  /// a hop animation whenever this value changes.
-  final int hopTrigger;
-  /// When true, position changes are instant (no AnimatedPositioned tween).
-  final bool instantMove;
+  /// When true, a hop arc fires automatically on every col/row change, and
+  /// AnimatedPositioned uses a linear curve so the arc travels between cells.
+  final bool hopOnMove;
   final VoidCallback? onTap;
 
   @override
@@ -83,23 +80,38 @@ class _LudoTokenWidgetState extends State<LudoTokenWidget>
 
     _hopCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 120),
+      duration: const Duration(milliseconds: 260),
     );
+    // Slight squash on landing, quick spring back — in-air scale stays neutral.
     _hopScale = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.28), weight: 35),
-      TweenSequenceItem(tween: Tween(begin: 1.28, end: 0.88), weight: 35),
-      TweenSequenceItem(tween: Tween(begin: 0.88, end: 1.0), weight: 30),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.0), weight: 75),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.84), weight: 12),
+      TweenSequenceItem(
+        tween: Tween(begin: 0.84, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 13,
+      ),
     ]).animate(_hopCtrl);
+    // Decelerate rising (initial velocity slows at peak), accelerate falling (gravity).
     _hopLift = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: -1.0), weight: 50),
-      TweenSequenceItem(tween: Tween(begin: -1.0, end: 0.0), weight: 50),
-    ]).animate(CurvedAnimation(parent: _hopCtrl, curve: Curves.easeInOut));
+      TweenSequenceItem(
+        tween: Tween(begin: 0.0, end: -1.0)
+            .chain(CurveTween(curve: Curves.decelerate)),
+        weight: 45,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: -1.0, end: 0.0)
+            .chain(CurveTween(curve: Curves.easeIn)),
+        weight: 55,
+      ),
+    ]).animate(_hopCtrl);
   }
 
   @override
   void didUpdateWidget(LudoTokenWidget old) {
     super.didUpdateWidget(old);
-    if (widget.hopTrigger != old.hopTrigger && widget.hopTrigger > 0) {
+    if (widget.hopOnMove &&
+        (widget.col != old.col || widget.row != old.row)) {
       _hopCtrl.forward(from: 0);
     }
   }
@@ -129,10 +141,10 @@ class _LudoTokenWidgetState extends State<LudoTokenWidget>
         widget.token.isInBase;
 
     return AnimatedPositioned(
-      duration: widget.instantMove
-          ? Duration.zero
+      duration: widget.hopOnMove
+          ? const Duration(milliseconds: 260)
           : const Duration(milliseconds: 350),
-      curve: Curves.easeInOut,
+      curve: widget.hopOnMove ? Curves.linear : Curves.easeInOut,
       left: left,
       top: top,
       width: size,
@@ -143,7 +155,7 @@ class _LudoTokenWidgetState extends State<LudoTokenWidget>
           animation: Listenable.merge([_pulseCtrl, _hopCtrl]),
           builder: (context, _) {
             final pulseScale = widget.isSelected ? _pulse.value : 1.0;
-            final liftY = _hopLift.value * widget.cellSize * 0.5;
+            final liftY = _hopLift.value * widget.cellSize * 0.55;
             final glowAlpha = widget.isMovable
                 ? _glowAlpha.value
                 : (ghosted ? 0.55 : 0.0);

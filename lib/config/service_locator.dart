@@ -9,6 +9,7 @@ import 'package:multigame/services/auth/auth_service.dart';
 import 'package:multigame/services/data/firebase_stats_service.dart';
 import 'package:multigame/services/storage/nickname_service.dart';
 import 'package:multigame/services/game/unsplash_service.dart';
+import 'package:multigame/services/network/pinned_http_client.dart';
 import 'package:multigame/utils/storage_migrator.dart';
 import 'package:multigame/games/sudoku/services/sudoku_persistence_service.dart';
 import 'package:multigame/games/sudoku/services/sudoku_stats_service.dart';
@@ -73,7 +74,7 @@ Future<void> setupServiceLocator() async {
   );
 
   getIt.registerLazySingleton<UnsplashService>(
-    () => UnsplashService(),
+    () => UnsplashService(client: createPinnedHttpClient()),
     dispose: (s) => s.dispose(),
   );
 

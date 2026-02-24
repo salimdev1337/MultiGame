@@ -24,6 +24,8 @@ import 'package:multigame/games/connect_four/screens/connect_four_screen.dart';
 import 'package:multigame/games/ludo/screens/ludo_game_screen.dart';
 import 'package:multigame/games/rpg/screens/boss_select_screen.dart';
 import 'package:multigame/games/rpg/screens/rpg_game_screen.dart';
+import 'package:multigame/games/rummy/screens/rummy_game_screen.dart';
+import 'package:multigame/games/rummy/screens/rummy_lobby_screen.dart';
 import 'package:multigame/games/sudoku/screens/modern_mode_difficulty_screen.dart';
 import 'package:multigame/games/sudoku/screens/sudoku_classic_screen.dart';
 import 'package:multigame/games/sudoku/screens/sudoku_rush_screen.dart';
@@ -44,6 +46,7 @@ abstract class AppRoutes {
   static const bombermanLobby = '/play/bomberman/lobby';
   static const wordleLobby = '/play/wordle/lobby';
   static const rpgBossSelect = '/play/rpg/boss_select';
+  static const rummyLobby = '/play/rummy/lobby';
 }
 
 GoRouter buildAppRouter(WidgetRef ref) {
@@ -157,6 +160,16 @@ GoRouter buildAppRouter(WidgetRef ref) {
                       GoRoute(
                         path: 'boss_select',
                         builder: (_, _) => const BossSelectPage(),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'rummy',
+                    builder: (_, _) => const RummyGamePage(),
+                    routes: [
+                      GoRoute(
+                        path: 'lobby',
+                        builder: (_, _) => const RummyLobbyPage(),
                       ),
                     ],
                   ),

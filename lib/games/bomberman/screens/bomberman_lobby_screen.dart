@@ -9,6 +9,7 @@ import 'package:multigame/games/bomberman/multiplayer/bomb_message.dart';
 import 'package:multigame/games/bomberman/multiplayer/bomb_room.dart';
 import 'package:multigame/games/bomberman/providers/bomberman_notifier.dart';
 import 'package:multigame/utils/extensions.dart';
+import 'package:multigame/utils/input_validator.dart';
 
 // Platform conditional import — web stub or native io version
 import 'package:multigame/games/bomberman/multiplayer/bomb_server_stub.dart'
@@ -70,9 +71,17 @@ class _BombermanLobbyPageState extends ConsumerState<BombermanLobbyPage>
   Future<void> _startHosting() async {
     if (kIsWeb) return;
 
-    final name = _nameController.text.trim().isEmpty
-        ? 'Host'
-        : _nameController.text.trim();
+    final rawName = _nameController.text.trim();
+    if (rawName.isNotEmpty) {
+      final v = InputValidator.validateNickname(rawName);
+      if (!v.isValid) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(v.error!)),
+        );
+        return;
+      }
+    }
+    final name = rawName.isEmpty ? 'Host' : rawName;
 
     final server = BombServerIo(hostDisplayName: name);
     final ip = await BombServerIo.getLocalIp();
@@ -181,6 +190,14 @@ class _BombermanLobbyPageState extends ConsumerState<BombermanLobbyPage>
       return;
     }
 
+    final ipValidation = InputValidator.validateIpAddress(
+      _nameController.text.trim(),
+    );
+    if (!ipValidation.isValid) {
+      setState(() => _connectError = ipValidation.error);
+      return;
+    }
+
     setState(() {
       _connecting = true;
       _connectError = null;
@@ -189,7 +206,7 @@ class _BombermanLobbyPageState extends ConsumerState<BombermanLobbyPage>
     final port = BombRoom.portFromCode(code);
     // We need the host IP — for now the guest types it in the name field
     // as a temporary fallback. In production, you'd resolve via discovery.
-    final hostIp = _nameController.text.trim();
+    final hostIp = ipValidation.value as String;
     final name = 'Guest';
 
     final room = BombRoom();

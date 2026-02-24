@@ -7,49 +7,48 @@ import 'package:multigame/games/rpg/components/arena_component.dart';
 import 'package:multigame/games/rpg/components/attack_component.dart';
 import 'package:multigame/games/rpg/components/boss_component.dart';
 import 'package:multigame/games/rpg/components/player_component.dart';
+import 'package:multigame/games/rpg/components/rpg_particle.dart';
 import 'package:multigame/games/rpg/logic/boss_ai/golem_ai.dart';
+import 'package:multigame/games/rpg/logic/boss_ai/hollow_king_ai.dart';
+import 'package:multigame/games/rpg/logic/boss_ai/shadowlord_ai.dart';
 import 'package:multigame/games/rpg/logic/boss_ai/wraith_ai.dart';
 import 'package:multigame/games/rpg/models/boss_config.dart';
 import 'package:multigame/games/rpg/models/player_stats.dart';
 import 'package:multigame/games/rpg/models/rpg_enums.dart';
 
-enum RpgEvent {
-  bossPhaseChange,
-  playerDeath,
-  bossDefeated,
-  bossDamaged,
-  playerDamaged,
-}
+enum RpgEvent { bossPhaseChange, playerDeath, bossDefeated, bossDamaged, playerDamaged }
 
-class RpgFlameGame extends FlameGame with HasCollisionDetection {
-  RpgFlameGame({
-    required this.bossId,
-    required this.playerStats,
-    required this.cycle,
-  });
+class RpgFlameGame extends FlameGame {
+  RpgFlameGame({required this.bossId, required this.playerStats});
 
   final BossId bossId;
   final PlayerStats playerStats;
-  final int cycle;
 
   RpgGamePhase _phase = RpgGamePhase.idle;
   RpgGamePhase get gamePhase => _phase;
 
   double _inputDx = 0;
   double _inputDy = 0;
-  double timeScale = 1.0;
-  double _timeSlowTimer = 0;
 
-  // Keyboard state — tracked via onKeyDown/onKeyUp from the screen widget
+  // Keyboard
   final Set<LogicalKeyboardKey> _pressedKeys = {};
   final Set<LogicalKeyboardKey> _justPressedKeys = {};
+
+  bool _ready = false;
 
   late PlayerComponent _player;
   late BossComponent _boss;
   late ArenaComponent _arena;
 
   final List<AttackComponent> _attacks = [];
-  final List<Rect> _platformRects = [];
+
+  // Hitstop: freeze for N frames on hit
+  int _hitstopFrames = 0;
+
+  // Screen shake
+  double _shakeTimer = 0;
+  double _shakeIntensity = 0;
+  final _shakeRng = _SimpleRng(7);
 
   final _eventController = StreamController<RpgEvent>.broadcast();
   Stream<RpgEvent> get events => _eventController.stream;
@@ -58,35 +57,39 @@ class RpgFlameGame extends FlameGame with HasCollisionDetection {
   double _tickAccum = 0;
   static const double _tickInterval = 0.05;
 
-  int get playerHp => _player.currentHp;
-  int get playerMaxHp => _player.stats.maxHp;
-  int get bossHp => _boss.currentHp;
-  int get bossMaxHp => _boss.maxHp;
-  int get bossPhase => _boss.currentPhase;
+  int get playerHp => _ready ? _player.currentHp : 0;
+  int get playerMaxHp => _ready ? _player.stats.maxHp : 1;
+  int get bossHp => _ready ? _boss.currentHp : 0;
+  int get bossMaxHp => _ready ? _boss.maxHp : 1;
+  int get bossPhase => _ready ? _boss.currentPhase : 0;
+  double get ultimateCharge => _ready ? _player.ultimate.charge : 0.0;
+  int get staminaPips => _ready ? _player.stamina.currentPips : 0;
+  int get maxStaminaPips => _ready ? _player.stamina.maxPips : 3;
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+
     _arena = ArenaComponent(bossId: bossId);
     await add(_arena);
 
-    _platformRects.clear();
-    _platformRects.addAll(_arena.platforms.map((p) => p.rect));
-
-    final config = BossConfig.forId(bossId);
-    final ai = bossId == BossId.golem ? GolemAI() : WraithAI();
-
     _player = PlayerComponent(
-      position: Vector2(80, size.y - 180),
+      position: Vector2(
+        _arena.arenaMin.x + 80,
+        size.y / 2 - 24,
+      ),
       stats: playerStats,
     );
     await add(_player);
 
+    final config = BossConfig.forId(bossId);
     _boss = BossComponent(
-      position: Vector2(size.x - 160, size.y - 220),
+      position: Vector2(
+        size.x - _arena.arenaMin.x - 80 - config.bossWidth,
+        size.y / 2 - config.bossHeight / 2,
+      ),
       config: config,
-      ai: ai,
-      scaledHp: config.scaledHp(cycle),
+      ai: _buildAi(bossId),
     );
     _boss.onPhaseChange = (p) => _eventController.add(RpgEvent.bossPhaseChange);
     _boss.onDeath = () {
@@ -97,6 +100,7 @@ class RpgFlameGame extends FlameGame with HasCollisionDetection {
     await add(_boss);
 
     overlays.add('hud');
+    _ready = true;
   }
 
   void startFight() {
@@ -109,7 +113,6 @@ class RpgFlameGame extends FlameGame with HasCollisionDetection {
     _inputDy = dy;
   }
 
-  /// Called by the screen's keyboard handler on key-down events.
   void onKeyDown(LogicalKeyboardKey key) {
     if (!_pressedKeys.contains(key)) {
       _justPressedKeys.add(key);
@@ -117,7 +120,6 @@ class RpgFlameGame extends FlameGame with HasCollisionDetection {
     _pressedKeys.add(key);
   }
 
-  /// Called by the screen's keyboard handler on key-up events.
   void onKeyUp(LogicalKeyboardKey key) {
     _pressedKeys.remove(key);
   }
@@ -132,30 +134,6 @@ class RpgFlameGame extends FlameGame with HasCollisionDetection {
     }
   }
 
-  void triggerFireball() {
-    if (_phase != RpgGamePhase.playing) {
-      return;
-    }
-    if (!playerStats.unlockedAbilities.contains(AbilityType.fireball)) {
-      return;
-    }
-    final fb = _player.triggerFireball();
-    if (fb != null) {
-      _spawnAttack(fb);
-    }
-  }
-
-  void triggerTimeSlow() {
-    if (_phase != RpgGamePhase.playing) {
-      return;
-    }
-    if (!playerStats.unlockedAbilities.contains(AbilityType.timeSlow)) {
-      return;
-    }
-    timeScale = 0.3;
-    _timeSlowTimer = 3.0;
-  }
-
   void triggerDodge() {
     if (_phase != RpgGamePhase.playing) {
       return;
@@ -163,112 +141,135 @@ class RpgFlameGame extends FlameGame with HasCollisionDetection {
     _player.triggerDodge();
   }
 
+  void triggerUltimate() {
+    if (_phase != RpgGamePhase.playing) {
+      return;
+    }
+    final aoe = _player.triggerUltimate();
+    if (aoe != null) {
+      _spawnAttack(aoe);
+      _triggerScreenShake(0.5, 8.0);
+    }
+  }
+
   void _spawnAttack(AttackComponent atk) {
     _attacks.add(atk);
     add(atk);
   }
 
+  void _triggerHitstop(int frames) {
+    _hitstopFrames = frames;
+  }
+
+  void _triggerScreenShake(double duration, double intensity) {
+    _shakeTimer = duration;
+    _shakeIntensity = intensity;
+  }
+
   @override
   void update(double dt) {
-    final scaledDt = dt * timeScale;
-    super.update(scaledDt);
-
-    if (_timeSlowTimer > 0) {
-      _timeSlowTimer -= dt;
-      if (_timeSlowTimer <= 0) {
-        timeScale = 1.0;
-      }
+    // Hitstop: skip game logic for N frames
+    if (_hitstopFrames > 0) {
+      _hitstopFrames--;
+      _updateHudTick(dt);
+      return;
     }
+
+    // Screen shake: offset camera
+    if (_shakeTimer > 0) {
+      _shakeTimer -= dt;
+      final dx = (_shakeRng.next() - 0.5) * _shakeIntensity;
+      final dy = (_shakeRng.next() - 0.5) * _shakeIntensity;
+      camera.viewfinder.position = Vector2(dx, dy);
+    } else if (camera.viewfinder.position != Vector2.zero()) {
+      camera.viewfinder.position = Vector2.zero();
+    }
+
+    super.update(dt);
 
     if (_phase != RpgGamePhase.playing) {
       _justPressedKeys.clear();
       return;
     }
 
-    // --- Keyboard input processing ---
+    // Keyboard input
     double effectiveDx = _inputDx;
     double effectiveDy = _inputDy;
-
     if (_pressedKeys.contains(LogicalKeyboardKey.arrowLeft)) {
       effectiveDx = -1.0;
     }
     if (_pressedKeys.contains(LogicalKeyboardKey.arrowRight)) {
       effectiveDx = 1.0;
     }
-    if (_justPressedKeys.contains(LogicalKeyboardKey.arrowUp)) {
+    if (_pressedKeys.contains(LogicalKeyboardKey.arrowUp)) {
       effectiveDy = -1.0;
     }
-
-    // One-shot keyboard actions
+    if (_pressedKeys.contains(LogicalKeyboardKey.arrowDown)) {
+      effectiveDy = 1.0;
+    }
     if (_justPressedKeys.contains(LogicalKeyboardKey.keyX)) {
       triggerAttack();
-    }
-    if (_justPressedKeys.contains(LogicalKeyboardKey.keyC)) {
-      triggerFireball();
     }
     if (_justPressedKeys.contains(LogicalKeyboardKey.keyZ) ||
         _justPressedKeys.contains(LogicalKeyboardKey.space)) {
       triggerDodge();
     }
-    if (_justPressedKeys.contains(LogicalKeyboardKey.keyV)) {
-      triggerTimeSlow();
+    if (_justPressedKeys.contains(LogicalKeyboardKey.keyC)) {
+      triggerUltimate();
     }
     _justPressedKeys.clear();
 
-    // Move player (keyboard + joystick merged)
-    _player.applyMovement(effectiveDx, effectiveDy, scaledDt, _platformRects);
+    // Player movement
+    _player.applyMovement(
+      effectiveDx,
+      effectiveDy,
+      dt,
+      _arena.arenaMin,
+      _arena.arenaMax,
+    );
 
     // Boss AI tick
-    final bossCmd = _boss.update2(scaledDt, _player.position);
-    if (bossCmd != null) {
-      final atk = _boss.spawnAttack(bossCmd, cycle);
-      if (atk != null) {
-        _spawnAttack(atk);
-      }
+    final bossAtk = _boss.update2(dt, _player.center);
+    if (bossAtk != null) {
+      _spawnAttack(bossAtk);
     }
 
     // Collision: player attacks vs boss
+    final bossCenter = _boss.center;
+    final bossR = _boss.hitRadius;
     for (final atk in List.of(_attacks)) {
       if (atk.owner == 'player' && !atk.consumed) {
-        final atkRect = Rect.fromLTWH(
-          atk.position.x,
-          atk.position.y,
-          atk.size.x,
-          atk.size.y,
-        );
-        final bossRect = Rect.fromLTWH(
-          _boss.position.x,
-          _boss.position.y,
-          _boss.size.x,
-          _boss.size.y,
-        );
-        if (atkRect.overlaps(bossRect)) {
+        if (atk.overlapsCircle(bossCenter, bossR)) {
           atk.consumed = true;
           _boss.takeDamage(atk.damage);
+          _player.ultimate.onHitLanded();
+          _triggerHitstop(playerStats.hitstopFrames);
           _eventController.add(RpgEvent.bossDamaged);
+          add(HitParticle(position: bossCenter.clone(), isBossHit: true));
         }
       }
     }
 
     // Collision: boss attacks vs player
+    final playerCenter = _player.center;
+    final playerR = _player.hitRadius;
     for (final atk in List.of(_attacks)) {
       if (atk.owner == 'boss' && !atk.consumed) {
-        final atkRect = Rect.fromLTWH(
-          atk.position.x,
-          atk.position.y,
-          atk.size.x,
-          atk.size.y,
-        );
-        final playerRect = Rect.fromLTWH(
-          _player.position.x,
-          _player.position.y,
-          _player.size.x,
-          _player.size.y,
-        );
-        if (atkRect.overlaps(playerRect)) {
-          atk.consumed = true;
-          _player.takeDamage(atk.damage);
-          _eventController.add(RpgEvent.playerDamaged);
+        final hit = atk.attackType == AttackType.poisonPool
+            ? atk.overlapsCircle(playerCenter, playerR)
+            : atk.overlapsCircle(playerCenter, playerR);
+
+        if (hit) {
+          if (atk.attackType == AttackType.poisonPool) {
+            // Pool deals damage repeatedly — don't consume it
+            _player.takePoisonDamage(atk.damage);
+          } else {
+            atk.consumed = true;
+            _player.takeDamage(atk.damage);
+            _triggerScreenShake(0.2, 4.0);
+            _eventController.add(RpgEvent.playerDamaged);
+            add(HitParticle(position: playerCenter.clone()));
+          }
           if (_player.isDead) {
             _phase = RpgGamePhase.gameOver;
             _eventController.add(RpgEvent.playerDeath);
@@ -278,10 +279,13 @@ class RpgFlameGame extends FlameGame with HasCollisionDetection {
       }
     }
 
-    // Remove consumed/expired attacks
+    // Remove consumed / expired attacks
     _attacks.removeWhere((a) => a.isRemoved || a.consumed);
 
-    // HUD tick throttle
+    _updateHudTick(dt);
+  }
+
+  void _updateHudTick(double dt) {
     _tickAccum += dt;
     if (_tickAccum >= _tickInterval) {
       _tickAccum = 0;
@@ -294,5 +298,28 @@ class RpgFlameGame extends FlameGame with HasCollisionDetection {
     _eventController.close();
     gameTick.dispose();
     super.onRemove();
+  }
+
+  static dynamic _buildAi(BossId id) {
+    switch (id) {
+      case BossId.warden:
+        return WardenAI();
+      case BossId.shaman:
+        return ShamanAI();
+      case BossId.hollowKing:
+        return HollowKingAI();
+      case BossId.shadowlord:
+        return ShadowlordAI();
+    }
+  }
+}
+
+/// Simple deterministic pseudo-random for shake (avoids dart:math Random allocation in hot path).
+class _SimpleRng {
+  _SimpleRng(this._seed);
+  int _seed;
+  double next() {
+    _seed = (_seed * 1664525 + 1013904223) & 0xFFFFFFFF;
+    return (_seed & 0xFFFF) / 0xFFFF;
   }
 }

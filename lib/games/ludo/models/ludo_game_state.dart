@@ -51,6 +51,7 @@ class LudoGameState {
     this.players = const [],
     this.currentPlayerIndex = 0,
     this.diceValue = 0,
+    this.normalDiceValue = 0,
     this.selectedTokenId,
     this.excludedColor,
     this.magicDiceFace,
@@ -73,7 +74,13 @@ class LudoGameState {
   final int currentPlayerIndex;
 
   /// Last dice roll result.  0 = not yet rolled this turn.
+  /// For magic dice turbo, this is the effective (doubled) value.
   final int diceValue;
+
+  /// The raw value rolled on the normal die (1–6). Equals [diceValue] in
+  /// classic mode or non-turbo magic faces. In turbo mode, [diceValue] is
+  /// doubled but [normalDiceValue] still holds the actual pip value to display.
+  final int normalDiceValue;
 
   /// Token id currently selected by the human player (null = none).
   final int? selectedTokenId;
@@ -238,6 +245,7 @@ class LudoGameState {
     List<LudoPlayer>? players,
     int? currentPlayerIndex,
     int? diceValue,
+    int? normalDiceValue,
     Object? selectedTokenId = _unset,
     Object? excludedColor = _unset,
     Object? magicDiceFace = _unset,
@@ -255,6 +263,7 @@ class LudoGameState {
       players: players ?? this.players,
       currentPlayerIndex: currentPlayerIndex ?? this.currentPlayerIndex,
       diceValue: diceValue ?? this.diceValue,
+      normalDiceValue: normalDiceValue ?? this.normalDiceValue,
       selectedTokenId: selectedTokenId == _unset
           ? this.selectedTokenId
           : selectedTokenId as int?,

@@ -16,6 +16,13 @@ class GameModel {
   static List<GameModel> getAvailableGames() {
     return [
       GameModel(
+        id: 'ludo',
+        name: 'Ludo',
+        description: 'Race tokens home — roll, capture, and use powerups!',
+        imagePath: 'assets/images/ludo.png',
+        isAvailable: true,
+      ),
+      GameModel(
         id: 'sudoku',
         name: 'Sudoku',
         description: 'classic, rush and 1v1 sudoku games',
@@ -44,10 +51,10 @@ class GameModel {
         isAvailable: true,
       ),
       GameModel(
-        id: 'memory_game',
-        name: 'Memory Game',
-        description: 'Match pairs — wrong guess shuffles the board!',
-        imagePath: 'assets/images/memory_game.png',
+        id: 'rpg',
+        name: 'Shadowfall Chronicles',
+        description: 'Fight pixel-art bosses, grow stronger, conquer New Game+',
+        imagePath: 'assets/images/rpg.png',
         isAvailable: true,
       ),
       GameModel(
@@ -55,6 +62,13 @@ class GameModel {
         name: 'Snake',
         description: 'Classic snake game with neon style',
         imagePath: 'assets/images/snake.png',
+        isAvailable: true,
+      ),
+      GameModel(
+        id: 'memory_game',
+        name: 'Memory Game',
+        description: 'Match pairs — wrong guess shuffles the board!',
+        imagePath: 'assets/images/memory_game.png',
         isAvailable: true,
       ),
       GameModel(
@@ -74,24 +88,10 @@ class GameModel {
         isAvailable: true,
       ),
       GameModel(
-        id: 'ludo',
-        name: 'Ludo',
-        description: 'Race tokens home — roll, capture, and use powerups!',
-        imagePath: 'assets/images/ludo.png',
-        isAvailable: true,
-      ),
-      GameModel(
         id: 'image_puzzle',
         name: 'Puzzle',
         description: 'Slide tiles to complete the picture',
         imagePath: 'assets/images/puzzle.png',
-        isAvailable: true,
-      ),
-      GameModel(
-        id: 'rpg',
-        name: 'Shadowfall Chronicles',
-        description: 'Fight pixel-art bosses, grow stronger, conquer New Game+',
-        imagePath: 'assets/images/rpg.png',
         isAvailable: true,
       ),
     ];

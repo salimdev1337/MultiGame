@@ -6,6 +6,7 @@ import 'package:multigame/repositories/stats_repository.dart';
 import 'package:multigame/services/data/achievement_service.dart';
 import 'package:multigame/services/data/streak_service.dart';
 import 'package:multigame/services/storage/nickname_service.dart';
+import 'package:multigame/utils/input_validator.dart';
 import 'package:multigame/utils/secure_logger.dart';
 import 'package:multigame/widgets/profile/achievement_gallery.dart';
 import 'package:multigame/widgets/profile/animated_profile_header.dart';
@@ -241,14 +242,19 @@ class _ProfilePageState extends State<ProfilePage> {
           TextButton(
             onPressed: () async {
               final newName = controller.text.trim();
-              if (newName.isNotEmpty) {
-                await _nicknameService.saveNickname(newName);
-                if (mounted && ctx.mounted) {
-                  setState(() {
-                    _nickname = newName;
-                  });
-                  Navigator.pop(ctx);
+              final validation = InputValidator.validateNickname(newName);
+              if (!validation.isValid) {
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(content: Text(validation.error!)),
+                  );
                 }
+                return;
+              }
+              await _nicknameService.saveNickname(validation.value as String);
+              if (mounted && ctx.mounted) {
+                setState(() => _nickname = validation.value as String);
+                Navigator.pop(ctx);
               }
             },
             child: Text(

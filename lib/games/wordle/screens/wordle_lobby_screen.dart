@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:multigame/config/app_router.dart';
+import 'package:multigame/utils/input_validator.dart';
 import 'package:multigame/utils/secure_logger.dart';
 
 import '../multiplayer/wordle_client.dart';
@@ -70,9 +71,17 @@ class _WordleLobbyPageState extends ConsumerState<WordleLobbyPage> {
       return;
     }
 
-    final name = _nameController.text.trim().isEmpty
-        ? 'Host'
-        : _nameController.text.trim();
+    final rawName = _nameController.text.trim();
+    if (rawName.isNotEmpty) {
+      final v = InputValidator.validateNickname(rawName);
+      if (!v.isValid) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(v.error!)),
+        );
+        return;
+      }
+    }
+    final name = rawName.isEmpty ? 'Host' : rawName;
 
     final server = WordleServerIo(hostDisplayName: name);
     final ip = await WordleServerIo.getLocalIp();
@@ -181,8 +190,9 @@ class _WordleLobbyPageState extends ConsumerState<WordleLobbyPage> {
       setState(() => _connectError = 'Enter a 6-digit code');
       return;
     }
-    if (hostIp.isEmpty) {
-      setState(() => _connectError = 'Enter the host IP address');
+    final ipValidation = InputValidator.validateIpAddress(hostIp);
+    if (!ipValidation.isValid) {
+      setState(() => _connectError = ipValidation.error);
       return;
     }
 

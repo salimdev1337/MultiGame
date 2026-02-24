@@ -1,61 +1,62 @@
+import 'package:multigame/games/rpg/models/equipment.dart';
 import 'package:multigame/games/rpg/models/player_stats.dart';
 import 'package:multigame/games/rpg/models/rpg_enums.dart';
-
-class BossReward {
-  const BossReward({
-    required this.hpGain,
-    required this.attackGain,
-    required this.newAbility,
-    required this.message,
-  });
-
-  final int hpGain;
-  final int attackGain;
-  final AbilityType? newAbility;
-  final String message;
-}
 
 class ProgressionEngine {
   const ProgressionEngine._();
 
-  static const BossReward golemReward = BossReward(
-    hpGain: 30,
-    attackGain: 0,
-    newAbility: AbilityType.fireball,
-    message: '+30 Max HP  •  Fireball unlocked!',
-  );
-
-  static const BossReward wraithReward = BossReward(
-    hpGain: 40,
-    attackGain: 2,
-    newAbility: AbilityType.timeSlow,
-    message: '+40 Max HP  •  +2 Attack  •  Time Slow unlocked!',
-  );
-
-  static BossReward rewardForBoss(BossId id) {
+  /// Returns the equipment dropped by the given boss (null for final boss).
+  static Equipment? equipmentForBoss(BossId id) {
     switch (id) {
-      case BossId.golem:
-        return golemReward;
-      case BossId.wraith:
-        return wraithReward;
+      case BossId.warden:
+        return Equipment.wardenSword;
+      case BossId.shaman:
+        return Equipment.shamanCloak;
+      case BossId.hollowKing:
+        return Equipment.hollowCrown;
+      case BossId.shadowlord:
+        return null;
     }
   }
 
-  static PlayerStats applyReward(PlayerStats stats, BossId bossId) {
-    final reward = rewardForBoss(bossId);
-    final newMaxHp = stats.maxHp + reward.hpGain;
-    final newHp = newMaxHp;
-    final newAttack = stats.attack + reward.attackGain;
-    final newAbilities = List<AbilityType>.from(stats.unlockedAbilities);
-    if (reward.newAbility != null &&
-        !newAbilities.contains(reward.newAbility)) {
-      newAbilities.add(reward.newAbility!);
+  /// Returns the next boss to unlock after defeating [id], or null if all beaten.
+  static BossId? nextBossAfter(BossId id) {
+    switch (id) {
+      case BossId.warden:
+        return BossId.shaman;
+      case BossId.shaman:
+        return BossId.hollowKing;
+      case BossId.hollowKing:
+        return BossId.shadowlord;
+      case BossId.shadowlord:
+        return null;
     }
-    return stats.copyWith(
-      hp: newHp,
-      maxHp: newMaxHp,
-      attack: newAttack,
-      unlockedAbilities: newAbilities,
-    );
+  }
+
+  /// Applies equipment bonuses to base stats, returning updated [PlayerStats].
+  static PlayerStats applyEquipment(
+    PlayerStats stats,
+    Equipment? weapon,
+    Equipment? armor,
+  ) {
+    var updated = stats;
+
+    if (weapon != null) {
+      updated = updated.copyWith(attack: updated.attack + weapon.atkBonus);
+    }
+    if (armor != null) {
+      final newMaxHp = updated.maxHp + armor.hpBonus;
+      updated = updated.copyWith(
+        maxHp: newMaxHp,
+        hp: (updated.hp + armor.hpBonus).clamp(0, newMaxHp),
+        ultimateStartCharge:
+            (updated.ultimateStartCharge + armor.ultimateStartCharge).clamp(
+              0.0,
+              0.5,
+            ),
+      );
+    }
+
+    return updated;
   }
 }

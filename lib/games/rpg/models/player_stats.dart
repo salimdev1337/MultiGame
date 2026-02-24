@@ -1,41 +1,75 @@
-import 'package:multigame/games/rpg/models/rpg_enums.dart';
-
+/// Immutable player stat snapshot. Skill tree nodes and equipment are
+/// applied via copyWith to produce a new snapshot.
 class PlayerStats {
   const PlayerStats({
     this.hp = 100,
     this.maxHp = 100,
     this.attack = 10,
-    this.defense = 5,
-    this.speed = 200,
-    this.level = 1,
-    this.unlockedAbilities = const [AbilityType.basicAttack],
+    this.speed = 180,
+    // Stamina
+    this.maxStaminaPips = 3,
+    this.staminaRegenInterval = 2.0,
+    // Combo
+    this.comboWindowBonus = 0.0,
+    this.heavyFinisherBonus = 0.0,
+    // Ultimate
+    this.ultimateHitChargeBonus = 0.0,
+    this.ultimateDmgChargeBonus = 0.0,
+    this.ultimateStartCharge = 0.0,
+    // Misc passives
+    this.hitstopFrames = 3,
+    this.hazardResistance = 0.0,
   });
 
   final int hp;
   final int maxHp;
   final int attack;
-  final int defense;
   final int speed;
-  final int level;
-  final List<AbilityType> unlockedAbilities;
+
+  final int maxStaminaPips;
+  final double staminaRegenInterval;
+
+  final double comboWindowBonus;
+  final double heavyFinisherBonus;
+
+  final double ultimateHitChargeBonus;
+  final double ultimateDmgChargeBonus;
+  final double ultimateStartCharge;
+
+  final int hitstopFrames;
+  final double hazardResistance;
 
   PlayerStats copyWith({
     int? hp,
     int? maxHp,
     int? attack,
-    int? defense,
     int? speed,
-    int? level,
-    List<AbilityType>? unlockedAbilities,
+    int? maxStaminaPips,
+    double? staminaRegenInterval,
+    double? comboWindowBonus,
+    double? heavyFinisherBonus,
+    double? ultimateHitChargeBonus,
+    double? ultimateDmgChargeBonus,
+    double? ultimateStartCharge,
+    int? hitstopFrames,
+    double? hazardResistance,
   }) {
     return PlayerStats(
       hp: hp ?? this.hp,
       maxHp: maxHp ?? this.maxHp,
       attack: attack ?? this.attack,
-      defense: defense ?? this.defense,
       speed: speed ?? this.speed,
-      level: level ?? this.level,
-      unlockedAbilities: unlockedAbilities ?? this.unlockedAbilities,
+      maxStaminaPips: maxStaminaPips ?? this.maxStaminaPips,
+      staminaRegenInterval: staminaRegenInterval ?? this.staminaRegenInterval,
+      comboWindowBonus: comboWindowBonus ?? this.comboWindowBonus,
+      heavyFinisherBonus: heavyFinisherBonus ?? this.heavyFinisherBonus,
+      ultimateHitChargeBonus:
+          ultimateHitChargeBonus ?? this.ultimateHitChargeBonus,
+      ultimateDmgChargeBonus:
+          ultimateDmgChargeBonus ?? this.ultimateDmgChargeBonus,
+      ultimateStartCharge: ultimateStartCharge ?? this.ultimateStartCharge,
+      hitstopFrames: hitstopFrames ?? this.hitstopFrames,
+      hazardResistance: hazardResistance ?? this.hazardResistance,
     );
   }
 
@@ -43,22 +77,36 @@ class PlayerStats {
     'hp': hp,
     'maxHp': maxHp,
     'attack': attack,
-    'defense': defense,
     'speed': speed,
-    'level': level,
-    'unlockedAbilities': unlockedAbilities.map((a) => a.index).toList(),
+    'maxStaminaPips': maxStaminaPips,
+    'staminaRegenInterval': staminaRegenInterval,
+    'comboWindowBonus': comboWindowBonus,
+    'heavyFinisherBonus': heavyFinisherBonus,
+    'ultimateHitChargeBonus': ultimateHitChargeBonus,
+    'ultimateDmgChargeBonus': ultimateDmgChargeBonus,
+    'ultimateStartCharge': ultimateStartCharge,
+    'hitstopFrames': hitstopFrames,
+    'hazardResistance': hazardResistance,
   };
 
   factory PlayerStats.fromJson(Map<String, dynamic> json) => PlayerStats(
     hp: (json['hp'] as int?) ?? 100,
     maxHp: (json['maxHp'] as int?) ?? 100,
     attack: (json['attack'] as int?) ?? 10,
-    defense: (json['defense'] as int?) ?? 5,
-    speed: (json['speed'] as int?) ?? 200,
-    level: (json['level'] as int?) ?? 1,
-    unlockedAbilities: (json['unlockedAbilities'] as List?)
-            ?.map((i) => AbilityType.values[i as int])
-            .toList() ??
-        [AbilityType.basicAttack],
+    speed: (json['speed'] as int?) ?? 180,
+    maxStaminaPips: (json['maxStaminaPips'] as int?) ?? 3,
+    staminaRegenInterval:
+        (json['staminaRegenInterval'] as num?)?.toDouble() ?? 2.0,
+    comboWindowBonus: (json['comboWindowBonus'] as num?)?.toDouble() ?? 0.0,
+    heavyFinisherBonus:
+        (json['heavyFinisherBonus'] as num?)?.toDouble() ?? 0.0,
+    ultimateHitChargeBonus:
+        (json['ultimateHitChargeBonus'] as num?)?.toDouble() ?? 0.0,
+    ultimateDmgChargeBonus:
+        (json['ultimateDmgChargeBonus'] as num?)?.toDouble() ?? 0.0,
+    ultimateStartCharge:
+        (json['ultimateStartCharge'] as num?)?.toDouble() ?? 0.0,
+    hitstopFrames: (json['hitstopFrames'] as int?) ?? 3,
+    hazardResistance: (json['hazardResistance'] as num?)?.toDouble() ?? 0.0,
   );
 }

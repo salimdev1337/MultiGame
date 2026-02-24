@@ -709,6 +709,7 @@ LudoGameState _advanceTurn(
     players: tickedPlayers,
     currentPlayerIndex: nextIdx,
     diceValue: 0,
+    normalDiceValue: 0,
     selectedTokenId: null,
     magicDiceFace: null,
     finishCount: finishCount,

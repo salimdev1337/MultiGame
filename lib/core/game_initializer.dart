@@ -10,6 +10,7 @@ import 'package:multigame/games/wordle/wordle_game_definition.dart';
 import 'package:multigame/games/connect_four/connect_four_game_definition.dart';
 import 'package:multigame/games/ludo/ludo_game_definition.dart';
 import 'package:multigame/games/rpg/rpg_game_definition.dart';
+import 'package:multigame/games/rummy/rummy_game_definition.dart';
 
 /// Initialize and register all games
 /// Should be called once during app startup
@@ -28,4 +29,5 @@ void initializeGames() {
   registry.register(ConnectFourGameDefinition());
   registry.register(LudoGameDefinition());
   registry.register(RpgGameDefinition());
+  registry.register(RummyGameDefinition());
 }

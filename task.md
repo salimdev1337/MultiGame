@@ -1,252 +1,414 @@
-# MultiGame — Tech Debt & Audit Backlog
+# RPG Redesign Plan — Shadowfall Chronicles
 
-> Generated from staff-engineer audit (2026-02-15).
-> Work through sprints in order. Each task has a checkbox, severity tag, and file reference.
-> Run `flutter analyze && flutter test` after every sprint before merging.
+## Context
 
----
-
-## Sprint 1 — Critical Bugs (fix before anything else, ~2 h total)
-
-These are actual bugs that can silently corrupt state, leak memory, or crash the app.
-
-- [x] **S1-1** 🔴 Fix `DSColors.withOpacity()` alpha formula
-  - File: `lib/design_system/ds_colors.dart:163`
-  - Change `color.withValues(alpha: opacity * 255)` → `color.withValues(alpha: opacity)`
-  - Verify no callers are compensating for the bug before fixing
-
-- [x] **S1-2** 🔴 Fix Bomberman orphan timer on round-over
-  - File: `lib/games/bomberman/providers/bomberman_notifier.dart:713`
-  - Change bare `Timer(Duration(seconds: 3), ...)` → `_countdownTimer = Timer(...)`
-  - The anonymous timer fires on a disposed notifier today
-
-- [x] **S1-3** 🔴 Await Firestore listener cancel in Sudoku Online
-  - File: `lib/games/sudoku/providers/sudoku_online_provider.dart:152`
-  - Change `_matchSubscription?.cancel()` → `await _matchSubscription?.cancel()`
-  - Same in `dispose()`. Old listener can fire between cancel and new subscription setup
-
-- [x] **S1-4** 🟠 Add `_isDisposed` guard to Memory game timer
-  - File: `lib/games/memory/providers/memory_notifier.dart:166`
-  - Add `bool _isDisposed = false;` flag, set it in `dispose()`, check it inside the 800 ms timer callback before calling `_doShuffle()`
-
-- [x] **S1-5** 🟠 Remove dead `provider` package from pubspec
-  - File: `pubspec.yaml:19`
-  - Remove `provider: ^6.1.2` — migration to Riverpod is complete, this is dead weight
-  - Run `flutter pub get` and verify nothing breaks
-
-- [x] **S1-6** 🟠 Fix stats stream silently swallowing Firestore errors
-  - File: `lib/repositories/stats_repository.dart:316-322` (and ~402-408)
-  - Replace `return null` inside `.handleError()` with `rethrow` (or propagate an error state)
-  - Callers must be updated to handle the error downstream
+The current RPG is a 2D side-scrolling platformer with 2 bosses, pixel-art sprites that don't read well,
+clunky platformer controls on mobile, shallow combat (basic attack + fireball + time slow), and no
+real story. The goal is a full rewrite that keeps only the file structure — producing a top-down 2D
+action RPG with best-in-class boss fights, a dark fantasy boss-hunting narrative, and satisfying power
+progression from weak survivor to unstoppable force.
 
 ---
 
-## Sprint 2 — High-Impact Fixes (~4 h total)
+## Design Summary (all 30 decisions)
 
-- [x] **S2-1** 🟠 Add Firestore operation timeouts
-  - File: `lib/repositories/stats_repository.dart` — all `.get()` / `.set()` / `.update()` calls
-  - Wrap with `.timeout(const Duration(seconds: 8))` like `appInitProvider` already does
-  - Add catch for `TimeoutException` and surface a user-visible error
-
-- [x] **S2-2** 🟠 Add retry logic to `saveUserStats()` and other critical writes
-  - File: `lib/repositories/stats_repository.dart`
-  - `UnsplashService` has a 3-attempt retry loop — apply the same pattern to score saves
-  - Use exponential backoff: 0 ms, 500 ms, 1500 ms
-
-- [x] **S2-3** 🟠 Fix 2048 score: add overflow cap + persist best score
-  - File: `lib/games/game_2048/providers/game_2048_notifier.dart:158`
-  - Clamp score: `(state.score + totalDelta).clamp(0, 999_999_999)`
-  - Persist `bestScore` to SharedPreferences/SecureStorage on game over and load it on init
-
-- [x] **S2-4** 🟠 Fix static `FlutterSecureStorage` in feedback services
-  - Files: `lib/services/feedback/sound_service.dart:18`, `lib/services/feedback/haptic_feedback_service.dart:22`
-  - Remove `static const FlutterSecureStorage _storage` — inject via constructor instead
-  - Register the storage dependency through GetIt in `service_locator.dart`
-
-- [x] **S2-5** 🟠 Cache BombGridPainter Paint objects & TextPainter
-  - File: `lib/games/bomberman/widgets/bomb_grid_painter.dart`
-  - Promoted all fixed-color `Paint()` instances to `static final` class-level fields
-  - (TextPainter and RadialGradient shader still per-frame — require instance state, deferred)
-
-- [x] **S2-6** 🟠 Fix Obstacle pool hitbox leak on `reset()`
-  - File: `lib/games/infinite_runner/components/obstacle.dart:111-130`
-  - Guard was already in place in the codebase — verified correct
-
-- [x] **S2-7** 🟠 Migrate Puzzle provider from ChangeNotifier to Riverpod
-  - Riverpod `PuzzleNotifier` / `puzzleProvider` already existed and screens already used it
-  - Deleted dead `puzzle_game_provider.dart` (ChangeNotifier) and its test
-  - Updated barrel exports in `providers/index.dart` and `games/puzzle/index.dart`
-
----
-
-## Sprint 3 — Tech Debt & Performance (~4 h total)
-
-- [x] **S3-1** 🟡 Move `mapIndexed` extension to shared utils
-  - Currently duplicated in: `bomberman_notifier.dart:802`, `bomberman_hud.dart:130`, `bomberman_lobby_screen.dart:598`
-  - Create `lib/utils/extensions.dart`, add `extension ListX<T> on List<T>` with `mapIndexed`
-  - Remove the 3 local copies and import from utils
-
-- [x] **S3-2** 🟡 Add snake food spawn incremental tracking
-  - File: `lib/games/snake/providers/snake_notifier.dart:157-160`
-  - Replace `SnakeState.allCells.difference(occupied).toList()` recomputed every spawn
-  - Maintain a `Set<Offset> _freeCells` updated incrementally as snake grows/shrinks
-
-- [x] **S3-3** 🟡 Cache puzzle images per session (don't re-fetch on grid size change)
-  - File: `lib/games/puzzle/providers/puzzle_notifier.dart:64-88`
-  - Keep a `_cachedImageUrl` or reuse the last loaded image when only grid size changes
-  - Only fetch a new image when explicitly "refresh" is requested
-
-- [x] **S3-4** 🟡 Add Bomberman frame-sync sequence numbers
-  - File: `lib/games/bomberman/providers/bomberman_notifier.dart` + `bomb_game_state.dart`
-  - Add `int frameId` to `toFrameJson()` payload, incremented by host each tick
-  - Guest tracks `_lastAppliedFrameId` and drops frames with `id <= _lastAppliedFrameId`
-
-- [x] **S3-5** 🟡 Standardize navigation to go_router project-wide
-  - Find all `Navigator.pop(context)` calls in game screens and replace with `context.go(AppRoutes.home)` or `context.pop()`
-  - Key files: `sudoku_classic_screen.dart`, `premium_game_carousel.dart`
-  - Do not change `Navigator.push` for dialogs — those are correct
-
-- [x] **S3-6** 🟡 Add back-button confirmation to game screens
-  - Wrap all game screens that currently navigate away without confirmation in `PopScope`
-  - Show a "Quit? Your progress will be lost" dialog
-  - Games needing this: Memory, Snake, Puzzle, Bomberman (solo)
-  - Pattern to follow: `lib/games/sudoku/screens/sudoku_classic_screen.dart`
-
-- [x] **S3-7** 🟡 Add Firestore operation timeouts to Sudoku Online
-  - File: `lib/games/sudoku/providers/sudoku_online_provider.dart`
-  - Same pattern as S2-1 but scoped to matchmaking and move-sync calls
-
-- [x] **S3-8** 🟡 Fix GetIt bypass — UnsplashService created inline
-  - File: `lib/games/puzzle/providers/puzzle_notifier.dart` (wherever `UnsplashService()` is `new`-ed)
-  - Replace with `getIt<UnsplashService>()` to respect DI contract
+| # | Decision | Choice |
+|---|----------|--------|
+| 1 | Combat style | Real-time action (dodge, react) |
+| 2 | Game structure | Linear story progression |
+| 3 | Player fantasy | Power fantasy — become unstoppable |
+| 4 | RPG depth | Medium: skill tree + equipment |
+| 5 | Setting | Dark fantasy (demons, ruins, corruption) |
+| 6 | Camera | **2D top-down (bird's eye)** — full departure from current platformer |
+| 7 | Story delivery | Environmental storytelling only, no dialogue |
+| 8 | Content scope | 3 chapters + final boss = **4 bosses total** |
+| 9 | Classes | Single hero, grows over story |
+| 10 | Combo system | 3-hit tap sequence (light → light → heavy finisher) |
+| 11 | Equipment slots | Weapon + Armor (2 slots) |
+| 12 | Upgrade loop | Level up after each boss defeat, pick stat node |
+| 13 | Visual style | Pixel art upscaled to 16-bit era quality |
+| 14 | Enemy variety | Boss-only — no trash mobs |
+| 15 | Touch controls | Left joystick + 3 action buttons |
+| 16 | Action buttons | **Attack** / **Dodge** / **Ultimate** |
+| 17 | Boss design | Phase-based + learnable patterns per phase |
+| 18 | Boss scope | 4 bosses: Warden, Shaman, Hollow King, Shadowlord |
+| 19 | Skill tree | Stat + passive nodes (ATK, stamina cap, dodge CD, ultimate rate) |
+| 20 | Ultimate | Screen-wide AOE blast |
+| 21 | Arena shape | Medium open arena (balanced dodge space) |
+| 22 | Equipment source | Boss drops (guaranteed, themed per boss) |
+| 23 | World map | Boss select screen only |
+| 24 | Dodge system | Stamina-based (pip bar, passive regen) |
+| 25 | Ultimate charge | Builds from hitting the boss AND from taking damage |
+| 26 | Difficulty | One well-tuned difficulty |
+| 27 | Endgame | None — focus entirely on the main run |
+| 28 | Core hook | **The bosses** — best-designed fights in the whole app |
+| 29 | Code reuse | Full rewrite — keep file structure only |
+| 30 | Story hook | Boss-hunting narrative (you seek out powerful enemies) |
 
 ---
 
-## Sprint 4 — Security & Robustness (~3 h total)
+## The Four Bosses
 
-- [x] **S4-1** 🟡 Fix input validator regex (ReDoS risk + event handler bypass)
-  - File: `lib/utils/input_validator.dart:59`
-  - Replace `<script[^>]*>.*?</script>` (backtracking risk) with a character-whitelist approach
-  - Also strip `on*=` event handler attributes — current regex misses `<img onerror=alert(1)>`
-  - Consider adding the `sanitize_html` package or similar
+### Chapter 1 — The Warden
+- Setting: Broken stone courtyard, abandoned weapons scattered, cracks glowing red
+- Fantasy: Corrupted knight who sealed the ruins after the Shadowfall
+- HP: ~300 | Phases: 2
+- Phase 0 (100–50%): Slow charge + overhead slam (telegraphed, learnable)
+- Phase 1 (≤50%): Gains shield bash + sweeping spin attack
+- Teaching role: introduces dodge timing, stamina management, combo window
+- Drop: Warden's Sword (weapon)
 
-- [x] **S4-2** 🟡 Add dispose to HapticFeedbackService
-  - File: `lib/services/feedback/haptic_feedback_service.dart`
-  - Add `Future<void> dispose()` that cancels any in-progress vibration and resets state
-  - Wire disposal in `service_locator.dart` via `getIt.registerSingleton(..., dispose: (s) => s.dispose())`
+### Chapter 2 — The Plague Shaman
+- Setting: Swamp clearing, dead trees, creeping toxic mist on ground
+- Fantasy: Witch who turned the forest into a death zone after the Shadowfall
+- HP: ~450 | Phases: 2
+- Phase 0: Pools of poison on arena floor + projectile tosses
+- Phase 1 (≤50%): Summons 2 stationary tendrils (hazards, not enemies) + faster casts
+- Teaching role: introduces arena awareness, positioning, ultimate usage
+- Drop: Shaman's Cloak (armor)
 
-- [x] **S4-3** 🟡 Fix offline_indicator StreamSubscription leak
-  - File: `lib/widgets/offline_indicator.dart`
-  - Ensure `_connectivitySubscription.cancel()` is called in `dispose()`
-  - Verify the widget has a `StatefulWidget` with proper lifecycle — if it's stateless, convert it
+### Chapter 3 — The Hollow King
+- Setting: Throne room ruins, shattered crown on floor, pale blue candlelight
+- Fantasy: Undead king who refused to die after the Shadowfall, corrupted by it
+- HP: ~600 | Phases: 3
+- Phase 0 (100–66%): Sword dash patterns (cardinal + diagonal)
+- Phase 1 (66–33%): Adds ground slam with shockwave
+- Phase 2 (≤33%): Enraged — attacks faster, leaves lingering blade trails on arena
+- Drop: Hollow Crown (armor variant / helm visual only, counts as armor slot)
 
-- [x] **S4-4** 🟡 Add HTTP client pooling to UnsplashService
-  - File: `lib/services/game/unsplash_service.dart`
-  - Replace bare `http.get()` with a reused `http.Client` instance stored as a field
-  - Call `_client.close()` in `dispose()`
-
-- [x] **S4-5** 🟡 Fix NicknameService migration retry on failure
-  - File: `lib/services/storage/nickname_service.dart:20-26`
-  - `_migrationChecked` flag prevents retry even if migration failed silently
-  - Add `_migrationSucceeded` boolean — only set true on confirmed completion, allow retry on next call if false
-
----
-
-## Sprint 5 — Design System Cleanup (~3 h total)
-
-- [x] **S5-1** 🔵 Replace bomb_grid_painter local color palette with DSColors
-  - File: `lib/games/bomberman/widgets/bomb_grid_painter.dart:9-30`
-  - Remove local color constants and import from `DSColors`
-  - Affected: player colors, explosion colors, wall/block colors, bomb color
-
-- [x] **S5-2** 🔵 Replace hardcoded magic numbers in game_result_widget
-  - File: `lib/widgets/shared/game_result_widget.dart:287,435-449,456-458`
-  - `Color(0xFF1a1d24)` → `DSColors.shimmerBase`; `BorderRadius.circular(16)` → `DSSpacing.borderRadiusLG`
-  - Hardcoded font sizes 15/16 → `DSTypography.bodyMedium.copyWith(...)` / `DSTypography.bodyLarge.copyWith(...)`
-
-- [x] **S5-3** 🔵 Replace hardcoded values in ds_button and podium_display
-  - Added `DSTypography.buttonSmall/Medium/Large` and `DSSpacing.iconXSmall`; ds_button uses them
-  - `podium_display._getPodiumColor()` → `DSColors.rarityLegendary/rarityRare/rarityCommon`
-
-- [x] **S5-4** 🔵 Add keys to mapped list widgets
-  - `premium_game_carousel.dart` page indicators → `key: ValueKey(game.id)`
-  - `game_result_widget.dart` stat rows → `key: ValueKey(stat.label)` on Column
-
-- [x] **S5-5** 🔵 Add Semantics labels to AnimatedPremiumGameCard
-  - Wrapped `GestureDetector` in `Semantics(label: '${game.name}, tap to play/coming soon', button: ...)`
+### Final Boss — The Shadowlord
+- Setting: The Shadowfall itself — void, falling debris, pitch-black sky
+- Fantasy: The entity you've been hunting — the source of all corruption
+- HP: ~900 | Phases: 3
+- Phase 0: Combines Warden slam + Shaman poison pools (calls back earlier bosses)
+- Phase 1: Adds Hollow King dash patterns, arena fills with shadow zones
+- Phase 2 (≤33%): Full chaos — all previous patterns at once + ultimate sweep attack
+- No drop — just victory
 
 ---
 
-## Sprint 6 — Testing (~4 h total)
+## Combat System (Top-Down)
 
-- [x] **S6-1** 🔵 Replace Phase 6 no-op tests with real assertions
-  - Replaced `expect(true, isTrue)` with `expect(hapticService.isEnabled, isTrue)` / `expect(soundService.isEnabled, isTrue)` after every method group
-  - Integration test asserts both disabled after `setEnabled(false)`
+### Movement
+- Left joystick: 8-directional movement (top-down, no gravity)
+- Player speed base: 180 px/s, upgradeable to 220 px/s via skill tree
+- Player stays on flat arena floor (no platforms, no jumping)
 
-- [x] **S6-2** 🔵 Add unit tests for FirebaseStatsService & StatsRepository
-  - Created `test/services/firebase_stats_service_test.dart` (17 tests)
-  - Added `fake_cloud_firestore: ^4.0.1` to dev_dependencies
-  - Covers: GameStats/UserStats serialization round-trip, null displayName, score tracking, stream emission, leaderboard, anonymous fallback
+### Attack Button (3-hit auto chain)
+- Tap 1: Light slash (damage = ATK)
+- Tap 2: Light slash (damage = ATK)
+- Tap 3: Heavy finisher (damage = ATK × 1.8, slight knockback)
+- Combo window: 0.6s between taps (miss window = reset to tap 1)
+- Attack direction: faces joystick direction (or last moved direction if joystick neutral)
+- Melee range: short (must be close to boss)
 
-- [x] **S6-3** 🔵 Add tests for router redirect chains
-  - Created `test/config/app_router_redirect_test.dart` (10 tests)
-  - Uses a minimal inline GoRouter to test the redirect logic without the full widget tree
-  - Covers: loading→splash, error→splash, not-onboarded→onboarding, already-on-onboarding→no-redirect, onboarded+splash→home, onboarded+onboarding→home, no-redirect for /home /leaderboard /profile
+### Dodge Button (Stamina-gated)
+- Direction: joystick direction (or away from boss if joystick neutral)
+- Invincibility frames: 0.3s
+- Stamina cost: 1 pip per dodge
+- Stamina: 3 pips, regens 1 pip every 2s
+- Visual: stamina shown as 3 dots below player HP bar
+- Stamina upgradeable to 4 pips via skill tree
 
-- [x] **S6-4** 🔵 Add integration test: game → score save → leaderboard update
-  - Created `test/services/stats_integration_test.dart` (14 tests)
-  - Uses `FakeFirebaseFirestore` (already in dev_dependencies)
-  - Covers: first save, accumulation, high-score preservation, multi-game, leaderboard ordering, leaderboard stream, userStatsStream, getUserRank
+### Ultimate Button (Gauge-gated)
+- Gauge fills from: hitting the boss (5% per hit) + taking damage (10% per hit taken)
+- When gauge = 100%: button lights up, tap to activate
+- Effect: full-screen pixel flash → massive AOE centered on player → all enemies/hazards on screen take 3× ATK damage, player is invincible during animation (0.8s)
+- Visual: screen-wide particle burst, screen shake 0.5s, chromatic aberration flash
+- After use: gauge resets to 0
 
-- [x] **S6-5** 🔵 Add Bomberman multiplayer unit tests
-  - Created `test/games/bomberman/multiplayer_test.dart` (15 tests)
-  - Covers: frameId in toFrameJson, sequence ordering, applyFrameSync with frameId, BombMessage encode/decode preserving frameId
-
----
-
-## Sprint 7 — UX Polish (~2 h total)
-
-- [x] **S7-1** 🔵 Verify timer isolation on 2048 and Snake screens
-  - Neither game stores `elapsedSeconds` in state — no timer-driven rebuild anti-pattern exists
-  - Snake uses `ref.watch(snakeProvider.select(...))` throughout — already correct
-
-- [ ] **S7-2** 🔵 Test Sudoku and Puzzle in landscape, fix overflow
-  - Requires device/emulator testing; deferred to backlog (B-6)
-
-- [x] **S7-3** 🔵 Add loading/error states to animated_stat_card
-  - Added `isLoading`, `errorMessage`, `onRetry` params to `AnimatedStatCard`
-  - `isLoading` → `_StatCardShimmer` (shimmer placeholder boxes)
-  - `errorMessage` non-null → `_StatCardError` with icon + message + optional retry button
+### Game Feel (non-negotiable, highest priority)
+- **Hitstop**: every hit pauses 3 frames (0.05s). Makes each hit feel crunchy.
+- **Screen shake**: camera shakes 0.2s when player takes damage
+- **Hit particles**: pixel particle burst on every hit landed on boss
+- **Ultimate**: biggest screen shake (0.5s) + full-screen white flash + particle explosion
+- **Boss hurt flash**: boss sprite flashes white on damage
 
 ---
 
-## Backlog (no sprint assigned — do when relevant)
+## Skill Tree (Post-Boss Level-Ups)
 
-- [x] **B-1** Add upper-bound version constraints to critical pubspec deps — all 30+ deps now use `'>=X.Y.Z <(X+1).0.0'` format
-- [x] **B-2** Add log-level control to SecureLogger — added `LogLevel` enum (verbose/debug/info/warn/error), `SecureLogger.level` static field, `forceInRelease` flag; existing methods gated by level
-- [x] **B-3** Add `///` documentation comments to all public repository and service methods — added to `AchievementRepository` interface, `AuthService.signInAnonymously`, `InputValidator` class doc
-- [x] **B-4** `GameRegistry` edge-case tests already existed in `test/core/game_registry_test.dart` — duplicate registration, unregistration cleanup, clear, order all covered
-- [x] **B-5** Evaluated `sanitize_html` — not needed: app renders user data via Flutter `Text` widgets (no HTML renderer). Decision documented in `InputValidator` class doc.
-- [ ] **B-6** Add landscape orientation locks to all game screens that don't yet handle it (or implement responsive layout)
+4 level-ups total (one after each boss, no level-up after final boss).
+Each level-up shows 3 random nodes from the pool — player picks 1.
 
----
-
-## Done
-
-- **Sprint 1** completed 2026-02-15 — S1-1 through S1-6 all fixed
-- **Sprint 2** completed 2026-02-15 — S2-1 through S2-7 (S2-6 was already fixed)
-- **Sprint 3** completed 2026-02-15 — S3-1 through S3-8 all done; fixed GetIt bypass in puzzle tests
-- **Sprint 4** completed 2026-02-16 — S4-1 through S4-5 all fixed (S4-3 was already correct)
-- **Sprint 5** completed 2026-02-16 — S5-1 through S5-5 all done; added Bomberman colors to DSColors, new DSTypography button styles, DSSpacing.iconXSmall
-- **Sprint 6** completed 2026-02-16 — S6-1, S6-2, S6-5 done; S6-3 and S6-4 deferred (need GoRouter/Firebase harness)
-- **Sprint 7** completed 2026-02-16 — S7-1 verified (no issue found), S7-3 done; S7-2 deferred (needs device testing)
-- **Backlog** completed 2026-02-16 — B-1 through B-5 done; B-6 deferred (needs device testing)
+### Stat Node Pool (12 nodes, 1 chosen per boss):
+1. +15 Max HP
+2. +5 ATK
+3. +1 Stamina pip (max 4 total)
+4. Dodge cooldown -0.3s
+5. Combo window +0.2s (more forgiving tap timing)
+6. Ultimate charge rate +20% (from hits)
+7. Ultimate charge rate +20% (from taking damage)
+8. Heavy finisher damage +30%
+9. Movement speed +20 px/s
+10. Stamina regen speed +30% faster
+11. Hitstop duration +1 frame (more satisfying hits)
+12. Boss poison/hazard damage -30%
 
 ---
 
-## Notes
+## Equipment System
 
-- **Before every merge:** `flutter analyze && flutter test` (full project, not scoped)
-- **Never use `withOpacity()`** — always `withValues(alpha: ...)` (0.0–1.0 range)
-- **All flow control** must use curly braces (CI enforces `curly_braces_in_flow_control_structures`)
-- **Never push** unless explicitly requested
+2 slots: Weapon + Armor
+Gear dropped by bosses, passive stat bonuses.
+
+| Boss | Drop | Bonus |
+|------|------|-------|
+| Warden | Warden's Sword | +8 ATK |
+| Shaman | Shaman's Cloak | +25 Max HP + poison resistance |
+| Hollow King | Hollow Crown | +10 ATK + ultimate starts 20% charged |
+| Shadowlord | — (no drop) | — |
+
+Default gear: Rusted Blade (0 ATK bonus), Torn Cloth (0 HP bonus)
+
+---
+
+## Story (Environmental Only, No Dialogue)
+
+### Narrative: The Shadowfall
+A corruption event broke the world. Powerful beings absorbed it and became monsters.
+You are a hunter tracking them down. The arenas tell their stories — no words needed.
+
+### Story beats told through arena design:
+- **Chapter 1 arena**: weapons and armor left by previous hunters who failed. Cracks in the courtyard floor glow the same color as the Warden's eyes.
+- **Chapter 2 arena**: tombstones half-submerged in swamp water. The Shaman used to be a healer (medicine pouches rotting in the mud).
+- **Chapter 3 arena**: an enormous throne, small enough for a human king. Crown shattered on the floor before the fight starts.
+- **Final arena**: falling architecture from all 3 previous chapters drifts in the void. The Shadowlord is made of all of them.
+
+### Chapter transitions:
+- After boss dies: screen fades to black, 1 line of ambient text (e.g. "The ruins breathe again.")
+- Boss select screen: boss portraits, crossed out when defeated, corrupted silhouette before defeated
+
+---
+
+## Architecture — Full Rewrite Plan
+
+### Keep (structure only)
+- `/lib/games/rpg/` directory layout
+- Riverpod `NotifierProvider.autoDispose` pattern
+- `GameStatsMixin` for Firebase score saving
+- Route: `/play/rpg` + `/play/rpg/boss_select`
+- `rpg_game_definition.dart` entry
+
+### Rewrite completely
+All Dart files are rewritten. New models, new logic, new Flame components.
+
+### New file structure
+
+```
+lib/games/rpg/
+├── models/
+│   ├── rpg_enums.dart           — BossId (warden/shaman/hollowKing/shadowlord), GamePhase,
+│   │                              AttackType, PlayerAnim, BossAnim
+│   ├── player_stats.dart        — HP, ATK, speed, stamina pips, equipment slots
+│   ├── equipment.dart           — Equipment model (weapon/armor with stat bonuses)
+│   ├── stamina_system.dart      — current pips, max pips, regen timer
+│   ├── ultimate_gauge.dart      — current charge (0.0–1.0), charge rates
+│   ├── boss_config.dart         — BossConfig for all 4 bosses (phases, patterns, HP)
+│   └── attack_data.dart         — AttackData (type, damage, range, direction, lifetime)
+├── logic/
+│   ├── combat_calculator.dart   — damage formula, hitstop duration, crit (keep formula)
+│   ├── progression_engine.dart  — level-up node pool, equipment application
+│   ├── skill_tree.dart          — node definitions (12 nodes), random pick-3 logic
+│   └── boss_ai/
+│       ├── boss_ai.dart         — abstract BossAI interface (top-down)
+│       ├── warden_ai.dart       — GolemAI replacement: charge + slam state machine
+│       ├── shaman_ai.dart       — poison pool placement + projectile AI
+│       ├── hollow_king_ai.dart  — dash pattern AI (cardinal/diagonal routing)
+│       └── shadowlord_ai.dart   — final boss AI (combines all 3 patterns)
+├── providers/
+│   ├── rpg_notifier.dart        — RpgState + RpgNotifier (progression, equipment, saves)
+│   └── rpg_ui_notifier.dart     — UI overlay states
+├── game/
+│   └── rpg_flame_game.dart      — RpgFlameGame (top-down, no gravity, HasCollisionDetection)
+├── components/
+│   ├── player_component.dart    — top-down movement (360°), combo system, stamina, ultimate
+│   ├── boss_component.dart      — top-down boss, phase tracking, AI delegation
+│   ├── attack_component.dart    — projectiles/AOE in top-down space
+│   └── arena_component.dart     — top-down tiled floor, environmental decorations
+├── sprites/
+│   ├── pixel_sprite.dart        — keep renderer, increase resolution
+│   ├── player_sprites.dart      — 16×16 hero (idle, walk-4dir, attack-3hit, dodge, ultimate)
+│   ├── warden_sprites.dart      — 24×24 boss sprite
+│   ├── shaman_sprites.dart      — 24×24 boss sprite
+│   ├── hollow_king_sprites.dart — 24×24 boss sprite
+│   └── shadowlord_sprites.dart  — 32×32 final boss sprite
+├── screens/
+│   ├── boss_select_screen.dart  — 4 boss cards, chapter labels, defeat markers
+│   └── rpg_game_screen.dart     — game widget + overlays + joystick + 3 buttons
+└── widgets/
+    ├── rpg_hud.dart             — HP bar (player + boss), stamina pips, ultimate gauge
+    ├── boss_intro_overlay.dart  — keep 2.2s intro (reuse pattern)
+    ├── level_up_overlay.dart    — post-boss: show 3 stat nodes, pick 1
+    ├── equipment_overlay.dart   — show new gear drop on boss defeat
+    ├── rpg_action_buttons.dart  — 3 circular buttons: ATK / DODGE / ULTIMATE
+    └── rpg_joystick.dart        — keep as-is (already works well)
+```
+
+---
+
+## HUD Layout (Top-Down Screen)
+
+```
+[Player HP ▓▓▓▓▓▓░░░░]        [Boss HP ░░░░▓▓▓▓▓▓]
+[● ● ●] stamina pips          [PHASE 1] badge
+
+                ARENA (top-down)
+
+[Joystick]          [DODGE] [ATK] [ULTIMATE⚡]
+```
+
+Ultimate button glows when charged. Stamina pips dim as used, refill as they regen.
+
+---
+
+## Flame Game — Top-Down Specifics
+
+### RpgFlameGame changes from current
+- Remove: gravity constant, jump force, platform Rects, platformer physics
+- Remove: landscape lock → keep landscape (good for top-down)
+- Add: top-down movement (velocity applied in XY, no Y gravity)
+- Add: arena boundary (player cannot leave arena bounds)
+- Camera: fixed on arena center (no scrolling for medium arena)
+- Collision: boss + player are circles (radius-based), attacks are circles or rectangles
+
+### PlayerComponent (top-down)
+```dart
+// Movement
+velocity = joystickInput.normalized() * speed;
+position += velocity * dt;
+
+// Combo
+_comboStep (0, 1, 2) — resets after 0.6s idle
+onAttackPressed() → spawn attack in facing direction, advance _comboStep
+
+// Stamina
+_staminaPips: int (0–maxPips)
+onDodgePressed() → if _staminaPips > 0: trigger dodge, _staminaPips--, start regen timer
+
+// Ultimate
+_ultimateCharge: double (0.0–1.0)
+onHitLanded() → _ultimateCharge += 0.05
+onHitTaken() → _ultimateCharge += 0.10
+onUltimatePressed() → if _ultimateCharge >= 1.0: trigger AOE blast, reset to 0.0
+```
+
+---
+
+## Deliverables Before Coding
+
+1. Create `rpg.md` at repo root with this design document (gitignored)
+2. Add `rpg.md` to `.gitignore`
+
+---
+
+## Implementation Phases (Task Breakdown)
+
+### Phase 1 — Foundation (rewrite engine, top-down core)
+**Goal:** Playable movement + attack in a flat top-down arena. No real boss yet.
+
+Tasks:
+- [ ] P1-1: New `RpgFlameGame` — top-down (remove gravity, platformer code), keep event stream
+- [ ] P1-2: New `PlayerComponent` — 360° joystick movement, facing direction, arena boundary
+- [ ] P1-3: Combo system — 3-hit chain, combo window timer, attack arc spawning
+- [ ] P1-4: Stamina system — `StaminaSystem` model + dodge with pip consumption + regen
+- [ ] P1-5: Ultimate gauge — `UltimateGauge` model + charge from hits/damage taken + AOE trigger
+- [ ] P1-6: `AttackComponent` — melee arc (short range), AOE (full screen), projectile (boss attacks)
+- [ ] P1-7: `ArenaComponent` — flat floor, boundary walls, placeholder visual per arena
+- [ ] P1-8: HUD — HP bars, stamina pips, ultimate gauge ring
+- [ ] P1-9: Placeholder boss — moves toward player, takes damage, dies → fires `bossDefeated` event
+- [ ] P1-10: Game feel basics — hitstop (3 frames), screen shake, hit particles
+
+**Done when:** You can enter a fight, combo the boss, dodge using stamina, charge and fire Ultimate.
+
+---
+
+### Phase 2 — All Four Boss Fights
+**Goal:** Each boss is distinct, challenging, has 2–3 phases, learnable patterns.
+
+Tasks:
+- [ ] P2-1: `BossComponent` — phase detection, AI delegation, hurt flash, enrage badge
+- [ ] P2-2: `WardenAI` — charge + overhead slam, 2 phases, enrage at 50% HP
+- [ ] P2-3: `ShamanAI` — poison pool spawning + projectile tosses, 2 phases
+- [ ] P2-4: `HollowKingAI` — dash patterns (cardinal/diagonal), blade trails at phase 3, 3 phases
+- [ ] P2-5: `ShadowlordAI` — combines all 3 patterns, 3 phases, progressive escalation
+- [ ] P2-6: Boss sprites — 16-bit pixel art for all 4 bosses (readable silhouettes, idle + attack anim)
+- [ ] P2-7: Player sprites — 16-bit (idle, walk 4-dir, attack 3-hit, dodge, ultimate)
+- [ ] P2-8: Arena visuals — environmental storytelling art for each of the 4 arenas
+
+**Done when:** All 4 bosses are playable, phased, and challenging but fair.
+
+---
+
+### Phase 3 — Progression & Story
+**Goal:** Full game loop: defeat boss → level up → equipment drop → select next boss.
+
+Tasks:
+- [ ] P3-1: `RpgNotifier` rewrite — 4 bosses, equipment slots, linear chapter unlock
+- [ ] P3-2: `SkillTree` — 12-node pool, random pick-3 on level-up, no duplicates
+- [ ] P3-3: `LevelUpOverlay` — show 3 nodes after boss death, pick 1, apply to stats
+- [ ] P3-4: `EquipmentOverlay` — show boss gear drop after level-up
+- [ ] P3-5: `ProgressionEngine` rewrite — equipment bonuses applied to PlayerStats
+- [ ] P3-6: Boss select screen — 4 chapters, portraits, defeat state, chapter labels
+- [ ] P3-7: Chapter transition — fade to black + 1 ambient sentence between chapters
+- [ ] P3-8: Persistence — save/load progress (SharedPreferences, JSON serializable models)
+
+**Done when:** Defeating Warden unlocks Shaman, etc. Equipment persists. Stats persist.
+
+---
+
+### Phase 4 — Polish & Game Feel (highest priority for "memorable bosses")
+**Goal:** Every hit feels satisfying. The Ultimate feels epic. Bosses feel weighty.
+
+Tasks:
+- [ ] P4-1: Hitstop — verify 3-frame pause fires on every attack hit landed
+- [ ] P4-2: Screen shake — camera offset on player damage + Ultimate activation
+- [ ] P4-3: Hit particles — pixel burst on boss damage, different color per attack type
+- [ ] P4-4: Ultimate animation — full-screen white flash + chromatic aberration + pixel explosion
+- [ ] P4-5: Boss phase transition — brief visual pause + arena color shift on phase change
+- [ ] P4-6: Boss death — satisfying death animation (shatter/dissolve in pixels)
+- [ ] P4-7: Boss intro overlay — reuse current 2.2s pattern, update for each boss name/title
+- [ ] P4-8: Sound hooks — attack SFX, dodge SFX, ultimate SFX, boss hurt, boss death, level-up
+
+**Done when:** Blind-playtesting someone says "the hits feel great."
+
+---
+
+### Phase 5 — Tests & Cleanup
+Tasks:
+- [ ] P5-1: `combat_calculator_test.dart` — damage formula, hitstop, crit
+- [ ] P5-2: `progression_engine_test.dart` — equipment bonuses, node application
+- [ ] P5-3: `skill_tree_test.dart` — pick-3 random, no duplicates, all 12 nodes
+- [ ] P5-4: `stamina_system_test.dart` — pip consumption, regen timer
+- [ ] P5-5: `ultimate_gauge_test.dart` — charge from hits, charge from damage, fire + reset
+- [ ] P5-6: `warden_ai_test.dart` — state machine: idle→charge→slam→cooldown
+- [ ] P5-7: `shaman_ai_test.dart` — poison pool targeting, projectile timing
+- [ ] P5-8: `flutter analyze` full project — zero warnings before any commit
+
+---
+
+## Critical Files to Modify (non-RPG)
+
+- `lib/games/rpg/rpg_game_definition.dart` — update description text
+- `lib/config/service_locator.dart` — no change needed (autoDispose pattern)
+- `lib/core/game_registry.dart` — no change needed (already registered)
+
+---
+
+## Tests to Write
+
+- `test/games/rpg/combat_calculator_test.dart` — damage formula, hitstop, crit (keep existing)
+- `test/games/rpg/progression_engine_test.dart` — node pool, equipment bonuses
+- `test/games/rpg/skill_tree_test.dart` — 3-node random pick, no duplicates
+- `test/games/rpg/stamina_system_test.dart` — pip consumption, regen timing
+- `test/games/rpg/ultimate_gauge_test.dart` — charge from hits, charge from damage, reset
+- `test/games/rpg/boss_ai/warden_ai_test.dart` — state machine transitions
+- `test/games/rpg/boss_ai/shaman_ai_test.dart` — poison pool targeting
+- Keep existing 16 tests where logic is reusable, rewrite the rest
+
+## Verification
+
+1. `flutter analyze` — zero warnings (run full project, not scoped)
+2. `flutter test` — all tests pass
+3. Manual: launch game → boss select shows 4 bosses → enter Warden fight → combo registers → dodge costs stamina → ultimate charges → boss phases trigger → defeat → level-up overlay → equipment shown → back to select → next boss unlocked
+4. Check: hitstop fires on every hit (visible pause), screen shake on player damage, ultimate flash covers full screen

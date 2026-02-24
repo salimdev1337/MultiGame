@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:multigame/games/rpg/game/rpg_flame_game.dart';
-import 'package:multigame/games/rpg/models/boss_config.dart';
 
 class RpgHud extends StatelessWidget {
   const RpgHud({super.key, required this.game});
@@ -10,137 +9,235 @@ class RpgHud extends StatelessWidget {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<int>(
       valueListenable: game.gameTick,
-      builder: (context, tick, child) {
-        return Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  _HpBar(
-                    label: 'YOU',
-                    hp: game.playerHp,
-                    maxHp: game.playerMaxHp,
-                    color: _playerHpColor(game.playerHp, game.playerMaxHp),
-                  ),
-                  const Spacer(),
-                  _HpBar(
-                    label: _bossLabel(game),
-                    hp: game.bossHp,
-                    maxHp: game.bossMaxHp,
-                    color: const Color(0xFFCC2200),
-                    reversed: true,
-                  ),
-                ],
-              ),
-              if (game.bossPhase > 0)
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Container(
-                    margin: const EdgeInsets.only(top: 4, right: 4),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xAACC0000),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      'ENRAGED',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
+      builder: (_, value, child) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _PlayerPanel(game: game),
+                const Spacer(),
+                _BossPanel(game: game),
+              ],
+            ),
           ),
         );
       },
     );
   }
+}
 
-  Color _playerHpColor(int hp, int maxHp) {
-    final safeMaxHp = maxHp > 0 ? maxHp : 1;
-    final ratio = (hp / safeMaxHp).clamp(0.0, 1.0);
-    if (ratio > 0.5) {
-      return const Color(0xFF19e6a2);
-    }
-    if (ratio > 0.25) {
-      return const Color(0xFFffa502);
-    }
-    return const Color(0xFFff4757);
+class _PlayerPanel extends StatelessWidget {
+  const _PlayerPanel({required this.game});
+  final RpgFlameGame game;
+
+  @override
+  Widget build(BuildContext context) {
+    final hp = game.playerHp;
+    final maxHp = game.playerMaxHp;
+    final ratio = maxHp > 0 ? hp / maxHp : 0.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _HpBar(
+          ratio: ratio.clamp(0.0, 1.0),
+          width: 140,
+          color: ratio > 0.5
+              ? const Color(0xFF44DD44)
+              : ratio > 0.25
+                  ? const Color(0xFFDDAA00)
+                  : const Color(0xFFCC2200),
+          label: '$hp / $maxHp',
+        ),
+        const SizedBox(height: 6),
+        // Stamina pips
+        Row(
+          children: List.generate(
+            game.maxStaminaPips,
+            (i) => Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: i < game.staminaPips
+                      ? const Color(0xFF00AAFF)
+                      : const Color(0xFF334455),
+                  border: Border.all(
+                    color: const Color(0xFF88AACC),
+                    width: 1,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        // Ultimate gauge
+        _UltimateBar(
+          charge: game.ultimateCharge,
+          width: 140,
+        ),
+      ],
+    );
   }
+}
 
-  String _bossLabel(RpgFlameGame game) {
-    return BossConfig.forId(game.bossId).displayName.toUpperCase();
+class _BossPanel extends StatelessWidget {
+  const _BossPanel({required this.game});
+  final RpgFlameGame game;
+
+  @override
+  Widget build(BuildContext context) {
+    final hp = game.bossHp;
+    final maxHp = game.bossMaxHp;
+    final ratio = maxHp > 0 ? hp / maxHp : 0.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _HpBar(
+          ratio: ratio.clamp(0.0, 1.0),
+          width: 140,
+          color: const Color(0xFFCC2200),
+          label: '$hp / $maxHp',
+          reversed: true,
+        ),
+        if (game.bossPhase > 0) ...[
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: const Color(0xFFCC0000),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              game.bossPhase >= 2 ? 'DESPERATION' : 'ENRAGED',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
   }
 }
 
 class _HpBar extends StatelessWidget {
   const _HpBar({
-    required this.label,
-    required this.hp,
-    required this.maxHp,
+    required this.ratio,
+    required this.width,
     required this.color,
+    required this.label,
     this.reversed = false,
   });
 
-  final String label;
-  final int hp;
-  final int maxHp;
+  final double ratio;
+  final double width;
   final Color color;
+  final String label;
   final bool reversed;
 
   @override
   Widget build(BuildContext context) {
-    final ratio = maxHp > 0 ? (hp / maxHp).clamp(0.0, 1.0) : 0.0;
-    return SizedBox(
-      width: 160,
-      child: Column(
-        crossAxisAlignment: reversed
-            ? CrossAxisAlignment.end
-            : CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
-            ),
-          ),
-          const SizedBox(height: 2),
-          ClipRRect(
+    final bar = Stack(
+      children: [
+        Container(
+          width: width,
+          height: 14,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
             borderRadius: BorderRadius.circular(3),
-            child: SizedBox(
-              height: 10,
-              child: Stack(
-                children: [
-                  Container(color: const Color(0x88000000)),
-                  FractionallySizedBox(
-                    widthFactor: ratio,
-                    alignment: reversed
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft,
-                    child: Container(color: color),
-                  ),
-                ],
+          ),
+        ),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 80),
+          width: width * ratio,
+          height: 14,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        Positioned.fill(
+          child: Center(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            '$hp / $maxHp',
-            style: const TextStyle(color: Colors.white70, fontSize: 9),
+        ),
+      ],
+    );
+
+    if (reversed) {
+      return Transform(
+        alignment: Alignment.center,
+        transform: Matrix4.rotationY(3.14159),
+        child: bar,
+      );
+    }
+    return bar;
+  }
+}
+
+class _UltimateBar extends StatelessWidget {
+  const _UltimateBar({required this.charge, required this.width});
+  final double charge;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    final isReady = charge >= 1.0;
+    return Stack(
+      children: [
+        Container(
+          width: width,
+          height: 8,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.circular(2),
           ),
-        ],
-      ),
+        ),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 60),
+          width: width * charge.clamp(0.0, 1.0),
+          height: 8,
+          decoration: BoxDecoration(
+            color: isReady
+                ? const Color(0xFFFFFFFF)
+                : const Color(0xFF8844CC),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        if (isReady)
+          Positioned.fill(
+            child: Center(
+              child: Text(
+                'ULTIMATE',
+                style: TextStyle(
+                  color: Colors.purple.shade100,
+                  fontSize: 7,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

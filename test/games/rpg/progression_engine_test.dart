@@ -1,51 +1,113 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:multigame/games/rpg/logic/progression_engine.dart';
+import 'package:multigame/games/rpg/models/equipment.dart';
 import 'package:multigame/games/rpg/models/player_stats.dart';
 import 'package:multigame/games/rpg/models/rpg_enums.dart';
 
 void main() {
-  group('ProgressionEngine', () {
+  group('ProgressionEngine.equipmentForBoss', () {
+    test('warden drops wardenSword', () {
+      final drop = ProgressionEngine.equipmentForBoss(BossId.warden);
+      expect(drop, isNotNull);
+      expect(drop!.id, 'warden_sword');
+      expect(drop.slot, EquipmentSlot.weapon);
+      expect(drop.atkBonus, 8);
+    });
+
+    test('shaman drops shamanCloak', () {
+      final drop = ProgressionEngine.equipmentForBoss(BossId.shaman);
+      expect(drop, isNotNull);
+      expect(drop!.id, 'shaman_cloak');
+      expect(drop.slot, EquipmentSlot.armor);
+      expect(drop.hpBonus, 25);
+    });
+
+    test('hollowKing drops hollowCrown', () {
+      final drop = ProgressionEngine.equipmentForBoss(BossId.hollowKing);
+      expect(drop, isNotNull);
+      expect(drop!.id, 'hollow_crown');
+      expect(drop.slot, EquipmentSlot.armor);
+      expect(drop.ultimateStartCharge, 0.20);
+    });
+
+    test('shadowlord drops nothing (final boss)', () {
+      final drop = ProgressionEngine.equipmentForBoss(BossId.shadowlord);
+      expect(drop, isNull);
+    });
+  });
+
+  group('ProgressionEngine.nextBossAfter', () {
+    test('warden -> shaman', () {
+      expect(ProgressionEngine.nextBossAfter(BossId.warden), BossId.shaman);
+    });
+
+    test('shaman -> hollowKing', () {
+      expect(
+        ProgressionEngine.nextBossAfter(BossId.shaman),
+        BossId.hollowKing,
+      );
+    });
+
+    test('hollowKing -> shadowlord', () {
+      expect(
+        ProgressionEngine.nextBossAfter(BossId.hollowKing),
+        BossId.shadowlord,
+      );
+    });
+
+    test('shadowlord -> null (end of chain)', () {
+      expect(ProgressionEngine.nextBossAfter(BossId.shadowlord), isNull);
+    });
+  });
+
+  group('ProgressionEngine.applyEquipment', () {
     const base = PlayerStats();
 
-    test('golem reward adds 30 maxHp and fireball', () {
-      final after = ProgressionEngine.applyReward(base, BossId.golem);
-      expect(after.maxHp, 130);
-      expect(after.hp, 130);
-      expect(after.unlockedAbilities.contains(AbilityType.fireball), true);
+    test('weapon atkBonus is added to attack', () {
+      final updated = ProgressionEngine.applyEquipment(
+        base,
+        Equipment.wardenSword,
+        null,
+      );
+      expect(updated.attack, base.attack + 8);
     });
 
-    test('wraith reward adds 40 maxHp, +2 attack, and timeSlow', () {
-      final after = ProgressionEngine.applyReward(base, BossId.wraith);
-      expect(after.maxHp, 140);
-      expect(after.hp, 140);
-      expect(after.attack, 12);
-      expect(after.unlockedAbilities.contains(AbilityType.timeSlow), true);
+    test('armor hpBonus increases maxHp and hp', () {
+      final updated = ProgressionEngine.applyEquipment(
+        base,
+        null,
+        Equipment.shamanCloak,
+      );
+      expect(updated.maxHp, base.maxHp + 25);
+      expect(updated.hp, base.hp + 25);
     });
 
-    test('applying rewards sequentially accumulates correctly', () {
-      var stats = base;
-      stats = ProgressionEngine.applyReward(stats, BossId.golem);
-      stats = ProgressionEngine.applyReward(stats, BossId.wraith);
-      expect(stats.maxHp, 170);
-      expect(stats.attack, 12);
-      expect(stats.unlockedAbilities.length, 3);
+    test('hollowCrown adds ultimateStartCharge', () {
+      final updated = ProgressionEngine.applyEquipment(
+        base,
+        null,
+        Equipment.hollowCrown,
+      );
+      expect(
+        updated.ultimateStartCharge,
+        closeTo(base.ultimateStartCharge + 0.20, 0.001),
+      );
     });
 
-    test('duplicate ability not added twice', () {
-      var stats = ProgressionEngine.applyReward(base, BossId.golem);
-      stats = ProgressionEngine.applyReward(stats, BossId.golem);
-      final fireballCount =
-          stats.unlockedAbilities.where((a) => a == AbilityType.fireball).length;
-      expect(fireballCount, 1);
+    test('weapon + armor both applied', () {
+      final updated = ProgressionEngine.applyEquipment(
+        base,
+        Equipment.wardenSword,
+        Equipment.shamanCloak,
+      );
+      expect(updated.attack, base.attack + 8);
+      expect(updated.maxHp, base.maxHp + 25);
     });
 
-    test('rewardForBoss returns correct reward for each boss', () {
-      final golem = ProgressionEngine.rewardForBoss(BossId.golem);
-      final wraith = ProgressionEngine.rewardForBoss(BossId.wraith);
-      expect(golem.hpGain, 30);
-      expect(wraith.hpGain, 40);
-      expect(golem.newAbility, AbilityType.fireball);
-      expect(wraith.newAbility, AbilityType.timeSlow);
+    test('null weapon and armor leaves stats unchanged', () {
+      final updated = ProgressionEngine.applyEquipment(base, null, null);
+      expect(updated.attack, base.attack);
+      expect(updated.maxHp, base.maxHp);
     });
   });
 }

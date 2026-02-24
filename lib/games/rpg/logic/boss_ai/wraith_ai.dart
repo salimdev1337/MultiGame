@@ -2,23 +2,25 @@ import 'dart:math';
 
 import 'package:flame/components.dart';
 import 'package:multigame/games/rpg/logic/boss_ai/boss_ai.dart';
-import 'package:multigame/games/rpg/models/attack_command.dart';
 import 'package:multigame/games/rpg/models/rpg_enums.dart';
 
-class WraithAI implements BossAI {
-  WraithAI();
-
-  BossAiState _state = BossAiState.float;
+/// The Plague Shaman AI: orbits at range, casts poison projectiles and pools.
+/// Phase 0: orbit + projectile every ~2s.
+/// Phase 1 (<=50% HP): faster casts + places poison pools at player position.
+class ShamanAI implements BossAI {
+  BossAiState _state = BossAiState.orbit;
   int _phase = 0;
   double _stateTimer = 0;
   double _cooldownTimer = 0;
+  double _orbitAngle = 0;
   final Random _rand = Random();
 
-  BossAiState get currentState => _state;
+  static const double _orbitRadius = 200;
+  static const double _orbitSpeed = 1.2; // radians/s
 
   @override
   void reset() {
-    _state = BossAiState.float;
+    _state = BossAiState.orbit;
     _phase = 0;
     _stateTimer = 0;
     _cooldownTimer = 0;
@@ -27,117 +29,76 @@ class WraithAI implements BossAI {
   @override
   void onPhaseChange(int newPhase) {
     _phase = newPhase;
-    _state = BossAiState.teleport;
-    _stateTimer = 0.5;
   }
 
   @override
-  AttackCommand? decide(double dt, Vector2 bossPos, Vector2 playerPos) {
+  BossTick tick(
+    double dt,
+    Vector2 bossPos,
+    Vector2 playerPos,
+    int phase,
+    BossPhaseParams params,
+  ) {
     _stateTimer = max(0, _stateTimer - dt);
     _cooldownTimer = max(0, _cooldownTimer - dt);
 
     switch (_state) {
-      case BossAiState.float:
-        if (_cooldownTimer <= 0) {
-          _pickAttack();
-        }
-        return null;
+      case BossAiState.orbit:
+        // Orbit around player
+        _orbitAngle += dt * (_phase >= 1 ? _orbitSpeed * 1.4 : _orbitSpeed);
+        final targetX = playerPos.x + cos(_orbitAngle) * _orbitRadius;
+        final targetY = playerPos.y + sin(_orbitAngle) * _orbitRadius;
+        final target = Vector2(targetX, targetY);
+        final toTarget = target - bossPos;
 
-      case BossAiState.shadowBolt:
+        if (_cooldownTimer <= 0) {
+          _pickAttack(bossPos, playerPos, params);
+        }
+
+        if (toTarget.length > 12) {
+          return BossTick(velocity: toTarget.normalized() * params.moveSpeed);
+        }
+        return BossTick(velocity: Vector2.zero());
+
+      case BossAiState.windupAttack:
         if (_stateTimer <= 0) {
-          _state = BossAiState.float;
-          // Phase-scaled cooldown — phase 2 fires almost constantly
-          _cooldownTimer = _phase >= 2
-              ? 0.15
-              : _phase == 1
-              ? 0.35
-              : 0.6;
-          final dir = (playerPos - bossPos)..normalize();
-          // Phase 1+: chance of burst (fire again quickly)
-          if (_phase >= 1 && _rand.nextDouble() < 0.45) {
-            _state = BossAiState.shadowBolt;
-            _stateTimer = _phase >= 2 ? 0.12 : 0.2;
+          _cooldownTimer = params.attackCooldown;
+          _state = BossAiState.orbit;
+
+          final usePool = _phase >= 1 && _rand.nextDouble() < 0.45;
+          if (usePool) {
+            final cmd = BossAttackCommand(
+              type: AttackType.poisonPool,
+              spawnPosition: playerPos.clone(),
+              direction: Vector2(0, 1),
+              damage: params.attackDamage ~/ 2,
+            );
+            return BossTick(velocity: Vector2.zero(), attack: cmd);
+          } else {
+            final dir = (playerPos - bossPos).normalized();
+            final cmd = BossAttackCommand(
+              type: AttackType.poisonProjectile,
+              spawnPosition: bossPos.clone(),
+              direction: dir,
+              damage: params.attackDamage,
+            );
+            return BossTick(velocity: Vector2.zero(), attack: cmd);
           }
-          return AttackCommand(
-            type: AttackType.shadowBolt,
-            direction: dir,
-            targetPosition: playerPos.clone(),
-          );
         }
-        return null;
-
-      case BossAiState.dash:
-        if (_stateTimer <= 0) {
-          _state = BossAiState.float;
-          _cooldownTimer = _phase >= 1 ? 0.5 : 0.8;
-          final dir = (playerPos - bossPos)..normalize();
-          return AttackCommand(
-            type: AttackType.dashAttack,
-            direction: dir,
-            targetPosition: playerPos.clone(),
-          );
-        }
-        return null;
-
-      case BossAiState.desperation:
-        if (_stateTimer <= 0) {
-          _state = BossAiState.float;
-          _cooldownTimer = 0.12;
-          final dir = (playerPos - bossPos)..normalize();
-          return AttackCommand(
-            type: AttackType.shadowBolt,
-            direction: dir,
-            targetPosition: playerPos.clone(),
-          );
-        }
-        return null;
-
-      case BossAiState.teleport:
-        if (_stateTimer <= 0) {
-          _state = BossAiState.float;
-        }
-        return null;
-
-      case BossAiState.cooldown:
-        if (_cooldownTimer <= 0) {
-          _state = BossAiState.float;
-        }
-        return null;
+        return BossTick(velocity: Vector2.zero());
 
       default:
-        return null;
+        _state = BossAiState.orbit;
+        return BossTick(velocity: Vector2.zero());
     }
   }
 
-  void _pickAttack() {
-    if (_phase >= 2) {
-      // Desperation: constant shadow bolts, occasional dash
-      if (_rand.nextDouble() < 0.25) {
-        _state = BossAiState.dash;
-        _stateTimer = 0.15;
-      } else {
-        _state = BossAiState.desperation;
-        _stateTimer = 0.12;
-      }
-    } else if (_phase == 1) {
-      // Aggressive mix: 55% bolt, 30% dash, 15% burst
-      final roll = _rand.nextDouble();
-      if (roll < 0.55) {
-        _state = BossAiState.shadowBolt;
-        _stateTimer = 0.18;
-      } else {
-        _state = BossAiState.dash;
-        _stateTimer = 0.22;
-      }
-    } else {
-      // Phase 0: 50/50 but with proper wind-up
-      if (_rand.nextBool()) {
-        _state = BossAiState.shadowBolt;
-        _stateTimer = 0.28;
-      } else {
-        _state = BossAiState.dash;
-        _stateTimer = 0.32;
-      }
-    }
+  void _pickAttack(
+    Vector2 bossPos,
+    Vector2 playerPos,
+    BossPhaseParams params,
+  ) {
+    _state = BossAiState.windupAttack;
+    _stateTimer = params.windupDuration;
   }
 }

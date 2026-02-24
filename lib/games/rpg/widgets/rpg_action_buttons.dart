@@ -1,127 +1,116 @@
 import 'package:flutter/material.dart';
-import 'package:multigame/games/rpg/models/rpg_enums.dart';
 
 class RpgActionButtons extends StatelessWidget {
   const RpgActionButtons({
     super.key,
-    required this.unlockedAbilities,
     required this.onAttack,
-    required this.onFireball,
-    required this.onTimeSlow,
     required this.onDodge,
-    this.fireballCooldownPct = 0,
-    this.timeSlowCooldownPct = 0,
+    required this.onUltimate,
+    this.ultimateReady = false,
   });
 
-  final List<AbilityType> unlockedAbilities;
   final VoidCallback onAttack;
-  final VoidCallback onFireball;
-  final VoidCallback onTimeSlow;
   final VoidCallback onDodge;
-  final double fireballCooldownPct;
-  final double timeSlowCooldownPct;
+  final VoidCallback onUltimate;
+  final bool ultimateReady;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        _ActionButton(
-          label: 'D',
+        _ActionBtn(
+          label: 'DODGE',
           sublabel: 'Z',
-          color: const Color(0xFFAAFFCC),
+          color: const Color(0xFF0088CC),
           onTap: onDodge,
         ),
         const SizedBox(width: 8),
-        _ActionButton(
-          label: 'A',
+        _ActionBtn(
+          label: 'ATK',
           sublabel: 'X',
-          color: const Color(0xFFFFD700),
+          color: const Color(0xFFCC6600),
           onTap: onAttack,
+          size: 76,
         ),
         const SizedBox(width: 8),
-        if (unlockedAbilities.contains(AbilityType.fireball))
-          _ActionButton(
-            label: 'F',
-            sublabel: 'C',
-            color: const Color(0xFFFF4400),
-            onTap: onFireball,
-            cooldownPct: fireballCooldownPct,
-          ),
-        if (unlockedAbilities.contains(AbilityType.fireball))
-          const SizedBox(width: 8),
-        if (unlockedAbilities.contains(AbilityType.timeSlow))
-          _ActionButton(
-            label: 'T',
-            sublabel: 'V',
-            color: const Color(0xFF00AAFF),
-            onTap: onTimeSlow,
-            cooldownPct: timeSlowCooldownPct,
-          ),
+        _ActionBtn(
+          label: 'ULT',
+          sublabel: 'C',
+          color: ultimateReady
+              ? const Color(0xFF8800CC)
+              : const Color(0xFF440066),
+          onTap: onUltimate,
+          glowing: ultimateReady,
+        ),
       ],
     );
   }
 }
 
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
+class _ActionBtn extends StatelessWidget {
+  const _ActionBtn({
     required this.label,
+    required this.sublabel,
     required this.color,
     required this.onTap,
-    this.sublabel,
-    this.cooldownPct = 0,
+    this.size = 68,
+    this.glowing = false,
   });
 
   final String label;
-  final String? sublabel;
+  final String sublabel;
   final Color color;
   final VoidCallback onTap;
-  final double cooldownPct;
+  final double size;
+  final bool glowing;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: SizedBox(
-        width: 56,
-        height: 56,
-        child: Stack(
-          alignment: Alignment.center,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 100),
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: color.withValues(alpha: 0.85),
+          border: Border.all(
+            color: glowing
+                ? Colors.white.withValues(alpha: 0.9)
+                : color.withValues(alpha: 0.6),
+            width: glowing ? 2.5 : 1.5,
+          ),
+          boxShadow: glowing
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.6),
+                    blurRadius: 12,
+                    spreadRadius: 2,
+                  ),
+                ]
+              : null,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: color.withValues(alpha: 0.25),
-                border: Border.all(color: color, width: 2),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
               ),
             ),
-            if (cooldownPct > 0)
-              CircularProgressIndicator(
-                value: cooldownPct,
-                strokeWidth: 3,
+            Text(
+              sublabel,
+              style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.5),
-                backgroundColor: Colors.transparent,
+                fontSize: 9,
               ),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (sublabel != null)
-                  Text(
-                    sublabel!,
-                    style: TextStyle(
-                      color: color.withValues(alpha: 0.55),
-                      fontSize: 9,
-                    ),
-                  ),
-              ],
             ),
           ],
         ),

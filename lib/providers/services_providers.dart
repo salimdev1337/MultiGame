@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:multigame/config/service_locator.dart';
+import 'package:multigame/repositories/secure_storage_repository.dart';
 import 'package:multigame/services/auth/auth_service.dart';
 import 'package:multigame/services/data/achievement_service.dart';
 import 'package:multigame/services/data/firebase_stats_service.dart';
@@ -24,6 +25,10 @@ import 'package:multigame/providers/accessibility_provider.dart';
 import 'package:multigame/services/themes/theme_service.dart';
 import 'package:multigame/providers/theme_provider.dart';
 import 'package:multigame/games/sudoku/providers/sudoku_online_provider.dart';
+
+final secureStorageProvider = Provider<SecureStorageRepository>(
+  (_) => getIt<SecureStorageRepository>(),
+);
 
 final authServiceProvider = Provider<AuthService>((_) => getIt<AuthService>());
 
