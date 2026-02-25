@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:multigame/config/app_router.dart';
 import 'package:multigame/games/bomberman/models/game_phase.dart';
+import 'package:multigame/utils/navigation_utils.dart';
 import 'package:multigame/games/bomberman/providers/bomberman_notifier.dart';
 
 const _kPlayerColors = [
@@ -36,7 +35,7 @@ class BombermanOverlay extends ConsumerWidget {
         onPlayAgain: () => ref.read(bombermanProvider.notifier).startSolo(),
         onHome: () {
           ref.read(bombermanProvider.notifier).reset();
-          context.go(AppRoutes.home);
+          NavigationUtils.goHome(context);
         },
       ),
       _ => const SizedBox.shrink(),

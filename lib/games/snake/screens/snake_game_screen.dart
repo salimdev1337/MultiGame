@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:multigame/config/app_router.dart';
 import 'package:multigame/games/snake/providers/snake_notifier.dart';
+import 'package:multigame/utils/navigation_utils.dart';
 import 'package:multigame/games/snake/widgets/snake_animations.dart';
 import 'package:multigame/games/snake/widgets/snake_board_widget.dart';
 import 'package:multigame/widgets/shared/game_result_widget.dart';
@@ -60,7 +59,7 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              context.go(AppRoutes.home);
+              NavigationUtils.goHome(context);
             },
             child: Text(
               'QUIT',
@@ -151,7 +150,7 @@ class _SnakeGamePageState extends ConsumerState<SnakeGamePage> {
           onTap: () {
             Navigator.of(context).pop();
             ref.read(snakeProvider.notifier).reset();
-            context.go(AppRoutes.home);
+            NavigationUtils.goHome(context);
           },
           style: GameResultButtonStyle.outline,
         ),

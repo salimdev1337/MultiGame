@@ -43,6 +43,13 @@ class ArenaComponent extends PositionComponent with HasGameReference {
     _generateDecorations();
   }
 
+  void resize(Vector2 newSize) {
+    arenaMin = Vector2(_margin, _margin);
+    arenaMax = Vector2(newSize.x - _margin, newSize.y - _margin);
+    size = newSize;
+    _generateDecorations();
+  }
+
   void _generateDecorations() {
     _decorPositions = List.generate(
       12,

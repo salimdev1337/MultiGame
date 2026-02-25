@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:multigame/config/app_router.dart';
 import 'package:multigame/games/bomberman/multiplayer/bomb_client.dart';
+import 'package:multigame/utils/navigation_utils.dart';
 import 'package:multigame/games/bomberman/multiplayer/bomb_message.dart';
 import 'package:multigame/games/bomberman/multiplayer/bomb_room.dart';
 import 'package:multigame/games/bomberman/providers/bomberman_notifier.dart';
@@ -238,7 +239,7 @@ class _BombermanLobbyPageState extends ConsumerState<BombermanLobbyPage>
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Host disconnected')));
-        context.go(AppRoutes.home);
+        NavigationUtils.goHome(context);
       }
     };
 
@@ -278,7 +279,7 @@ class _BombermanLobbyPageState extends ConsumerState<BombermanLobbyPage>
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.go(AppRoutes.home),
+          onPressed: () => NavigationUtils.goHome(context),
         ),
         bottom: kIsWeb
             ? null

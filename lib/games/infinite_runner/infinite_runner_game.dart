@@ -169,7 +169,6 @@ class InfiniteRunnerGame extends FlameGame
 
     // Add background
     _background = ParallaxBackground(
-      size: size,
       scrollSpeed: _currentScrollSpeed,
     );
     add(_background);
@@ -194,7 +193,6 @@ class InfiniteRunnerGame extends FlameGame
 
   /// Initialize ground tiles for infinite scrolling with queue system
   Future<void> _initializeGround() async {
-    // Create first tile to get the tile width
     final firstTile = GroundTile(
       position: Vector2(0, groundY),
       scrollSpeed: _currentScrollSpeed,
@@ -203,8 +201,12 @@ class InfiniteRunnerGame extends FlameGame
     await firstTile.loaded;
     _groundTiles.add(firstTile);
 
-    // Create 9 more tiles, each positioned right after the previous one
-    final tileWidth = firstTile.size.x;
+    // onMount (which sets size) hasn't run yet after loaded, so compute the
+    // scaled tile width manually — same formula used in GroundTile.onMount.
+    final groundHeight = size.y - groundY;
+    final scaleFactor = groundHeight / firstTile.sprite!.originalSize.y;
+    final tileWidth = firstTile.sprite!.originalSize.x * scaleFactor;
+
     for (int i = 1; i < 20; i++) {
       final tile = GroundTile(
         position: Vector2(tileWidth * i, groundY),

@@ -24,6 +24,7 @@ import 'package:multigame/services/accessibility/accessibility_service.dart';
 import 'package:multigame/services/themes/theme_service.dart';
 import 'package:multigame/services/performance/image_cache_service.dart';
 import 'package:multigame/services/performance/battery_saver_service.dart';
+import 'package:multigame/services/ads/ad_service.dart';
 
 /// Global service locator instance
 final getIt = GetIt.instance;
@@ -150,6 +151,11 @@ Future<void> setupServiceLocator() async {
   // Note: ImagePuzzleGenerator is NOT registered as a singleton because
   // it has mutable state (gridSize) and needs to be created per-game instance.
   // Instead, providers will create instances and inject UnsplashService.
+
+  getIt.registerLazySingleton<AdService>(
+    () => AdService(),
+    dispose: (s) => s.dispose(),
+  );
 }
 
 /// Reset the service locator (useful for testing)

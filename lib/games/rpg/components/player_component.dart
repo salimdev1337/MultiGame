@@ -1,8 +1,8 @@
-import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flame/components.dart';
 import 'package:multigame/games/rpg/components/attack_component.dart';
+import 'package:multigame/games/rpg/components/player_sprite_renderer.dart';
 import 'package:multigame/games/rpg/models/player_stats.dart';
 import 'package:multigame/games/rpg/models/rpg_enums.dart';
 import 'package:multigame/games/rpg/models/stamina_system.dart';
@@ -46,6 +46,7 @@ class PlayerComponent extends PositionComponent {
   // Visual
   PlayerAnimState _animState = PlayerAnimState.idle;
   double _animTime = 0;
+  final _renderer = PlayerSpriteRenderer();
 
   /// Collision radius for hit detection.
   double get hitRadius => 20.0;
@@ -53,6 +54,7 @@ class PlayerComponent extends PositionComponent {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+    await _renderer.load();
     currentHp = stats.hp;
     stamina = StaminaSystem(
       maxPips: stats.maxStaminaPips,
@@ -277,53 +279,30 @@ class PlayerComponent extends PositionComponent {
       );
     }
 
-    // Ultimate glow
+    // Ultimate glow (flame orange)
     if (_isUltimateActive) {
-      final glow = Paint()..color = const Color(0x88FFFFFF);
+      final glow = Paint()..color = const Color(0x88FF6600);
       canvas.drawOval(
         Rect.fromLTWH(-10, -10, size.x + 20, size.y + 20),
         glow,
       );
     }
 
-    final paint = Paint()..color = _bodyColor();
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(size.toRect(), const Radius.circular(6)),
-      paint,
+    // Flip sprite horizontally when facing left
+    if (facingDir.x < 0) {
+      canvas.save();
+      canvas.translate(size.x, 0);
+      canvas.scale(-1, 1);
+    }
+    _renderer.draw(
+      canvas,
+      _animState,
+      _animState == PlayerAnimState.hurt,
+      _animTime,
+      size,
     );
-
-    _drawFacingIndicator(canvas);
-  }
-
-  void _drawFacingIndicator(Canvas canvas) {
-    final cx = size.x / 2;
-    final cy = size.y / 2;
-    final angle = math.atan2(facingDir.y, facingDir.x);
-    final paint = Paint()..color = const Color(0xCCFFFFFF);
-    canvas.save();
-    canvas.translate(cx, cy);
-    canvas.rotate(angle);
-    final path = Path()
-      ..moveTo(size.x * 0.42, 0)
-      ..lineTo(size.x * 0.22, -size.y * 0.17)
-      ..lineTo(size.x * 0.22, size.y * 0.17)
-      ..close();
-    canvas.drawPath(path, paint);
-    canvas.restore();
-  }
-
-  Color _bodyColor() {
-    switch (_animState) {
-      case PlayerAnimState.dodge:
-        return const Color(0xFFFFD700);
-      case PlayerAnimState.attack:
-        return const Color(0xFFFF8800);
-      case PlayerAnimState.hurt:
-        return const Color(0xFFCC2200);
-      case PlayerAnimState.ultimate:
-        return const Color(0xFFFFFFFF);
-      default:
-        return const Color(0xFF5C8AFF);
+    if (facingDir.x < 0) {
+      canvas.restore();
     }
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:multigame/config/app_router.dart';
+import 'package:multigame/utils/navigation_utils.dart';
 import 'package:multigame/widgets/shared/game_result_widget.dart';
 
 import '../logic/wordle_evaluator.dart';
@@ -78,7 +79,7 @@ class _WordleGamePageState extends ConsumerState<WordleGamePage> {
                   icon: const Icon(Icons.arrow_back_ios_new,
                       color: Colors.white70, size: 18),
                   onPressed: phase == WordlePhase.idle
-                      ? () => context.go(AppRoutes.home)
+                      ? () => NavigationUtils.goHome(context)
                       : _confirmQuit,
                 ),
                 // Round pill (only in game)
@@ -126,7 +127,7 @@ class _WordleGamePageState extends ConsumerState<WordleGamePage> {
           TextButton(
             onPressed: () {
               Navigator.of(dialogCtx).pop();
-              context.go(AppRoutes.home);
+              NavigationUtils.goHome(context);
             },
             child: const Text('Quit', style: TextStyle(color: _kCyan)),
           ),
@@ -193,7 +194,7 @@ class _WordleGamePageState extends ConsumerState<WordleGamePage> {
           onTap: () {
             Navigator.of(context).pop();
             _resultShowing = false;
-            context.go(AppRoutes.home);
+            NavigationUtils.goHome(context);
           },
           style: GameResultButtonStyle.outline,
         ),

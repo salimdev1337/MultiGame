@@ -3,11 +3,16 @@ import 'package:flame/parallax.dart';
 import 'package:flutter/painting.dart';
 
 class ParallaxBackground extends ParallaxComponent {
-  ParallaxBackground({required Vector2 size, required double scrollSpeed})
-    : _scrollSpeed = scrollSpeed,
-      super(size: size);
+  ParallaxBackground({required double scrollSpeed})
+    : _scrollSpeed = scrollSpeed;
 
   double _scrollSpeed;
+
+  @override
+  void onGameResize(Vector2 size) {
+    super.onGameResize(size);
+    this.size = size;
+  }
 
   @override
   Future<void> onLoad() async {

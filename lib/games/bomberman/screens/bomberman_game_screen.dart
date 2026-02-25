@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:multigame/config/app_router.dart';
 import 'package:multigame/games/bomberman/logic/bot_ai.dart';
+import 'package:multigame/utils/navigation_utils.dart';
 import 'package:multigame/games/bomberman/models/bomb_game_state.dart'
     show kGridW, kGridH;
 import 'package:multigame/games/bomberman/models/game_phase.dart';
@@ -115,7 +116,7 @@ class _BombermanGamePageState extends ConsumerState<BombermanGamePage>
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              context.go(AppRoutes.home);
+              NavigationUtils.goHome(context);
             },
             child: Text(
               'QUIT',
@@ -405,7 +406,7 @@ class _BombermanGamePageState extends ConsumerState<BombermanGamePage>
 
             const SizedBox(height: 32),
             TextButton(
-              onPressed: () => context.go(AppRoutes.home),
+              onPressed: () => NavigationUtils.goHome(context),
               child: Text(
                 'Back to Home',
                 style: TextStyle(color: Colors.white.withValues(alpha: 0.4)),

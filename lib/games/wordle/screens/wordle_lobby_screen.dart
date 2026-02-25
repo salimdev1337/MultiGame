@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:multigame/config/app_router.dart';
 import 'package:multigame/utils/input_validator.dart';
+import 'package:multigame/utils/navigation_utils.dart';
 import 'package:multigame/utils/secure_logger.dart';
 
 import '../multiplayer/wordle_client.dart';
@@ -240,7 +241,7 @@ class _WordleLobbyPageState extends ConsumerState<WordleLobbyPage> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Host disconnected')));
-        context.go(AppRoutes.home);
+        NavigationUtils.goHome(context);
       }
     };
 
@@ -280,7 +281,7 @@ class _WordleLobbyPageState extends ConsumerState<WordleLobbyPage> {
     switch (_view) {
       case _LobbyView.home:
         title = 'WORD CLASH';
-        onBack = () => context.go(AppRoutes.home);
+        onBack = () => NavigationUtils.goHome(context);
       case _LobbyView.hosting:
         title = 'MATCH LOBBY';
         onBack = _stopHosting;

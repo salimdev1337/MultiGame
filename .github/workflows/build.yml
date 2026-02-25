@@ -44,7 +44,14 @@ jobs:
       - name:  Build Android APK
         env:
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
-        run: flutter build apk --debug --dart-define=UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY
+          ADMOB_APP_ID: ${{ secrets.ADMOB_APP_ID }}
+          ADMOB_BANNER_ANDROID: ${{ secrets.ADMOB_BANNER_ANDROID }}
+          ADMOB_INTERSTITIAL_ANDROID: ${{ secrets.ADMOB_INTERSTITIAL_ANDROID }}
+        run: |
+          flutter build apk --debug \
+            --dart-define=UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY \
+            --dart-define=ADMOB_BANNER_ANDROID=$ADMOB_BANNER_ANDROID \
+            --dart-define=ADMOB_INTERSTITIAL_ANDROID=$ADMOB_INTERSTITIAL_ANDROID
 
       # Upload the built APK so you can download it
       - name:  Upload APK

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:multigame/config/app_router.dart';
+import 'package:multigame/utils/navigation_utils.dart';
 import 'package:multigame/widgets/shared/game_result_widget.dart';
 
 import '../models/memory_game_state.dart';
@@ -118,7 +117,7 @@ class _MemoryGamePageState extends ConsumerState<MemoryGamePage> {
             onPressed: () {
               Navigator.pop(ctx);
               ref.read(memoryProvider.notifier).reset();
-              context.go(AppRoutes.home);
+              NavigationUtils.goHome(context);
             },
             child: Text(
               'QUIT',
@@ -181,7 +180,7 @@ class _MemoryGamePageState extends ConsumerState<MemoryGamePage> {
             Navigator.of(context).pop();
             _resultShowing = false;
             notifier.reset();
-            context.go(AppRoutes.home);
+            NavigationUtils.goHome(context);
           },
           style: GameResultButtonStyle.outline,
         ),

@@ -294,6 +294,24 @@ class RpgFlameGame extends FlameGame {
   }
 
   @override
+  void onGameResize(Vector2 size) {
+    super.onGameResize(size);
+    if (!_ready) {
+      return;
+    }
+    _arena.resize(size);
+    _player.position = Vector2(
+      _arena.arenaMin.x + 80,
+      size.y / 2 - 24,
+    );
+    final config = BossConfig.forId(bossId);
+    _boss.position = Vector2(
+      size.x - _arena.arenaMin.x - 80 - config.bossWidth,
+      size.y / 2 - config.bossHeight / 2,
+    );
+  }
+
+  @override
   void onRemove() {
     _eventController.close();
     gameTick.dispose();

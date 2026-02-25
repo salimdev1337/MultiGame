@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:multigame/config/app_router.dart';
 import 'package:multigame/games/puzzle/providers/puzzle_notifier.dart';
+import 'package:multigame/utils/navigation_utils.dart';
 import 'package:multigame/games/puzzle/providers/puzzle_ui_notifier.dart';
 import 'package:multigame/widgets/shared/game_result_widget.dart';
 
@@ -184,7 +183,7 @@ Future<void> showPuzzleWinDialog({
         labelColor: Colors.grey[400],
         onTap: () {
           Navigator.of(context).pop();
-          context.go(AppRoutes.home);
+          NavigationUtils.goHome(context);
         },
       ),
       presentation: GameResultPresentation.dialog,

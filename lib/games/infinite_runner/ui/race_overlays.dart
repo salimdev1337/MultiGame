@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
-import 'package:multigame/config/app_router.dart';
+import 'package:multigame/utils/navigation_utils.dart';
 import '../infinite_runner_game.dart';
 
 void _exitToHome(BuildContext context) {
@@ -11,7 +10,7 @@ void _exitToHome(BuildContext context) {
     DeviceOrientation.portraitDown,
   ]);
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  context.go(AppRoutes.home);
+  NavigationUtils.goHome(context);
 }
 
 /// Animated 3-2-1-GO! countdown shown before the race starts

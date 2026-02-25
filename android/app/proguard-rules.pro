@@ -94,6 +94,11 @@
 ## Retain declared checked exceptions for use by a Proxy instance.
 -keepattributes Exceptions
 
+## Google Mobile Ads (AdMob)
+-keep class com.google.android.gms.ads.** { *; }
+-dontwarn com.google.android.gms.ads.**
+-keep class com.google.android.gms.internal.ads.** { *; }
+
 ## audioplayers plugin
 -keep class xyz.luan.audioplayers.** { *; }
 

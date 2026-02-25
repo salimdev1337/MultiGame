@@ -17,6 +17,7 @@ import 'package:multigame/widgets/shared/ds_skeleton.dart';
 import 'package:multigame/widgets/shared/ds_button.dart';
 import 'package:multigame/widgets/nickname_dialog.dart';
 import 'package:multigame/screens/help_support_screen.dart';
+import 'package:multigame/widgets/shared/ad_banner_widget.dart';
 
 /// Enhanced home page with premium design system
 class HomePagePremium extends StatefulWidget {
@@ -115,6 +116,7 @@ class _HomePagePremiumState extends State<HomePagePremium> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: DSColors.backgroundPrimary,
+      bottomNavigationBar: const AdBannerWidget(),
       body: Container(
         decoration: BoxDecoration(
           gradient: RadialGradient(

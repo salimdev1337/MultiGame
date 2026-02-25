@@ -1,8 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
-import 'package:multigame/config/app_router.dart';
+import 'package:multigame/utils/navigation_utils.dart';
 import '../infinite_runner_game.dart';
 import '../screens/race_lobby_screen.dart';
 
@@ -14,7 +13,7 @@ void _exitToHome(BuildContext context) {
     DeviceOrientation.portraitDown,
   ]);
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  context.go(AppRoutes.home);
+  NavigationUtils.goHome(context);
 }
 
 /// Overlay shown when game is loading

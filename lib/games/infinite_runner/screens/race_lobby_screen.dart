@@ -3,8 +3,7 @@ import 'dart:async' show TimeoutException;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
-import 'package:multigame/config/app_router.dart';
+import 'package:multigame/utils/navigation_utils.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:multigame/utils/input_validator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -255,7 +254,7 @@ class _RaceLobbyScreenState extends State<RaceLobbyScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Host left the room')));
-    context.go(AppRoutes.home);
+    NavigationUtils.goHome(context);
   }
 
   // ── Ready / Start ───────────────────────────────────────────────────────────

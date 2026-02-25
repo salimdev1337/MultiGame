@@ -12,6 +12,7 @@ import 'package:multigame/core/game_initializer.dart';
 import 'package:multigame/design_system/design_system.dart';
 import 'package:multigame/services/feedback/haptic_feedback_service.dart';
 import 'package:multigame/services/feedback/sound_service.dart';
+import 'package:multigame/services/ads/ad_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -56,6 +57,11 @@ Future<void> _initializeAppServices() async {
     SecureLogger.log('App-wide services initialized', tag: 'Phase6');
   } catch (e) {
     SecureLogger.error('Failed to initialize app-wide services', error: e);
+  }
+  try {
+    await getIt<AdService>().initialize();
+  } catch (e) {
+    SecureLogger.error('Failed to initialize AdMob', error: e);
   }
 }
 

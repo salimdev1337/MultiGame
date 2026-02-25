@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:multigame/config/app_router.dart';
 import 'package:multigame/games/puzzle/providers/puzzle_notifier.dart';
+import 'package:multigame/utils/navigation_utils.dart';
 import 'package:multigame/games/puzzle/providers/puzzle_ui_notifier.dart';
 import 'package:multigame/games/puzzle/screens/puzzle_controls.dart';
 import 'package:multigame/games/puzzle/screens/puzzle_dialogs.dart';
@@ -88,7 +87,7 @@ class _PuzzlePageState extends ConsumerState<PuzzlePage>
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              context.go(AppRoutes.home);
+              NavigationUtils.goHome(context);
             },
             child: Text(
               'QUIT',
@@ -199,7 +198,7 @@ class _PuzzlePageState extends ConsumerState<PuzzlePage>
                                 const SizedBox(height: 24),
                                 PuzzleFooterControls(
                                   onReset: () {
-                                    context.go(AppRoutes.home);
+                                    NavigationUtils.goHome(context);
                                   },
                                   onPlayAgain: () {
                                     ref

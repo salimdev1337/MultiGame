@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:multigame/config/app_router.dart';
+import 'package:multigame/utils/navigation_utils.dart';
 import 'package:multigame/widgets/shared/game_result_widget.dart';
 import '../logic/sudoku_generator.dart';
 import '../providers/sudoku_notifier.dart';
@@ -85,7 +85,7 @@ class _SudokuClassicScreenState extends ConsumerState<SudokuClassicScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              context.go(AppRoutes.home);
+              NavigationUtils.goHome(context);
             },
             child: Text(
               'QUIT',
@@ -345,7 +345,7 @@ class _SudokuClassicScreenState extends ConsumerState<SudokuClassicScreen> {
           label: 'NEW GAME',
           onTap: () {
             context.pop();
-            context.go(AppRoutes.home);
+            NavigationUtils.goHome(context);
           },
           style: GameResultButtonStyle.text,
         ),
