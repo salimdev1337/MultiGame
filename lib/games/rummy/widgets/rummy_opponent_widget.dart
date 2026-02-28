@@ -6,7 +6,6 @@ import '../models/playing_card.dart';
 import '../models/rummy_player.dart';
 import 'playing_card_widget.dart';
 
-/// Displays a face-down opponent hand + name + score chip.
 class RummyOpponentWidget extends StatelessWidget {
   const RummyOpponentWidget({
     super.key,
@@ -19,58 +18,58 @@ class RummyOpponentWidget extends StatelessWidget {
   final bool isCurrentTurn;
   final bool horizontal;
 
+  static const double _scale = 0.55;
+  static const double _cardW = kCardWidth * _scale;
+  static const double _cardH = kCardHeight * _scale;
+
   @override
   Widget build(BuildContext context) {
     final cardCount = player.hand.length.clamp(0, 8);
-
-    Widget cards = horizontal
-        ? _horizontalCards(cardCount)
-        : _verticalCards(cardCount);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         _nameChip(),
-        const SizedBox(height: 4),
-        cards,
-        const SizedBox(height: 4),
-        _meldBadge(),
+        const SizedBox(height: 2),
+        horizontal ? _horizontalCards(cardCount) : _verticalCards(cardCount),
       ],
     );
   }
 
   Widget _nameChip() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: isCurrentTurn
             ? DSColors.rummyAccent.withValues(alpha: 0.9)
             : DSColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: isCurrentTurn ? DSColors.rummyAccent : DSColors.surfaceHighlight,
           width: 1,
         ),
       ),
       child: Text(
-        '${player.name}  ${player.score}pts',
+        '${player.name} (${player.hand.length}) ${player.score}pts',
         style: DSTypography.labelSmall.copyWith(
           color: isCurrentTurn ? Colors.black : DSColors.textSecondary,
           fontWeight: FontWeight.bold,
+          fontSize: 9,
         ),
       ),
     );
   }
 
   Widget _horizontalCards(int count) {
+    final overlap = _cardW * 0.45;
     return SizedBox(
-      height: kCardHeight * 0.55,
-      width: (kCardWidth * 0.5) * count + kCardWidth * 0.5,
+      height: _cardH,
+      width: overlap * count + _cardW * 0.55,
       child: Stack(
         children: [
           for (var i = 0; i < count; i++)
             Positioned(
-              left: i * kCardWidth * 0.5,
+              left: i * overlap,
               child: _faceDownCard(),
             ),
         ],
@@ -79,14 +78,15 @@ class RummyOpponentWidget extends StatelessWidget {
   }
 
   Widget _verticalCards(int count) {
+    final overlap = _cardH * 0.35;
     return SizedBox(
-      width: kCardWidth * 0.55,
-      height: (kCardHeight * 0.4) * count + kCardHeight * 0.4,
+      width: _cardW,
+      height: overlap * count + _cardH * 0.65,
       child: Stack(
         children: [
           for (var i = 0; i < count; i++)
             Positioned(
-              top: i * kCardHeight * 0.4,
+              top: i * overlap,
               child: _faceDownCard(),
             ),
         ],
@@ -95,7 +95,6 @@ class RummyOpponentWidget extends StatelessWidget {
   }
 
   Widget _faceDownCard() {
-    // Use a placeholder card id for face-down rendering.
     const dummyCard = PlayingCard(
       id: '_back',
       suit: suitSpades,
@@ -105,28 +104,8 @@ class RummyOpponentWidget extends StatelessWidget {
     return PlayingCardWidget(
       card: dummyCard,
       faceUp: false,
-      width: kCardWidth * 0.7,
-      height: kCardHeight * 0.7,
-    );
-  }
-
-  Widget _meldBadge() {
-    if (player.melds.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: DSColors.rummyPrimary.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        '${player.melds.length} meld${player.melds.length > 1 ? 's' : ''}',
-        style: DSTypography.labelSmall.copyWith(
-          color: Colors.white,
-          fontSize: 9,
-        ),
-      ),
+      width: _cardW,
+      height: _cardH,
     );
   }
 }

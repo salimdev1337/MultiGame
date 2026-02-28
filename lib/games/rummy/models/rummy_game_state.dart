@@ -8,6 +8,8 @@ enum TurnPhase { draw, meld, discard }
 
 enum AiDifficulty { easy, medium, hard }
 
+enum HandSortMode { none, bySuit, byRank, byColor }
+
 const int kRummyEliminationScore = 1200;
 const int kRummyHandSize = 14;
 const int kRummyPlayerCount = 4;
@@ -30,6 +32,14 @@ class RummyGameState {
     this.difficulty = AiDifficulty.medium,
     this.drawnCardThisTurn,
     this.selectedCardIds = const [],
+    this.handSortMode = HandSortMode.none,
+    this.meldMinimum = 71,
+    this.turnMeldPoints = 0,
+    this.turnMeldCount = 0,
+    this.completingMeldIds = const <String>{},
+    this.drawnFromDiscard = false,
+    this.preTurnMeldMinimum = 71,
+    this.preTurnPlayerOpen = false,
   });
 
   final List<RummyPlayer> players;
@@ -56,6 +66,30 @@ class RummyGameState {
   /// IDs of cards the human has selected for meld placement.
   final List<String> selectedCardIds;
 
+  /// Current hand sort mode (none = manual order).
+  final HandSortMode handSortMode;
+
+  /// Points required for a player's first meld(s) in this round.
+  final int meldMinimum;
+
+  /// Running total of meld point value laid by the current player this turn.
+  final int turnMeldPoints;
+
+  /// Number of melds laid by the current player this turn (for revert).
+  final int turnMeldCount;
+
+  /// First-card IDs of melds currently in their flash-then-remove window.
+  final Set<String> completingMeldIds;
+
+  /// True when the current human draw came from the discard pile (enables undo).
+  final bool drawnFromDiscard;
+
+  /// Snapshot of meldMinimum at the start of this human turn draw (for undo-open revert).
+  final int preTurnMeldMinimum;
+
+  /// Snapshot of human player's isOpen at the start of this turn draw (for undo).
+  final bool preTurnPlayerOpen;
+
   PlayingCard? get topDiscard =>
       discardPile.isEmpty ? null : discardPile.last;
 
@@ -65,6 +99,12 @@ class RummyGameState {
 
   int get activePlayers =>
       players.where((p) => !p.isEliminated).length;
+
+  /// True when the human can undo their last action this turn.
+  bool get canUndo =>
+      isHumanTurn &&
+      turnPhase == TurnPhase.meld &&
+      (turnMeldCount > 0 || drawnFromDiscard);
 
   RummyGameState copyWith({
     List<RummyPlayer>? players,
@@ -81,6 +121,14 @@ class RummyGameState {
     AiDifficulty? difficulty,
     Object? drawnCardThisTurn = _sentinel,
     List<String>? selectedCardIds,
+    HandSortMode? handSortMode,
+    int? meldMinimum,
+    int? turnMeldPoints,
+    int? turnMeldCount,
+    Set<String>? completingMeldIds,
+    bool? drawnFromDiscard,
+    int? preTurnMeldMinimum,
+    bool? preTurnPlayerOpen,
   }) {
     return RummyGameState(
       players: players ?? this.players,
@@ -105,6 +153,14 @@ class RummyGameState {
           ? this.drawnCardThisTurn
           : drawnCardThisTurn as PlayingCard?,
       selectedCardIds: selectedCardIds ?? this.selectedCardIds,
+      handSortMode: handSortMode ?? this.handSortMode,
+      meldMinimum: meldMinimum ?? this.meldMinimum,
+      turnMeldPoints: turnMeldPoints ?? this.turnMeldPoints,
+      turnMeldCount: turnMeldCount ?? this.turnMeldCount,
+      completingMeldIds: completingMeldIds ?? this.completingMeldIds,
+      drawnFromDiscard: drawnFromDiscard ?? this.drawnFromDiscard,
+      preTurnMeldMinimum: preTurnMeldMinimum ?? this.preTurnMeldMinimum,
+      preTurnPlayerOpen: preTurnPlayerOpen ?? this.preTurnPlayerOpen,
     );
   }
 
@@ -123,6 +179,13 @@ class RummyGameState {
         'difficulty': difficulty.name,
         'drawnCardThisTurn': drawnCardThisTurn?.toJson(),
         'selectedCardIds': selectedCardIds,
+        'handSortMode': handSortMode.name,
+        'meldMinimum': meldMinimum,
+        'turnMeldPoints': turnMeldPoints,
+        'turnMeldCount': turnMeldCount,
+        'drawnFromDiscard': drawnFromDiscard,
+        'preTurnMeldMinimum': preTurnMeldMinimum,
+        'preTurnPlayerOpen': preTurnPlayerOpen,
       };
 
   factory RummyGameState.fromJson(Map<String, dynamic> json) => RummyGameState(
@@ -155,6 +218,15 @@ class RummyGameState {
                 json['drawnCardThisTurn'] as Map<String, dynamic>),
         selectedCardIds:
             (json['selectedCardIds'] as List).cast<String>(),
+        handSortMode: json['handSortMode'] != null
+            ? HandSortMode.values.byName(json['handSortMode'] as String)
+            : HandSortMode.none,
+        meldMinimum: (json['meldMinimum'] as int?) ?? 71,
+        turnMeldPoints: (json['turnMeldPoints'] as int?) ?? 0,
+        turnMeldCount: (json['turnMeldCount'] as int?) ?? 0,
+        drawnFromDiscard: (json['drawnFromDiscard'] as bool?) ?? false,
+        preTurnMeldMinimum: (json['preTurnMeldMinimum'] as int?) ?? 71,
+        preTurnPlayerOpen: (json['preTurnPlayerOpen'] as bool?) ?? false,
       );
 }
 

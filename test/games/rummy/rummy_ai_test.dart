@@ -121,19 +121,57 @@ void main() {
     });
   });
 
-  group('AI declares when possible', () {
-    test('easy AI declares with 2+ valid melds in hand', () {
-      // Hand that clearly forms 2 sets.
+  group('AI opening minimum', () {
+    test('easy AI lays melds when already open (no minimum check)', () {
+      // Two sets worth 42 pts — below 71 minimum but bot is already open.
       final hand = [
-        c(0, 5), c(1, 5), c(2, 5), // set
-        c(0, 9), c(1, 9), c(2, 9), // set
+        c(0, 5), c(1, 5), c(2, 5), // set: 15 pts
+        c(0, 9), c(1, 9), c(2, 9), // set: 27 pts
+        c(0, 2),
+      ];
+      final openBot = RummyPlayer(
+        id: 1,
+        name: 'Bot',
+        isHuman: false,
+        hand: hand,
+        melds: const [],
+        score: 0,
+        isEliminated: false,
+        isOpen: true,
+      );
+      final state = baseState(hand);
+      final decisions =
+          aiDecide(AiDifficulty.easy, openBot, state.topDiscard, state, 1);
+      final hasLayMeld = decisions.any((d) => d is LayMeld);
+      expect(hasLayMeld, isTrue);
+    });
+
+    test('easy AI withholds melds when total is below minimum', () {
+      // Two sets worth 42 pts total — below 71 minimum, bot not open.
+      final hand = [
+        c(0, 5), c(1, 5), c(2, 5), // 15 pts
+        c(0, 9), c(1, 9), c(2, 9), // 27 pts
         c(0, 2),
       ];
       final state = baseState(hand);
-      final decisions = aiDecide(
-          AiDifficulty.easy, bot(hand: hand), state.topDiscard, state, 1);
-      final hasDeclare = decisions.any((d) => d is DeclareWin);
-      expect(hasDeclare, isTrue);
+      final decisions =
+          aiDecide(AiDifficulty.easy, bot(hand: hand), state.topDiscard, state, 1);
+      final hasLayMeld = decisions.any((d) => d is LayMeld);
+      expect(hasLayMeld, isFalse);
+    });
+
+    test('easy AI lays melds when combined value meets minimum', () {
+      // Four Kings (K=10 each) + four Queens (Q=10 each) = 80 pts >= 71.
+      final hand = [
+        c(0, 13), c(1, 13), c(2, 13), c(3, 13), // 4-card set: 40 pts
+        c(0, 12), c(1, 12), c(2, 12), c(3, 12), // 4-card set: 40 pts
+        c(0, 2),
+      ];
+      final state = baseState(hand);
+      final decisions =
+          aiDecide(AiDifficulty.easy, bot(hand: hand), state.topDiscard, state, 1);
+      final hasLayMeld = decisions.any((d) => d is LayMeld);
+      expect(hasLayMeld, isTrue);
     });
   });
 }

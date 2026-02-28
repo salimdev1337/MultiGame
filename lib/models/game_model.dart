@@ -16,6 +16,14 @@ class GameModel {
   static List<GameModel> getAvailableGames() {
     return [
       GameModel(
+        id: 'rummy',
+        name: 'Rummy',
+        description:
+            'Classic card game — meld sets & runs, declare before your opponents!',
+        imagePath: 'assets/images/rummy.png',
+        isAvailable: true,
+      ),
+      GameModel(
         id: 'ludo',
         name: 'Ludo',
         description: 'Race tokens home — roll, capture, and use powerups!',

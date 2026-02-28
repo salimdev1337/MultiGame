@@ -26,6 +26,7 @@ import 'package:multigame/services/performance/image_cache_service.dart';
 import 'package:multigame/services/performance/battery_saver_service.dart';
 import 'package:multigame/services/ads/ad_service.dart';
 
+
 /// Global service locator instance
 final getIt = GetIt.instance;
 
@@ -156,6 +157,7 @@ Future<void> setupServiceLocator() async {
     () => AdService(),
     dispose: (s) => s.dispose(),
   );
+
 }
 
 /// Reset the service locator (useful for testing)

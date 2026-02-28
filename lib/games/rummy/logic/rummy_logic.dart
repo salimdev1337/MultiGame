@@ -74,6 +74,102 @@ bool _validateRun(List<PlayingCard> cards) {
   return uniqueRanks.length == nonJokers.length;
 }
 
+// ── Partition into multiple melds ─────────────────────────────────────────────
+
+/// Returns a partition of [cards] into valid melds, or null if impossible.
+/// Only succeeds when all cards are accounted for and each group is a valid meld.
+List<List<PlayingCard>>? tryPartitionIntoMelds(List<PlayingCard> cards) {
+  if (cards.length < 6) {
+    return null;
+  }
+  return _partitionHelper(cards);
+}
+
+List<List<PlayingCard>>? _partitionHelper(List<PlayingCard> remaining) {
+  if (remaining.isEmpty) {
+    return [];
+  }
+  if (remaining.length < 3) {
+    return null;
+  }
+  for (int size = 3; size <= remaining.length; size++) {
+    for (final subset in _combinations(remaining, size)) {
+      if (validateMeld(subset) != null) {
+        final rest = remaining.where((c) => !subset.contains(c)).toList();
+        final partitioned = _partitionHelper(rest);
+        if (partitioned != null) {
+          return [subset, ...partitioned];
+        }
+      }
+    }
+  }
+  return null;
+}
+
+List<List<T>> _combinations<T>(List<T> items, int size) {
+  if (size == 0) {
+    return [[]];
+  }
+  if (items.length < size) {
+    return [];
+  }
+  final result = <List<T>>[];
+  for (int i = 0; i <= items.length - size; i++) {
+    for (final rest in _combinations(items.sublist(i + 1), size - 1)) {
+      result.add([items[i], ...rest]);
+    }
+  }
+  return result;
+}
+
+// ── Add to meld ───────────────────────────────────────────────────────────────
+
+/// Tries to add [cardsToAdd] to [meld] for an already-open player.
+///
+/// - Joker swap: if `nonJokers(meld) + cardsToAdd` is a valid meld of the
+///   *same size* as [meld], one joker is retrieved.
+/// - Extend:    if `meld.cards + cardsToAdd` is a valid longer meld.
+///
+/// Returns `({newMeld, retrievedJokers})` on success, `null` otherwise.
+({RummyMeld newMeld, List<PlayingCard> retrievedJokers})? tryAddToMeld(
+  RummyMeld meld,
+  List<PlayingCard> cardsToAdd,
+) {
+  if (cardsToAdd.isEmpty) {
+    return null;
+  }
+
+  final jokers = meld.cards.where((c) => c.isJoker).toList();
+  final nonJokers = meld.cards.where((c) => !c.isJoker).toList();
+
+  // Joker-swap path: only attempted when exactly one card is added and the
+  // meld contains at least one joker.
+  if (jokers.isNotEmpty && cardsToAdd.length == 1) {
+    final swapCards = [...nonJokers, cardsToAdd.first];
+    if (swapCards.length == meld.cards.length) {
+      final type = validateMeld(swapCards);
+      if (type != null) {
+        return (
+          newMeld: RummyMeld(type: type, cards: swapCards),
+          retrievedJokers: [jokers.first],
+        );
+      }
+    }
+  }
+
+  // Extend path: add card(s) to the full meld.
+  final extended = [...meld.cards, ...cardsToAdd];
+  final type = validateMeld(extended);
+  if (type != null) {
+    return (
+      newMeld: RummyMeld(type: type, cards: extended),
+      retrievedJokers: const [],
+    );
+  }
+
+  return null;
+}
+
 // ── Deadwood ─────────────────────────────────────────────────────────────────
 
 /// Sum of point values of all unmelded cards in [hand].
@@ -83,8 +179,8 @@ int deadwoodValue(List<PlayingCard> hand) {
 
 // ── Declare check ─────────────────────────────────────────────────────────────
 
-/// A player can declare when they have laid down at least 2 valid melds.
-bool canDeclare(List<RummyMeld> melds) => melds.length >= kRummyMinMeldsToDeclare;
+/// A round ends automatically when a player's hand is completely empty.
+bool canDeclare(List<PlayingCard> hand) => hand.isEmpty;
 
 // ── Round scoring ─────────────────────────────────────────────────────────────
 

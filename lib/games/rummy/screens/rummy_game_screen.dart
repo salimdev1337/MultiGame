@@ -1,438 +1,376 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:multigame/design_system/ds_colors.dart';
 import 'package:multigame/design_system/ds_typography.dart';
 
-import '../logic/rummy_logic.dart';
+import '../models/playing_card.dart';
 import '../models/rummy_game_state.dart';
 import '../providers/rummy_notifier.dart';
-import '../widgets/rummy_center_pile.dart';
-import '../widgets/rummy_hand_widget.dart';
-import '../widgets/rummy_meld_widget.dart';
-import '../widgets/rummy_opponent_widget.dart';
-import '../widgets/rummy_score_panel.dart';
+import '../widgets/playing_card_widget.dart';
+import '../widgets/rummy_bottom_strip.dart';
+import '../widgets/rummy_center_area.dart';
+import '../widgets/rummy_flying_card.dart';
+import '../widgets/rummy_left_sidebar.dart';
+import '../widgets/rummy_opponent_slot.dart';
+import '../widgets/tunisian_background.dart';
+import 'rummy_game_over_screen.dart';
+import 'rummy_mode_select_screen.dart';
 
 class RummyGamePage extends ConsumerWidget {
   const RummyGamePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(rummyProvider);
-
-    if (state.phase == RummyPhase.idle) {
-      return _ModeSelectScreen();
+    final phase = ref.watch(rummyProvider.select((s) => s.phase));
+    if (phase == RummyPhase.idle) {
+      return const RummyModeSelectScreen();
     }
-
-    return _GameScreen();
+    return const _GameScreen();
   }
 }
 
-// ── Mode selection ─────────────────────────────────────────────────────────────
+class _GameScreen extends ConsumerStatefulWidget {
+  const _GameScreen();
 
-class _ModeSelectScreen extends ConsumerWidget {
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      backgroundColor: DSColors.rummyFelt,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: BackButton(
-          color: DSColors.rummyAccent,
-          onPressed: () => context.pop(),
-        ),
-        title: Text('Rummy', style: DSTypography.titleMedium.copyWith(color: DSColors.rummyAccent)),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Choose Difficulty',
-              style: DSTypography.titleLarge.copyWith(color: Colors.white),
-            ),
-            const SizedBox(height: 32),
-            for (final diff in AiDifficulty.values)
-              _DifficultyButton(difficulty: diff),
-          ],
-        ),
-      ),
+  ConsumerState<_GameScreen> createState() => _GameScreenState();
+}
+
+class _GameScreenState extends ConsumerState<_GameScreen> {
+  final _flyingCards = ValueNotifier<List<FlyingCardData>>([]);
+  final _deckKey = GlobalKey();
+  final _discardKey = GlobalKey();
+  final _handKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeRight,
+      DeviceOrientation.landscapeLeft,
+    ]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
+
+  @override
+  void dispose() {
+    _flyingCards.dispose();
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    super.dispose();
+  }
+
+  void _removeFlyingCard(String id) {
+    final current = List<FlyingCardData>.from(_flyingCards.value);
+    current.removeWhere((c) => c.id == id);
+    _flyingCards.value = current;
+  }
+
+  Offset? _widgetTopLeft(GlobalKey key) {
+    final box = key.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null) return null;
+    return box.localToGlobal(Offset.zero);
+  }
+
+  Offset? _widgetCenter(GlobalKey key) {
+    final box = key.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null) return null;
+    final tl = box.localToGlobal(Offset.zero);
+    return Offset(
+      tl.dx + box.size.width / 2 - kCardWidth / 2,
+      tl.dy + box.size.height / 2 - kCardHeight / 2,
     );
   }
-}
 
-class _DifficultyButton extends ConsumerWidget {
-  const _DifficultyButton({required this.difficulty});
-  final AiDifficulty difficulty;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final label = difficulty.name[0].toUpperCase() + difficulty.name.substring(1);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: DSColors.rummyPrimary,
-          foregroundColor: Colors.white,
-          minimumSize: const Size(220, 52),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        ),
-        onPressed: () => ref.read(rummyProvider.notifier).startSolo(difficulty),
-        child: Text(label, style: DSTypography.buttonLarge),
-      ),
-    );
+  void _launchFlyCard(PlayingCard card,
+      {required Offset from, required Offset to, bool faceUp = true}) {
+    final id = '${card.id}_${DateTime.now().microsecondsSinceEpoch}';
+    final current = List<FlyingCardData>.from(_flyingCards.value);
+    current.add(FlyingCardData(
+      id: id,
+      card: card,
+      from: from,
+      to: to,
+      faceUp: faceUp,
+      duration: const Duration(milliseconds: 320),
+    ));
+    _flyingCards.value = current;
   }
-}
 
-// ── Active game screen ─────────────────────────────────────────────────────────
+  void _onDrawFromDeck(RummyNotifier notifier) {
+    final state = ref.read(rummyProvider);
+    if (state.drawPile.isNotEmpty) {
+      final from = _widgetTopLeft(_deckKey);
+      final to = _widgetCenter(_handKey);
+      if (from != null && to != null) {
+        _launchFlyCard(state.drawPile.last, from: from, to: to, faceUp: false);
+      }
+    }
+    notifier.drawFromDeck();
+  }
 
-class _GameScreen extends ConsumerWidget {
+  void _onDrawFromDiscard(RummyNotifier notifier) {
+    final state = ref.read(rummyProvider);
+    final card = state.topDiscard;
+    if (card != null) {
+      final from = _widgetTopLeft(_discardKey);
+      final to = _widgetCenter(_handKey);
+      if (from != null && to != null) {
+        _launchFlyCard(card, from: from, to: to);
+      }
+    }
+    notifier.drawFromDiscard();
+  }
+
+  void _onDropOnDiscard(PlayingCard card, RummyNotifier notifier) {
+    final from = _widgetCenter(_handKey);
+    final to = _widgetTopLeft(_discardKey);
+    if (from != null && to != null) {
+      _launchFlyCard(card, from: from, to: to);
+    }
+    notifier.discard(card);
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(rummyProvider);
+  Widget build(BuildContext context) {
     final notifier = ref.read(rummyProvider.notifier);
+    final (phase, playerCount) = ref.watch(
+      rummyProvider.select((s) => (s.phase, s.players.length)),
+    );
 
-    if (state.phase == RummyPhase.gameOver) {
-      return _GameOverScreen(state: state, notifier: notifier);
+    if (phase == RummyPhase.gameOver) {
+      final state = ref.read(rummyProvider);
+      return RummyGameOverScreen(state: state, notifier: notifier);
     }
-
-    final humanPlayer = state.players.isNotEmpty ? state.players[0] : null;
 
     return Scaffold(
       backgroundColor: DSColors.rummyFelt,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top bar: score + back.
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
-              child: Row(
+      body: TunisianBackground(
+        child: SafeArea(
+          child: Stack(
+            children: [
+              Column(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white70),
-                    onPressed: () {
-                      notifier.goToIdle();
-                      context.pop();
-                    },
-                  ),
+                  _TopBar(notifier: notifier),
                   Expanded(
-                    child: RummyScorePanel(
-                      players: state.players,
-                      currentPlayerIndex: state.currentPlayerIndex,
-                      roundNumber: state.roundNumber,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Opponents row (top + sides).
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (state.players.length > 1)
-                    _OpponentSlot(
-                      playerIdx: 1,
-                      state: state,
-                      horizontal: true,
-                    ),
-                  if (state.players.length > 2)
-                    _OpponentSlot(
-                      playerIdx: 2,
-                      state: state,
-                      horizontal: true,
-                    ),
-                  if (state.players.length > 3)
-                    _OpponentSlot(
-                      playerIdx: 3,
-                      state: state,
-                      horizontal: true,
-                    ),
-                ],
-              ),
-            ),
-
-            // Center piles.
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  RummyCenterPile(
-                    drawPileCount: state.drawPile.length,
-                    topDiscard: state.topDiscard,
-                    canDraw: state.isHumanTurn &&
-                        state.turnPhase == TurnPhase.draw,
-                    onDrawFromDeck: notifier.drawFromDeck,
-                    onDrawFromDiscard: notifier.drawFromDiscard,
-                  ),
-                  const SizedBox(height: 8),
-                  // Status message.
-                  if (state.statusMessage != null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        state.statusMessage!,
-                        style: DSTypography.bodySmall
-                            .copyWith(color: Colors.white70),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-
-            // Human player melds.
-            if (humanPlayer != null && humanPlayer.melds.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: RummyMeldWidget(
-                  melds: humanPlayer.melds,
-                  label: 'Your melds',
-                ),
-              ),
-
-            // Human action buttons (meld phase).
-            if (state.isHumanTurn && state.turnPhase == TurnPhase.meld)
-              _ActionBar(state: state, notifier: notifier),
-
-            // Human hand.
-            if (humanPlayer != null)
-              RummyHandWidget(
-                cards: humanPlayer.hand,
-                selectedCardIds: state.selectedCardIds,
-                onCardTap: (card) {
-                  if (state.turnPhase == TurnPhase.meld) {
-                    notifier.toggleCardSelection(card.id);
-                  } else if (state.turnPhase == TurnPhase.discard ||
-                      (state.turnPhase == TurnPhase.meld)) {
-                    // Tapping selected card in discard phase discards it.
-                  }
-                },
-                enabled: state.isHumanTurn,
-              ),
-
-            // Discard button when in meld phase.
-            if (state.isHumanTurn &&
-                (state.turnPhase == TurnPhase.meld) &&
-                state.selectedCardIds.length == 1)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.shade700,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                    icon: const Icon(Icons.arrow_upward, size: 18),
-                    label: const Text('Discard Selected'),
-                    onPressed: () {
-                      final selectedId = state.selectedCardIds.first;
-                      final player = state.players[0];
-                      final card = player.hand.firstWhere(
-                        (c) => c.id == selectedId,
-                        orElse: () => player.hand.first,
-                      );
-                      notifier.discard(card);
-                    },
-                  ),
-                ),
-              ),
-
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _OpponentSlot extends StatelessWidget {
-  const _OpponentSlot({
-    required this.playerIdx,
-    required this.state,
-    required this.horizontal,
-  });
-
-  final int playerIdx;
-  final RummyGameState state;
-  final bool horizontal;
-
-  @override
-  Widget build(BuildContext context) {
-    if (playerIdx >= state.players.length) {
-      return const SizedBox.shrink();
-    }
-    return RummyOpponentWidget(
-      player: state.players[playerIdx],
-      isCurrentTurn: state.currentPlayerIndex == playerIdx,
-      horizontal: horizontal,
-    );
-  }
-}
-
-class _ActionBar extends ConsumerWidget {
-  const _ActionBar({required this.state, required this.notifier});
-  final RummyGameState state;
-  final RummyNotifier notifier;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
-      child: Row(
-        children: [
-          // Lay meld button.
-          if (state.selectedCardIds.length >= 3)
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: DSColors.rummyPrimary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                  icon: const Icon(Icons.check, size: 18),
-                  label: const Text('Lay Meld'),
-                  onPressed: () {
-                    final error = notifier.laySelectedMeld();
-                    if (error != null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(error),
-                          duration: const Duration(seconds: 2),
-                          backgroundColor: Colors.red.shade700,
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ),
-            ),
-
-          // Declare button.
-          if (canDeclare(state.players[0].melds))
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 4),
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: DSColors.rummyAccent,
-                    foregroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                  icon: const Icon(Icons.star, size: 18),
-                  label: const Text('Declare!'),
-                  onPressed: notifier.declare,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Game over ────────────────────────────────────────────────────────────────
-
-class _GameOverScreen extends StatelessWidget {
-  const _GameOverScreen({required this.state, required this.notifier});
-  final RummyGameState state;
-  final RummyNotifier notifier;
-
-  @override
-  Widget build(BuildContext context) {
-    final winners = state.players.where((p) => !p.isEliminated).toList();
-
-    return Scaffold(
-      backgroundColor: DSColors.rummyFelt,
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  '🎉 Game Over!',
-                  style: DSTypography.displaySmall
-                      .copyWith(color: DSColors.rummyAccent),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  winners.isEmpty
-                      ? 'No winners'
-                      : 'Winner${winners.length > 1 ? 's' : ''}: ${winners.map((p) => p.name).join(' & ')}',
-                  style: DSTypography.titleMedium.copyWith(color: Colors.white),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                // Final scores.
-                ...state.players.map(
-                  (p) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          p.isEliminated
-                              ? Icons.cancel
-                              : Icons.emoji_events,
-                          color: p.isEliminated
-                              ? DSColors.error
-                              : DSColors.rummyAccent,
-                          size: 18,
+                        RummyLeftSidebar(
+                          notifier: notifier,
+                          deckWidgetKey: _deckKey,
+                          discardWidgetKey: _discardKey,
+                          onDrawFromDeck: () => _onDrawFromDeck(notifier),
+                          onDrawFromDiscard: () =>
+                              _onDrawFromDiscard(notifier),
+                          onCardDroppedOnDiscard: (card) =>
+                              _onDropOnDiscard(card, notifier),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${p.name}: ${p.score} pts',
-                          style: DSTypography.bodyMedium.copyWith(
-                            color: p.isEliminated
-                                ? DSColors.textDisabled
-                                : Colors.white,
+                        Expanded(
+                          child: RummyCenterArea(notifier: notifier),
+                        ),
+                        if (playerCount > 3)
+                          SizedBox(
+                            width: 70,
+                            child: Center(
+                              child: RummyOpponentSlot(
+                                playerIdx: 3,
+                                horizontal: false,
+                              ),
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 32),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: DSColors.rummyPrimary,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(200, 50),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                  RummyBottomStrip(
+                    notifier: notifier,
+                    handContainerKey: _handKey,
                   ),
-                  onPressed: () => notifier.goToIdle(),
-                  child: const Text('Play Again'),
-                ),
-                const SizedBox(height: 12),
-                TextButton(
-                  onPressed: () {
-                    notifier.goToIdle();
-                    context.pop();
-                  },
-                  child: Text(
-                    'Main Menu',
-                    style: DSTypography.bodyMedium
-                        .copyWith(color: Colors.white60),
-                  ),
-                ),
-              ],
-            ),
+                ],
+              ),
+              ValueListenableBuilder<List<FlyingCardData>>(
+                valueListenable: _flyingCards,
+                builder: (_, cards, _) {
+                  return Stack(
+                    children: cards.map((data) {
+                      return RummyFlyingCard(
+                        key: ValueKey(data.id),
+                        data: data,
+                        onComplete: () => _removeFlyingCard(data.id),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+              const Positioned(top: 4, right: 4, child: _FpsCounter()),
+            ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _FpsCounter extends StatefulWidget {
+  const _FpsCounter();
+
+  @override
+  State<_FpsCounter> createState() => _FpsCounterState();
+}
+
+class _FpsCounterState extends State<_FpsCounter>
+    with SingleTickerProviderStateMixin {
+  late final Ticker _ticker;
+  final _frameDurations = <int>[];
+  double _fps = 0;
+  Duration _prev = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = createTicker(_onTick)..start();
+  }
+
+  void _onTick(Duration elapsed) {
+    if (_prev != Duration.zero) {
+      _frameDurations.add((elapsed - _prev).inMicroseconds);
+      if (_frameDurations.length > 60) {
+        _frameDurations.removeAt(0);
+      }
+      if (_frameDurations.length >= 5) {
+        final avg =
+            _frameDurations.reduce((a, b) => a + b) / _frameDurations.length;
+        final fps = 1000000 / avg;
+        if ((fps - _fps).abs() >= 0.5) {
+          setState(() => _fps = fps);
+        }
+      }
+    }
+    _prev = elapsed;
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _fps >= 55
+        ? Colors.greenAccent
+        : _fps >= 30
+            ? Colors.orange
+            : Colors.redAccent;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        '${_fps.toStringAsFixed(0)} FPS',
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'monospace',
+        ),
+      ),
+    );
+  }
+}
+
+class _TopBar extends ConsumerWidget {
+  const _TopBar({required this.notifier});
+  final RummyNotifier notifier;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(rummyProvider.select((s) => (
+      roundNumber: s.roundNumber,
+      players: s.players,
+      currentPlayerIndex: s.currentPlayerIndex,
+      meldMinimum: s.meldMinimum,
+    )));
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 2, 8, 0),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white70, size: 20),
+            onPressed: () {
+              notifier.goToIdle();
+              context.pop();
+            },
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          ),
+          Text(
+            'Round ${s.roundNumber}',
+            style: DSTypography.labelSmall.copyWith(color: Colors.white70),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: s.players.asMap().entries.map((e) {
+                  final p = e.value;
+                  final isCurrent = e.key == s.currentPlayerIndex;
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: isCurrent
+                          ? DSColors.rummyPrimary.withValues(alpha: 0.3)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(6),
+                      border: isCurrent
+                          ? Border.all(color: DSColors.rummyAccent, width: 1)
+                          : null,
+                    ),
+                    child: Text(
+                      '${p.name} ${p.score}',
+                      style: DSTypography.labelSmall.copyWith(
+                        color: p.isEliminated
+                            ? DSColors.textDisabled
+                            : isCurrent
+                                ? DSColors.rummyAccent
+                                : Colors.white70,
+                        fontSize: 10,
+                        fontWeight:
+                            isCurrent ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+            decoration: BoxDecoration(
+              color: DSColors.rummyAccent.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                  color: DSColors.rummyAccent.withValues(alpha: 0.5), width: 0.8),
+            ),
+            child: Text(
+              'Min: ${s.meldMinimum}pts',
+              style: DSTypography.labelSmall.copyWith(
+                color: DSColors.rummyAccent,
+                fontWeight: FontWeight.bold,
+                fontSize: 9,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

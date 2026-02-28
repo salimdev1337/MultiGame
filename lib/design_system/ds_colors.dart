@@ -126,6 +126,16 @@ class DSColors {
   static const Color rummyCardBack = Color(0xFF1A237E); // deep navy back
   static const Color rummySuitRed  = Color(0xFFD32F2F); // hearts/diamonds
 
+  // Tunisian STEM-Tunis card style tokens
+  static const Color rummyCardBorder   = Color(0xFF1565C0); // blue inner frame
+  static const Color rummyFaceRed      = Color(0xFFCC2222); // face card red
+  static const Color rummyFaceBlue     = Color(0xFF1A3D8F); // face card blue
+  static const Color rummyFaceYellow   = Color(0xFFD4A017); // face card yellow
+  static const Color rummySuitBlack    = Color(0xFF1A1A1A); // spades/clubs
+  static const Color rummyJokerPurple  = Color(0xFF6A1B9A); // joker purple
+  static const Color rummyMedallion    = Color(0xFFB8860B); // card back medallion
+  static const Color rummyLatticeLine  = Color(0xFF283593); // card back lattice
+
   /// Bomberman game colors
   // Floor — near-black stone tiles
   static const Color bombermanBg        = Color(0xFF08090d); // overall canvas fill

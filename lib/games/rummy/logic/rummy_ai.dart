@@ -39,17 +39,21 @@ List<AiDecision> aiDecide(
 ) {
   switch (difficulty) {
     case AiDifficulty.easy:
-      return _easyDecide(self, topDiscard);
+      return _easyDecide(self, topDiscard, state.meldMinimum);
     case AiDifficulty.medium:
-      return _mediumDecide(self, topDiscard, state, selfIndex);
+      return _mediumDecide(self, topDiscard, state, selfIndex, state.meldMinimum);
     case AiDifficulty.hard:
-      return _hardDecide(self, topDiscard, state, selfIndex);
+      return _hardDecide(self, topDiscard, state, selfIndex, state.meldMinimum);
   }
 }
 
 // ── Easy AI ───────────────────────────────────────────────────────────────────
 
-List<AiDecision> _easyDecide(RummyPlayer self, PlayingCard? topDiscard) {
+List<AiDecision> _easyDecide(
+  RummyPlayer self,
+  PlayingCard? topDiscard,
+  int meldMinimum,
+) {
   final decisions = <AiDecision>[];
 
   // Always draw from deck.
@@ -57,20 +61,30 @@ List<AiDecision> _easyDecide(RummyPlayer self, PlayingCard? topDiscard) {
 
   // Try to form melds from hand (naive: try all combos of 3+).
   final hand = List<PlayingCard>.from(self.hand);
-  final foundMelds = _extractMelds(hand);
+  final candidates = _extractMelds(hand);
+
+  final List<RummyMeld> foundMelds;
+  if (self.isOpen) {
+    foundMelds = candidates;
+  } else {
+    final total = candidates.fold(0, (s, m) => s + deadwoodValue(m.cards));
+    foundMelds = total >= meldMinimum ? candidates : [];
+  }
   decisions.addAll(foundMelds.map(LayMeld.new));
 
-  // Declare if >= 2 melds placed.
-  if (self.melds.length + foundMelds.length >= kRummyMinMeldsToDeclare) {
-    decisions.add(DeclareWin());
-    return decisions;
-  }
-
-  // Discard highest-value card.
+  // Discard: when not open, keep meld-potential/high-value cards, shed deadwood.
+  // When open, discard highest-value leftover to minimise penalty risk.
   final remaining = _removeUsedCards(hand, foundMelds);
   if (remaining.isNotEmpty) {
-    remaining.sort((a, b) => cardPointValue(b).compareTo(cardPointValue(a)));
-    decisions.add(DiscardCard(remaining.first));
+    if (self.isOpen) {
+      remaining.sort((a, b) => cardPointValue(b).compareTo(cardPointValue(a)));
+    } else {
+      remaining.sort(
+        (a, b) => _keepScore(a, hand).compareTo(_keepScore(b, hand)),
+      );
+    }
+    final nonJokers = remaining.where((c) => !c.isJoker).toList();
+    decisions.add(DiscardCard(nonJokers.isNotEmpty ? nonJokers.first : remaining.first));
   }
 
   return decisions;
@@ -83,6 +97,7 @@ List<AiDecision> _mediumDecide(
   PlayingCard? topDiscard,
   RummyGameState state,
   int selfIndex,
+  int meldMinimum,
 ) {
   final decisions = <AiDecision>[];
 
@@ -93,30 +108,45 @@ List<AiDecision> _mediumDecide(
     decisions.add(DrawFromDeck());
   }
 
-  // Try to form melds.
+  // Try to form melds — respect opening minimum.
   final hand = List<PlayingCard>.from(self.hand);
-  final foundMelds = _extractMelds(hand);
+  final candidates = _extractMelds(hand);
+
+  final List<RummyMeld> foundMelds;
+  if (self.isOpen) {
+    foundMelds = candidates;
+  } else {
+    final total = candidates.fold(0, (s, m) => s + deadwoodValue(m.cards));
+    foundMelds = total >= meldMinimum ? candidates : [];
+  }
   decisions.addAll(foundMelds.map(LayMeld.new));
 
-  if (self.melds.length + foundMelds.length >= kRummyMinMeldsToDeclare) {
-    decisions.add(DeclareWin());
-    return decisions;
-  }
-
-  // Discard — avoid handing easy melds to next player.
+  // Discard — avoid handing easy melds to next player (never discard a joker).
   final remaining = _removeUsedCards(hand, foundMelds);
   if (remaining.isNotEmpty) {
     final nextIdx = nextActivePlayer(state.players, selfIndex);
     final nextHand = state.players[nextIdx].hand;
-    remaining.sort((a, b) {
-      final aRisk = _discardRisk(a, nextHand);
-      final bRisk = _discardRisk(b, nextHand);
-      if (aRisk != bRisk) {
-        return aRisk.compareTo(bRisk); // prefer low-risk discard
-      }
-      return cardPointValue(b).compareTo(cardPointValue(a));
-    });
-    decisions.add(DiscardCard(remaining.first));
+    if (self.isOpen) {
+      remaining.sort((a, b) {
+        final aRisk = _discardRisk(a, nextHand);
+        final bRisk = _discardRisk(b, nextHand);
+        if (aRisk != bRisk) {
+          return aRisk.compareTo(bRisk);
+        }
+        return cardPointValue(b).compareTo(cardPointValue(a));
+      });
+    } else {
+      remaining.sort((a, b) {
+        final aKeep = _keepScore(a, hand);
+        final bKeep = _keepScore(b, hand);
+        if (aKeep != bKeep) {
+          return aKeep.compareTo(bKeep);
+        }
+        return _discardRisk(a, nextHand).compareTo(_discardRisk(b, nextHand));
+      });
+    }
+    final nonJokers = remaining.where((c) => !c.isJoker).toList();
+    decisions.add(DiscardCard(nonJokers.isNotEmpty ? nonJokers.first : remaining.first));
   }
 
   return decisions;
@@ -129,38 +159,54 @@ List<AiDecision> _hardDecide(
   PlayingCard? topDiscard,
   RummyGameState state,
   int selfIndex,
+  int meldMinimum,
 ) {
   final decisions = <AiDecision>[];
 
-  // Draw from discard only if it won't give an easy meld to us from the enemy.
+  // Draw from discard only if it improves the hand toward a meld.
   if (topDiscard != null && _improvesHand(self.hand, topDiscard)) {
     decisions.add(DrawFromDiscard(topDiscard));
   } else {
     decisions.add(DrawFromDeck());
   }
 
+  // Try to form melds — respect opening minimum.
   final hand = List<PlayingCard>.from(self.hand);
-  final foundMelds = _extractMelds(hand);
-  decisions.addAll(foundMelds.map(LayMeld.new));
+  final candidates = _extractMelds(hand);
 
-  if (self.melds.length + foundMelds.length >= kRummyMinMeldsToDeclare) {
-    decisions.add(DeclareWin());
-    return decisions;
+  final List<RummyMeld> foundMelds;
+  if (self.isOpen) {
+    foundMelds = candidates;
+  } else {
+    final total = candidates.fold(0, (s, m) => s + deadwoodValue(m.cards));
+    foundMelds = total >= meldMinimum ? candidates : [];
   }
+  decisions.addAll(foundMelds.map(LayMeld.new));
 
   final remaining = _removeUsedCards(hand, foundMelds);
   if (remaining.isNotEmpty) {
     final nextIdx = nextActivePlayer(state.players, selfIndex);
     final nextHand = state.players[nextIdx].hand;
 
-    // Hard: strongly prefer safe discards (next player can't meld with them).
-    remaining.sort((a, b) {
-      final aScore = _discardRisk(a, nextHand) * 10 + cardPointValue(a);
-      final bScore = _discardRisk(b, nextHand) * 10 + cardPointValue(b);
-      return aScore.compareTo(bScore);
-    });
-
-    decisions.add(DiscardCard(remaining.first));
+    if (self.isOpen) {
+      // Hard: strongly prefer safe discards (never discard a joker).
+      remaining.sort((a, b) {
+        final aScore = _discardRisk(a, nextHand) * 10 + cardPointValue(a);
+        final bScore = _discardRisk(b, nextHand) * 10 + cardPointValue(b);
+        return aScore.compareTo(bScore);
+      });
+    } else {
+      remaining.sort((a, b) {
+        final aKeep = _keepScore(a, hand);
+        final bKeep = _keepScore(b, hand);
+        if (aKeep != bKeep) {
+          return aKeep.compareTo(bKeep);
+        }
+        return _discardRisk(a, nextHand).compareTo(_discardRisk(b, nextHand));
+      });
+    }
+    final nonJokers = remaining.where((c) => !c.isJoker).toList();
+    decisions.add(DiscardCard(nonJokers.isNotEmpty ? nonJokers.first : remaining.first));
   }
 
   return decisions;
@@ -242,6 +288,51 @@ bool _improvesHand(List<PlayingCard> hand, PlayingCard card) {
     }
   }
   return false;
+}
+
+/// Returns a keep-score for [card] relative to the full [hand].
+/// Lower score = discard first. Used when the player has not yet opened.
+///
+/// Priority (ascending = discard first):
+///   -100  exact duplicate (same rank + same suit) — deadweight
+///     2+  has meld partners (partial set or run) — keep
+///   2–10  isolated card — keep high-value ones, shed low-value ones
+int _keepScore(PlayingCard card, List<PlayingCard> hand) {
+  // Exact duplicate: two copies of the same rank+suit can never both appear
+  // in the same meld, so one is deadweight.
+  final hasDuplicate = hand.any(
+    (c) => c.id != card.id && c.rank == card.rank && c.suit == card.suit,
+  );
+  if (hasDuplicate) {
+    return -100;
+  }
+
+  var partners = 0;
+  for (final other in hand) {
+    if (other.id == card.id || other.isJoker) {
+      continue;
+    }
+    // Set potential: same rank, different suit.
+    if (other.rank == card.rank && other.suit != card.suit) {
+      partners += 2;
+    }
+    // Run potential: same suit, directly adjacent rank (±1).
+    if (other.suit == card.suit && (other.rank - card.rank).abs() == 1) {
+      partners += 2;
+    }
+    // Run potential: same suit, one gap (±2) — joker can bridge.
+    if (other.suit == card.suit && (other.rank - card.rank).abs() == 2) {
+      partners += 1;
+    }
+  }
+
+  if (partners > 0) {
+    return partners;
+  }
+
+  // Isolated card: keep high-value ones (needed for 71-pt opening minimum),
+  // discard low-value ones first.
+  return cardPointValue(card);
 }
 
 /// Returns a risk score (0 = safe, higher = risky) for discarding [card]
