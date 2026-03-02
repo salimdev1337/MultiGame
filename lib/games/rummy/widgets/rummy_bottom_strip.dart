@@ -27,7 +27,6 @@ class RummyBottomStrip extends ConsumerWidget {
       humanHand: s.players.isNotEmpty
           ? s.players[0].hand
           : const <PlayingCard>[],
-      selectedCardIds: s.selectedCardIds,
       humanIsOpen: s.players.isNotEmpty && s.players[0].isOpen,
       canUndo: s.canUndo,
     )));
@@ -39,10 +38,8 @@ class RummyBottomStrip extends ConsumerWidget {
         if (isMeldPhase)
           RummyActionBar(
             notifier: notifier,
-            selectedCardIds: s.selectedCardIds,
             isOpen: s.humanIsOpen,
             canUndo: s.canUndo,
-            humanHand: s.humanHand,
           ),
         if (s.hasHumanPlayer)
           Row(
@@ -51,7 +48,6 @@ class RummyBottomStrip extends ConsumerWidget {
               Expanded(
                 child: RummyHandWidget(
                   cards: s.humanHand,
-                  selectedCardIds: s.selectedCardIds,
                   onCardTap: (card) {
                     if (s.turnPhase == TurnPhase.meld) {
                       notifier.toggleCardSelection(card.id);

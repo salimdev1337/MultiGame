@@ -24,13 +24,14 @@ class RummyCenterArea extends ConsumerWidget {
       completingMeldIds: s.completingMeldIds,
       isHumanTurn: s.isHumanTurn,
       turnPhase: s.turnPhase,
-      selectedCardIds: s.selectedCardIds,
+      anySelected: s.selectedCardIds.isNotEmpty,
       humanIsOpen: s.players.isNotEmpty && s.players[0].isOpen,
+      drawnCardMeldedThisTurn: s.drawnCardMeldedThisTurn,
     )));
     final canInteractWithMelds = s.isHumanTurn &&
         s.turnPhase == TurnPhase.meld &&
         s.playerCount > 0 &&
-        s.humanIsOpen;
+        (s.humanIsOpen || s.drawnCardMeldedThisTurn);
 
     return Column(
       children: [
@@ -51,12 +52,10 @@ class RummyCenterArea extends ConsumerWidget {
               players: s.players,
               meldMinimum: s.meldMinimum,
               completingMeldIds: s.completingMeldIds,
-              highlightOwnMelds:
-                  canInteractWithMelds && s.selectedCardIds.isNotEmpty,
-              onOwnMeldTap:
-                  canInteractWithMelds && s.selectedCardIds.isNotEmpty
-                      ? (meldIdx) => _onMeldTap(context, meldIdx)
-                      : null,
+              highlightOwnMelds: canInteractWithMelds && s.anySelected,
+              onOwnMeldTap: canInteractWithMelds && s.anySelected
+                  ? (meldIdx) => _onMeldTap(context, meldIdx)
+                  : null,
               onCardDroppedOnMeld: canInteractWithMelds
                   ? (card, meldIdx) => _onMeldDrop(context, card, meldIdx)
                   : null,

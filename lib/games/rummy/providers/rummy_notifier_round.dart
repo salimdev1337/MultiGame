@@ -57,6 +57,9 @@ extension _RummyNotifierRound on RummyNotifier {
       if (winners.length == 1 && winners.first.isHuman) {
         saveScore('rummy', 1);
       }
+      if (_isHost) {
+        _broadcastStateToAll();
+      }
       return;
     }
 
@@ -68,6 +71,9 @@ extension _RummyNotifierRound on RummyNotifier {
       statusMessage: _buildRoundEndMessage(penalties, declarerIdx, players),
     );
 
+    if (_isHost) {
+      _broadcastStateToAll();
+    }
     Timer(const Duration(seconds: 3), _startNewRound);
   }
 
@@ -120,7 +126,11 @@ extension _RummyNotifierRound on RummyNotifier {
           : '${players[startIdx].name}\'s turn...',
     );
 
-    _scheduleNextBotTurn();
+    if (_isHost) {
+      _broadcastStateToAll();
+    } else {
+      _scheduleNextBotTurn();
+    }
   }
 
   String _buildWinMessage(List<RummyPlayer> players) {

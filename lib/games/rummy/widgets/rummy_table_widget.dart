@@ -36,8 +36,10 @@ class RummyTableWidget extends StatelessWidget {
         children: [
           Text(
             'Table',
-            style: DSTypography.labelSmall
-                .copyWith(color: DSColors.textSecondary, fontSize: 9),
+            style: DSTypography.labelSmall.copyWith(
+              color: DSColors.textSecondary,
+              fontSize: 9,
+            ),
           ),
           const SizedBox(height: 2),
           if (!hasAnyMelds)
@@ -60,8 +62,9 @@ class RummyTableWidget extends StatelessWidget {
                       player: player,
                       completingMeldIds: completingMeldIds,
                       onMeldTap: player.isHuman ? onOwnMeldTap : null,
-                      onCardDroppedOnMeld:
-                          player.isHuman ? onCardDroppedOnMeld : null,
+                      onCardDroppedOnMeld: player.isHuman
+                          ? onCardDroppedOnMeld
+                          : null,
                       highlightMelds: player.isHuman && highlightOwnMelds,
                     ),
               ],
@@ -96,8 +99,9 @@ class _PlayerMeldGroup extends StatelessWidget {
         Text(
           player.name,
           style: DSTypography.labelSmall.copyWith(
-            color:
-                player.isHuman ? DSColors.rummyAccent : DSColors.textTertiary,
+            color: player.isHuman
+                ? DSColors.rummyAccent
+                : DSColors.textTertiary,
             fontSize: 8,
             fontWeight: FontWeight.bold,
           ),
@@ -109,6 +113,7 @@ class _PlayerMeldGroup extends StatelessWidget {
                 ? entry.value.cards.first.id
                 : '';
             return _SmallMeldGroup(
+              key: ValueKey(meldKey),
               meld: entry.value,
               isCompleting: completingMeldIds.contains(meldKey),
               onTap: onMeldTap != null ? () => onMeldTap!(entry.key) : null,
@@ -131,6 +136,7 @@ class _SmallMeldGroup extends StatefulWidget {
     this.onTap,
     this.onCardDropped,
     this.highlighted = false,
+    required ValueKey<String> key,
   });
 
   final RummyMeld meld;
@@ -148,6 +154,7 @@ class _SmallMeldGroupState extends State<_SmallMeldGroup>
   late final AnimationController _entryCtrl;
   late final Animation<double> _entryScale;
   late final AnimationController _flashCtrl;
+  late final AnimationController _slamCtrl;
   bool _hovering = false;
 
   static const double _scale = 0.5;
@@ -159,9 +166,10 @@ class _SmallMeldGroupState extends State<_SmallMeldGroup>
       vsync: this,
       duration: const Duration(milliseconds: 280),
     );
-    _entryScale = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutBack),
-    );
+    _entryScale = Tween<double>(
+      begin: 0.5,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutBack));
     _entryCtrl.forward();
 
     _flashCtrl = AnimationController(
@@ -171,6 +179,12 @@ class _SmallMeldGroupState extends State<_SmallMeldGroup>
     if (widget.isCompleting) {
       _flashCtrl.repeat(reverse: true);
     }
+
+    _slamCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _slamCtrl.forward();
   }
 
   @override
@@ -188,6 +202,7 @@ class _SmallMeldGroupState extends State<_SmallMeldGroup>
   void dispose() {
     _entryCtrl.dispose();
     _flashCtrl.dispose();
+    _slamCtrl.dispose();
     super.dispose();
   }
 
@@ -206,8 +221,8 @@ class _SmallMeldGroupState extends State<_SmallMeldGroup>
             color: _hovering
                 ? DSColors.rummyAccent
                 : widget.onTap != null || widget.onCardDropped != null
-                    ? DSColors.rummyAccent.withValues(alpha: 0.85)
-                    : DSColors.rummyAccent.withValues(alpha: 0.3),
+                ? DSColors.rummyAccent.withValues(alpha: 0.85)
+                : DSColors.rummyAccent.withValues(alpha: 0.3),
             width: _hovering ? 2.0 : (widget.onTap != null ? 1.5 : 0.8),
           ),
           boxShadow: _hovering
@@ -225,6 +240,7 @@ class _SmallMeldGroupState extends State<_SmallMeldGroup>
           children: widget.meld.cards
               .map(
                 (card) => Padding(
+                  key: ValueKey(card.id),
                   padding: const EdgeInsets.only(right: 1),
                   child: PlayingCardWidget(
                     card: card,
@@ -255,27 +271,42 @@ class _SmallMeldGroupState extends State<_SmallMeldGroup>
 
     return AnimatedBuilder(
       animation: _entryCtrl,
-      builder: (_, child) => Transform.scale(
-        scale: _entryScale.value,
-        child: child,
-      ),
+      builder: (_, child) =>
+          Transform.scale(scale: _entryScale.value, child: child),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           dropWrapped,
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _slamCtrl,
+                builder: (_, _) => Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(3),
+                    color: Colors.white.withValues(
+                      alpha: 0.15 * (1 - _slamCtrl.value),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
           if (widget.isCompleting)
             Positioned.fill(
               child: AnimatedBuilder(
                 animation: _flashCtrl,
-                builder: (_, __) => Container(
+                builder: (_, _) => Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(3),
-                    color: DSColors.rummyAccent
-                        .withValues(alpha: _flashCtrl.value * 0.55),
+                    color: DSColors.rummyAccent.withValues(
+                      alpha: _flashCtrl.value * 0.55,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: DSColors.rummyAccent
-                            .withValues(alpha: _flashCtrl.value * 0.7),
+                        color: DSColors.rummyAccent.withValues(
+                          alpha: _flashCtrl.value * 0.7,
+                        ),
                         blurRadius: 10 * _flashCtrl.value,
                         spreadRadius: 3 * _flashCtrl.value,
                       ),

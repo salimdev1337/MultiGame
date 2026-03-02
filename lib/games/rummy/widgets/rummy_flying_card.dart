@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../models/playing_card.dart';
@@ -80,6 +82,8 @@ class _RummyFlyingCardState extends State<RummyFlyingCard>
     super.dispose();
   }
 
+  bool get _shouldFlip => !widget.data.faceUp;
+
   @override
   Widget build(BuildContext context) {
     if (!_started && widget.data.delay != Duration.zero) {
@@ -87,18 +91,29 @@ class _RummyFlyingCardState extends State<RummyFlyingCard>
     }
 
     return AnimatedBuilder(
-      animation: _posAnim,
-      builder: (_, child) {
+      animation: _controller,
+      builder: (_, _) {
+        final progress = _controller.value;
+        final showFace = !_shouldFlip || progress >= 0.5;
+        final flipAngle = _shouldFlip
+            ? (progress < 0.5 ? progress * math.pi : (1 - progress) * math.pi)
+            : 0.0;
+
         return Positioned(
           left: _posAnim.value.dx,
           top: _posAnim.value.dy,
-          child: child!,
+          child: Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.identity()
+              ..setEntry(3, 2, 0.001)
+              ..rotateY(flipAngle),
+            child: PlayingCardWidget(
+              card: widget.data.card,
+              faceUp: showFace,
+            ),
+          ),
         );
       },
-      child: PlayingCardWidget(
-        card: widget.data.card,
-        faceUp: widget.data.faceUp,
-      ),
     );
   }
 }

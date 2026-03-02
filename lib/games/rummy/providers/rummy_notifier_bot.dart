@@ -38,7 +38,11 @@ extension _RummyNotifierBot on RummyNotifier {
     );
     final drawAction =
         preDrawDecisions.isNotEmpty ? preDrawDecisions.first : null;
-    if (drawAction is DrawFromDiscard) {
+    // In forced mode, prefer discard draw when bot has not opened yet.
+    final preferDiscard = state.gameMode == RummyGameMode.forced &&
+        !self.isOpen &&
+        state.topDiscard != null;
+    if (preferDiscard || drawAction is DrawFromDiscard) {
       _botDraw(selfIdx, fromDiscard: true);
     } else {
       _botDraw(selfIdx, fromDiscard: false);
@@ -94,6 +98,7 @@ extension _RummyNotifierBot on RummyNotifier {
         players: updatedPlayers,
         discardPile: newDiscard,
         drawnCardThisTurn: top,
+        drawnFromDiscard: true,
       );
     } else {
       if (state.drawPile.isEmpty) {
@@ -109,6 +114,7 @@ extension _RummyNotifierBot on RummyNotifier {
         players: updatedPlayers,
         drawPile: newDraw,
         drawnCardThisTurn: draw,
+        drawnFromDiscard: false,
       );
     }
   }
@@ -133,7 +139,15 @@ extension _RummyNotifierBot on RummyNotifier {
     final newTurnTotal = state.turnMeldPoints + meldValue;
 
     // Compute opening in-memory — single state notification.
-    final shouldOpen = !player.isOpen && newTurnTotal >= state.meldMinimum;
+    final drawnCard = state.drawnCardThisTurn;
+    final drawnCardStillUnused = drawnCard != null &&
+        player.hand.any((c) => c.id == drawnCard.id) &&
+        !meldIds.contains(drawnCard.id);
+    final forcedBlocksOpen = state.gameMode == RummyGameMode.forced &&
+        !player.isOpen &&
+        (!state.drawnFromDiscard || drawnCard == null || drawnCardStillUnused);
+    final shouldOpen =
+        !player.isOpen && !forcedBlocksOpen && newTurnTotal >= state.meldMinimum;
     final newMin = shouldOpen ? newTurnTotal + 1 : state.meldMinimum;
 
     final updatedPlayer = player.copyWith(
@@ -161,7 +175,6 @@ extension _RummyNotifierBot on RummyNotifier {
   void _botDiscard(int selfIdx, PlayingCard card) {
     // Step 1: Compute revert in-memory — no intermediate state assignment.
     var players = List<RummyPlayer>.from(state.players);
-    var turnMeldPoints = state.turnMeldPoints;
     var turnMeldCount = state.turnMeldCount;
 
     if (!players[selfIdx].isOpen && turnMeldCount > 0) {
@@ -173,7 +186,6 @@ extension _RummyNotifierBot on RummyNotifier {
         hand: [...p.hand, ...revertedCards],
         melds: revertedMelds,
       );
-      turnMeldPoints = 0;
       turnMeldCount = 0;
     }
 

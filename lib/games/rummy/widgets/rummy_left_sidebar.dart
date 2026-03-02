@@ -27,13 +27,22 @@ class RummyLeftSidebar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final s = ref.watch(rummyProvider.select((s) => (
-      drawPileCount: s.drawPile.length,
-      topDiscard: s.topDiscard,
-      isHumanTurn: s.isHumanTurn,
-      turnPhase: s.turnPhase,
-      statusMessage: s.statusMessage,
-    )));
+    final s = ref.watch(rummyProvider.select((s) {
+      final dp = s.discardPile;
+      final len = dp.length;
+      return (
+        drawPileCount: s.drawPile.length,
+        topDiscard: s.topDiscard,
+        recentDiscards: len >= 3
+            ? dp.sublist(len - 3, len - 1)
+            : len >= 2
+                ? [dp[len - 2]]
+                : <PlayingCard>[],
+        isHumanTurn: s.isHumanTurn,
+        turnPhase: s.turnPhase,
+        statusMessage: s.statusMessage,
+      );
+    }));
     return SizedBox(
       width: 100,
       child: Column(
@@ -42,6 +51,7 @@ class RummyLeftSidebar extends ConsumerWidget {
           RummyCenterPile(
             drawPileCount: s.drawPileCount,
             topDiscard: s.topDiscard,
+            recentDiscards: s.recentDiscards,
             canDraw: s.isHumanTurn && s.turnPhase == TurnPhase.draw,
             onDrawFromDeck: onDrawFromDeck ?? notifier.drawFromDeck,
             onDrawFromDiscard: onDrawFromDiscard ?? notifier.drawFromDiscard,

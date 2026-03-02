@@ -13,6 +13,7 @@ class RummyPlayer {
     required this.score,
     required this.isEliminated,
     this.isOpen = false,
+    this.isConnected = true,
   });
 
   final int id;
@@ -26,12 +27,16 @@ class RummyPlayer {
   /// True once the player has met the opening minimum for this round.
   final bool isOpen;
 
+  /// False when this player has disconnected mid-game (multiplayer only).
+  final bool isConnected;
+
   RummyPlayer copyWith({
     List<PlayingCard>? hand,
     List<RummyMeld>? melds,
     int? score,
     bool? isEliminated,
     bool? isOpen,
+    bool? isConnected,
   }) {
     return RummyPlayer(
       id: id,
@@ -42,6 +47,7 @@ class RummyPlayer {
       score: score ?? this.score,
       isEliminated: isEliminated ?? this.isEliminated,
       isOpen: isOpen ?? this.isOpen,
+      isConnected: isConnected ?? this.isConnected,
     );
   }
 
@@ -54,6 +60,7 @@ class RummyPlayer {
         'score': score,
         'isEliminated': isEliminated,
         'isOpen': isOpen,
+        'isConnected': isConnected,
       };
 
   factory RummyPlayer.fromJson(Map<String, dynamic> json) => RummyPlayer(
@@ -69,5 +76,6 @@ class RummyPlayer {
         score: json['score'] as int,
         isEliminated: json['isEliminated'] as bool,
         isOpen: (json['isOpen'] as bool?) ?? false,
+        isConnected: (json['isConnected'] as bool?) ?? true,
       );
 }

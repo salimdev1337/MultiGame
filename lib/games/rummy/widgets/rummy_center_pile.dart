@@ -17,11 +17,14 @@ class RummyCenterPile extends StatefulWidget {
     this.onCardDroppedOnDiscard,
     this.deckWidgetKey,
     this.discardWidgetKey,
+    this.recentDiscards = const [],
   });
 
   final int drawPileCount;
   final PlayingCard? topDiscard;
   final bool canDraw;
+  /// Up to 2 cards below the top discard (for the fanned pile effect).
+  final List<PlayingCard> recentDiscards;
   final VoidCallback onDrawFromDeck;
   final VoidCallback onDrawFromDiscard;
   final bool canDropOnDiscard;
@@ -133,26 +136,61 @@ class _RummyCenterPileState extends State<RummyCenterPile>
             onTap: widget.canDraw && widget.topDiscard != null
                 ? widget.onDrawFromDiscard
                 : null,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 220),
-              transitionBuilder: (child, anim) => SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, -0.5),
-                  end: Offset.zero,
-                ).animate(
-                    CurvedAnimation(parent: anim, curve: Curves.easeOut)),
-                child: FadeTransition(opacity: anim, child: child),
-              ),
-              child: KeyedSubtree(
-                key: ValueKey(widget.topDiscard?.id),
-                child: widget.topDiscard != null
-                    ? PlayingCardWidget(
-                        card: widget.topDiscard!,
-                        faceUp: true,
-                        width: RummyCenterPile._pileW,
-                        height: RummyCenterPile._pileH,
-                      )
-                    : _emptyDiscardSlot(),
+            child: SizedBox(
+              width: RummyCenterPile._pileW + 12,
+              height: RummyCenterPile._pileH + 4,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  for (var i = 0; i < widget.recentDiscards.length; i++)
+                    Positioned(
+                      key: ValueKey(widget.recentDiscards[i].id),
+                      left: i * 6.0,
+                      top: i * 2.0,
+                      child: Transform.rotate(
+                        angle: (i - 1) * 0.04,
+                        child: PlayingCardWidget(
+                          card: widget.recentDiscards[i],
+                          faceUp: true,
+                          width: RummyCenterPile._pileW,
+                          height: RummyCenterPile._pileH,
+                        ),
+                      ),
+                    ),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    transitionBuilder: (child, anim) => SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, -0.5),
+                        end: Offset.zero,
+                      ).animate(CurvedAnimation(
+                          parent: anim, curve: Curves.easeOut)),
+                      child: FadeTransition(opacity: anim, child: child),
+                    ),
+                    child: KeyedSubtree(
+                      key: ValueKey(widget.topDiscard?.id),
+                      child: widget.topDiscard != null
+                          ? Padding(
+                              padding: EdgeInsets.only(
+                                left: widget.recentDiscards.length * 6.0,
+                                top: widget.recentDiscards.length * 2.0,
+                              ),
+                              child: Transform.rotate(
+                                angle: widget.recentDiscards.isEmpty
+                                    ? 0
+                                    : (widget.recentDiscards.length - 1) * 0.04,
+                                child: PlayingCardWidget(
+                                  card: widget.topDiscard!,
+                                  faceUp: true,
+                                  width: RummyCenterPile._pileW,
+                                  height: RummyCenterPile._pileH,
+                                ),
+                              ),
+                            )
+                          : _emptyDiscardSlot(),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

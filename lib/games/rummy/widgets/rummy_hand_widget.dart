@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/playing_card.dart';
+import '../providers/rummy_notifier.dart';
 import 'playing_card_widget.dart';
 
-class RummyHandWidget extends StatelessWidget {
+class RummyHandWidget extends ConsumerWidget {
   const RummyHandWidget({
     super.key,
     required this.cards,
-    required this.selectedCardIds,
     required this.onCardTap,
     this.onReorder,
     this.isDragEnabled = false,
@@ -16,7 +17,6 @@ class RummyHandWidget extends StatelessWidget {
   });
 
   final List<PlayingCard> cards;
-  final List<String> selectedCardIds;
   final void Function(PlayingCard) onCardTap;
   final void Function(int oldIndex, int newIndex)? onReorder;
   final bool isDragEnabled;
@@ -24,9 +24,30 @@ class RummyHandWidget extends StatelessWidget {
   final GlobalKey? containerKey;
 
   static const double _cardVisibleWidth = 28.0;
+  static const double _maxAngle = 0.06; // ~3.4 degrees at edges
+  static const double _maxLift = 10.0; // max vertical offset at edges
+
+  static double _arcAngle(int i, int count) {
+    if (count <= 1) {
+      return 0;
+    }
+    final t = (i / (count - 1)) * 2 - 1; // -1..1
+    return t * _maxAngle;
+  }
+
+  static double _arcY(int i, int count) {
+    if (count <= 1) {
+      return 0;
+    }
+    final t = (i / (count - 1)) * 2 - 1; // -1..1
+    return t * t * _maxLift; // parabolic: edges high, center low
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedCardIds =
+        ref.watch(rummyProvider.select((s) => s.selectedCardIds));
+
     if (cards.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -37,29 +58,34 @@ class RummyHandWidget extends StatelessWidget {
       children: [
         for (var i = 0; i < cards.length; i++)
           Positioned(
+            key: ValueKey(cards[i].id),
             left: i * _cardVisibleWidth,
-            top: 0,
-            child: isDragEnabled
-                ? _DraggableCard(
-                    card: cards[i],
-                    isSelected: selectedCardIds.contains(cards[i].id),
-                    onTap: enabled ? () => onCardTap(cards[i]) : null,
-                  )
-                : _StaticCard(
-                    index: i,
-                    card: cards[i],
-                    isSelected: selectedCardIds.contains(cards[i].id),
-                    onTap: enabled ? () => onCardTap(cards[i]) : null,
-                    onReorder: onReorder,
-                    totalCards: cards.length,
-                  ),
+            top: _arcY(i, cards.length),
+            child: Transform.rotate(
+              angle: _arcAngle(i, cards.length),
+              alignment: Alignment.bottomCenter,
+              child: isDragEnabled
+                  ? _DraggableCard(
+                      card: cards[i],
+                      isSelected: selectedCardIds.contains(cards[i].id),
+                      onTap: enabled ? () => onCardTap(cards[i]) : null,
+                    )
+                  : _StaticCard(
+                      index: i,
+                      card: cards[i],
+                      isSelected: selectedCardIds.contains(cards[i].id),
+                      onTap: enabled ? () => onCardTap(cards[i]) : null,
+                      onReorder: onReorder,
+                      totalCards: cards.length,
+                    ),
+            ),
           ),
       ],
     );
 
     final body = SizedBox(
       width: totalWidth,
-      height: kCardHeight + 16,
+      height: kCardHeight + 16 + _maxLift,
       child: isDragEnabled && onReorder != null
           ? _HandReorderTarget(
               cards: cards,
@@ -103,7 +129,19 @@ class _DraggableCard extends StatelessWidget {
         color: Colors.transparent,
         child: Transform.scale(
           scale: 1.12,
-          child: PlayingCardWidget(card: card, faceUp: true),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x55000000),
+                  blurRadius: 8,
+                  offset: Offset(2, 4),
+                ),
+              ],
+            ),
+            child: PlayingCardWidget(card: card, faceUp: true),
+          ),
         ),
       ),
       childWhenDragging: Opacity(

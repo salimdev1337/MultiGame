@@ -1,28 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:multigame/design_system/ds_colors.dart';
 import 'package:multigame/design_system/ds_typography.dart';
 
 import '../models/playing_card.dart';
 import '../providers/rummy_notifier.dart';
 
-class RummyActionBar extends StatelessWidget {
+class RummyActionBar extends ConsumerWidget {
   const RummyActionBar({
     super.key,
     required this.notifier,
-    required this.selectedCardIds,
     required this.isOpen,
     required this.canUndo,
-    required this.humanHand,
   });
 
   final RummyNotifier notifier;
-  final List<String> selectedCardIds;
   final bool isOpen;
   final bool canUndo;
-  final List<PlayingCard> humanHand;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final (selectedCardIds, humanHand) = ref.watch(rummyProvider.select((s) => (
+      s.selectedCardIds,
+      s.players.isNotEmpty ? s.players[0].hand : const <PlayingCard>[],
+    )));
     final selectedCount = selectedCardIds.length;
     final showLay = selectedCount >= 3;
     final showDiscard = selectedCount == 1;
@@ -124,7 +125,9 @@ class RummyActionBar extends StatelessWidget {
                   ),
                   icon: const Icon(Icons.arrow_upward, size: 14),
                   label: const Text('Discard', style: TextStyle(fontSize: 11)),
-                  onPressed: showDiscard ? () => _discardSelected(context) : null,
+                  onPressed: showDiscard
+                      ? () => _discardSelected(context, selectedCardIds, humanHand)
+                      : null,
                 ),
               ),
             ),
@@ -134,7 +137,11 @@ class RummyActionBar extends StatelessWidget {
     );
   }
 
-  void _discardSelected(BuildContext context) {
+  void _discardSelected(
+    BuildContext context,
+    List<String> selectedCardIds,
+    List<PlayingCard> humanHand,
+  ) {
     if (selectedCardIds.isEmpty || humanHand.isEmpty) {
       return;
     }

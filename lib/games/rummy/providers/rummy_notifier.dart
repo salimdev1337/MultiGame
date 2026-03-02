@@ -12,8 +12,12 @@ import '../models/playing_card.dart';
 import '../models/rummy_game_state.dart';
 import '../models/rummy_meld.dart';
 import '../models/rummy_player.dart';
+import '../multiplayer/rummy_client.dart';
+import '../multiplayer/rummy_message.dart';
+import '../multiplayer/rummy_server.dart';
 
 part 'rummy_notifier_bot.dart';
+part 'rummy_notifier_multiplayer.dart';
 part 'rummy_notifier_round.dart';
 
 final rummyProvider =
@@ -31,12 +35,22 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
     ref.onDispose(() {
       _disposed = true;
       _cancelBotTimer();
+      _server?.stop();
+      _client?.disconnect();
     });
     return const RummyGameState();
   }
 
   Timer? _botTimer;
   bool _disposed = false;
+
+  // Multiplayer fields — null in solo mode.
+  RummyServer? _server;
+  RummyClient? _client;
+  int? _localPlayerId;
+
+  bool get _isGuest => _client != null && _server == null;
+  bool get _isHost => _server != null;
 
   void _cancelBotTimer() {
     _botTimer?.cancel();
@@ -45,15 +59,16 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
 
   // ── Public API ──────────────────────────────────────────────────────────────
 
-  void startSolo(AiDifficulty difficulty) {
+  void startSolo(AiDifficulty difficulty, {RummyGameMode gameMode = RummyGameMode.normal}) {
     _cancelBotTimer();
     final deck = shuffle(generateDeck());
     final dealt = dealHands(deck, kRummyPlayerCount, kRummyHandSize);
     final hands = dealt.hands;
     var remaining = dealt.remaining;
 
-    // Flip top card to start discard pile.
-    final firstDiscard = remaining.removeAt(0);
+    // Flip first non-joker card to start the discard pile.
+    final firstDiscardIdx = remaining.indexWhere((c) => !c.isJoker);
+    final firstDiscard = remaining.removeAt(firstDiscardIdx == -1 ? 0 : firstDiscardIdx);
 
     final players = [
       RummyPlayer(
@@ -107,6 +122,7 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
       meldMinimum: 71,
       turnMeldPoints: 0,
       turnMeldCount: 0,
+      gameMode: gameMode,
     );
 
     _scheduleNextBotTurn();
@@ -120,6 +136,10 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
   // ── Human actions ───────────────────────────────────────────────────────────
 
   void drawFromDeck() {
+    if (_isGuest) {
+      _client!.sendDrawDeck(_localPlayerId!);
+      return;
+    }
     if (!_canAct(TurnPhase.draw)) {
       state = state.copyWith(statusMessage: 'Not your turn to draw.');
       return;
@@ -150,9 +170,16 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
       preTurnPlayerOpen: state.players[state.currentPlayerIndex].isOpen,
       statusMessage: 'Draw a card or lay down melds.',
     );
+    if (_isHost) {
+      _broadcastStateToAll();
+    }
   }
 
   void drawFromDiscard() {
+    if (_isGuest) {
+      _client!.sendDrawDiscard(_localPlayerId!);
+      return;
+    }
     if (!_canAct(TurnPhase.draw)) {
       state = state.copyWith(statusMessage: 'Not your turn to draw.');
       return;
@@ -179,6 +206,9 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
       preTurnPlayerOpen: state.players[state.currentPlayerIndex].isOpen,
       statusMessage: 'Lay down melds or discard.',
     );
+    if (_isHost) {
+      _broadcastStateToAll();
+    }
   }
 
   void toggleCardSelection(String cardId) {
@@ -199,6 +229,10 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
 
   /// Attempts to lay down the currently selected cards as a meld.
   String? laySelectedMeld() {
+    if (_isGuest) {
+      _client!.sendLayMeld(_localPlayerId!, state.selectedCardIds);
+      return null;
+    }
     if (state.turnPhase != TurnPhase.meld) {
       return 'Not your meld phase.';
     }
@@ -214,6 +248,22 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
 
     if (selectedCards.length < 3) {
       return 'Select at least 3 cards.';
+    }
+
+    // Forced mode: opening must include the card drawn from the discard pile.
+    if (state.gameMode == RummyGameMode.forced && !player.isOpen) {
+      if (!state.drawnFromDiscard) {
+        return 'Forced mode: you must draw from the discard pile to open.';
+      }
+      final drawnCard = state.drawnCardThisTurn;
+      if (drawnCard == null) {
+        return 'Forced mode: your opening meld must include the discard card you drew.';
+      }
+      final drawnCardInHand = player.hand.any((c) => c.id == drawnCard.id);
+      final drawnCardSelected = state.selectedCardIds.contains(drawnCard.id);
+      if (drawnCardInHand && !drawnCardSelected) {
+        return 'Forced mode: you must use the discard card in a meld before opening.';
+      }
     }
 
     final type = validateMeld(selectedCards);
@@ -251,7 +301,12 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
           ? '${groups.length} melds laid! Lay more or discard.'
           : (alreadyOpen
               ? 'Meld laid! Lay more or discard.'
-              : 'Meld laid! $newTurnTotal/${state.meldMinimum} pts to open.'),
+              : (state.gameMode == RummyGameMode.forced &&
+                      state.drawnFromDiscard &&
+                      !updatedPlayer.hand.any(
+                          (c) => c.id == state.drawnCardThisTurn?.id)
+                  ? 'Forced card used! Keep melding ($newTurnTotal/${state.meldMinimum} pts to open).'
+                  : 'Meld laid! $newTurnTotal/${state.meldMinimum} pts to open.')),
     );
 
     if (!alreadyOpen && newTurnTotal >= state.meldMinimum) {
@@ -270,6 +325,8 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
 
     if (canDeclare(newHand)) {
       _applyDeclare(currentIdx);
+    } else if (_isHost) {
+      _broadcastStateToAll();
     }
 
     return null;
@@ -279,9 +336,20 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
   /// Joker retrieval is automatic: see [tryAddToMeld].
   /// Returns an error string on failure, null on success.
   String? addSelectedCardsToMeld(int meldIdx) {
+    if (_isGuest) {
+      _client!.sendAddToMeld(
+        _localPlayerId!,
+        state.selectedCardIds,
+        state.currentPlayer.id,
+        meldIdx,
+      );
+      return null;
+    }
     if (state.turnPhase != TurnPhase.meld) return 'Not your meld phase.';
     if (!state.isHumanTurn) return 'Not your turn.';
-    if (!state.currentPlayer.isOpen) return 'Open with a meld first.';
+    if (!state.currentPlayer.isOpen && !state.drawnCardMeldedThisTurn) {
+      return 'Open with a meld first.';
+    }
     if (state.selectedCardIds.isEmpty) return 'Select at least one card.';
 
     final player = state.currentPlayer;
@@ -315,6 +383,8 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
 
     if (canDeclare(newHand)) {
       _applyDeclare(currentIdx);
+    } else if (_isHost) {
+      _broadcastStateToAll();
     }
     return null;
   }
@@ -322,9 +392,15 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
   /// Drag-and-drop: adds [card] from hand to the player's own meld at [meldIdx].
   /// Returns an error string on failure, null on success.
   String? dropCardOnMeld(PlayingCard card, int meldIdx) {
+    if (_isGuest) {
+      _client!.sendAddToMeld(_localPlayerId!, [card.id], state.currentPlayer.id, meldIdx);
+      return null;
+    }
     if (state.turnPhase != TurnPhase.meld) return 'Not your meld phase.';
     if (!state.isHumanTurn) return 'Not your turn.';
-    if (!state.currentPlayer.isOpen) return 'Open with a meld first.';
+    if (!state.currentPlayer.isOpen && !state.drawnCardMeldedThisTurn) {
+      return 'Open with a meld first.';
+    }
 
     final player = state.currentPlayer;
     final currentIdx = state.currentPlayerIndex;
@@ -351,17 +427,27 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
 
     if (canDeclare(newHand)) {
       _applyDeclare(currentIdx);
+    } else if (_isHost) {
+      _broadcastStateToAll();
     }
     return null;
   }
 
   void discard(PlayingCard card) {
+    if (_isGuest) {
+      _client!.sendDiscard(_localPlayerId!, card.id);
+      return;
+    }
     if (!_canAct(TurnPhase.meld) && !_canAct(TurnPhase.discard)) {
       state = state.copyWith(statusMessage: 'Not your turn to discard.');
       return;
     }
     if (state.turnPhase == TurnPhase.draw) {
       state = state.copyWith(statusMessage: 'Draw a card first.');
+      return;
+    }
+    if (card.isJoker) {
+      state = state.copyWith(statusMessage: 'Jokers cannot be discarded.');
       return;
     }
 
@@ -428,14 +514,23 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
           : '${state.players[next].name}\'s turn...',
     );
 
-    _scheduleNextBotTurn();
+    if (_isHost) {
+      _broadcastStateToAll();
+    } else {
+      _scheduleNextBotTurn();
+    }
   }
 
   void reorderHand(int oldIndex, int newIndex) {
+    if (_isGuest) {
+      _client!.sendReorderHand(_localPlayerId!, oldIndex, newIndex);
+      return;
+    }
     if (state.players.isEmpty) {
       return;
     }
-    final player = state.players[0];
+    final idx = _localPlayerId ?? 0;
+    final player = state.players[idx];
     final hand = List<PlayingCard>.from(player.hand);
     if (oldIndex < 0 || oldIndex >= hand.length || newIndex < 0 || newIndex >= hand.length) {
       return;
@@ -444,15 +539,23 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
     hand.insert(newIndex, card);
     final updatedPlayer = player.copyWith(hand: hand);
     final players = List<RummyPlayer>.from(state.players);
-    players[0] = updatedPlayer;
+    players[idx] = updatedPlayer;
     state = state.copyWith(players: players, handSortMode: HandSortMode.none);
+    if (_isHost) {
+      _broadcastStateToAll();
+    }
   }
 
   void sortHand(HandSortMode mode) {
+    if (_isGuest) {
+      _client!.sendSortHand(_localPlayerId!, mode.name);
+      return;
+    }
     if (state.players.isEmpty) {
       return;
     }
-    final player = state.players[0];
+    final idx = _localPlayerId ?? 0;
+    final player = state.players[idx];
     final hand = List<PlayingCard>.from(player.hand);
 
     switch (mode) {
@@ -483,11 +586,18 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
 
     final updatedPlayer = player.copyWith(hand: hand);
     final players = List<RummyPlayer>.from(state.players);
-    players[0] = updatedPlayer;
+    players[idx] = updatedPlayer;
     state = state.copyWith(players: players, handSortMode: mode);
+    if (_isHost) {
+      _broadcastStateToAll();
+    }
   }
 
   void declare() {
+    if (_isGuest) {
+      _client!.sendDeclare(_localPlayerId!);
+      return;
+    }
     if (!state.isHumanTurn) {
       state = state.copyWith(statusMessage: 'Not your turn.');
       return;
@@ -501,7 +611,11 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
 
   /// Undoes the most recent human action this turn.
   /// Priority: undo last meld → undo draw from discard.
+  /// Disabled in multiplayer (both host and guest).
   void undo() {
+    if (_isHost || _isGuest) {
+      return;
+    }
     if (!state.isHumanTurn || state.turnPhase != TurnPhase.meld) {
       return;
     }

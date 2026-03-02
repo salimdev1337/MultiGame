@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:multigame/design_system/ds_colors.dart';
 
 import '../models/playing_card.dart';
 import '../painters/card_painter.dart';
@@ -52,9 +51,26 @@ class PlayingCardWidget extends StatelessWidget {
     return 'assets/images/deck/card_${suitOffset + card.rank - 10}.png';
   }
 
+  static const _baseShadow = BoxShadow(
+    color: Color(0x42000000),
+    blurRadius: 4,
+    offset: Offset(1, 2),
+  );
+
+  static const _selectedGlow = BoxShadow(
+    color: Color(0x99FFD700),
+    blurRadius: 6,
+    spreadRadius: 3,
+  );
+
   @override
   Widget build(BuildContext context) {
     final path = _imagePath();
+    final shadows = <BoxShadow>[
+      if (faceUp) _baseShadow,
+      if (isSelected) _selectedGlow,
+    ];
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedSlide(
@@ -65,16 +81,10 @@ class PlayingCardWidget extends StatelessWidget {
             ? Container(
                 width: width,
                 height: height,
-                decoration: isSelected
+                decoration: shadows.isNotEmpty
                     ? BoxDecoration(
                         borderRadius: BorderRadius.circular(9),
-                        boxShadow: [
-                          BoxShadow(
-                            color: DSColors.rummyAccent.withValues(alpha: 0.6),
-                            blurRadius: 6,
-                            spreadRadius: 3,
-                          ),
-                        ],
+                        boxShadow: shadows,
                       )
                     : null,
                 child: ClipRRect(
@@ -87,9 +97,15 @@ class PlayingCardWidget extends StatelessWidget {
                   ),
                 ),
               )
-            : SizedBox(
+            : Container(
                 width: width,
                 height: height,
+                decoration: shadows.isNotEmpty
+                    ? BoxDecoration(
+                        borderRadius: BorderRadius.circular(6),
+                        boxShadow: shadows,
+                      )
+                    : null,
                 child: CustomPaint(
                   painter: CardPainter(
                     card: card,

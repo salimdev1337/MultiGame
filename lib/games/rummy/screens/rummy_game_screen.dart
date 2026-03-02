@@ -44,6 +44,7 @@ class _GameScreenState extends ConsumerState<_GameScreen> {
   final _deckKey = GlobalKey();
   final _discardKey = GlobalKey();
   final _handKey = GlobalKey();
+  int _lastRound = -1;
 
   @override
   void initState() {
@@ -103,6 +104,57 @@ class _GameScreenState extends ConsumerState<_GameScreen> {
     _flyingCards.value = current;
   }
 
+  void _launchDealCascade() {
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      final from = _widgetTopLeft(_deckKey);
+      if (from == null) {
+        return;
+      }
+      final state = ref.read(rummyProvider);
+      final totalCards = state.players
+          .where((p) => !p.isEliminated)
+          .fold<int>(0, (sum, p) => sum + p.hand.length);
+
+      const dummyCard = PlayingCard(
+        id: '_deal',
+        suit: suitSpades,
+        rank: rankAce,
+        isJoker: false,
+      );
+
+      final screenSize = MediaQuery.sizeOf(context);
+      final targets = <Offset>[
+        Offset(screenSize.width / 2, screenSize.height - kCardHeight - 20),
+        Offset(screenSize.width / 2, 30),
+        Offset(20, screenSize.height / 2),
+        Offset(screenSize.width - kCardWidth - 20, screenSize.height / 2),
+      ];
+
+      final cards = <FlyingCardData>[];
+      var dealIdx = 0;
+      for (var round = 0; round < kRummyHandSize && dealIdx < totalCards; round++) {
+        for (var p = 0; p < state.players.length && dealIdx < totalCards; p++) {
+          if (state.players[p].isEliminated) {
+            continue;
+          }
+          final target = targets[p % targets.length];
+          cards.add(FlyingCardData(
+            id: 'deal_${dealIdx}_${DateTime.now().microsecondsSinceEpoch}',
+            card: dummyCard,
+            from: from,
+            to: target,
+            faceUp: false,
+            duration: const Duration(milliseconds: 200),
+            delay: Duration(milliseconds: 30 * dealIdx),
+          ));
+          dealIdx++;
+        }
+      }
+
+      _flyingCards.value = [..._flyingCards.value, ...cards];
+    });
+  }
+
   void _onDrawFromDeck(RummyNotifier notifier) {
     final state = ref.read(rummyProvider);
     if (state.drawPile.isNotEmpty) {
@@ -140,9 +192,14 @@ class _GameScreenState extends ConsumerState<_GameScreen> {
   @override
   Widget build(BuildContext context) {
     final notifier = ref.read(rummyProvider.notifier);
-    final (phase, playerCount) = ref.watch(
-      rummyProvider.select((s) => (s.phase, s.players.length)),
+    final (phase, playerCount, roundNumber) = ref.watch(
+      rummyProvider.select((s) => (s.phase, s.players.length, s.roundNumber)),
     );
+
+    if (roundNumber != _lastRound && phase == RummyPhase.playing) {
+      _lastRound = roundNumber;
+      _launchDealCascade();
+    }
 
     if (phase == RummyPhase.gameOver) {
       final state = ref.read(rummyProvider);
@@ -193,21 +250,27 @@ class _GameScreenState extends ConsumerState<_GameScreen> {
                   ),
                 ],
               ),
-              ValueListenableBuilder<List<FlyingCardData>>(
-                valueListenable: _flyingCards,
-                builder: (_, cards, _) {
-                  return Stack(
-                    children: cards.map((data) {
-                      return RummyFlyingCard(
-                        key: ValueKey(data.id),
-                        data: data,
-                        onComplete: () => _removeFlyingCard(data.id),
-                      );
-                    }).toList(),
-                  );
-                },
+              RepaintBoundary(
+                child: ValueListenableBuilder<List<FlyingCardData>>(
+                  valueListenable: _flyingCards,
+                  builder: (_, cards, _) {
+                    return Stack(
+                      children: cards.map((data) {
+                        return RummyFlyingCard(
+                          key: ValueKey(data.id),
+                          data: data,
+                          onComplete: () => _removeFlyingCard(data.id),
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
               ),
-              const Positioned(top: 4, right: 4, child: _FpsCounter()),
+              const Positioned(
+                top: 4,
+                right: 4,
+                child: RepaintBoundary(child: _FpsCounter()),
+              ),
             ],
           ),
         ),
@@ -225,8 +288,12 @@ class _FpsCounter extends StatefulWidget {
 
 class _FpsCounterState extends State<_FpsCounter>
     with SingleTickerProviderStateMixin {
+  static const _kBufSize = 60;
+
   late final Ticker _ticker;
-  final _frameDurations = <int>[];
+  final _frameDurations = List<int>.filled(_kBufSize, 0);
+  int _head = 0;
+  int _count = 0;
   double _fps = 0;
   Duration _prev = Duration.zero;
 
@@ -238,14 +305,17 @@ class _FpsCounterState extends State<_FpsCounter>
 
   void _onTick(Duration elapsed) {
     if (_prev != Duration.zero) {
-      _frameDurations.add((elapsed - _prev).inMicroseconds);
-      if (_frameDurations.length > 60) {
-        _frameDurations.removeAt(0);
+      _frameDurations[_head] = (elapsed - _prev).inMicroseconds;
+      _head = (_head + 1) % _kBufSize;
+      if (_count < _kBufSize) {
+        _count++;
       }
-      if (_frameDurations.length >= 5) {
-        final avg =
-            _frameDurations.reduce((a, b) => a + b) / _frameDurations.length;
-        final fps = 1000000 / avg;
+      if (_count >= 5) {
+        var sum = 0;
+        for (var i = 0; i < _count; i++) {
+          sum += _frameDurations[i];
+        }
+        final fps = 1000000 / (sum / _count);
         if ((fps - _fps).abs() >= 0.5) {
           setState(() => _fps = fps);
         }
@@ -335,18 +405,27 @@ class _TopBar extends ConsumerWidget {
                           ? Border.all(color: DSColors.rummyAccent, width: 1)
                           : null,
                     ),
-                    child: Text(
-                      '${p.name} ${p.score}',
-                      style: DSTypography.labelSmall.copyWith(
-                        color: p.isEliminated
-                            ? DSColors.textDisabled
-                            : isCurrent
-                                ? DSColors.rummyAccent
-                                : Colors.white70,
-                        fontSize: 10,
-                        fontWeight:
-                            isCurrent ? FontWeight.bold : FontWeight.normal,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${p.name} ${p.score}',
+                          style: DSTypography.labelSmall.copyWith(
+                            color: p.isEliminated
+                                ? DSColors.textDisabled
+                                : isCurrent
+                                    ? DSColors.rummyAccent
+                                    : Colors.white70,
+                            fontSize: 10,
+                            fontWeight:
+                                isCurrent ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        if (p.score > 0) ...[
+                          const SizedBox(width: 3),
+                          _ScoreChips(score: p.score),
+                        ],
+                      ],
                     ),
                   );
                 }).toList(),
@@ -371,6 +450,57 @@ class _TopBar extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ScoreChips extends StatelessWidget {
+  const _ScoreChips({required this.score});
+
+  final int score;
+
+  static const _chipColors = [
+    Color(0xFFE53935), // 100s - red
+    Color(0xFF1E88E5), // 50s - blue
+    Color(0xFF43A047), // 10s - green
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final hundreds = score ~/ 100;
+    final fifties = (score % 100) ~/ 50;
+    final tens = (score % 50) ~/ 10;
+
+    final chips = <Widget>[];
+    for (var i = 0; i < hundreds && chips.length < 5; i++) {
+      chips.add(_chip(_chipColors[0], 7));
+    }
+    for (var i = 0; i < fifties && chips.length < 5; i++) {
+      chips.add(_chip(_chipColors[1], 6));
+    }
+    for (var i = 0; i < tens && chips.length < 5; i++) {
+      chips.add(_chip(_chipColors[2], 5));
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: chips,
+    );
+  }
+
+  Widget _chip(Color color, double size) {
+    return Container(
+      width: size,
+      height: size,
+      margin: const EdgeInsets.only(left: 1),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.5),
+          width: 0.5,
+        ),
       ),
     );
   }
