@@ -50,8 +50,8 @@ jobs:
       # Copy legal docs into web build so they're served alongside the game
       - name:  Copy legal docs
         run: |
-          cp docs/privacy.html build/web/privacy.html
-          cp docs/terms.html build/web/terms.html
+          cp docs/legal/privacy.html build/web/privacy.html
+          cp docs/legal/terms.html build/web/terms.html
 
       # Setup GitHub Pages
       - name:  Setup Pages
