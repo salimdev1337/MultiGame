@@ -285,8 +285,7 @@ class _TurnIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (state.phase == ConnectFourPhase.won) {
-      // The player who just won is the one whose turn it no longer is
-      final winnerPlayer = state.currentPlayer == 1 ? 2 : 1;
+      final winnerPlayer = state.currentPlayer;
       final color = winnerPlayer == 1 ? _kP1 : _kP2;
       final label = state.mode == ConnectFourMode.solo
           ? (winnerPlayer == 1 ? 'YOU WIN!' : 'COMPUTER WINS!')
@@ -354,73 +353,86 @@ class _Board extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: _kBoard,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: _kBoard.withValues(alpha: 0.5),
-            blurRadius: 20,
-            spreadRadius: 4,
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Column tap targets (arrows on top)
-          if (!state.isOver && !state.isBotTurn)
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(kCFCols, (col) {
-                return GestureDetector(
-                  onTap: () =>
-                      ref.read(connectFourProvider.notifier).dropInColumn(col),
-                  child: SizedBox(
-                    width: 44,
-                    height: 24,
-                    child: Icon(
-                      Icons.keyboard_arrow_down,
-                      color: state.currentPlayer == 1
-                          ? _kP1.withValues(alpha: 0.6)
-                          : _kP2.withValues(alpha: 0.6),
-                      size: 20,
-                    ),
-                  ),
-                );
-              }),
-            )
-          else
-            const SizedBox(height: 24),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // board margin: 12×2=24, board padding: 10×2=20,
+        // cell margin: 2×2=4 per cell, 7 cells = 28
+        final cellSize =
+            ((constraints.maxWidth - 24 - 20 - 28) / kCFCols).clamp(28.0, 52.0);
+        final innerSize = (cellSize - 8).clamp(20.0, 44.0);
 
-          // Grid rows (row 5 at top = highest = displayed first)
-          for (var row = kCFRows - 1; row >= 0; row--)
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(kCFCols, (col) {
-                return GestureDetector(
-                  onTap: () {
-                    if (!state.isOver && !state.isBotTurn) {
-                      ref
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: _kBoard,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: _kBoard.withValues(alpha: 0.5),
+                blurRadius: 20,
+                spreadRadius: 4,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Column tap targets (arrows on top)
+              if (!state.isOver && !state.isBotTurn)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(kCFCols, (col) {
+                    return GestureDetector(
+                      onTap: () => ref
                           .read(connectFourProvider.notifier)
-                          .dropInColumn(col);
-                    }
-                  },
-                  child: _Cell(
-                    col: col,
-                    row: row,
-                    value: state.grid.isNotEmpty ? state.grid[col][row] : 0,
-                    isWinCell: state.winLine
-                        .any((w) => w.$1 == col && w.$2 == row),
-                  ),
-                );
-              }),
-            ),
-        ],
-      ),
+                          .dropInColumn(col),
+                      child: SizedBox(
+                        width: cellSize + 4,
+                        height: 24,
+                        child: Icon(
+                          Icons.keyboard_arrow_down,
+                          color: state.currentPlayer == 1
+                              ? _kP1.withValues(alpha: 0.6)
+                              : _kP2.withValues(alpha: 0.6),
+                          size: 20,
+                        ),
+                      ),
+                    );
+                  }),
+                )
+              else
+                const SizedBox(height: 24),
+
+              // Grid rows (row 5 at top = highest = displayed first)
+              for (var row = kCFRows - 1; row >= 0; row--)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(kCFCols, (col) {
+                    return GestureDetector(
+                      onTap: () {
+                        if (!state.isOver && !state.isBotTurn) {
+                          ref
+                              .read(connectFourProvider.notifier)
+                              .dropInColumn(col);
+                        }
+                      },
+                      child: _Cell(
+                        col: col,
+                        row: row,
+                        value: state.grid.isNotEmpty ? state.grid[col][row] : 0,
+                        isWinCell:
+                            state.winLine.any((w) => w.$1 == col && w.$2 == row),
+                        size: cellSize,
+                        innerSize: innerSize,
+                      ),
+                    );
+                  }),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -433,12 +445,16 @@ class _Cell extends StatefulWidget {
     required this.row,
     required this.value,
     required this.isWinCell,
+    required this.size,
+    required this.innerSize,
   });
 
   final int col;
   final int row;
   final int value; // 0=empty, 1=p1, 2=p2
   final bool isWinCell;
+  final double size;
+  final double innerSize;
 
   @override
   State<_Cell> createState() => _CellState();
@@ -481,19 +497,19 @@ class _CellState extends State<_Cell> with SingleTickerProviderStateMixin {
             : null;
 
     return Container(
-      width: 44,
-      height: 44,
+      width: widget.size,
+      height: widget.size,
       margin: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         color: _kCell,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(widget.size / 2),
       ),
       child: Center(
         child: ScaleTransition(
           scale: widget.value != 0 ? _scaleAnim : const AlwaysStoppedAnimation(1),
           child: Container(
-            width: 36,
-            height: 36,
+            width: widget.innerSize,
+            height: widget.innerSize,
             decoration: BoxDecoration(
               color: color ?? _kEmpty,
               shape: BoxShape.circle,

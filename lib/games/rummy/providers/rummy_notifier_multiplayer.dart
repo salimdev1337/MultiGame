@@ -92,6 +92,12 @@ extension RummyNotifierMultiplayer on RummyNotifier {
           return;
         }
         drawFromDiscard();
+      case RummyMessageType.returnDiscard:
+        if (!isCurrentPlayer) {
+          _server!.sendTo(fromPlayerId, RummyMessage.actionError('Not your turn.').encode());
+          return;
+        }
+        returnDiscardCard();
       case RummyMessageType.layMeld:
         if (!isCurrentPlayer) {
           _server!.sendTo(fromPlayerId, RummyMessage.actionError('Not your turn.').encode());

@@ -72,6 +72,9 @@ class RummyClient {
   void sendDrawDiscard(int playerId) =>
       _send(RummyMessage.drawDiscard(playerId).encode());
 
+  void sendReturnDiscard(int playerId) =>
+      _send(RummyMessage.returnDiscard(playerId).encode());
+
   void sendLayMeld(int playerId, List<String> cardIds) =>
       _send(RummyMessage.layMeld(playerId, cardIds).encode());
 

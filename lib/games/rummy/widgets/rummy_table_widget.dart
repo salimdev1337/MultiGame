@@ -269,53 +269,59 @@ class _SmallMeldGroupState extends State<_SmallMeldGroup>
             builder: (_, _, _) => container,
           );
 
-    return AnimatedBuilder(
-      animation: _entryCtrl,
-      builder: (_, child) =>
-          Transform.scale(scale: _entryScale.value, child: child),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          dropWrapped,
-          Positioned.fill(
-            child: IgnorePointer(
-              child: AnimatedBuilder(
-                animation: _slamCtrl,
-                builder: (_, _) => Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(3),
-                    color: Colors.white.withValues(
-                      alpha: 0.15 * (1 - _slamCtrl.value),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          if (widget.isCompleting)
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _entryCtrl,
+        builder: (_, child) =>
+            Transform.scale(scale: _entryScale.value, child: child),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            dropWrapped,
             Positioned.fill(
-              child: AnimatedBuilder(
-                animation: _flashCtrl,
-                builder: (_, _) => Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(3),
-                    color: DSColors.rummyAccent.withValues(
-                      alpha: _flashCtrl.value * 0.55,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: DSColors.rummyAccent.withValues(
-                          alpha: _flashCtrl.value * 0.7,
+              child: IgnorePointer(
+                child: RepaintBoundary(
+                  child: AnimatedBuilder(
+                    animation: _slamCtrl,
+                    builder: (_, _) => Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(3),
+                        color: Colors.white.withValues(
+                          alpha: 0.15 * (1 - _slamCtrl.value),
                         ),
-                        blurRadius: 10 * _flashCtrl.value,
-                        spreadRadius: 3 * _flashCtrl.value,
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
-        ],
+            if (widget.isCompleting)
+              Positioned.fill(
+                child: RepaintBoundary(
+                  child: AnimatedBuilder(
+                    animation: _flashCtrl,
+                    builder: (_, _) => Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(3),
+                        color: DSColors.rummyAccent.withValues(
+                          alpha: _flashCtrl.value * 0.55,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: DSColors.rummyAccent.withValues(
+                              alpha: _flashCtrl.value * 0.7,
+                            ),
+                            blurRadius: 10 * _flashCtrl.value,
+                            spreadRadius: 3 * _flashCtrl.value,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

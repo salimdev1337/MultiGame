@@ -29,6 +29,7 @@ class RummyBottomStrip extends ConsumerWidget {
           : const <PlayingCard>[],
       humanIsOpen: s.players.isNotEmpty && s.players[0].isOpen,
       canUndo: s.canUndo,
+      canReturnDiscardCard: s.canReturnDiscardCard,
     )));
     final isMeldPhase = s.isHumanTurn && s.turnPhase == TurnPhase.meld;
 
@@ -40,6 +41,7 @@ class RummyBottomStrip extends ConsumerWidget {
             notifier: notifier,
             isOpen: s.humanIsOpen,
             canUndo: s.canUndo,
+            canReturnDiscardCard: s.canReturnDiscardCard,
           ),
         if (s.hasHumanPlayer)
           Row(

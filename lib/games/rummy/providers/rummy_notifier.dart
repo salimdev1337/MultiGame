@@ -281,7 +281,12 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
     final newMelds = [
       ...player.melds,
       for (final group in groups)
-        RummyMeld(type: validateMeld(group)!, cards: group),
+        RummyMeld(
+          type: validateMeld(group)!,
+          cards: validateMeld(group) == MeldType.run
+              ? sortRunCards(group)
+              : group,
+        ),
     ];
     final newHand = player.hand.where((c) => !state.selectedCardIds.contains(c.id)).toList();
     final updatedPlayer = player.copyWith(hand: newHand, melds: newMelds);
@@ -451,6 +456,20 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
       return;
     }
 
+    // Enforce: if drew from discard pile, must meld that card before discarding.
+    if (state.drawnFromDiscard && state.drawnCardThisTurn != null) {
+      final drawnCard = state.drawnCardThisTurn!;
+      if (state.currentPlayer.hand.any((c) => c.id == drawnCard.id)) {
+        final canReturn = state.turnMeldCount == 0;
+        state = state.copyWith(
+          statusMessage: canReturn
+              ? 'Use the drawn discard card in a meld first, or tap "Return" to put it back and draw from the deck.'
+              : 'You must meld the drawn discard card before discarding.',
+        );
+        return;
+      }
+    }
+
     // Revert guard: if player hasn't met the opening minimum, return melds to hand.
     final player0 = state.currentPlayer;
     if (!player0.isOpen && state.turnMeldCount > 0) {
@@ -609,6 +628,28 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
     _applyDeclare(state.currentPlayerIndex);
   }
 
+  /// Returns the card drawn from the discard pile back to the discard pile,
+  /// then moves to [TurnPhase.draw] so the player can draw from the deck instead.
+  /// Only valid before any melds are laid this turn.
+  void returnDiscardCard() {
+    if (_isGuest) {
+      _client!.sendReturnDiscard(_localPlayerId!);
+      return;
+    }
+    if (!state.isHumanTurn) {
+      return;
+    }
+    if (!state.drawnFromDiscard || state.drawnCardThisTurn == null) {
+      state = state.copyWith(statusMessage: 'No discard card to return.');
+      return;
+    }
+    if (state.turnMeldCount > 0) {
+      state = state.copyWith(statusMessage: 'Undo your melds first, then return the card.');
+      return;
+    }
+    _undoDrawFromDiscard();
+  }
+
   /// Undoes the most recent human action this turn.
   /// Priority: undo last meld → undo draw from discard.
   /// Disabled in multiplayer (both host and guest).
@@ -689,7 +730,7 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
     final completing = <String>{};
     for (final p in players) {
       for (final m in p.melds) {
-        if (m.type == MeldType.set && m.cards.length == 4) {
+        if (m.type == MeldType.set && m.cards.length == 4 && m.cards.every((c) => !c.isJoker)) {
           completing.add(m.cards.first.id);
         }
       }

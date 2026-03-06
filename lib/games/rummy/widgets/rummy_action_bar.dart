@@ -12,11 +12,13 @@ class RummyActionBar extends ConsumerWidget {
     required this.notifier,
     required this.isOpen,
     required this.canUndo,
+    required this.canReturnDiscardCard,
   });
 
   final RummyNotifier notifier;
   final bool isOpen;
   final bool canUndo;
+  final bool canReturnDiscardCard;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -40,23 +42,27 @@ class RummyActionBar extends ConsumerWidget {
               maintainSize: true,
               maintainAnimation: true,
               maintainState: true,
-              child: SizedBox(
-                height: 28,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey.shade800,
-                    foregroundColor: Colors.white70,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  icon: const Icon(Icons.undo, size: 14),
-                  label: const Text('Undo', style: TextStyle(fontSize: 11)),
-                  onPressed: canUndo ? notifier.undo : null,
-                ),
+              child: _RummyActionBtn(
+                icon: Icons.undo,
+                label: 'Undo',
+                colorDark: const Color(0xFF37474F),
+                colorLight: const Color(0xFF546E7A),
+                glowColor: const Color(0xFF607D8B),
+                onPressed: canUndo ? notifier.undo : null,
               ),
             ),
+            if (canReturnDiscardCard) ...[
+              const SizedBox(width: 4),
+              _RummyActionBtn(
+                icon: Icons.replay,
+                label: 'Return',
+                colorDark: DSColors.rummyAccent.withValues(alpha: 0.85),
+                colorLight: DSColors.rummyAccent,
+                glowColor: DSColors.rummyAccent,
+                textColor: Colors.black87,
+                onPressed: notifier.returnDiscardCard,
+              ),
+            ],
             const Spacer(),
             if (showOrTapHint)
               Padding(
@@ -76,34 +82,26 @@ class RummyActionBar extends ConsumerWidget {
               maintainState: true,
               child: Padding(
                 padding: const EdgeInsets.only(right: 4),
-                child: SizedBox(
-                  height: 28,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: DSColors.rummyPrimary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    icon: const Icon(Icons.check, size: 14),
-                    label: const Text('Lay Meld', style: TextStyle(fontSize: 11)),
-                    onPressed: showLay
-                        ? () {
-                            final error = notifier.laySelectedMeld();
-                            if (error != null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(error),
-                                  duration: const Duration(seconds: 2),
-                                  backgroundColor: Colors.red.shade700,
-                                ),
-                              );
-                            }
+                child: _RummyActionBtn(
+                  icon: Icons.check,
+                  label: 'Lay Meld',
+                  colorDark: DSColors.rummyPrimary,
+                  colorLight: const Color(0xFF26A69A),
+                  glowColor: DSColors.rummyPrimary,
+                  onPressed: showLay
+                      ? () {
+                          final error = notifier.laySelectedMeld();
+                          if (error != null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(error),
+                                duration: const Duration(seconds: 2),
+                                backgroundColor: DSColors.error,
+                              ),
+                            );
                           }
-                        : null,
-                  ),
+                        }
+                      : null,
                 ),
               ),
             ),
@@ -112,23 +110,16 @@ class RummyActionBar extends ConsumerWidget {
               maintainSize: true,
               maintainAnimation: true,
               maintainState: true,
-              child: SizedBox(
-                height: 28,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.shade700,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  icon: const Icon(Icons.arrow_upward, size: 14),
-                  label: const Text('Discard', style: TextStyle(fontSize: 11)),
-                  onPressed: showDiscard
-                      ? () => _discardSelected(context, selectedCardIds, humanHand)
-                      : null,
-                ),
+              child: _RummyActionBtn(
+                icon: Icons.arrow_upward,
+                label: 'Discard',
+                colorDark: DSColors.error,
+                colorLight: const Color(0xFFEF5350),
+                glowColor: DSColors.error,
+                onPressed: showDiscard
+                    ? () =>
+                        _discardSelected(context, selectedCardIds, humanHand)
+                    : null,
               ),
             ),
           ],
@@ -151,5 +142,67 @@ class RummyActionBar extends ConsumerWidget {
       orElse: () => humanHand.first,
     );
     notifier.discard(card);
+  }
+}
+
+class _RummyActionBtn extends StatelessWidget {
+  const _RummyActionBtn({
+    required this.icon,
+    required this.label,
+    required this.colorDark,
+    required this.colorLight,
+    required this.glowColor,
+    required this.onPressed,
+    this.textColor = Colors.white,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color colorDark;
+  final Color colorLight;
+  final Color glowColor;
+  final VoidCallback? onPressed;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 28,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [colorDark, colorLight]),
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: glowColor.withValues(alpha: 0.45),
+            blurRadius: 8,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: onPressed,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 14, color: textColor),
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: textColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

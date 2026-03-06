@@ -60,7 +60,40 @@ extension _RummyNotifierBot on RummyNotifier {
         .where((d) => d is! DrawFromDeck && d is! DrawFromDiscard)
         .toList();
 
+    // Enforce: if bot drew from discard but won't meld that card, return it and draw from deck.
+    if (state.drawnFromDiscard && state.drawnCardThisTurn != null) {
+      final drawnCard = state.drawnCardThisTurn!;
+      final willMeld = meldAndDiscard.whereType<LayMeld>()
+          .any((d) => d.meld.cards.any((c) => c.id == drawnCard.id));
+      if (!willMeld) {
+        _botReturnDiscardAndDrawFromDeck(selfIdx, drawnCard);
+        final replan = aiDecide(
+          state.difficulty,
+          state.players[selfIdx],
+          state.topDiscard,
+          state,
+          selfIdx,
+        ).where((d) => d is! DrawFromDeck && d is! DrawFromDiscard).toList();
+        _applyBotDecisions(replan, selfIdx);
+        return;
+      }
+    }
+
     _applyBotDecisions(meldAndDiscard, selfIdx);
+  }
+
+  void _botReturnDiscardAndDrawFromDeck(int selfIdx, PlayingCard card) {
+    final player = state.players[selfIdx];
+    final newHand = player.hand.where((c) => c.id != card.id).toList();
+    final players = List<RummyPlayer>.from(state.players);
+    players[selfIdx] = player.copyWith(hand: newHand);
+    state = state.copyWith(
+      players: players,
+      discardPile: [...state.discardPile, card],
+      drawnFromDiscard: false,
+      drawnCardThisTurn: null,
+    );
+    _botDraw(selfIdx, fromDiscard: false);
   }
 
   void _applyBotDecisions(List<AiDecision> decisions, int selfIdx) {

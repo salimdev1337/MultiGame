@@ -6,7 +6,7 @@ enum RummyMessageType {
   // Lobby
   join, joined, playerJoined, playerLeft, start,
   // Guest → host actions
-  drawDeck, drawDiscard,
+  drawDeck, drawDiscard, returnDiscard,
   layMeld,      // {cardIds: List<String>}
   addToMeld,    // {cardIds, meldOwnerId, meldIdx}
   discard,      // {cardId}
@@ -61,6 +61,9 @@ class RummyMessage {
 
   static RummyMessage drawDiscard(int playerId) =>
       RummyMessage(type: RummyMessageType.drawDiscard, payload: {'playerId': playerId});
+
+  static RummyMessage returnDiscard(int playerId) =>
+      RummyMessage(type: RummyMessageType.returnDiscard, payload: {'playerId': playerId});
 
   static RummyMessage layMeld(int playerId, List<String> cardIds) =>
       RummyMessage(type: RummyMessageType.layMeld, payload: {'playerId': playerId, 'cardIds': cardIds});

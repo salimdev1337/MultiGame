@@ -76,8 +76,7 @@ class PlayingCardWidget extends StatelessWidget {
       child: AnimatedSlide(
         duration: const Duration(milliseconds: 180),
         offset: isSelected ? const Offset(0, -0.15) : Offset.zero,
-        child: RepaintBoundary(
-          child: path != null
+        child: path != null
             ? Container(
                 width: width,
                 height: height,
@@ -114,7 +113,6 @@ class PlayingCardWidget extends StatelessWidget {
                   ),
                 ),
               ),
-        ),
       ),
     );
   }

@@ -98,10 +98,11 @@ class _RummyCenterPileState extends State<RummyCenterPile>
                 ),
               ),
               if (widget.canDraw)
-                IgnorePointer(
-                  child: FadeTransition(
-                    opacity: _pulseAnim,
-                    child: DecoratedBox(
+                RepaintBoundary(
+                  child: IgnorePointer(
+                    child: FadeTransition(
+                      opacity: _pulseAnim,
+                      child: DecoratedBox(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
@@ -119,6 +120,7 @@ class _RummyCenterPileState extends State<RummyCenterPile>
                     ),
                   ),
                 ),
+              ),
             ],
           ),
         ),

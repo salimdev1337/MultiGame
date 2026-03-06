@@ -34,7 +34,9 @@ class RummyOpponentWidget extends StatelessWidget {
           isCurrentTurn: isCurrentTurn,
         ),
         const SizedBox(height: 2),
-        horizontal ? _horizontalCards(cardCount) : _verticalCards(cardCount),
+        RepaintBoundary(
+          child: horizontal ? _horizontalCards(cardCount) : _verticalCards(cardCount),
+        ),
       ],
     );
   }
@@ -198,22 +200,24 @@ class _PulsingNameChipState extends State<_PulsingNameChip>
       return chip;
     }
 
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (_, child) => Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: DSColors.rummyAccent.withValues(alpha: _ctrl.value * 0.6),
-              blurRadius: 8 + _ctrl.value * 6,
-              spreadRadius: _ctrl.value * 2,
-            ),
-          ],
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _ctrl,
+        builder: (_, child) => Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: DSColors.rummyAccent.withValues(alpha: _ctrl.value * 0.6),
+                blurRadius: 8 + _ctrl.value * 6,
+                spreadRadius: _ctrl.value * 2,
+              ),
+            ],
+          ),
+          child: child,
         ),
-        child: child,
+        child: chip,
       ),
-      child: chip,
     );
   }
 }

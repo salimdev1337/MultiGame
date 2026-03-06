@@ -45,9 +45,13 @@ class RummyLeftSidebar extends ConsumerWidget {
     }));
     return SizedBox(
       width: 100,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
           RummyCenterPile(
             drawPileCount: s.drawPileCount,
             topDiscard: s.topDiscard,
@@ -74,6 +78,7 @@ class RummyLeftSidebar extends ConsumerWidget {
               ),
             ),
         ],
+        ),
       ),
     );
   }

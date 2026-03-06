@@ -96,6 +96,26 @@ void main() {
       final cards = [c(0, 5), c(0, 7), c(0, 9)];
       expect(validateMeld(cards), isNull);
     });
+
+    test('ace-high run A-K-Q = run', () {
+      final cards = [c(0, 1), c(0, 13), c(0, 12)];
+      expect(validateMeld(cards), MeldType.run);
+    });
+
+    test('ace-high run A-K-Q-J = run', () {
+      final cards = [c(0, 1), c(0, 13), c(0, 12), c(0, 11)];
+      expect(validateMeld(cards), MeldType.run);
+    });
+
+    test('ace wrap-around A-2-K = not valid', () {
+      final cards = [c(0, 1), c(0, 2), c(0, 13)];
+      expect(validateMeld(cards), isNull);
+    });
+
+    test('ace-high run with joker A-K-J (joker fills Q) = run', () {
+      final cards = [c(0, 1), c(0, 13), joker, c(0, 11)];
+      expect(validateMeld(cards), MeldType.run);
+    });
   });
 
   // ── deadwoodValue ───────────────────────────────────────────────────────────
@@ -108,6 +128,55 @@ void main() {
     test('sums point values correctly', () {
       final hand = [c(0, 3), c(0, 7), c(1, 13), joker];
       expect(deadwoodValue(hand), 3 + 7 + 10 + 10);
+    });
+  });
+
+  // ── meldPointTotal ─────────────────────────────────────────────────────────
+
+  group('meldPointTotal', () {
+    test('ace-low run A-2-3 = 6', () {
+      final cards = [c(0, 1), c(0, 2), c(0, 3)];
+      expect(meldPointTotal(cards), 6);
+    });
+
+    test('ace-high run A-K-Q-J = 40', () {
+      final cards = [c(0, 1), c(0, 13), c(0, 12), c(0, 11)];
+      expect(meldPointTotal(cards), 40);
+    });
+
+    test('set of 3 aces = 30', () {
+      final cards = [c(0, 1), c(1, 1), c(2, 1)];
+      expect(meldPointTotal(cards), 30);
+    });
+
+    test('regular run 5-6-7 = 18', () {
+      final cards = [c(0, 5), c(0, 6), c(0, 7)];
+      expect(meldPointTotal(cards), 18);
+    });
+
+    test('ace-high run A-K-Q = 30', () {
+      final cards = [c(0, 1), c(0, 13), c(0, 12)];
+      expect(meldPointTotal(cards), 30);
+    });
+
+    test('joker in set of 2s = 6', () {
+      final cards = [c(0, 2), c(1, 2), joker];
+      expect(meldPointTotal(cards), 6);
+    });
+
+    test('joker in set of aces = 30', () {
+      final cards = [c(0, 1), c(1, 1), joker];
+      expect(meldPointTotal(cards), 30);
+    });
+
+    test('joker filling gap in run 5-?-7 = 18', () {
+      final cards = [c(0, 5), joker, c(0, 7)];
+      expect(meldPointTotal(cards), 18);
+    });
+
+    test('joker extending run above J-Q = 30', () {
+      final cards = [c(0, 11), c(0, 12), joker];
+      expect(meldPointTotal(cards), 30);
     });
   });
 
@@ -272,6 +341,23 @@ void main() {
       expect(result, isNotNull);
       expect(result!.newMeld.cards.length, 4);
       expect(result.retrievedJokers, isEmpty);
+    });
+
+    test('adding real card to 3-card set with joker extends (joker not retrieved)', () {
+      final meld = setMeld([c(0, 13), c(1, 13), joker]); // K♠ K♥ joker
+      final result = tryAddToMeld(meld, [c(2, 13)]); // add K♦
+      expect(result, isNotNull);
+      expect(result!.newMeld.cards.length, 4);
+      expect(result.retrievedJokers, isEmpty);
+    });
+
+    test('adding real card to 4-card set with joker swaps joker back', () {
+      final meld = setMeld([c(0, 13), c(1, 13), c(2, 13), joker]); // K♠ K♥ K♦ joker
+      final result = tryAddToMeld(meld, [c(3, 13)]); // add K♣
+      expect(result, isNotNull);
+      expect(result!.newMeld.cards.length, 4);
+      expect(result.retrievedJokers.length, 1);
+      expect(result.retrievedJokers.first.isJoker, isTrue);
     });
 
     test('invalid card returns null', () {

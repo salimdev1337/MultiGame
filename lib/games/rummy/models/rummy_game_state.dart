@@ -123,6 +123,18 @@ class RummyGameState {
     return !currentPlayer.hand.any((c) => c.id == drawnCardThisTurn!.id);
   }
 
+  /// True when the player drew from the discard pile and hasn't yet used that
+  /// card in a meld — they cannot discard until they meld it or return it.
+  bool get mustUseOrReturnDiscardDraw =>
+      isHumanTurn &&
+      drawnFromDiscard &&
+      drawnCardThisTurn != null &&
+      currentPlayer.hand.any((c) => c.id == drawnCardThisTurn!.id);
+
+  /// True when the player can return the drawn-discard card (no melds laid yet).
+  bool get canReturnDiscardCard =>
+      mustUseOrReturnDiscardDraw && turnMeldCount == 0;
+
   /// True when the human can undo their last action this turn.
   bool get canUndo =>
       !isMultiplayer &&

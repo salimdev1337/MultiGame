@@ -26,6 +26,7 @@ class RummyHandWidget extends ConsumerWidget {
   static const double _cardVisibleWidth = 28.0;
   static const double _maxAngle = 0.06; // ~3.4 degrees at edges
   static const double _maxLift = 10.0; // max vertical offset at edges
+  static const double _selectedLift = kCardHeight * 0.15; // 13.5px — matches AnimatedSlide offset
 
   static double _arcAngle(int i, int count) {
     if (count <= 1) {
@@ -60,7 +61,7 @@ class RummyHandWidget extends ConsumerWidget {
           Positioned(
             key: ValueKey(cards[i].id),
             left: i * _cardVisibleWidth,
-            top: _arcY(i, cards.length),
+            top: _selectedLift + _arcY(i, cards.length),
             child: Transform.rotate(
               angle: _arcAngle(i, cards.length),
               alignment: Alignment.bottomCenter,
@@ -85,7 +86,7 @@ class RummyHandWidget extends ConsumerWidget {
 
     final body = SizedBox(
       width: totalWidth,
-      height: kCardHeight + 16 + _maxLift,
+      height: kCardHeight + _maxLift + _selectedLift + 6,
       child: isDragEnabled && onReorder != null
           ? _HandReorderTarget(
               cards: cards,
@@ -96,12 +97,14 @@ class RummyHandWidget extends ConsumerWidget {
           : stack,
     );
 
-    return Center(
-      key: containerKey,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        child: body,
+    return RepaintBoundary(
+      child: Center(
+        key: containerKey,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+          child: body,
+        ),
       ),
     );
   }

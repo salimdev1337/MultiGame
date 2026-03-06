@@ -27,18 +27,24 @@ class WordleKeyboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenH = MediaQuery.of(context).size.height;
+    final isCompact = screenH < 660;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         // Row 1 has 10 keys, each with 6px total horizontal margin.
         // Derive keyW so row 1 fits exactly in the available width.
         final keyW = ((constraints.maxWidth - 10 * 6) / 10).clamp(26.0, 38.0);
-        final keyH = (keyW * 1.42).clamp(38.0, 54.0);
+        final keyH = isCompact
+            ? (keyW * 1.05).clamp(30.0, 38.0)
+            : (keyW * 1.42).clamp(38.0, 54.0);
+        final rowPadding = isCompact ? 2.0 : 3.0;
 
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: _kRows.map((row) {
             return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 3),
+              padding: EdgeInsets.symmetric(vertical: rowPadding),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: row
