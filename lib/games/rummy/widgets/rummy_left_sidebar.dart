@@ -45,26 +45,26 @@ class RummyLeftSidebar extends ConsumerWidget {
     }));
     return SizedBox(
       width: 100,
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        alignment: Alignment.center,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-          RummyCenterPile(
-            drawPileCount: s.drawPileCount,
-            topDiscard: s.topDiscard,
-            recentDiscards: s.recentDiscards,
-            canDraw: s.isHumanTurn && s.turnPhase == TurnPhase.draw,
-            onDrawFromDeck: onDrawFromDeck ?? notifier.drawFromDeck,
-            onDrawFromDiscard: onDrawFromDiscard ?? notifier.drawFromDiscard,
-            canDropOnDiscard: s.isHumanTurn && s.turnPhase == TurnPhase.meld,
-            onCardDroppedOnDiscard: onCardDroppedOnDiscard,
-            deckWidgetKey: deckWidgetKey,
-            discardWidgetKey: discardWidgetKey,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.center,
+            child: RummyCenterPile(
+              drawPileCount: s.drawPileCount,
+              topDiscard: s.topDiscard,
+              recentDiscards: s.recentDiscards,
+              canDraw: s.isHumanTurn && s.turnPhase == TurnPhase.draw,
+              onDrawFromDeck: onDrawFromDeck ?? notifier.drawFromDeck,
+              onDrawFromDiscard: onDrawFromDiscard ?? notifier.drawFromDiscard,
+              canDropOnDiscard: s.isHumanTurn && s.turnPhase == TurnPhase.meld,
+              onCardDroppedOnDiscard: onCardDroppedOnDiscard,
+              deckWidgetKey: deckWidgetKey,
+              discardWidgetKey: discardWidgetKey,
+            ),
           ),
-          const SizedBox(height: 6),
           if (s.statusMessage != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -78,7 +78,6 @@ class RummyLeftSidebar extends ConsumerWidget {
               ),
             ),
         ],
-        ),
       ),
     );
   }

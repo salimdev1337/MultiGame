@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:multigame/design_system/ds_colors.dart';
 import 'package:multigame/design_system/ds_typography.dart';
 
+import '../logic/rummy_logic.dart';
 import '../models/playing_card.dart';
 import '../models/rummy_meld.dart';
 import '../models/rummy_player.dart';
@@ -106,8 +107,9 @@ class _PlayerMeldGroup extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
+        Wrap(
+          spacing: 3,
+          runSpacing: 2,
           children: player.melds.asMap().entries.map((entry) {
             final meldKey = entry.value.cards.isNotEmpty
                 ? entry.value.cards.first.id
@@ -157,7 +159,7 @@ class _SmallMeldGroupState extends State<_SmallMeldGroup>
   late final AnimationController _slamCtrl;
   bool _hovering = false;
 
-  static const double _scale = 0.5;
+  static const double _scale = 0.85;
 
   @override
   void initState() {
@@ -206,6 +208,13 @@ class _SmallMeldGroupState extends State<_SmallMeldGroup>
     super.dispose();
   }
 
+  List<PlayingCard> _displayCards(RummyMeld meld) {
+    if (meld.type == MeldType.run) {
+      return sortRunCards(meld.cards);
+    }
+    return meld.cards;
+  }
+
   @override
   Widget build(BuildContext context) {
     final container = GestureDetector(
@@ -237,7 +246,7 @@ class _SmallMeldGroupState extends State<_SmallMeldGroup>
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          children: widget.meld.cards
+          children: _displayCards(widget.meld)
               .map(
                 (card) => Padding(
                   key: ValueKey(card.id),

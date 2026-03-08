@@ -470,24 +470,13 @@ class RummyNotifier extends GameStatsNotifier<RummyGameState> {
       }
     }
 
-    // Revert guard: if player hasn't met the opening minimum, return melds to hand.
+    // Block discard: if melds are laid but minimum not met, refuse to discard.
     final player0 = state.currentPlayer;
     if (!player0.isOpen && state.turnMeldCount > 0) {
-      final meldedThisTurn = player0.melds.sublist(player0.melds.length - state.turnMeldCount);
-      final revertedCards = meldedThisTurn.expand((m) => m.cards).toList();
-      final revertedMelds = player0.melds.sublist(0, player0.melds.length - state.turnMeldCount);
-      final revertedHand = [...player0.hand, ...revertedCards];
-      final revertedPlayers = List<RummyPlayer>.from(state.players);
-      revertedPlayers[state.currentPlayerIndex] = player0.copyWith(
-        hand: revertedHand,
-        melds: revertedMelds,
-      );
       state = state.copyWith(
-        players: revertedPlayers,
-        turnMeldPoints: 0,
-        turnMeldCount: 0,
-        statusMessage: 'Need >= ${state.meldMinimum} pts to open. Melds returned.',
+        statusMessage: 'Not enough to meld (${state.turnMeldPoints}/${state.meldMinimum} pts). Add more cards or undo.',
       );
+      return;
     }
 
     final player = state.currentPlayer;
