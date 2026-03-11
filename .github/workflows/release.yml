@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*.*.*'  # Triggers on tags like v1.0.0, v2.1.3, etc.
 
+permissions:
+  contents: write
+
 jobs:
   # Job 1: Create the release
   create-release:
@@ -122,12 +125,44 @@ jobs:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
           KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
-          echo "$KEYSTORE_B64" | base64 --decode > /tmp/multigame-release-key.jks
+          set -euo pipefail
+
+          # Decode keystore — strip any whitespace/newlines that break base64
+          echo "$KEYSTORE_B64" | tr -d '\n\r ' | base64 --decode > /tmp/multigame-release-key.jks
+
+          # 1) Validate store password (catches corrupt file or wrong store password)
+          keytool -list \
+            -keystore /tmp/multigame-release-key.jks \
+            -storepass "$KEY_STORE_PASSWORD" \
+            >/dev/null \
+            || { echo "ERROR: store password is incorrect or keystore file is corrupt"; exit 1; }
+
+          # 2) Validate alias exists inside the keystore
+          keytool -list \
+            -keystore /tmp/multigame-release-key.jks \
+            -storepass "$KEY_STORE_PASSWORD" \
+            -alias "$KEY_ALIAS" \
+            >/dev/null \
+            || { echo "ERROR: alias '$KEY_ALIAS' not found in keystore"; exit 1; }
+
+          # 3) Validate key password by generating a throw-away CSR
+          keytool -certreq \
+            -keystore /tmp/multigame-release-key.jks \
+            -storepass "$KEY_STORE_PASSWORD" \
+            -keypass "$KEY_PASSWORD" \
+            -alias "$KEY_ALIAS" \
+            -file /tmp/test.csr \
+            >/dev/null 2>&1 \
+            || { echo "ERROR: key password for alias '$KEY_ALIAS' is incorrect"; exit 1; }
+
+          rm -f /tmp/test.csr
+
           cat > android/key.properties <<EOF
           storePassword=$KEY_STORE_PASSWORD
           keyPassword=$KEY_PASSWORD
-          keyAlias=multigame
+          keyAlias=$KEY_ALIAS
           storeFile=/tmp/multigame-release-key.jks
           EOF
 
@@ -138,10 +173,18 @@ jobs:
           ADMOB_BANNER_ANDROID: ${{ secrets.ADMOB_BANNER_ANDROID }}
           ADMOB_INTERSTITIAL_ANDROID: ${{ secrets.ADMOB_INTERSTITIAL_ANDROID }}
         run: |
+          EXTRA_DEFINES=""
+          if [ -n "$UNSPLASH_ACCESS_KEY" ]; then
+            EXTRA_DEFINES="$EXTRA_DEFINES --dart-define=UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY"
+          fi
+          if [ -n "$ADMOB_BANNER_ANDROID" ]; then
+            EXTRA_DEFINES="$EXTRA_DEFINES --dart-define=ADMOB_BANNER_ANDROID=$ADMOB_BANNER_ANDROID"
+          fi
+          if [ -n "$ADMOB_INTERSTITIAL_ANDROID" ]; then
+            EXTRA_DEFINES="$EXTRA_DEFINES --dart-define=ADMOB_INTERSTITIAL_ANDROID=$ADMOB_INTERSTITIAL_ANDROID"
+          fi
           flutter build apk --release \
-            --dart-define=UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY \
-            --dart-define=ADMOB_BANNER_ANDROID=$ADMOB_BANNER_ANDROID \
-            --dart-define=ADMOB_INTERSTITIAL_ANDROID=$ADMOB_INTERSTITIAL_ANDROID \
+            $EXTRA_DEFINES \
             --build-name=${{ needs.create-release.outputs.version }} \
             --build-number=${{ needs.create-release.outputs.build_number }}
 
